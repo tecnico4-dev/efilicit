@@ -1,0 +1,17 @@
+{
+  "name": "efilicit",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Plataforma de vigilancia de contratación pública (monorepo EfiLicit)",
+  "packageManager": "pnpm@10.33.0",
+  "engines": {
+    "node": "24.x",
+    "pnpm": "10.x"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @efilicit/web dev",
+    "build": "pnpm --filter @efilicit/web build",
+    "lint": "pnpm -r run lint",
+    "typecheck": "pnpm -r run typecheck"
+  }
+}
