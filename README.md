@@ -49,7 +49,7 @@ supabase --version
 
 ## Estado actual
 
-Fase 0 en curso: monorepo + reglas Cursor + web + ingestion + Supabase local. Pendiente: CI/GitHub, link remoto y cierre del checklist.
+Fase 0 en curso: monorepo + web + ingestion + Supabase local + CI. Pendiente: protección `main` en GitHub UI, link remoto y cierre del checklist.
 
 ## Contribuir
 

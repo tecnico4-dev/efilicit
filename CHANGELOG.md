@@ -15,3 +15,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Scaffold frontend `@efilicit/web` (Next.js + TypeScript + Tailwind) y paquete `@efilicit/types`.
 - Scaffold Python `@efilicit` ingestion (`efilicit_ingestion` CLI mínimo con `uv`).
 - Inicialización de `supabase/` y stack local (Docker) para desarrollo.
+- Workflow CI mínimo en GitHub Actions (lint/typecheck/build web + smoke CLI ingestion).
