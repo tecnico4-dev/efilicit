@@ -1,0 +1,2 @@
+-- Synthetic development seed for EfiLicit.
+-- Populated in Fase 0 Paso 8. Keep out real user data and secrets.
