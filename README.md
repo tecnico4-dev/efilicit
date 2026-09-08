@@ -49,7 +49,7 @@ supabase --version
 
 ## Estado actual
 
-Fase 0 en curso: monorepo + reglas Cursor + scaffold web (`apps/web`). Pendiente: CLI de ingesta y `supabase init`.
+Fase 0 en curso: monorepo + reglas Cursor + scaffold web + scaffold ingestion. Pendiente: Supabase local/remoto y CI.
 
 ## Contribuir
 
