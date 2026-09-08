@@ -1,0 +1,32 @@
+---
+description: Estándares Next.js, React, TypeScript y Tailwind del frontend
+globs: apps/web/**/*.{ts,tsx,js,jsx,css},packages/**/*.{ts,tsx}
+alwaysApply: false
+---
+
+# TypeScript / Next.js
+
+## Frontend
+
+- Next.js
+- React
+- TypeScript
+- Tailwind CSS
+
+## Reglas
+
+- No meter lógica de negocio compleja en componentes React.
+- Centralizar el acceso a datos en `lib/queries` o una capa equivalente.
+- Reutilizar tipos generados desde el esquema Supabase cuando estén disponibles.
+- Validar entradas.
+- Separar datos públicos de datos privados.
+- Todo acceso privado debe estar protegido por RLS.
+- Nunca usar `service_role` key en frontend.
+- No acceder directamente a RAW Storage desde la UI como mecanismo de negocio.
+
+## LIBRE
+
+- Diseño visual.
+- Naming de componentes.
+- Organización interna de UI.
+- Patrones internos de composición, si respetan las APIs y contratos del proyecto.

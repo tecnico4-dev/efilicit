@@ -1,0 +1,47 @@
+---
+description: Visión EfiLicit, modelo mental y checklist antes de escribir código
+alwaysApply: true
+---
+
+# EfiLicit — project overview
+
+EfiLicit es una plataforma de vigilancia de contratación pública.
+Ingiere licitaciones de fuentes oficiales (PLACSP, TED, CCAA y otras),
+las unifica en un modelo canónico en PostgreSQL, permite buscarlas
+y genera alertas para usuarios.
+
+## Modelo mental
+
+- GitHub contiene código, configuración y documentación.
+- GitHub Actions ejecuta trabajo batch.
+- Python descarga, valida, parsea y transforma.
+- Supabase Storage conserva el RAW original.
+- PostgreSQL es la fuente de verdad operativa.
+- El frontend (Next.js) consume la capa de datos/API.
+- La aplicación NO conoce parsers ni formatos de fuentes.
+- El móvil es un cliente posterior.
+
+## Antes de escribir código
+
+1. Inspecciona la estructura existente del repo.
+2. Revisa la documentación relevante en `docs/`.
+3. Revisa los ADR aplicables en `docs/adr/`.
+4. Comprueba la fase del roadmap en la que se encuentra la tarea.
+5. Respeta las reglas de `.cursor/rules/` aplicables al archivo.
+
+## Prompt maestro (resumen)
+
+1. No cambies producción directamente.
+2. Cambios de DB = migraciones versionadas.
+3. Conectores idempotentes e incrementales cuando sea posible.
+4. Trazabilidad `source → artifact → parser → canonical record`.
+5. No scraping si existe API/Open Data/feed oficial adecuado.
+6. No dependencias/proveedores nuevos sin justificar (ADR si aplica).
+7. Parsers nuevos → fixtures + tests.
+8. Sin secretos en código; sin `service_role` en frontend.
+9. Si contradice arquitectura fija o un ADR → propon un ADR; no improvises.
+10. No amplíes una tarea más allá de la fase actual sin explicarlo.
+11. Si falta información arquitectónica, no la inventes: señala el hueco.
+
+Autoridad: seguridad > ADRs/arquitectura fija > estas rules > docs generales > preferencias locales.
+Los documentos `docs/00`–`docs/04` son norma de referencia; no los edites salvo petición explícita del usuario.

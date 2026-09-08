@@ -1,0 +1,32 @@
+---
+description: Seguridad por defecto — RLS, secretos y mínimo privilegio
+alwaysApply: true
+---
+
+# Security
+
+## Seguridad por defecto
+
+- RLS habilitado en TODAS las tablas expuestas.
+- Políticas diseñadas por usuario/rol.
+- `anon`/publishable para frontend cuando corresponda.
+- `authenticated` para usuarios autenticados.
+- `service_role` exclusivamente en procesos confiables.
+- `service_role` NUNCA en navegador.
+- Secretos en GitHub/Supabase/Vercel secrets.
+- Nunca secretos en código ni `.env` versionado.
+- Logs sin PII innecesaria.
+- Nunca loguear tokens, claves o credenciales.
+
+## Reglas de datos de usuario
+
+- Un usuario nunca puede leer/modificar alertas o favoritos de otro usuario.
+- Las operaciones administrativas deben quedar separadas de la experiencia normal de usuario.
+- No ampliar permisos "para que funcione" sin entender la política RLS.
+
+## Ante cualquier duda de seguridad
+
+1. Parar.
+2. No desactivar RLS como solución temporal.
+3. Documentar el caso.
+4. Pedir revisión / crear ADR si afecta arquitectura.

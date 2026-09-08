@@ -1,0 +1,30 @@
+---
+description: Migration-first para esquema PostgreSQL / Supabase
+globs: supabase/**/*.sql,supabase/**/*.toml
+alwaysApply: false
+---
+
+# Supabase migrations
+
+Toda modificación de esquema PostgreSQL pasa por una migración versionada.
+
+## Flujo
+
+1. `supabase migration new <nombre>`
+2. Editar SQL
+3. `supabase db reset` (solo LOCAL)
+4. Ejecutar tests
+5. Revisar impacto
+6. CI
+7. Desplegar de forma controlada
+
+## PROHIBIDO
+
+- Cambiar el esquema de producción manualmente desde SQL Editor/Table Editor.
+- Crear tablas/índices/funciones permanentes fuera de migraciones.
+- Modificar el esquema remoto y después intentar "ponerse al día".
+- `supabase db reset --linked` contra producción.
+
+Las migraciones son la fuente versionada del esquema.
+
+Toda modificación de tablas, índices, funciones, triggers, políticas RLS y buckets/policies de Storage (cuando se gestionen como parte del esquema) debe quedar reproducible y revisable.

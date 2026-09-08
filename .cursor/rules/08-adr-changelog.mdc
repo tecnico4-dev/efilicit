@@ -1,0 +1,38 @@
+---
+description: ADRs, CHANGELOG y convención de commits
+alwaysApply: true
+---
+
+# ADR and changelog
+
+Todo cambio de arquitectura requiere un ADR en `docs/adr/`.
+
+## Plantilla mínima de ADR
+
+- Estado
+- Contexto
+- Decisión
+- Alternativas
+- Consecuencias
+- Riesgos
+- Fecha
+- Referencias
+
+Si una decisión contradice un ADR existente:
+
+- NO sobrescribir silenciosamente el ADR.
+- Proponer un nuevo ADR que explique el cambio.
+
+Todo cambio funcional importante actualiza `CHANGELOG.md` en el mismo PR.
+
+## Convención de commits
+
+`feat` · `fix` · `refactor` · `test` · `docs` · `chore` · `ci` · `perf` · `security`
+
+## Changelog
+
+Formato Keep a Changelog.
+
+No crear un ADR para decisiones puramente internas que no afectan arquitectura, seguridad, contratos o dependencias estructurales.
+
+No editar `docs/00`–`docs/04` salvo petición explícita del usuario.

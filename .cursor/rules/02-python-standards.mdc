@@ -1,0 +1,38 @@
+---
+description: Estándares Python 3.12 + uv para el motor de ingesta
+globs: ingestion/**/*.py,ingestion/**/pyproject.toml,ingestion/**/*.toml
+alwaysApply: false
+---
+
+# Python standards (ingestion)
+
+Ingesta en Python 3.12.x.
+
+## Dependencias
+
+- Utilizar `uv` como gestor del proyecto.
+- No instalar dependencias del proyecto con `pip` a mano.
+- Respetar `pyproject.toml` y lockfile.
+
+## Librerías principales aprobadas
+
+- `httpx`: HTTP.
+- `lxml`: XML.
+- `pydantic`: validación/modelos.
+- `pandas`: sólo cuando simplifique una transformación tabular.
+- `tenacity`: retries.
+- `scrapy`: último recurso cuando no exista acceso oficial mejor.
+
+## Estándares
+
+- Tipado con type hints.
+- Funciones pequeñas y testeables.
+- Pydantic en límites de entrada/salida.
+- Errores explícitos y clasificables.
+- Timeouts y retries configurados.
+- Código idempotente.
+- Soporte para checkpoints cuando la fuente lo permita.
+- No loguear secretos.
+
+No añadir una dependencia nueva sólo por comodidad.
+Si aporta un beneficio significativo, justificarla en el PR y crear ADR si cambia la arquitectura o introduce un proveedor/componente nuevo.

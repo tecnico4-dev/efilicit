@@ -1,0 +1,41 @@
+---
+description: Decisiones de arquitectura fijas y qué no introducir sin ADR
+alwaysApply: true
+---
+
+# Architecture (fijo)
+
+## Decisiones FIJAS
+
+- Monorepo único.
+- GitHub Actions como orquestador de ETL batch inicial.
+- Supabase PostgreSQL como source of truth.
+- Supabase Storage para RAW inmutable.
+- Modelo canónico común a todas las fuentes.
+- Búsqueda fase 1 con PostgreSQL FTS + GIN + `pg_trgm`.
+- GIST sólo cuando exista una necesidad concreta y justificada.
+- Alertas batch-first.
+- Webhooks sólo para side-effects e integraciones secundarias.
+- No introducir infraestructura adicional sin necesidad medible y ADR.
+
+## Regla de oro
+
+La aplicación no depende de archivos originales ni de parsers específicos.
+La web consume el modelo canónico en PostgreSQL.
+
+## No introducir sin ADR
+
+- Redis.
+- Elasticsearch/OpenSearch.
+- colas externas.
+- backend HTTP permanente como arquitectura principal de ingesta.
+- proxies de pago.
+- otro framework de frontend.
+- otro proveedor de email.
+
+## Si una tarea parece requerir una de estas piezas
+
+1. Explica por qué la arquitectura actual no es suficiente.
+2. Mide o documenta la limitación.
+3. Propón un ADR.
+4. No incorpores el componente directamente.

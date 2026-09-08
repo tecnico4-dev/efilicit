@@ -1,0 +1,45 @@
+---
+description: Contrato de conectores ETL y pipeline común
+globs: ingestion/**/*
+alwaysApply: false
+---
+
+# ETL connectors
+
+Los conectores son responsables de conocer una fuente concreta.
+El pipeline común es responsable del procesamiento canónico.
+
+## Contrato mínimo del conector
+
+- `discover()`
+- `fetch()`
+- `parse()`
+
+## Pipeline común
+
+discover → fetch → validate_artifact → store_raw → parse → normalize → enrich → resolve_identity → deduplicate → quality_checks → upsert → emit_events → checkpoint
+
+## Requisitos FIJOS de cada conector
+
+- Idempotente: repetir no duplica ni corrompe.
+- Incremental: procesa sólo lo nuevo/modificado cuando la fuente lo permita.
+- Trazable: `source → artifact → parser → canonical record`.
+- Registra estado en `source_sync`.
+- Registra el artefacto en `source_artifacts`.
+- Utiliza fuente oficial primero.
+- Scraping sólo como último recurso.
+- Respeta timeouts, rate limits y condiciones de acceso.
+- No contamina el modelo canónico con campos específicos de la fuente.
+- No pone lógica de negocio exclusiva del producto dentro del parser.
+
+## Identidad
+
+- Utilizar NIF/CIF u otro identificador oficial como señal primaria cuando exista.
+- Nunca utilizar el nombre como identificador único.
+- Si faltan identificadores fiables, usar múltiples señales y registrar confidence.
+
+## LIBRE
+
+- Implementación interna, clases auxiliares, paginación, parser concreto, cachés, organización interna.
+
+Si dos fuentes comparten formato pero no semántica, no forzar una abstracción común.

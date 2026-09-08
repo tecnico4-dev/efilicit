@@ -1,0 +1,38 @@
+---
+description: Requisitos de tests, fixtures y regresión
+globs: "**/*test*.*,**/tests/**/*,**/fixtures/**/*,**/*_test.py,**/__tests__/**/*"
+alwaysApply: false
+---
+
+# Testing
+
+## Todo parser nuevo
+
+- Fixture de fuente.
+- Tests de parseo.
+- Tests de normalización.
+- Tests de casos límite.
+
+## Todo bug reproducible
+
+Crear o ampliar un test de regresión antes o junto con el fix.
+
+## Niveles
+
+- unit
+- parser
+- contract
+- integration
+- dedup/entity resolution
+- e2e
+- workflow
+- smoke
+
+## Requisitos
+
+- No aceptar un parser porque "funciona con un fichero".
+- Probar al menos un caso válido, un caso incompleto y un caso inesperado.
+- Para cambios sensibles, ejecutar regresión de la parte afectada.
+- Los tests deben ser reproducibles y no depender de servicios externos en los tests unitarios.
+
+Cuando un test requiera datos reales, utilizar fixtures controlados/anonimizados y nunca secretos.
