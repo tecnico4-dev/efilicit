@@ -1,3 +1,5 @@
 # apps/
 
-Aplicaciones del monorepo. El frontend web vivirá en `apps/web/` (scaffold en un paso posterior de la Fase 0).
+| Paquete | Descripción |
+|---|---|
+| `web` (`@efilicit/web`) | Frontend Next.js + React + TypeScript + Tailwind |

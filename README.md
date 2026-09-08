@@ -49,7 +49,7 @@ supabase --version
 
 ## Estado actual
 
-Cimientos del monorepo (Paso 1). Aún no hay scaffold de Next.js, CLI de ingesta ni `supabase init`.
+Fase 0 en curso: monorepo + reglas Cursor + scaffold web (`apps/web`). Pendiente: CLI de ingesta y `supabase init`.
 
 ## Contribuir
 

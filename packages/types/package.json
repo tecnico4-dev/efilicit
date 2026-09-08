@@ -1,0 +1,17 @@
+{
+  "name": "@efilicit/types",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./database": "./src/database.types.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "lint": "echo \"no lint configured yet\""
+  },
+  "devDependencies": {
+    "typescript": "^5"
+  }
+}
