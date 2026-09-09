@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Inicialización de `supabase/` y stack local (Docker) para desarrollo.
 - Workflow CI mínimo en GitHub Actions (lint/typecheck/build web + smoke CLI ingestion).
 - Migración local Fase 0: bucket Storage `raw` + tabla RLS smoke `setup_rls_smoke` + seed sintético (Alice/Bob).
+- Proyecto Supabase remoto EfiLicit vinculado (`luvxqyajujlznocflymo`); major PostgreSQL 17 alineada; migración Fase 0 aplicada en remoto.
 
 ### Changed
 

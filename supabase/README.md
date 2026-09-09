@@ -34,9 +34,11 @@ URLs típicas (confirma con `supabase status`):
 - Tabla smoke `setup_rls_smoke` con RLS (cada usuario solo ve lo suyo).
 - Seed: `alice@example.com` / `bob@example.com` (password local: `password123`).
 
-## Reglas
+## Remoto (Paso 7)
 
-- Trabajar contra **local**, no producción.
-- Nunca `supabase db reset --linked`.
-- El link al proyecto remoto (`db pull`) es el **Paso 7** (aplazado si aún no existe el proyecto EfiLicit en Supabase).
-- No guardar service role keys en Git.
+- Proyecto vinculado: **EfiLicit** (`luvxqyajujlznocflymo`) — https://luvxqyajujlznocflymo.supabase.co  
+- PostgreSQL major local y remoto: **17** (alineados).  
+- El remoto empezó vacío; se aplicó la migración local `20260909090000_fase0_storage_raw_and_rls_smoke` con `supabase db push` (no `db reset --linked`).  
+- `supabase db pull` no generó migración nueva porque no había esquema de app que capturar; el historial local/remoto ya coincide.
+
+Identificador `SUPABASE_PROJECT_REF=luvxqyajujlznocflymo` (no es un secreto).
