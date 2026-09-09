@@ -1,6 +1,6 @@
 # Semana 1 — Plan: modelo canónico + infraestructura de ingesta
 
-> **Estado:** en curso (Paso 1 hecho; siguiente = Paso 2 migración canónica).  
+> **Estado:** en curso (Pasos 1–2 hechos; siguiente = Paso 3 esqueleto users/alertas).  
 > **Checklist:** [fase1-checklist.md](fase1-checklist.md)  
 > **Precondición:** Fase 0 cerrada ([fase0-checklist.md](fase0-checklist.md)).  
 > **Norma:** implementar lo ya fijado en `docs/00`–`04` y `.cursor/rules/`. ADR solo si hace falta cambiar arquitectura de verdad.
@@ -94,6 +94,8 @@ Registro de lo acordado al cerrar (o antes de) cada paso:
 | Plan | Sin ADRs previos; ADR solo si hay cambio estructural | Respetar arquitectura ya fijada |
 | Paso 1 | Tres tablas operativas en migración propia; RLS sin grants a anon/authenticated | Bitácora ETL antes del modelo canónico; solo service_role escribe |
 | Paso 1 | Unique `(source_code, run_id)` y `(source_code, artifact_key)` / checksum | Base de idempotencia y trazabilidad |
+| Paso 2 | DDL canónico mínimo + SELECT público (anon/authenticated); escritura solo service_role | Datos de contratación son públicos; ETL no usa el frontend |
+| Paso 2 | Unique parcial `(tax_id_country, tax_id)` en organismos/suppliers | Identidad fiscal cuando existe; sin forzar si falta |
 
 ---
 

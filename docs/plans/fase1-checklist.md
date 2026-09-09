@@ -5,9 +5,9 @@ Plan: [semana01-plan.md](semana01-plan.md). Criterios: `docs/04-roadmap-mvp.md` 
 | Ítem | Estado | Notas |
 |---|---|---|
 | Migración operativa (`source_sync`, `source_artifacts`, `errors`) | OK | `20260909103000_semana1_source_sync_artifacts_errors.sql` |
-| Migración canónica (`tenders` + relacionadas) | — | |
+| Migración canónica (`tenders` + relacionadas) | OK | `20260909120000_semana1_canonical_core.sql` |
 | Esqueleto users / saved_searches / alerts / notification_queue + RLS | — | |
-| `supabase db reset` local OK (esquema Semana 1) | OK | Paso 1 verificado; se revalidará al cerrar migraciones |
+| `supabase db reset` local OK (esquema Semana 1) | OK | Revalidado tras Paso 2 |
 | Tipos TS regenerados | — | |
 | `SourceConnector` + tests básicos | — | |
 | Pipeline común + prueba mínima | — | |
