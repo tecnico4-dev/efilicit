@@ -1,6 +1,6 @@
 """Minimal CLI for the ingestion engine.
 
-Fase 0 only exposes --help / version. Connectors arrive in Semana 1–2.
+Fase 0 only exposes --help / version. SourceConnector lands in Semana 1; real sources in Semana 2.
 """
 
 from __future__ import annotations
@@ -14,7 +14,7 @@ from efilicit_ingestion import __version__
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="efilicit-ingestion",
-        description="EfiLicit ingestion CLI (scaffold — no connectors yet).",
+        description="EfiLicit ingestion CLI (SourceConnector contract in Semana 1; real sources later).",
     )
     parser.add_argument(
         "--version",
