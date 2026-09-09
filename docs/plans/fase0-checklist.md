@@ -2,6 +2,8 @@
 
 Estado tras Pasos 0–9 (Paso 7 remoto hecho; protection `main` aplazada a propósito).
 
+Plan de ejecución: [semana00-plan.md](semana00-plan.md).
+
 | Ítem | Estado | Notas |
 |---|---|---|
 | Git | OK | |

@@ -51,6 +51,8 @@ supabase --version
 
 Fase 0 setup cerrada en local (+ remoto vinculado). Siguiente: Semana 1 del roadmap (modelo canónico + infraestructura de ingesta).
 
+Planes y checklists de ejecución por semana: [docs/plans/](docs/plans/).
+
 ## Contribuir
 
 Ver [CONTRIBUTING.md](CONTRIBUTING.md) y el roadmap en `docs/04-roadmap-mvp.md`.
