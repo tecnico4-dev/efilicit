@@ -16,3 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Scaffold Python `@efilicit` ingestion (`efilicit_ingestion` CLI mínimo con `uv`).
 - Inicialización de `supabase/` y stack local (Docker) para desarrollo.
 - Workflow CI mínimo en GitHub Actions (lint/typecheck/build web + smoke CLI ingestion).
+- Migración local Fase 0: bucket Storage `raw` + tabla RLS smoke `setup_rls_smoke` + seed sintético (Alice/Bob).
+
+### Changed
+
+- Decisión documentada: no aplicar branch protection en `main` por ahora (repo privado de prueba; no se contratará plan GitHub Team solo para ese bloqueo). Ver `.github/README.md`.

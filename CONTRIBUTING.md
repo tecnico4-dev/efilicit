@@ -29,7 +29,7 @@ rama desde main
   → merge
 ```
 
-- `main` debe tratarse como protegida (PR obligatorio).
+- `main` es la rama principal. **Por ahora no hay branch protection formal en GitHub** (decisión documentada en `.github/README.md`: proyecto de prueba, sin plan Team de pago). Conviene igual evitar force push y no borrar `main`; el CI de Actions sigue siendo la comprobación automática.
 - No secretos en Git. Solo plantillas tipo `.env.example`.
 - No tocar el esquema de producción a mano.
 - Nunca `supabase db reset --linked` contra producción.

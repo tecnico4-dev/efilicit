@@ -9,45 +9,36 @@ En cada push/PR a `main` ejecuta:
 1. **Web lint / typecheck / build** — pnpm 10.33.0 + Node 24
 2. **Ingestion CLI smoke** — Python 3.12 + uv + `cli --help`
 
-## Protección de `main` (hacer en GitHub)
+Comprobar runs: https://github.com/tecnico4-dev/efilicit/actions
 
-Como ahora trabajamos a menudo con push directo a `main` en el setup, la protección recomendada **en esta fase** es:
+## Protección de `main` — decisión del proyecto
 
-1. Repo → **Settings** → **Branches** → **Add branch protection rule**
-2. Branch name pattern: `main`
-3. Marca:
-   - **Require status checks to pass before merging**
-   - Status checks: `Web lint / typecheck / build`, `Ingestion CLI smoke`  
-     (aparecen tras el primer run de CI; si aún no salen, haz un push con el workflow y vuelve)
-   - **Do not allow force pushes**
-   - **Do not allow deletions**
-4. Deja **sin** exigir PR reviews todavía (opcional más adelante).
-5. Save.
+**No se aplica** branch protection / ruleset sobre `main`, **al menos por ahora**.
 
-### Opción CLI (`gh`)
+### Motivo
 
-Requiere permisos de admin. Tras el primer CI verde:
+GitHub exige una cuenta de organización con plan de pago (**Team** o superior) para proteger ramas en un repositorio **privado**. EfiLicit es todavía un proyecto **pequeño y de prueba**: no se va a invertir en esa cuenta de pago solo para ese bloqueo.
 
-```powershell
-gh api repos/tecnico4-dev/efilicit/branches/main/protection -X PUT -H "Accept: application/vnd.github+json" --input - @"
-{
-  "required_status_checks": {
-    "strict": true,
-    "contexts": [
-      "Web lint / typecheck / build",
-      "Ingestion CLI smoke"
-    ]
-  },
-  "enforce_admins": false,
-  "required_pull_request_reviews": null,
-  "restrictions": null,
-  "allow_force_pushes": false,
-  "allow_deletions": false
-}
-"@
-```
+### Qué sí queda en vigor
 
-Si falla por el plan de GitHub o el formato de API, usa la UI.
+- El **CI** de Actions sigue activo y debe consultarse tras cambios relevantes.
+- Disciplina manual recomendada: evitar force push y no borrar `main`.
+- Push directo a `main` permitido durante esta fase.
+
+Si en el futuro el proyecto crece o se dispone de plan Team / otro modelo de cuenta, se podrá reactivar la protección formal. Hasta entonces, **este requisito del setup se considera no aplicable** (aplazado a propósito).
+
+<details>
+<summary>Referencia (no usar por ahora): cómo se aplicaría la protection si el plan de GitHub lo permitiera</summary>
+
+Usar **Add classic branch protection rule**:
+
+1. Repo → **Settings** → **Branches** → **Add classic branch protection rule**
+2. Pattern: `main`
+3. Require status checks: `Web lint / typecheck / build`, `Ingestion CLI smoke`
+4. Allow force pushes **desmarcado**; Allow deletions **desmarcado**
+5. No exigir PR reviews mientras se quiera push directo en setup
+
+</details>
 
 ## Environments / Secrets
 
