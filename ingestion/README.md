@@ -13,5 +13,6 @@ uv run python -m efilicit_ingestion.cli --help
 
 ## Estado (Semana 1)
 
-Contrato `SourceConnector` (`discover` / `fetch` / `parse`) + modelos Pydantic + stub de prueba.
+Contrato `SourceConnector` + pipeline común mínimo (`run_pipeline`) con etapas del roadmap.
+Persistencia de sync/artifacts en memoria por ahora; Postgres en el siguiente paso.
 Conectores reales de fuente (p. ej. PLACSP) llegan en Semana 2.

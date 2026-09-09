@@ -10,7 +10,7 @@ Plan: [semana01-plan.md](semana01-plan.md). Criterios: `docs/04-roadmap-mvp.md` 
 | `supabase db reset` local OK (esquema Semana 1) | OK | Revalidado tras Paso 3 |
 | Tipos TS regenerados | OK | `packages/types/src/database.types.ts` |
 | `SourceConnector` + tests básicos | OK | Protocol + stub; `pytest` en `ingestion/tests` |
-| Pipeline común + prueba mínima | — | |
+| Pipeline común + prueba mínima | OK | `run_pipeline` + test con stub (in-memory) |
 | `source_sync` / `source_artifacts` funcionando | — | Schema listo; “funcionando” = Paso 7 |
 | `pytest` en CI | — | |
 | ADRs estructurales (solo si hubo decisión nueva) | — | Si no → N/A |

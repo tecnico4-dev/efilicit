@@ -1,6 +1,6 @@
 # Semana 1 — Plan: modelo canónico + infraestructura de ingesta
 
-> **Estado:** en curso (Pasos 1–5 hechos; siguiente = Paso 6 pipeline común).  
+> **Estado:** en curso (Pasos 1–6 hechos; siguiente = Paso 7 sync/artifacts en Postgres).  
 > **Checklist:** [fase1-checklist.md](fase1-checklist.md)  
 > **Precondición:** Fase 0 cerrada ([fase0-checklist.md](fase0-checklist.md)).  
 > **Norma:** implementar lo ya fijado en `docs/00`–`04` y `.cursor/rules/`. ADR solo si hace falta cambiar arquitectura de verdad.
@@ -99,6 +99,7 @@ Registro de lo acordado al cerrar (o antes de) cada paso:
 | Paso 3 | Esqueleto users/alertas/cola con RLS owner-only | Reserva sitio para Semana 5 sin lógica de producto aún |
 | Paso 4 | Regenerar `database.types.ts` desde esquema local | Frontend tipado alineado con migraciones Semana 1 |
 | Paso 5 | `SourceConnector` + stub + tests de contrato | Contrato de `docs/01` bajado a código; sin red |
+| Paso 6 | Pipeline común + runner in-memory | Etapas del roadmap; store_raw con checksum; DB real en Paso 7 |
 
 ---
 
