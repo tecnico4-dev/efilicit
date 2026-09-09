@@ -1,0 +1,138 @@
+"""Postgres persistence for source_sync / source_artifacts (Semana 1 Paso 7)."""
+
+from __future__ import annotations
+
+import psycopg
+
+from efilicit_ingestion.pipeline.types import StoredArtifact, SyncRun, utc_now
+
+
+class PostgresSyncRepository:
+    """Writes sync runs and artifact metadata to local/remote Postgres.
+
+    Uses a direct DB connection (service / postgres role), not the browser anon key.
+    """
+
+    def __init__(self, conn: psycopg.Connection) -> None:
+        self._conn = conn
+
+    def start_run(self, *, source_code: str, run_id: str, cursor: str | None) -> SyncRun:
+        row = self._conn.execute(
+            """
+            insert into public.source_sync (source_code, run_id, status, cursor)
+            values (%s, %s, 'running', %s)
+            returning id, started_at
+            """,
+            (source_code, run_id, cursor),
+        ).fetchone()
+        assert row is not None
+        sync_id, started_at = row
+        return SyncRun(
+            id=str(sync_id),
+            source_code=source_code,
+            run_id=run_id,
+            cursor=cursor,
+            started_at=started_at,
+        )
+
+    def register_artifact(self, run: SyncRun, stored: StoredArtifact) -> None:
+        if run.id is None:
+            raise ValueError("sync run is missing database id")
+
+        run.artifacts.append(stored)
+        run.last_artifact = stored.artifact_key
+        run.checksum = stored.checksum
+
+        self._conn.execute(
+            """
+            insert into public.source_artifacts (
+              source_code,
+              sync_id,
+              artifact_key,
+              storage_path,
+              checksum,
+              byte_size,
+              content_type,
+              source_url
+            )
+            values (%s, %s::uuid, %s, %s, %s, %s, %s, %s)
+            on conflict (source_code, artifact_key) do update set
+              sync_id = excluded.sync_id,
+              storage_path = excluded.storage_path,
+              checksum = excluded.checksum,
+              byte_size = excluded.byte_size,
+              content_type = excluded.content_type,
+              source_url = excluded.source_url,
+              downloaded_at = now()
+            """,
+            (
+                run.source_code,
+                run.id,
+                stored.artifact_key,
+                stored.storage_path,
+                stored.checksum,
+                stored.byte_size,
+                stored.content_type,
+                stored.source_url,
+            ),
+        )
+
+    def finish_run(
+        self,
+        run: SyncRun,
+        *,
+        status: str,
+        error_message: str | None = None,
+    ) -> SyncRun:
+        if run.id is None:
+            raise ValueError("sync run is missing database id")
+
+        run.status = status
+        run.error_message = error_message
+        run.finished_at = utc_now()
+
+        self._conn.execute(
+            """
+            update public.source_sync
+            set
+              status = %s,
+              finished_at = %s,
+              cursor = %s,
+              last_artifact = %s,
+              checksum = %s,
+              records_seen = %s,
+              records_new = %s,
+              records_updated = %s,
+              records_failed = %s,
+              error_message = %s
+            where id = %s::uuid
+            """,
+            (
+                run.status,
+                run.finished_at,
+                run.cursor,
+                run.last_artifact,
+                run.checksum,
+                run.records_seen,
+                run.records_new,
+                run.records_updated,
+                run.records_failed,
+                run.error_message,
+                run.id,
+            ),
+        )
+        return run
+
+
+def default_database_url() -> str:
+    """Local Supabase DB URL (override with EFILICIT_DATABASE_URL)."""
+    import os
+
+    return os.environ.get(
+        "EFILICIT_DATABASE_URL",
+        "postgresql://postgres:postgres@127.0.0.1:54322/postgres",
+    )
+
+
+def connect(database_url: str | None = None) -> psycopg.Connection:
+    return psycopg.connect(database_url or default_database_url())

@@ -28,6 +28,7 @@ class SyncRun:
 
     source_code: str
     run_id: str
+    id: str | None = None
     status: str = "running"
     cursor: str | None = None
     last_artifact: str | None = None

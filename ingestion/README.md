@@ -13,6 +13,15 @@ uv run python -m efilicit_ingestion.cli --help
 
 ## Estado (Semana 1)
 
-Contrato `SourceConnector` + pipeline común mínimo (`run_pipeline`) con etapas del roadmap.
-Persistencia de sync/artifacts en memoria por ahora; Postgres en el siguiente paso.
+Contrato `SourceConnector` + pipeline común + persistencia de `source_sync` / `source_artifacts` en Postgres local.
 Conectores reales de fuente (p. ej. PLACSP) llegan en Semana 2.
+
+## Tests
+
+```powershell
+cd ingestion
+uv sync --extra dev
+uv run pytest -q
+```
+
+Los tests de Postgres requieren `supabase start` (DB en `127.0.0.1:54322`). Si no hay DB, esos tests se saltan.

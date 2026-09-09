@@ -6,6 +6,7 @@ from efilicit_ingestion.pipeline.ports import (
     InMemorySyncRepository,
     SyncRepository,
 )
+from efilicit_ingestion.pipeline.postgres import PostgresSyncRepository
 from efilicit_ingestion.pipeline.runner import run_pipeline
 from efilicit_ingestion.pipeline.types import PipelineResult, StoredArtifact, SyncRun
 
@@ -14,6 +15,7 @@ __all__ = [
     "InMemoryArtifactStore",
     "InMemorySyncRepository",
     "PipelineResult",
+    "PostgresSyncRepository",
     "StoredArtifact",
     "SyncRepository",
     "SyncRun",

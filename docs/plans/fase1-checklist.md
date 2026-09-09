@@ -11,7 +11,7 @@ Plan: [semana01-plan.md](semana01-plan.md). Criterios: `docs/04-roadmap-mvp.md` 
 | Tipos TS regenerados | OK | `packages/types/src/database.types.ts` |
 | `SourceConnector` + tests básicos | OK | Protocol + stub; `pytest` en `ingestion/tests` |
 | Pipeline común + prueba mínima | OK | `run_pipeline` + test con stub (in-memory) |
-| `source_sync` / `source_artifacts` funcionando | — | Schema listo; “funcionando” = Paso 7 |
+| `source_sync` / `source_artifacts` funcionando | OK | Persistencia Postgres + tests de integración locales |
 | `pytest` en CI | — | |
 | ADRs estructurales (solo si hubo decisión nueva) | — | Si no → N/A |
 | CHANGELOG actualizado | OK | Entradas Pasos 1–4 en Unreleased |
