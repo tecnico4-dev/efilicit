@@ -1,6 +1,6 @@
 # Semana 1 — Plan: modelo canónico + infraestructura de ingesta
 
-> **Estado:** en curso (Pasos 1–3 hechos; siguiente = Paso 4 tipos + CHANGELOG).  
+> **Estado:** en curso (Pasos 1–4 hechos; siguiente = Paso 5 SourceConnector).  
 > **Checklist:** [fase1-checklist.md](fase1-checklist.md)  
 > **Precondición:** Fase 0 cerrada ([fase0-checklist.md](fase0-checklist.md)).  
 > **Norma:** implementar lo ya fijado en `docs/00`–`04` y `.cursor/rules/`. ADR solo si hace falta cambiar arquitectura de verdad.
@@ -97,6 +97,7 @@ Registro de lo acordado al cerrar (o antes de) cada paso:
 | Paso 2 | DDL canónico mínimo + SELECT público (anon/authenticated); escritura solo service_role | Datos de contratación son públicos; ETL no usa el frontend |
 | Paso 2 | Unique parcial `(tax_id_country, tax_id)` en organismos/suppliers | Identidad fiscal cuando existe; sin forzar si falta |
 | Paso 3 | Esqueleto users/alertas/cola con RLS owner-only | Reserva sitio para Semana 5 sin lógica de producto aún |
+| Paso 4 | Regenerar `database.types.ts` desde esquema local | Frontend tipado alineado con migraciones Semana 1 |
 
 ---
 
