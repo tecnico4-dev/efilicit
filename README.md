@@ -49,7 +49,7 @@ supabase --version
 
 ## Estado actual
 
-Fase 0 en curso: monorepo + web + ingestion + Supabase local + CI. Pendiente: protección `main` en GitHub UI, link remoto y cierre del checklist.
+Fase 0 setup cerrada en local (+ remoto vinculado). Siguiente: Semana 1 del roadmap (modelo canónico + infraestructura de ingesta).
 
 ## Contribuir
 
