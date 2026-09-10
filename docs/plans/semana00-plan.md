@@ -14,7 +14,7 @@ Entorno funcional, monorepo vivo, Supabase reproducible (local + remoto vinculad
 
 ## Estado al arrancar (resumen)
 
-Solo existían el repo Git y la documentación base (`docs/00`–`04`, entonces con sufijo `-EfiLicit`). Faltaba el monorepo, Supabase, CI, scaffolds web/Python y el resto del setup.
+Solo existían el repo Git y la documentación base (`docs/00`–`04`). Faltaba el monorepo, Supabase, CI, scaffolds web/Python y el resto del setup.
 
 ---
 
@@ -27,10 +27,6 @@ Comprobar Git, Docker (daemon + RAM práctica), Node, pnpm, Python 3.12, uv, Sup
 ### Paso 1 — Cimientos del repo
 
 `.gitignore`, `.env.example`, `README.md`, `CONTRIBUTING.md`, `CHANGELOG.md`, `package.json` (engines + packageManager), `pnpm-workspace.yaml`, árbol de carpetas (`apps/`, `packages/`, `ingestion/`, `docs/adr|sources|runbooks/`, `.github/`, `.cursor/`).
-
-### Paso hidratante — Alinear nombres de docs
-
-Renombrar `docs/*-EfiLicit.md` → `docs/00-onboarding.md` … `docs/04-roadmap-mvp.md` para coincidir con las referencias internas. **Sin reescribir** el contenido nuclear de esos cinco documentos.
 
 ### Paso 2 — Reglas Cursor
 
@@ -73,7 +69,6 @@ Registro de lo acordado **antes** de seguir (o al cerrar un paso), en orden cron
 | Cuándo | Decisión | Motivo / consecuencia |
 |---|---|---|
 | Inicio | Ejecutar Fase 0 **paso a paso** con OK explícito | Evitar cambios masivos sin revisión |
-| Tras docs | Renombrar `*-EfiLicit.md` a nombres canónicos | Alinear disco con referencias internas; no editar contenido 00–04 |
 | Paso 1 | Fijar Node **24.x** y pnpm **10.33.0** en el repo | Versiones reales de la máquina al bootstrap |
 | Paso 0 | Ubuntu WSL2 **opcional**; continuar en PowerShell | Reduce fricción pero no es requisito |
 | Paso 6 | CI mínimo en GitHub Actions | Cumplir checklist sin orquestar ETL aún |
