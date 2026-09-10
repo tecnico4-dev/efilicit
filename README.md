@@ -49,7 +49,7 @@ supabase --version
 
 ## Estado actual
 
-Fase 0 setup cerrada en local (+ remoto vinculado). Siguiente: Semana 1 del roadmap (modelo canónico + infraestructura de ingesta).
+Semana 1 cerrada (modelo canónico + infraestructura de ingesta). Siguiente: Semana 2 del roadmap (PLACSP vertical slice).
 
 Planes y checklists de ejecución por semana: [docs/plans/](docs/plans/).
 

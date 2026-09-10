@@ -18,7 +18,7 @@ Aquí se documenta **cómo se ha decidido ejecutar** cada semana del roadmap (or
 | Semana / fase | Plan | Checklist | Estado |
 |---|---|---|---|
 | Semana 0 / Fase 0 (setup) | [semana00-plan.md](semana00-plan.md) | [fase0-checklist.md](fase0-checklist.md) | Cerrada |
-| Semana 1 / Fase 1 (canónico + ingesta) | [semana01-plan.md](semana01-plan.md) | [fase1-checklist.md](fase1-checklist.md) | Planificado (sin ejecutar; ADRs solo si hacen falta) |
+| Semana 1 / Fase 1 (canónico + ingesta) | [semana01-plan.md](semana01-plan.md) | [fase1-checklist.md](fase1-checklist.md) | Cerrada |
 | Semana 2+ | Se añadirán `semana02-plan.md` / `fase2-checklist.md` al arrancar | — | Pendiente |
 
 ## Relación con el roadmap
