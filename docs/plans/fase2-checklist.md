@@ -5,7 +5,7 @@ Plan: [semana02-plan.md](semana02-plan.md). Criterios: `docs/04-roadmap-mvp.md` 
 | Ítem | Estado | Notas |
 |---|---|---|
 | Documentación `docs/sources/placsp.md` | OK | Sindicación `643`; Atom/CODICE; sin scraping; menores/agregación fuera de alcance Semana 2 |
-| `discover` PLACSP | — | |
+| `discover` PLACSP | OK | Paquetes mensuales ZIP vía URI conocidas; `artifact_key` estable; tests sin red |
 | `fetch` (timeout, retry, tamaño, checksum) | — | |
 | RAW en Storage `raw` + `source_artifacts` | — | |
 | Parseo XML (`lxml`) + fixtures + tests | — | |

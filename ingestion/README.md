@@ -11,10 +11,10 @@ uv run python -c "import sys; print(sys.version)"
 uv run python -m efilicit_ingestion.cli --help
 ```
 
-## Estado (Semana 1)
+## Estado (Semana 2)
 
-Contrato `SourceConnector` + pipeline común + persistencia de `source_sync` / `source_artifacts` en Postgres local.
-Conectores reales de fuente (p. ej. PLACSP) llegan en Semana 2.
+Contrato `SourceConnector` + pipeline común + persistencia de `source_sync` / `source_artifacts`.
+Conector PLACSP: `discover` de paquetes mensuales oficiales (sindicación `643`). `fetch` / `parse` en pasos siguientes.
 
 ## Tests
 
