@@ -1,6 +1,6 @@
 # Semana 2 — Plan: PLACSP vertical slice
 
-> **Estado:** planificado; ejecución pendiente hasta OK explícito.  
+> **Estado:** en curso (Paso 1 documentado).  
 > **Checklist:** [fase2-checklist.md](fase2-checklist.md)  
 > **Precondición:** Semana 1 cerrada ([fase1-checklist.md](fase1-checklist.md)).  
 > **Norma:** `docs/00`–`04` y `.cursor/rules/`. Reutilizar contrato `SourceConnector` + pipeline de Semana 1. ADR solo si hace falta cambiar arquitectura de verdad.
@@ -106,7 +106,9 @@ Registro de lo acordado al cerrar (o antes de) cada paso:
 |---|---|---|
 | Inicio Semana 2 | Ejecutar **paso a paso** con revisión | Igual que Semanas 0–1 |
 | Plan | Sin ADRs previos; ADR solo si hay cambio estructural | Respetar arquitectura ya fijada |
-| *(ir rellenando)* | | |
+| Paso 1 | Dataset Semana 2 = sindicación `643` (licitaciones perfiles PLACSP, **sin** menores) | Open Data oficial Atom/CODICE; sin scraping; menores/agregación CCAA quedan fuera de este `source_code` |
+| Paso 1 | Acceso = descarga HTTP de ZIP/`.atom` en URI conocidas de `sindicacion_643` | Cumple “fuente oficial primero”; B2B no es el canal de reutilización abierta |
+| Paso 1 | Documentar en `docs/sources/placsp.md`; `source_tender_id` exacto se cierra en parse/upsert | Ficha completa ahora; identidad de expediente requiere ver fixtures reales |
 
 ---
 
