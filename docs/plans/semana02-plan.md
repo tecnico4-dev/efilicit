@@ -111,7 +111,9 @@ Registro de lo acordado al cerrar (o antes de) cada paso:
 | Paso 1 | Documentar en `docs/sources/placsp.md`; `source_tender_id` exacto se cierra en parse/upsert | Ficha completa ahora; identidad de expediente requiere ver fixtures reales |
 | Paso 2 | `discover` lista ZIPs mensuales por patrón URI (`…_YYYYMM.zip`); unidad de artefacto = paquete mensual | URI conocidas oficiales; sin scraping HTML; `artifact_key` = nombre de fichero |
 | Paso 2 | Ventana configurable (`from`/`to`/`as_of`) + cursor por `artifact_key`; probe opcional `url_exists` | Incremental sin red en unit tests; HEAD real se podrá inyectar en Pasos 3–8 |
-| Paso 2 | `fetch`/`parse` quedan `NotImplementedError` hasta Pasos 3 y 5 | Cumplir contrato sin adelantar alcance |
+| Paso 2 | `parse` queda `NotImplementedError` hasta Paso 5; `fetch` en Paso 3 | No adelantar parseo CODICE |
+| Paso 3 | `fetch` con `httpx` (timeout/stream), `tenacity` (reintentos), `max_bytes` y SHA-256 helper | Éxito/fallos controlados sin red vía transport inyectable |
+| Paso 3 | Errores tipados `ArtifactTooLargeError` / `PlacspHttpError` / `PlacspFetchError` | Fallos clasificables para sync/logs posteriores |
 
 ---
 
