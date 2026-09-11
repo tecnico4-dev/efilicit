@@ -24,4 +24,17 @@ uv sync --extra dev
 uv run pytest -q
 ```
 
-Los tests de Postgres requieren `supabase start` (DB en `127.0.0.1:54322`). Si no hay DB, esos tests se saltan.
+Los tests de Postgres/Storage requieren `supabase start` (DB `127.0.0.1:54322`, API `54321`).
+Si no hay stack local, esos tests se saltan.
+
+Para el test live de RAW (`test_raw_storage.py`), con Supabase local bastan los defaults.
+Si quieres fijar la key explícitamente:
+
+```powershell
+supabase status -o env
+# Copia SERVICE_ROLE_KEY y, en la misma sesión:
+$env:SUPABASE_URL = "http://127.0.0.1:54321"
+$env:SUPABASE_SERVICE_ROLE_KEY = "<SERVICE_ROLE_KEY de status>"
+uv run pytest -q tests/test_raw_storage.py -v
+```
+

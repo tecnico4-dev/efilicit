@@ -102,5 +102,26 @@ def default_supabase_url() -> str:
     return os.environ.get("SUPABASE_URL", "http://127.0.0.1:54321")
 
 
+# Public demo JWT shipped by Supabase CLI for local stacks (role=service_role).
+# Safe only against local Supabase; never use against a remote project.
+_LOCAL_SUPABASE_SERVICE_ROLE_KEY = (
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9."
+    "eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0."
+    "EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU"
+)
+
+
 def default_service_role_key() -> str | None:
-    return os.environ.get("SUPABASE_SERVICE_ROLE_KEY") or None
+    """Resolve service_role for trusted local ingestion/tests.
+
+    Prefer ``SUPABASE_SERVICE_ROLE_KEY``. If unset and the API URL is local,
+    fall back to the Supabase CLI demo service_role JWT.
+    """
+    explicit = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
+    if explicit:
+        return explicit
+
+    url = default_supabase_url()
+    if "127.0.0.1" in url or "localhost" in url:
+        return _LOCAL_SUPABASE_SERVICE_ROLE_KEY
+    return None

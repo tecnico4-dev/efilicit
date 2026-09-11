@@ -178,9 +178,20 @@ def _storage_available() -> bool:
         return False
 
 
+def _live_raw_skip_reason() -> str | None:
+    if not _db_available():
+        return "Local Postgres not reachable on 54322 (start Docker + supabase start)"
+    if not _storage_available():
+        return (
+            "Local Storage not reachable or missing service_role "
+            "(set SUPABASE_SERVICE_ROLE_KEY from `supabase status`, or use local demo key)"
+        )
+    return None
+
+
 @pytest.mark.skipif(
-    not (_db_available() and _storage_available()),
-    reason="Local Supabase Postgres+Storage not reachable (supabase start + SERVICE_ROLE)",
+    _live_raw_skip_reason() is not None,
+    reason=_live_raw_skip_reason() or "live Supabase unavailable",
 )
 def test_placsp_fetch_stores_raw_and_registers_source_artifact() -> None:
     """Live local criterion: Storage object + source_artifacts row."""
