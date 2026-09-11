@@ -26,7 +26,8 @@ class SyncRepository(Protocol):
     def start_run(self, *, source_code: str, run_id: str, cursor: str | None) -> SyncRun:
         ...
 
-    def register_artifact(self, run: SyncRun, stored: StoredArtifact) -> None:
+    def register_artifact(self, run: SyncRun, stored: StoredArtifact) -> str | None:
+        """Persist artifact metadata; return DB artifact id when available."""
         ...
 
     def finish_run(
@@ -79,10 +80,11 @@ class InMemorySyncRepository:
         self.runs[(source_code, run_id)] = run
         return run
 
-    def register_artifact(self, run: SyncRun, stored: StoredArtifact) -> None:
+    def register_artifact(self, run: SyncRun, stored: StoredArtifact) -> str | None:
         run.artifacts.append(stored)
         run.last_artifact = stored.artifact_key
         run.checksum = stored.checksum
+        return None
 
     def finish_run(
         self,
