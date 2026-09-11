@@ -6,6 +6,7 @@ import hashlib
 from typing import Protocol
 
 from efilicit_ingestion.models import RemoteArtifact
+from efilicit_ingestion.pipeline.paths import build_raw_storage_path
 from efilicit_ingestion.pipeline.types import StoredArtifact, SyncRun, utc_now
 
 
@@ -52,8 +53,10 @@ class InMemoryArtifactStore:
         raw: bytes,
     ) -> StoredArtifact:
         checksum = hashlib.sha256(raw).hexdigest()
-        day = utc_now().strftime("%Y/%m/%d")
-        storage_path = f"raw/{source_code}/{day}/{artifact.artifact_key}"
+        storage_path, _object_key = build_raw_storage_path(
+            source_code,
+            artifact.artifact_key,
+        )
         self.objects[storage_path] = raw
         return StoredArtifact(
             artifact_key=artifact.artifact_key,

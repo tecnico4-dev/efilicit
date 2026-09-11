@@ -21,7 +21,7 @@ SOURCE_CODE = "stub"
 
 def _db_available() -> bool:
     try:
-        with connect() as conn:
+        with psycopg.connect(default_database_url(), connect_timeout=2) as conn:
             conn.execute("select 1")
         return True
     except psycopg.Error:

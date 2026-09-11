@@ -7,7 +7,7 @@ Plan: [semana02-plan.md](semana02-plan.md). Criterios: `docs/04-roadmap-mvp.md` 
 | Documentación `docs/sources/placsp.md` | OK | Sindicación `643`; Atom/CODICE; sin scraping; menores/agregación fuera de alcance Semana 2 |
 | `discover` PLACSP | OK | Paquetes mensuales ZIP vía URI conocidas; `artifact_key` estable; tests sin red |
 | `fetch` (timeout, retry, tamaño, checksum) | OK | `httpx` + `tenacity`; budget de tamaño; SHA-256 determinista; tests sin red |
-| RAW en Storage `raw` + `source_artifacts` | — | |
+| RAW en Storage `raw` + `source_artifacts` | OK | `SupabaseStorageArtifactStore` + `fetch_validate_and_store_raw`; tests mock + integración local (skip sin Docker) |
 | Parseo XML (`lxml`) + fixtures + tests | — | |
 | Normalización + identidad organismos (NIF/CIF) | — | |
 | Upsert canónico (`tenders` / `tender_sources` / events / documents) | — | |

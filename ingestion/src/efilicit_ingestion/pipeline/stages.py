@@ -8,9 +8,18 @@ from efilicit_ingestion.pipeline.types import StoredArtifact
 
 
 def validate_artifact(raw: bytes, artifact: RemoteArtifact) -> bytes:
-    """Reject empty payloads before RAW storage / parse."""
+    """Reject empty / clearly invalid payloads before RAW storage / parse."""
     if not raw:
         raise ValueError(f"empty artifact payload: {artifact.artifact_key}")
+
+    content_type = (artifact.content_type or "").lower()
+    key = artifact.artifact_key.lower()
+    looks_like_zip = "zip" in content_type or key.endswith(".zip")
+    if looks_like_zip and not raw.startswith(b"PK"):
+        raise ValueError(
+            f"artifact does not look like a ZIP (missing PK header): "
+            f"{artifact.artifact_key}"
+        )
     return raw
 
 

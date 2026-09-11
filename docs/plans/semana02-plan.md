@@ -1,6 +1,6 @@
 # Semana 2 — Plan: PLACSP vertical slice
 
-> **Estado:** en curso (Pasos 1–3 hechos).  
+> **Estado:** en curso (Pasos 1–4 hechos).  
 > **Checklist:** [fase2-checklist.md](fase2-checklist.md)  
 > **Precondición:** Semana 1 cerrada ([fase1-checklist.md](fase1-checklist.md)).  
 > **Norma:** `docs/00`–`04` y `.cursor/rules/`. Reutilizar contrato `SourceConnector` + pipeline de Semana 1. ADR solo si hace falta cambiar arquitectura de verdad.
@@ -114,6 +114,10 @@ Registro de lo acordado al cerrar (o antes de) cada paso:
 | Paso 2 | `parse` queda `NotImplementedError` hasta Paso 5; `fetch` en Paso 3 | No adelantar parseo CODICE |
 | Paso 3 | `fetch` con `httpx` (timeout/stream), `tenacity` (reintentos), `max_bytes` y SHA-256 helper | Éxito/fallos controlados sin red vía transport inyectable |
 | Paso 3 | Errores tipados `ArtifactTooLargeError` / `PlacspHttpError` / `PlacspFetchError` | Fallos clasificables para sync/logs posteriores |
+| Paso 4 | `SupabaseStorageArtifactStore` vía Storage HTTP API (`httpx` + service_role); sin cliente `supabase-py` nuevo | Stack ya aprobado; service_role solo en proceso confiable |
+| Paso 4 | Helper `fetch_validate_and_store_raw` (fetch→validate→store) antes del parse canónico | Cumple criterio Paso 4 sin exigir `parse` (Paso 5) |
+| Paso 4 | `validate_artifact` exige magic ZIP (`PK`) para artefactos `.zip` | Evita guardar basura como RAW PLACSP |
+| Paso 4 | Integración live se salta si no hay Docker/`SUPABASE_SERVICE_ROLE_KEY` | CI y máquinas sin stack local siguen verdes |
 
 ---
 
