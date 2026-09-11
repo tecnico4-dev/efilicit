@@ -1,6 +1,6 @@
 # Semana 2 — Plan: PLACSP vertical slice
 
-> **Estado:** en curso (Pasos 1–7 hechos).  
+> **Estado:** en curso (Pasos 1–8 hechos).  
 > **Checklist:** [fase2-checklist.md](fase2-checklist.md)  
 > **Precondición:** Semana 1 cerrada ([fase1-checklist.md](fase1-checklist.md)).  
 > **Norma:** `docs/00`–`04` y `.cursor/rules/`. Reutilizar contrato `SourceConnector` + pipeline de Semana 1. ADR solo si hace falta cambiar arquitectura de verdad.
@@ -127,6 +127,8 @@ Registro de lo acordado al cerrar (o antes de) cada paso:
 | Paso 7 | `PostgresCanonicalRepository` upsert por `(source_code, source_tender_id)`; authority por NIF | Idempotencia canónica; sin migración extra (DDL Semana 1 basta) |
 | Paso 7 | Events `published`/`updated` + document `publication` si hay URL; `register_artifact` devuelve id | Trazabilidad tender ↔ artifact |
 | Paso 7 | `run_pipeline(..., canonical_repo=...)` opcional (sin repo = contadores legacy stub) | No rompe tests Semana 1 |
+| Paso 8 | CLI `run-placsp` con `--fixture` / `--dry-run` / Postgres local | E2E documentado sin depender de red PLACSP |
+| Paso 8 | Fixture `.atom` se empaqueta a ZIP en memoria para respetar el artefacto mensual | Misma forma que el paquete oficial |
 
 ---
 

@@ -13,28 +13,59 @@ uv run python -m efilicit_ingestion.cli --help
 
 ## Estado (Semana 2)
 
-Contrato `SourceConnector` + pipeline común + persistencia de `source_sync` / `source_artifacts`.
-Conector PLACSP: `discover` → `fetch` → RAW → `parse` → normalize/identidad → **upsert canónico**. CLI E2E en el siguiente paso.
+PLACSP vertical slice cableado en CLI:
 
-## Comprobar upsert en local (Paso 7)
+`discover` → `fetch` → RAW → `parse` → normalize/identidad → upsert canónico.
+
+## Corrida E2E local (Paso 8)
+
+### Dry-run (sin escribir DB)
+
+```powershell
+cd ingestion
+uv run python -m efilicit_ingestion.cli run-placsp `
+  --fixture tests/fixtures/placsp/valid_single_entry.atom `
+  --dry-run `
+  --as-of 2026-09-11
+```
+
+Esperado: `status=success`, `records_seen=1`, `raw_path=raw/placsp/...`.
+
+### Contra Supabase local (Studio)
 
 Con Docker + `supabase start`:
 
 ```powershell
 cd ingestion
-uv run pytest -q tests/test_canonical_upsert.py -v
+uv run python -m efilicit_ingestion.cli run-placsp `
+  --fixture tests/fixtures/placsp/valid_single_entry.atom `
+  --no-storage `
+  --as-of 2026-09-11 `
+  --run-id demo-placsp-1
 ```
 
-Si todo pasa, en Studio (`http://127.0.0.1:54323`) mira:
+(`--no-storage` evita depender de la service_role; añade Storage omitiendo ese flag si tienes `SUPABASE_SERVICE_ROLE_KEY`.)
 
-1. Table Editor → `tenders` (título fixture, status `published`, CPV `30192700`)
-2. `tender_sources` (source_code `placsp`, source_tender_id `B00000000:EXP/2026/0001`)
-3. `contracting_authorities` (tax_id `B00000000`, confidence `HIGH`)
-4. `tender_events` (`published` y, tras reejecutar el test, también `updated`)
-5. `documents` (URL de publicación)
+Luego en Studio (`http://127.0.0.1:54323`):
 
-Reejecutar el test no debe crear una segunda fila en `tender_sources` para el mismo id.
+1. `source_sync` → `run_id` = `demo-placsp-1`, status `success`
+2. `source_artifacts` → path/checksum del ZIP fixture
+3. `tenders` / `tender_sources` → licitación fixture
+4. Reejecutar el mismo comando con otro `--run-id` → no duplica `tender_sources`
 
+### Live PLACSP (opcional, red real)
+
+```powershell
+uv run python -m efilicit_ingestion.cli run-placsp --from-month 2026-09 --to-month 2026-09
+```
+
+Solo cuando quieras probar descarga oficial (ZIPs pueden ser grandes).
+
+## Comprobar upsert (Paso 7)
+
+```powershell
+uv run pytest -q tests/test_canonical_upsert.py -v
+```
 
 ## Tests
 
@@ -44,17 +75,4 @@ uv sync --extra dev
 uv run pytest -q
 ```
 
-Los tests de Postgres/Storage requieren `supabase start` (DB `127.0.0.1:54322`, API `54321`).
-Si no hay stack local, esos tests se saltan.
-
-Para el test live de RAW (`test_raw_storage.py`), con Supabase local bastan los defaults.
-Si quieres fijar la key explícitamente:
-
-```powershell
-supabase status -o env
-# Copia SERVICE_ROLE_KEY y, en la misma sesión:
-$env:SUPABASE_URL = "http://127.0.0.1:54321"
-$env:SUPABASE_SERVICE_ROLE_KEY = "<SERVICE_ROLE_KEY de status>"
-uv run pytest -q tests/test_raw_storage.py -v
-```
-
+Los tests de Postgres/Storage requieren `supabase start`. Si no hay stack local, esos tests se saltan.
