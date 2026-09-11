@@ -14,7 +14,7 @@ uv run python -m efilicit_ingestion.cli --help
 ## Estado (Semana 2)
 
 Contrato `SourceConnector` + pipeline común + persistencia de `source_sync` / `source_artifacts`.
-Conector PLACSP: `discover` de paquetes mensuales oficiales (sindicación `643`). `fetch` / `parse` en pasos siguientes.
+Conector PLACSP: `discover` + `fetch` (timeout/retry/tamaño/checksum). `parse` en pasos siguientes.
 
 ## Tests
 

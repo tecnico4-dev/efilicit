@@ -1,6 +1,6 @@
-"""PLACSP SourceConnector — Paso 2: discover monthly ZIP packages.
+"""PLACSP SourceConnector — discover + fetch (Semana 2).
 
-`fetch` / `parse` arrive in later Semana 2 steps.
+`parse` arrives in Paso 5.
 """
 
 from __future__ import annotations
@@ -8,6 +8,17 @@ from __future__ import annotations
 from collections.abc import Callable, Iterable
 from datetime import date
 
+import httpx
+
+from efilicit_ingestion.connectors.placsp.fetch import (
+    DEFAULT_MAX_BYTES,
+    DEFAULT_RETRY_ATTEMPTS,
+    DEFAULT_TIMEOUT_SECONDS,
+    FetchSettings,
+    FetchTransport,
+    download_bytes,
+    sha256_hex,
+)
 from efilicit_ingestion.connectors.placsp.urls import (
     FEED_BASE_NAME,
     iter_year_months,
@@ -20,12 +31,18 @@ from efilicit_ingestion.models import RemoteArtifact, SourceRecord, SyncContext
 # Optional probe: return True if the remote package appears available.
 UrlExists = Callable[[str], bool]
 
+__all__ = [
+    "PlacspConnector",
+    "sha256_hex",
+    "FetchSettings",
+]
+
 
 class PlacspConnector:
-    """Discovers official sindicacion_643 monthly ZIP artifacts.
+    """PLACSP sindicacion_643 connector (official ZIP packages).
 
     Discovery uses well-known URI patterns from docs/sources/placsp.md.
-    It does not scrape HTML indexes.
+    Fetch downloads with timeout, retries, and a size budget.
     """
 
     source_code: str = "placsp"
@@ -37,17 +54,29 @@ class PlacspConnector:
         to_year_month: str | None = None,
         as_of: date | None = None,
         url_exists: UrlExists | None = None,
+        fetch_transport: FetchTransport | None = None,
+        http_client: httpx.Client | None = None,
+        timeout_seconds: float = DEFAULT_TIMEOUT_SECONDS,
+        max_bytes: int = DEFAULT_MAX_BYTES,
+        retry_attempts: int = DEFAULT_RETRY_ATTEMPTS,
     ) -> None:
-        """Configure the discovery window.
+        """Configure discovery window and fetch policy.
 
         - If neither from/to is set: discover the single month of ``as_of`` (or today).
-        - If only one bound is set: treat the other as that same month / ``as_of``.
         - ``url_exists``: optional probe (e.g. HEAD) to skip missing packages.
+        - ``fetch_transport``: injectable downloader for tests (no live network).
         """
         self._from_year_month = from_year_month
         self._to_year_month = to_year_month
         self._as_of = as_of
         self._url_exists = url_exists
+        self._fetch_transport = fetch_transport
+        self._http_client = http_client
+        self._fetch_settings = FetchSettings(
+            timeout_seconds=timeout_seconds,
+            max_bytes=max_bytes,
+            retry_attempts=retry_attempts,
+        )
 
     def discover(self, context: SyncContext) -> list[RemoteArtifact]:
         start, end = self._resolve_window()
@@ -80,8 +109,15 @@ class PlacspConnector:
         return artifacts
 
     def fetch(self, artifact: RemoteArtifact) -> bytes:
-        raise NotImplementedError(
-            "PLACSP fetch lands in Semana 2 Paso 3 (timeout/retry/checksum)."
+        if not artifact.source_url:
+            raise ValueError(
+                f"artifact {artifact.artifact_key!r} is missing source_url"
+            )
+        return download_bytes(
+            artifact.source_url,
+            settings=self._fetch_settings,
+            transport=self._fetch_transport,
+            http_client=self._http_client,
         )
 
     def parse(

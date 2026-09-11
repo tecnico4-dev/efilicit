@@ -101,14 +101,12 @@ def test_discover_probe_skips_missing_packages() -> None:
     ]
 
 
-def test_fetch_and_parse_not_implemented_yet() -> None:
+def test_parse_not_implemented_yet() -> None:
     connector = PlacspConnector(as_of=date(2026, 9, 1))
     artifact = RemoteArtifact(
         artifact_key=monthly_package_filename(2026, 9),
         source_url=monthly_package_url(2026, 9),
     )
-    with pytest.raises(NotImplementedError):
-        connector.fetch(artifact)
     with pytest.raises(NotImplementedError):
         list(connector.parse(b"unused", artifact))
 

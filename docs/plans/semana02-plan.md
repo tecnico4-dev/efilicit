@@ -1,6 +1,6 @@
 # Semana 2 — Plan: PLACSP vertical slice
 
-> **Estado:** en curso (Pasos 1–2 hechos).  
+> **Estado:** en curso (Pasos 1–3 hechos).  
 > **Checklist:** [fase2-checklist.md](fase2-checklist.md)  
 > **Precondición:** Semana 1 cerrada ([fase1-checklist.md](fase1-checklist.md)).  
 > **Norma:** `docs/00`–`04` y `.cursor/rules/`. Reutilizar contrato `SourceConnector` + pipeline de Semana 1. ADR solo si hace falta cambiar arquitectura de verdad.
