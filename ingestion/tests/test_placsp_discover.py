@@ -9,11 +9,10 @@ import pytest
 from efilicit_ingestion.connectors import SourceConnector
 from efilicit_ingestion.connectors.placsp import PlacspConnector
 from efilicit_ingestion.connectors.placsp.urls import (
-    monthly_package_filename,
     monthly_package_url,
     parse_year_month,
 )
-from efilicit_ingestion.models import RemoteArtifact, SyncContext
+from efilicit_ingestion.models import SyncContext
 
 
 def test_placsp_is_source_connector() -> None:
@@ -99,16 +98,6 @@ def test_discover_probe_skips_missing_packages() -> None:
         "licitacionesPerfilesContratanteCompleto3_202608.zip",
         "licitacionesPerfilesContratanteCompleto3_202609.zip",
     ]
-
-
-def test_parse_not_implemented_yet() -> None:
-    connector = PlacspConnector(as_of=date(2026, 9, 1))
-    artifact = RemoteArtifact(
-        artifact_key=monthly_package_filename(2026, 9),
-        source_url=monthly_package_url(2026, 9),
-    )
-    with pytest.raises(NotImplementedError):
-        list(connector.parse(b"unused", artifact))
 
 
 def test_parse_year_month_formats() -> None:

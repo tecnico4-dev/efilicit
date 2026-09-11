@@ -1,7 +1,4 @@
-"""PLACSP SourceConnector — discover + fetch (Semana 2).
-
-`parse` arrives in Paso 5.
-"""
+"""PLACSP SourceConnector — discover + fetch + parse (Semana 2)."""
 
 from __future__ import annotations
 
@@ -19,6 +16,7 @@ from efilicit_ingestion.connectors.placsp.fetch import (
     download_bytes,
     sha256_hex,
 )
+from efilicit_ingestion.connectors.placsp.parser import parse_placsp_artifact
 from efilicit_ingestion.connectors.placsp.urls import (
     FEED_BASE_NAME,
     iter_year_months,
@@ -125,10 +123,7 @@ class PlacspConnector:
         raw: bytes,
         artifact: RemoteArtifact,
     ) -> Iterable[SourceRecord]:
-        _ = raw, artifact
-        raise NotImplementedError(
-            "PLACSP parse lands in Semana 2 Paso 5 (Atom/CODICE fixtures)."
-        )
+        return parse_placsp_artifact(raw, artifact)
 
     def _resolve_window(self) -> tuple[tuple[int, int], tuple[int, int]]:
         pivot = self._as_of or date.today()

@@ -14,7 +14,7 @@ uv run python -m efilicit_ingestion.cli --help
 ## Estado (Semana 2)
 
 Contrato `SourceConnector` + pipeline común + persistencia de `source_sync` / `source_artifacts`.
-Conector PLACSP: `discover` + `fetch` + RAW en Storage (`raw`) / `source_artifacts`. `parse` en pasos siguientes.
+Conector PLACSP: `discover` + `fetch` + RAW + `parse` Atom/CODICE. Normalización/upsert en pasos siguientes.
 
 ## Tests
 

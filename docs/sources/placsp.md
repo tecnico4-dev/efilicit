@@ -167,7 +167,16 @@ source_code = placsp
 source_tender_id = <identificador estable del expediente en PLACSP>
 ```
 
-La elección exacta del string de `source_tender_id` (p. ej. `ContractFolderID` solo vs composición con id de órgano/plataforma) se fija al implementar `parse`/`upsert`, documentando el criterio aquí cuando quede cerrado.
+**Decisión (Paso 5 — parse):** `source_record_id` / futuro `source_tender_id`:
+
+```text
+{tax_id|platform_id}:{ContractFolderID}
+```
+
+cuando exista identificador de órgano (NIF/CIF preferente; si no, id de plataforma).  
+Si no hay órgano identificable → solo `ContractFolderID`.  
+Si tampoco hay expediente → `atom:id` (último recurso).  
+Entradas sin ninguna de estas señales se **omiten** (no se inventa identidad).
 
 ---
 

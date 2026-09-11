@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Anonymized PLACSP Atom fixture: incomplete but still identity-bearing. -->
+<feed xmlns="http://www.w3.org/2005/Atom"
+      xmlns:cbc="urn:dgpe:names:draft:codice:schema:xsd:CommonBasicComponents-2"
+      xmlns:cac="urn:dgpe:names:draft:codice:schema:xsd:CommonAggregateComponents-2"
+      xmlns:cac-ext="urn:dgpe:names:draft:codice-place-ext:schema:xsd:CommonAggregateComponents-2">
+  <id>https://example.invalid/sindicacion/fixture-incomplete</id>
+  <title>PLACSP fixture feed — incomplete</title>
+  <updated>2026-09-10T12:00:00+02:00</updated>
+  <entry>
+    <id>https://contrataciondelsectorpublico.gob.es/wps/fixture?idExpediente=FIX-INCOMPLETE-001</id>
+    <title>Servicio de limpieza (fixture incompleto)</title>
+    <updated>2026-09-09T08:00:00+02:00</updated>
+    <link href="https://contrataciondelsectorpublico.gob.es/wps/fixture?idE=FIX-INCOMPLETE-001"/>
+    <content type="application/xml">
+      <cac-ext:ContractFolderStatus>
+        <cbc:ContractFolderID>EXP/2026/INCOMP</cbc:ContractFolderID>
+        <!-- No status code, no NIF, no budget, no CPV -->
+        <cac-ext:LocatedContractingParty>
+          <cac:Party>
+            <cac:PartyName>
+              <cbc:Name>Ayuntamiento Fixture Sin NIF</cbc:Name>
+            </cac:PartyName>
+          </cac:Party>
+        </cac-ext:LocatedContractingParty>
+        <cac:ProcurementProject>
+          <cbc:Name>Servicio de limpieza (fixture incompleto)</cbc:Name>
+        </cac:ProcurementProject>
+      </cac-ext:ContractFolderStatus>
+    </content>
+  </entry>
+</feed>

@@ -1,6 +1,6 @@
 # Semana 2 — Plan: PLACSP vertical slice
 
-> **Estado:** en curso (Pasos 1–4 hechos).  
+> **Estado:** en curso (Pasos 1–5 hechos).  
 > **Checklist:** [fase2-checklist.md](fase2-checklist.md)  
 > **Precondición:** Semana 1 cerrada ([fase1-checklist.md](fase1-checklist.md)).  
 > **Norma:** `docs/00`–`04` y `.cursor/rules/`. Reutilizar contrato `SourceConnector` + pipeline de Semana 1. ADR solo si hace falta cambiar arquitectura de verdad.
@@ -118,6 +118,9 @@ Registro de lo acordado al cerrar (o antes de) cada paso:
 | Paso 4 | Helper `fetch_validate_and_store_raw` (fetch→validate→store) antes del parse canónico | Cumple criterio Paso 4 sin exigir `parse` (Paso 5) |
 | Paso 4 | `validate_artifact` exige magic ZIP (`PK`) para artefactos `.zip` | Evita guardar basura como RAW PLACSP |
 | Paso 4 | Integración live se salta si no hay Docker/`SUPABASE_SERVICE_ROLE_KEY` | CI y máquinas sin stack local siguen verdes |
+| Paso 5 | Parser `lxml` Atom/CODICE → `SourceRecord` con campos neutros (no DDL canónico) | Separación conector/pipeline; normalize en Paso 6 |
+| Paso 5 | Identidad `tax_id|platform_id:ContractFolderID` (doc en placsp.md); sin id → omitir entry | Evita inventar identidad; NIF preferente |
+| Paso 5 | Fixtures anonimizadas: válido, incompleto, sin identidad, XML roto + ZIP | Cumple reglas de testing (válido/incompleto/inesperado) |
 
 ---
 
