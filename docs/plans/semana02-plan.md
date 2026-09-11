@@ -1,6 +1,6 @@
 # Semana 2 — Plan: PLACSP vertical slice
 
-> **Estado:** en curso (Pasos 1–5 hechos).  
+> **Estado:** en curso (Pasos 1–6 hechos).  
 > **Checklist:** [fase2-checklist.md](fase2-checklist.md)  
 > **Precondición:** Semana 1 cerrada ([fase1-checklist.md](fase1-checklist.md)).  
 > **Norma:** `docs/00`–`04` y `.cursor/rules/`. Reutilizar contrato `SourceConnector` + pipeline de Semana 1. ADR solo si hace falta cambiar arquitectura de verdad.
@@ -121,6 +121,9 @@ Registro de lo acordado al cerrar (o antes de) cada paso:
 | Paso 5 | Parser `lxml` Atom/CODICE → `SourceRecord` con campos neutros (no DDL canónico) | Separación conector/pipeline; normalize en Paso 6 |
 | Paso 5 | Identidad `tax_id|platform_id:ContractFolderID` (doc en placsp.md); sin id → omitir entry | Evita inventar identidad; NIF preferente |
 | Paso 5 | Fixtures anonimizadas: válido, incompleto, sin identidad, XML roto + ZIP | Cumple reglas de testing (válido/incompleto/inesperado) |
+| Paso 6 | `normalize` escribe `payload.canonical` (fechas, importes Decimal, CPV, códigos mapeados) | Listo para upsert sin acoplar DDL al parser |
+| Paso 6 | `resolve_identity`: HIGH=NIF/CIF, MEDIUM=platform_id, LOW=solo nombre, UNRESOLVED=nada | Cumple regla: nombre nunca es identidad única |
+| Paso 6 | Mapas de estado/tipo/procedimiento CODICE→etiquetas estables; se conservan códigos crudos | Útil para UI y trazabilidad |
 
 ---
 

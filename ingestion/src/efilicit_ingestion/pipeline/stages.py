@@ -35,8 +35,10 @@ def store_raw(
 
 
 def normalize(records: list[SourceRecord]) -> list[SourceRecord]:
-    """Placeholder: domain normalization arrives with real sources (Semana 2)."""
-    return records
+    """Map source payloads to canonical MVP fields (dates, amounts, codes, authority)."""
+    from efilicit_ingestion.pipeline.canonical import normalize_records
+
+    return normalize_records(records)
 
 
 def enrich(records: list[SourceRecord]) -> list[SourceRecord]:
@@ -45,8 +47,10 @@ def enrich(records: list[SourceRecord]) -> list[SourceRecord]:
 
 
 def resolve_identity(records: list[SourceRecord]) -> list[SourceRecord]:
-    """Placeholder: entity resolution later."""
-    return records
+    """Resolve contracting-authority identity confidence (NIF/CIF primary)."""
+    from efilicit_ingestion.pipeline.canonical import resolve_identity_records
+
+    return resolve_identity_records(records)
 
 
 def deduplicate(records: list[SourceRecord]) -> list[SourceRecord]:
