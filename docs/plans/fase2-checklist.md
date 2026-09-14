@@ -15,7 +15,7 @@ Plan: [semana02-plan.md](semana02-plan.md). Criterios: `docs/04-roadmap-mvp.md` 
 | Reejecutar no duplica | OK | Tests in-memory + Postgres: 2ª pasada → updated, 1 fila fuente |
 | Trazabilidad licitación → artefacto RAW | OK | `source_artifacts.storage_path` + `tender_sources.artifact_id` en pipeline |
 | `source_sync` refleja la ejecución | OK | status/contadores en corrida fixture local |
-| Workflow `ingest-placsp.yml` | — | |
+| Workflow `ingest-placsp.yml` | OK | Manual `workflow_dispatch`; default `dry-run`; cron comentado; secrets fuera del código |
 | Tests parser / normalización / persistencia en verde | OK | Suite ingestion en verde en Paso 8 |
 | ADRs estructurales (solo si hubo decisión nueva) | — | Si no → N/A |
 | CHANGELOG actualizado | — | |

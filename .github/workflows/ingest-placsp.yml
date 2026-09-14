@@ -1,0 +1,141 @@
+# Semana 2 / Paso 9 — ingesta PLACSP vía GitHub Actions.
+# Por defecto: dry-run con fixture (sin secretos, sin writes).
+# Escritura a DB/Storage o descarga live: solo workflow_dispatch explícito + secrets.
+name: Ingest PLACSP
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: >
+          dry-run = fixture in-memory (safe).
+          fixture-db = fixture → Postgres (needs EFILICIT_DATABASE_URL).
+          live = ZIP real PLACSP (needs secrets + from_month; ZIPs pueden ser grandes).
+        type: choice
+        options:
+          - dry-run
+          - fixture-db
+          - live
+        default: dry-run
+      from_month:
+        description: "live: inicio YYYY-MM (obligatorio en live)"
+        required: false
+        default: ""
+      to_month:
+        description: "live: fin YYYY-MM inclusivo (vacío = from_month)"
+        required: false
+        default: ""
+      as_of:
+        description: "Fecha pivote YYYY-MM-DD (discover / fixture window)"
+        required: false
+        default: "2026-09-11"
+      run_id:
+        description: "run_id opcional (fixture-db/live); vacío = UUID"
+        required: false
+        default: ""
+      upload_storage:
+        description: "Subir RAW a Storage (requiere SUPABASE_SERVICE_ROLE_KEY + SUPABASE_URL)"
+        type: boolean
+        default: false
+  # Cron desactivado a propósito: no quemar prod/red PLACSP hasta acordar entorno + secrets.
+  # schedule:
+  #   - cron: "0 5 * * 1"
+
+concurrency:
+  group: ingest-placsp
+  cancel-in-progress: false
+
+jobs:
+  ingest:
+    name: Run PLACSP (${{ inputs.mode }})
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ingestion
+    env:
+      EFILICIT_DATABASE_URL: ${{ secrets.EFILICIT_DATABASE_URL }}
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Sync dependencies
+        run: uv sync --frozen
+
+      - name: Guard secrets for write modes
+        if: inputs.mode != 'dry-run'
+        run: |
+          set -euo pipefail
+          if [ -z "${EFILICIT_DATABASE_URL:-}" ]; then
+            echo "::error::Missing repository secret EFILICIT_DATABASE_URL (required for ${{ inputs.mode }})"
+            exit 1
+          fi
+          if [ "${{ inputs.upload_storage }}" = "true" ]; then
+            if [ -z "${SUPABASE_SERVICE_ROLE_KEY:-}" ]; then
+              echo "::error::upload_storage=true requires secret SUPABASE_SERVICE_ROLE_KEY"
+              exit 1
+            fi
+            if [ -z "${SUPABASE_URL:-}" ]; then
+              echo "::error::upload_storage=true requires secret SUPABASE_URL"
+              exit 1
+            fi
+          fi
+
+      - name: Run PLACSP CLI
+        run: |
+          set -euo pipefail
+          MODE="${{ inputs.mode }}"
+          AS_OF="${{ inputs.as_of }}"
+          RUN_ID="${{ inputs.run_id }}"
+          EXTRA=()
+          if [ -n "$AS_OF" ]; then
+            EXTRA+=(--as-of "$AS_OF")
+          fi
+          if [ -n "$RUN_ID" ]; then
+            EXTRA+=(--run-id "$RUN_ID")
+          fi
+          if [ "${{ inputs.upload_storage }}" != "true" ] && [ "$MODE" != "dry-run" ]; then
+            EXTRA+=(--no-storage)
+          fi
+
+          case "$MODE" in
+            dry-run)
+              uv run python -m efilicit_ingestion.cli run-placsp \
+                --fixture tests/fixtures/placsp/valid_single_entry.atom \
+                --dry-run \
+                "${EXTRA[@]}"
+              ;;
+            fixture-db)
+              uv run python -m efilicit_ingestion.cli run-placsp \
+                --fixture tests/fixtures/placsp/valid_single_entry.atom \
+                "${EXTRA[@]}"
+              ;;
+            live)
+              FROM="${{ inputs.from_month }}"
+              TO="${{ inputs.to_month }}"
+              if [ -z "$FROM" ]; then
+                echo "::error::live mode requires input from_month (YYYY-MM)"
+                exit 1
+              fi
+              if [ -z "$TO" ]; then
+                TO="$FROM"
+              fi
+              uv run python -m efilicit_ingestion.cli run-placsp \
+                --from-month "$FROM" \
+                --to-month "$TO" \
+                "${EXTRA[@]}"
+              ;;
+            *)
+              echo "::error::Unknown mode: $MODE"
+              exit 1
+              ;;
+          esac

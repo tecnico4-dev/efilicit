@@ -61,6 +61,17 @@ uv run python -m efilicit_ingestion.cli run-placsp --from-month 2026-09 --to-mon
 
 Solo cuando quieras probar descarga oficial (ZIPs pueden ser grandes).
 
+## GitHub Actions (Paso 9)
+
+Workflow: [`.github/workflows/ingest-placsp.yml`](../.github/workflows/ingest-placsp.yml)
+
+1. Repo → **Actions** → **Ingest PLACSP** → **Run workflow**.
+2. Empieza con mode **`dry-run`** (sin secretos).
+3. Para escribir en un entorno remoto: configura secrets (`EFILICIT_DATABASE_URL`, y si subes RAW también `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY`) y elige `fixture-db` o `live`.
+4. Cron desactivado en el YAML hasta acordar horario y destino.
+
+Detalle de secretos: [`.github/README.md`](../.github/README.md).
+
 ## Comprobar upsert (Paso 7)
 
 ```powershell
