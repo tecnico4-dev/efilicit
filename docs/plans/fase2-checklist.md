@@ -16,8 +16,8 @@ Plan: [semana02-plan.md](semana02-plan.md). Criterios: `docs/04-roadmap-mvp.md` 
 | Trazabilidad licitación → artefacto RAW | OK | `source_artifacts.storage_path` + `tender_sources.artifact_id` en pipeline |
 | `source_sync` refleja la ejecución | OK | status/contadores en corrida fixture local |
 | Workflow `ingest-placsp.yml` | OK | Manual `workflow_dispatch`; default `dry-run`; cron comentado; secrets fuera del código |
-| Tests parser / normalización / persistencia en verde | OK | Suite ingestion en verde en Paso 8 |
-| ADRs estructurales (solo si hubo decisión nueva) | — | Si no → N/A |
-| CHANGELOG actualizado | — | |
+| Tests parser / normalización / persistencia en verde | OK | Regresión Paso 10: `40 passed, 6 skipped` (integración local skip sin Docker) |
+| ADRs estructurales (solo si hubo decisión nueva) | N/A | Sin cambio de arquitectura; se implementó lo fijado en `docs/01`–`04` |
+| CHANGELOG actualizado | OK | Unreleased con entradas Semana 2 |
 
 Cuando esté en OK → Semana 3 (escalado estatal + primeras CCAA).

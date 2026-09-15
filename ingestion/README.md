@@ -72,6 +72,22 @@ Workflow: [`.github/workflows/ingest-placsp.yml`](../.github/workflows/ingest-pl
 
 Detalle de secretos: [`.github/README.md`](../.github/README.md).
 
+Tras merge a `main`: Actions → **Ingest PLACSP** → **Run workflow** → mode `dry-run` (comprueba el YAML en GitHub).
+
+## Cierre Semana 2 (Paso 10)
+
+Regresión local:
+
+```powershell
+cd ingestion
+uv sync --extra dev
+uv run pytest -q
+```
+
+Esperado: **40 passed**, **6 skipped** (tests Postgres/Storage si no hay `supabase start`).
+
+Checklist: [fase2-checklist.md](../docs/plans/fase2-checklist.md).
+
 ## Comprobar upsert (Paso 7)
 
 ```powershell

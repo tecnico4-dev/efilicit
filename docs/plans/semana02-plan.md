@@ -1,6 +1,6 @@
 # Semana 2 — Plan: PLACSP vertical slice
 
-> **Estado:** en curso (Pasos 1–9 hechos).  
+> **Estado:** cerrada (Pasos 1–10). Siguiente: Semana 3 (escalado estatal + primeras CCAA).  
 > **Checklist:** [fase2-checklist.md](fase2-checklist.md)  
 > **Precondición:** Semana 1 cerrada ([fase1-checklist.md](fase1-checklist.md)).  
 > **Norma:** `docs/00`–`04` y `.cursor/rules/`. Reutilizar contrato `SourceConnector` + pipeline de Semana 1. ADR solo si hace falta cambiar arquitectura de verdad.
@@ -131,6 +131,7 @@ Registro de lo acordado al cerrar (o antes de) cada paso:
 | Paso 8 | Fixture `.atom` se empaqueta a ZIP en memoria para respetar el artefacto mensual | Misma forma que el paquete oficial |
 | Paso 9 | `ingest-placsp.yml` con `workflow_dispatch` (dry-run / fixture-db / live) | Controlado; cron comentado hasta acordar destino |
 | Paso 9 | Secretos `EFILICIT_DATABASE_URL` (+ Storage opcional); default sin writes | No quemar prod/red a ciegas |
+| Paso 10 | Regresión completa ingestion (`pytest`); checklist + CHANGELOG; ADR N/A | Cierre Fase 2; verificación UI de Actions tras merge a `main` |
 
 ---
 
