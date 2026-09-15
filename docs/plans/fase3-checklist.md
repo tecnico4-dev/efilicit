@@ -6,7 +6,7 @@ Plan: [semana03-plan.md](semana03-plan.md). Criterios: `docs/04-roadmap-mvp.md` 
 |---|---|---|
 | Inventario priorizado (estatal + primeras CCAA) | OK | Estatal: agregadas→menores. CCAA cola: catalunya→euskadi + reservas (valencia, jcyl, canarias, asturias, …) |
 | Ficha `docs/sources/` fuente estatal ampliada | OK | `placsp_agregadas.md` (`sindicacion_1044`); siguientes: conector Pasos 3–5 |
-| Conector estatal reutiliza contrato + pipeline | — | Preferir reuso PLACSP si compatible |
+| Conector estatal reutiliza contrato + pipeline | Parcial | Discover `placsp_agregadas` OK; fetch/parse/pipeline pendientes |
 | RAW + `source_artifacts` + upsert canónico (estatal) | — | Idempotente; mismo modelo; sin DDL paralelo |
 | Workflow/job fuente estatal | — | Manual/controlado; secretos fuera del código |
 | Adaptador CSV genérico (o N/A documentado) | N/A | Familia CSV no priorizada; si la cola cae a reserva CSV → conector puntual |

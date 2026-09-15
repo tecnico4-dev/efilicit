@@ -1,4 +1,4 @@
-"""PLACSP SourceConnector — discover + fetch + parse (Semana 2)."""
+"""PLACSP SourceConnector — discover + fetch + parse (Atom/CODICE syndications)."""
 
 from __future__ import annotations
 
@@ -18,7 +18,8 @@ from efilicit_ingestion.connectors.placsp.fetch import (
 )
 from efilicit_ingestion.connectors.placsp.parser import parse_placsp_artifact
 from efilicit_ingestion.connectors.placsp.urls import (
-    FEED_BASE_NAME,
+    PLACSP,
+    PlacspSyndication,
     iter_year_months,
     monthly_package_filename,
     monthly_package_url,
@@ -37,17 +38,18 @@ __all__ = [
 
 
 class PlacspConnector:
-    """PLACSP sindicacion_643 connector (official ZIP packages).
+    """PLACSP Open Data connector for Atom/CODICE ZIP syndications.
 
-    Discovery uses well-known URI patterns from docs/sources/placsp.md.
+    Default syndication is perfiles alojados (``placsp`` / ``sindicacion_643``).
+    Pass ``syndication=PLACSP_AGREGADAS`` (or another config) for Semana 3+ datasets.
+    Discovery uses well-known URI patterns from ``docs/sources/placsp*.md``.
     Fetch downloads with timeout, retries, and a size budget.
     """
-
-    source_code: str = "placsp"
 
     def __init__(
         self,
         *,
+        syndication: PlacspSyndication = PLACSP,
         from_year_month: str | None = None,
         to_year_month: str | None = None,
         as_of: date | None = None,
@@ -58,12 +60,14 @@ class PlacspConnector:
         max_bytes: int = DEFAULT_MAX_BYTES,
         retry_attempts: int = DEFAULT_RETRY_ATTEMPTS,
     ) -> None:
-        """Configure discovery window and fetch policy.
+        """Configure syndication, discovery window, and fetch policy.
 
         - If neither from/to is set: discover the single month of ``as_of`` (or today).
         - ``url_exists``: optional probe (e.g. HEAD) to skip missing packages.
         - ``fetch_transport``: injectable downloader for tests (no live network).
         """
+        self.syndication = syndication
+        self.source_code = syndication.source_code
         self._from_year_month = from_year_month
         self._to_year_month = to_year_month
         self._as_of = as_of
@@ -79,13 +83,14 @@ class PlacspConnector:
     def discover(self, context: SyncContext) -> list[RemoteArtifact]:
         start, end = self._resolve_window()
         artifacts: list[RemoteArtifact] = []
+        feed = self.syndication
 
         for year, month in iter_year_months(start, end):
-            artifact_key = monthly_package_filename(year, month)
+            artifact_key = monthly_package_filename(year, month, feed)
             if not self._is_after_cursor(artifact_key, context.cursor):
                 continue
 
-            source_url = monthly_package_url(year, month)
+            source_url = monthly_package_url(year, month, feed)
             if self._url_exists is not None and not self._url_exists(source_url):
                 continue
 
@@ -95,8 +100,8 @@ class PlacspConnector:
                     source_url=source_url,
                     content_type="application/zip",
                     metadata={
-                        "feed_base": FEED_BASE_NAME,
-                        "sindicacion": "643",
+                        "feed_base": feed.feed_base_name,
+                        "sindicacion": feed.sindicacion,
                         "package_kind": "monthly",
                         "year": year,
                         "month": month,

@@ -1,6 +1,6 @@
 # Semana 3 — Plan: escalado estatal + primeras CCAA
 
-> **Estado:** en curso (Pasos 1–2 cerrados; siguientes pendientes).  
+> **Estado:** en curso (Pasos 1–2 + discover 3a cerrados; fetch 3b pendiente).  
 > **Checklist:** [fase3-checklist.md](fase3-checklist.md)  
 > **Precondición:** Semana 2 cerrada ([fase2-checklist.md](fase2-checklist.md)).  
 > **Norma:** `docs/00`–`04` y `.cursor/rules/`. Reutilizar contrato `SourceConnector` + pipeline + upsert canónico de Semanas 1–2. ADR solo si hace falta cambiar arquitectura de verdad.  
@@ -83,6 +83,10 @@ Si no es compatible: documentar por qué y elegir CSV o REST según el Paso 1.
 
 **Listo cuando:** `discover`/`fetch` (o config equivalente) listan artefactos con `artifact_key` estable; tests sin red.
 
+**Progreso:**
+- **Discover — HECHO:** `PlacspSyndication` + `PLACSP_AGREGADAS`; `PlacspConnector(syndication=...)` lista ZIP mensuales `PlataformasAgregadasSinMenores_YYYYMM.zip` en `sindicacion_1044` con cursor/probe; tests sin red.
+- **Fetch — pendiente:** siguiente micro-paso (reutilizar `download_bytes`; ya apunta a `artifact.source_url`).
+
 ### 4. RAW + parse + normalize + upsert (fuente estatal)
 
 Misma tubería: validate → Storage `raw` → `source_artifacts` → parse → canonical → upsert; `source_sync` actualizado. Fixtures (válido / incompleto / inesperado).
@@ -148,6 +152,8 @@ Registro de lo acordado al cerrar (o antes de) cada paso:
 | Paso 1 | Rama de trabajo = `tecnico4/semana-03` | No mergear a `main` hasta OK explícito |
 | Paso 2 | Primera ficha estatal = `placsp_agregadas` (`sindicacion_1044`) | Open Data oficial Atom/CODICE; mismo patrón ZIP mensuales que `placsp`; sin scraping |
 | Paso 2 | Identidad de expediente alineada con `placsp` | Reuso del parser; clave `(placsp_agregadas, source_tender_id)` |
+| Paso 3a | Parametrizar `PlacspConnector` con `PlacspSyndication` | Reuso sin clonar parser; default = `placsp`; agregadas = `PLACSP_AGREGADAS` |
+| Paso 3a | Discover agregadas con `artifact_key` estable + tests sin red | Fetch queda para 3b (misma `download_bytes` vía `source_url`) |
 
 ---
 

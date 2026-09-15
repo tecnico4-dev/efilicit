@@ -1,34 +1,101 @@
-"""Official sindicacion_643 URI helpers (docs/sources/placsp.md).
+"""Official PLACSP syndication URI helpers (docs/sources/placsp*.md).
 
 No HTML scraping: packages live at well-known paths.
+Supports multiple Atom/CODICE syndications (perfiles vs agregadas, etc.).
 """
 
 from __future__ import annotations
 
-PLACSP_SINDICACION_BASE = (
-    "https://contrataciondelsectorpublico.gob.es/sindicacion/sindicacion_643"
+from dataclasses import dataclass
+
+__all__ = [
+    "PlacspSyndication",
+    "PLACSP",
+    "PLACSP_AGREGADAS",
+    "PLACSP_SINDICACION_BASE",
+    "FEED_BASE_NAME",
+    "monthly_package_filename",
+    "monthly_package_url",
+    "yearly_package_filename",
+    "yearly_package_url",
+    "parse_year_month",
+    "iter_year_months",
+]
+
+
+@dataclass(frozen=True, slots=True)
+class PlacspSyndication:
+    """One official PLACSP Open Data syndication dataset."""
+
+    source_code: str
+    sindicacion: str
+    feed_base_name: str
+
+    @property
+    def base_url(self) -> str:
+        return (
+            "https://contrataciondelsectorpublico.gob.es/sindicacion/"
+            f"sindicacion_{self.sindicacion}"
+        )
+
+
+# Semana 2 — perfiles alojados, sin menores (docs/sources/placsp.md).
+PLACSP = PlacspSyndication(
+    source_code="placsp",
+    sindicacion="643",
+    feed_base_name="licitacionesPerfilesContratanteCompleto3",
 )
-FEED_BASE_NAME = "licitacionesPerfilesContratanteCompleto3"
+
+# Semana 3 — agregación CCAA/entes, sin menores (docs/sources/placsp_agregadas.md).
+PLACSP_AGREGADAS = PlacspSyndication(
+    source_code="placsp_agregadas",
+    sindicacion="1044",
+    feed_base_name="PlataformasAgregadasSinMenores",
+)
+
+# Backward-compatible aliases for the default (perfiles) syndication.
+PLACSP_SINDICACION_BASE = PLACSP.base_url
+FEED_BASE_NAME = PLACSP.feed_base_name
 
 
-def monthly_package_filename(year: int, month: int) -> str:
+def monthly_package_filename(
+    year: int,
+    month: int,
+    syndication: PlacspSyndication = PLACSP,
+) -> str:
     """Stable artifact_key for a monthly ZIP package."""
     if month < 1 or month > 12:
         raise ValueError(f"month out of range: {month}")
-    return f"{FEED_BASE_NAME}_{year:04d}{month:02d}.zip"
+    return f"{syndication.feed_base_name}_{year:04d}{month:02d}.zip"
 
 
-def monthly_package_url(year: int, month: int) -> str:
-    return f"{PLACSP_SINDICACION_BASE}/{monthly_package_filename(year, month)}"
+def monthly_package_url(
+    year: int,
+    month: int,
+    syndication: PlacspSyndication = PLACSP,
+) -> str:
+    return (
+        f"{syndication.base_url}/"
+        f"{monthly_package_filename(year, month, syndication)}"
+    )
 
 
-def yearly_package_filename(year: int) -> str:
+def yearly_package_filename(
+    year: int,
+    syndication: PlacspSyndication = PLACSP,
+) -> str:
     """Stable artifact_key for a closed-year ZIP package."""
-    return f"{FEED_BASE_NAME}_{year:04d}.zip"
+    return f"{syndication.feed_base_name}_{year:04d}.zip"
 
 
-def yearly_package_url(year: int) -> str:
-    return f"{PLACSP_SINDICACION_BASE}/{yearly_package_filename(year)}"
+def yearly_package_url(
+    year: int,
+    syndication: PlacspSyndication = PLACSP,
+) -> str:
+    return (
+        f"{syndication.base_url}/"
+        f"{yearly_package_filename(year, syndication)}"
+    )
 
 
 def parse_year_month(value: str) -> tuple[int, int]:
