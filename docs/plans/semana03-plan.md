@@ -1,6 +1,6 @@
 # Semana 3 — Plan: escalado estatal + primeras CCAA
 
-> **Estado:** en curso (Pasos 1–2 + discover 3a cerrados; fetch 3b pendiente).  
+> **Estado:** en curso (Pasos 1–3 discover+fetch cerrados; Paso 4 RAW/parse/upsert pendiente).  
 > **Checklist:** [fase3-checklist.md](fase3-checklist.md)  
 > **Precondición:** Semana 2 cerrada ([fase2-checklist.md](fase2-checklist.md)).  
 > **Norma:** `docs/00`–`04` y `.cursor/rules/`. Reutilizar contrato `SourceConnector` + pipeline + upsert canónico de Semanas 1–2. ADR solo si hace falta cambiar arquitectura de verdad.  
@@ -76,7 +76,7 @@ Crear/actualizar ficha en `docs/sources/` (mismo esquema que `placsp.md`: URL, a
 
 **Hecho:** [docs/sources/placsp_agregadas.md](../sources/placsp_agregadas.md) — `sindicacion_1044`, feed `PlataformasAgregadasSinMenores`, ZIP mensuales oficiales, `source_code=placsp_agregadas`, adaptador PLACSP-reuse. Catálogo actualizado en [docs/sources/README.md](../sources/README.md).
 
-### 3. Conector estatal — reutilizar / extender adaptador PLACSP
+### 3. Conector estatal — reutilizar / extender adaptador PLACSP — HECHO (discover + fetch)
 
 Si la fuente es Atom/CODICE o sindicación compatible: reutilizar el conector/plataforma PLACSP (configuración, URLs, `source_code`) en lugar de copiar el parser.  
 Si no es compatible: documentar por qué y elegir CSV o REST según el Paso 1.
@@ -85,7 +85,9 @@ Si no es compatible: documentar por qué y elegir CSV o REST según el Paso 1.
 
 **Progreso:**
 - **Discover — HECHO:** `PlacspSyndication` + `PLACSP_AGREGADAS`; `PlacspConnector(syndication=...)` lista ZIP mensuales `PlataformasAgregadasSinMenores_YYYYMM.zip` en `sindicacion_1044` con cursor/probe; tests sin red.
-- **Fetch — pendiente:** siguiente micro-paso (reutilizar `download_bytes`; ya apunta a `artifact.source_url`).
+- **Fetch — HECHO:** reutiliza `download_bytes` / `fetch_transport` sobre el `source_url` descubierto; tests agregadas (URL 1044, discover→fetch, HTTP error) sin red.
+
+**Listo cuando:** `discover`/`fetch` (o config equivalente) listan artefactos con `artifact_key` estable; tests sin red. → **cumplido para `placsp_agregadas`.**
 
 ### 4. RAW + parse + normalize + upsert (fuente estatal)
 
@@ -154,6 +156,7 @@ Registro de lo acordado al cerrar (o antes de) cada paso:
 | Paso 2 | Identidad de expediente alineada con `placsp` | Reuso del parser; clave `(placsp_agregadas, source_tender_id)` |
 | Paso 3a | Parametrizar `PlacspConnector` con `PlacspSyndication` | Reuso sin clonar parser; default = `placsp`; agregadas = `PLACSP_AGREGADAS` |
 | Paso 3a | Discover agregadas con `artifact_key` estable + tests sin red | Fetch queda para 3b (misma `download_bytes` vía `source_url`) |
+| Paso 3b | Fetch agregadas reutiliza `download_bytes` + tests sin red | Misma política timeout/retry/`max_bytes`; URL `sindicacion_1044`; sin descarga live en CI |
 
 ---
 
