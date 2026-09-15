@@ -9,3 +9,4 @@ Cada fuente debe indicar: organismo, URL, mecanismo de acceso, formato, frecuenc
 | source_code | Documento | Estado |
 |---|---|---|
 | `placsp` | [placsp.md](placsp.md) | Semana 2 — vertical slice |
+| `placsp_agregadas` | [placsp_agregadas.md](placsp_agregadas.md) | Semana 3 — ficha OK; conector pendiente |

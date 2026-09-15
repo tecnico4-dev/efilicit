@@ -1,6 +1,6 @@
 # Semana 3 — Plan: escalado estatal + primeras CCAA
 
-> **Estado:** en curso (Paso 1 cerrado; siguientes pasos pendientes).  
+> **Estado:** en curso (Pasos 1–2 cerrados; siguientes pendientes).  
 > **Checklist:** [fase3-checklist.md](fase3-checklist.md)  
 > **Precondición:** Semana 2 cerrada ([fase2-checklist.md](fase2-checklist.md)).  
 > **Norma:** `docs/00`–`04` y `.cursor/rules/`. Reutilizar contrato `SourceConnector` + pipeline + upsert canónico de Semanas 1–2. ADR solo si hace falta cambiar arquitectura de verdad.  
@@ -68,11 +68,13 @@ Registrar en este plan (tabla de decisiones) el orden de ataque y el motivo cobe
 - Catálogo de referencia: [contratacionabierta.com](https://contratacionabierta.com/); URLs concretas se confirman en la ficha de cada fuente al atacarla.
 - Fuera de alcance Semana 3 (salvo sustitución por bloqueo): encargos `1383`, CPM `1403`, resto de CCAA no listadas aquí (Semana 4).
 
-### 2. Documentar la primera fuente estatal ampliada
+### 2. Documentar la primera fuente estatal ampliada — HECHO
 
 Crear/actualizar ficha en `docs/sources/` (mismo esquema que `placsp.md`: URL, acceso, formato, frecuencia, incremental, identificadores, límites, cobertura, exclusiones).
 
 **Listo cuando:** documento revisable alineado con el acceso real que usaremos.
+
+**Hecho:** [docs/sources/placsp_agregadas.md](../sources/placsp_agregadas.md) — `sindicacion_1044`, feed `PlataformasAgregadasSinMenores`, ZIP mensuales oficiales, `source_code=placsp_agregadas`, adaptador PLACSP-reuse. Catálogo actualizado en [docs/sources/README.md](../sources/README.md).
 
 ### 3. Conector estatal — reutilizar / extender adaptador PLACSP
 
@@ -144,6 +146,8 @@ Registro de lo acordado al cerrar (o antes de) cada paso:
 | Paso 1 | CCAA: cola `catalunya` → `euskadi` → reservas CSV (`valencia`, `jcyl`, `canarias`, `asturias`, …) | Objetivo ≥2 implementadas; reservas para sustituir si hay bloqueo |
 | Paso 1 | Adaptador CSV de familia = **N/A** salvo caída a reserva CSV | No forzar familia vacía; conector puntual si la cola lo exige |
 | Paso 1 | Rama de trabajo = `tecnico4/semana-03` | No mergear a `main` hasta OK explícito |
+| Paso 2 | Primera ficha estatal = `placsp_agregadas` (`sindicacion_1044`) | Open Data oficial Atom/CODICE; mismo patrón ZIP mensuales que `placsp`; sin scraping |
+| Paso 2 | Identidad de expediente alineada con `placsp` | Reuso del parser; clave `(placsp_agregadas, source_tender_id)` |
 
 ---
 

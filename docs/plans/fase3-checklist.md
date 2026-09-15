@@ -5,7 +5,7 @@ Plan: [semana03-plan.md](semana03-plan.md). Criterios: `docs/04-roadmap-mvp.md` 
 | Ítem | Estado | Notas |
 |---|---|---|
 | Inventario priorizado (estatal + primeras CCAA) | OK | Estatal: agregadas→menores. CCAA cola: catalunya→euskadi + reservas (valencia, jcyl, canarias, asturias, …) |
-| Ficha `docs/sources/` fuente estatal ampliada | — | Siguiente: `placsp_agregadas` (Paso 2) |
+| Ficha `docs/sources/` fuente estatal ampliada | OK | `placsp_agregadas.md` (`sindicacion_1044`); siguientes: conector Pasos 3–5 |
 | Conector estatal reutiliza contrato + pipeline | — | Preferir reuso PLACSP si compatible |
 | RAW + `source_artifacts` + upsert canónico (estatal) | — | Idempotente; mismo modelo; sin DDL paralelo |
 | Workflow/job fuente estatal | — | Manual/controlado; secretos fuera del código |
