@@ -6,6 +6,7 @@ import hashlib
 from typing import Protocol
 
 from efilicit_ingestion.models import RemoteArtifact
+from efilicit_ingestion.pipeline.paths import build_raw_storage_path
 from efilicit_ingestion.pipeline.types import StoredArtifact, SyncRun, utc_now
 
 
@@ -25,7 +26,8 @@ class SyncRepository(Protocol):
     def start_run(self, *, source_code: str, run_id: str, cursor: str | None) -> SyncRun:
         ...
 
-    def register_artifact(self, run: SyncRun, stored: StoredArtifact) -> None:
+    def register_artifact(self, run: SyncRun, stored: StoredArtifact) -> str | None:
+        """Persist artifact metadata; return DB artifact id when available."""
         ...
 
     def finish_run(
@@ -52,8 +54,10 @@ class InMemoryArtifactStore:
         raw: bytes,
     ) -> StoredArtifact:
         checksum = hashlib.sha256(raw).hexdigest()
-        day = utc_now().strftime("%Y/%m/%d")
-        storage_path = f"raw/{source_code}/{day}/{artifact.artifact_key}"
+        storage_path, _object_key = build_raw_storage_path(
+            source_code,
+            artifact.artifact_key,
+        )
         self.objects[storage_path] = raw
         return StoredArtifact(
             artifact_key=artifact.artifact_key,
@@ -76,10 +80,11 @@ class InMemorySyncRepository:
         self.runs[(source_code, run_id)] = run
         return run
 
-    def register_artifact(self, run: SyncRun, stored: StoredArtifact) -> None:
+    def register_artifact(self, run: SyncRun, stored: StoredArtifact) -> str | None:
         run.artifacts.append(stored)
         run.last_artifact = stored.artifact_key
         run.checksum = stored.checksum
+        return None
 
     def finish_run(
         self,

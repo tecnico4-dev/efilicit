@@ -5,6 +5,7 @@ from __future__ import annotations
 from efilicit_ingestion.connectors.protocol import SourceConnector
 from efilicit_ingestion.models import SyncContext
 from efilicit_ingestion.pipeline import stages
+from efilicit_ingestion.pipeline.canonical_repo import CanonicalRepository
 from efilicit_ingestion.pipeline.ports import ArtifactStore, SyncRepository
 from efilicit_ingestion.pipeline.types import PipelineResult
 
@@ -15,12 +16,9 @@ def run_pipeline(
     *,
     artifact_store: ArtifactStore,
     sync_repo: SyncRepository,
+    canonical_repo: CanonicalRepository | None = None,
 ) -> PipelineResult:
-    """discover → fetch → validate → store_raw → parse → … → checkpoint.
-
-    Domain stages are pass-through in Semana 1; sync/artifact bookkeeping is real
-    against the injected repositories (in-memory now, Postgres in Paso 7).
-    """
+    """discover → fetch → validate → store_raw → parse → normalize → upsert → checkpoint."""
     run = sync_repo.start_run(
         source_code=connector.source_code,
         run_id=context.run_id,
@@ -40,7 +38,7 @@ def run_pipeline(
                 raw=raw,
                 store=artifact_store,
             )
-            sync_repo.register_artifact(run, stored)
+            artifact_id = sync_repo.register_artifact(run, stored)
             stored_artifacts.append(stored)
 
             records = list(connector.parse(raw, artifact))
@@ -49,11 +47,17 @@ def run_pipeline(
             records = stages.resolve_identity(records)
             records = stages.deduplicate(records)
             records = stages.quality_checks(records)
-            seen, new = stages.upsert(records)
+            seen, new, updated = stages.upsert(
+                records,
+                source_code=connector.source_code,
+                canonical_repo=canonical_repo,
+                artifact_id=artifact_id,
+            )
             stages.emit_events(records)
 
             run.records_seen += seen
             run.records_new += new
+            run.records_updated += updated
             records_processed += seen
 
             run.cursor = stages.checkpoint(run.cursor, stored.artifact_key)

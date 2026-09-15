@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Unexpected: well-formed Atom, but entry has no ContractFolderStatus / usable id beyond empty. -->
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <id>https://example.invalid/sindicacion/fixture-unexpected</id>
+  <title>PLACSP fixture feed — unexpected</title>
+  <updated>2026-09-10T12:00:00+02:00</updated>
+  <entry>
+    <!-- Missing atom:id and CODICE block: parser must skip, not crash -->
+    <title>Entrada sin identidad usable</title>
+    <updated>2026-09-10T09:00:00+02:00</updated>
+  </entry>
+</feed>

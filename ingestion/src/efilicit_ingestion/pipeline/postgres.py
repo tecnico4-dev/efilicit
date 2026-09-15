@@ -35,7 +35,7 @@ class PostgresSyncRepository:
             started_at=started_at,
         )
 
-    def register_artifact(self, run: SyncRun, stored: StoredArtifact) -> None:
+    def register_artifact(self, run: SyncRun, stored: StoredArtifact) -> str | None:
         if run.id is None:
             raise ValueError("sync run is missing database id")
 
@@ -43,7 +43,7 @@ class PostgresSyncRepository:
         run.last_artifact = stored.artifact_key
         run.checksum = stored.checksum
 
-        self._conn.execute(
+        row = self._conn.execute(
             """
             insert into public.source_artifacts (
               source_code,
@@ -64,6 +64,7 @@ class PostgresSyncRepository:
               content_type = excluded.content_type,
               source_url = excluded.source_url,
               downloaded_at = now()
+            returning id
             """,
             (
                 run.source_code,
@@ -75,7 +76,9 @@ class PostgresSyncRepository:
                 stored.content_type,
                 stored.source_url,
             ),
-        )
+        ).fetchone()
+        assert row is not None
+        return str(row[0])
 
     def finish_run(
         self,

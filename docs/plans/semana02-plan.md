@@ -1,6 +1,6 @@
 # Semana 2 — Plan: PLACSP vertical slice
 
-> **Estado:** planificado; ejecución pendiente hasta OK explícito.  
+> **Estado:** cerrada (Pasos 1–10). Siguiente: Semana 3 (escalado estatal + primeras CCAA).  
 > **Checklist:** [fase2-checklist.md](fase2-checklist.md)  
 > **Precondición:** Semana 1 cerrada ([fase1-checklist.md](fase1-checklist.md)).  
 > **Norma:** `docs/00`–`04` y `.cursor/rules/`. Reutilizar contrato `SourceConnector` + pipeline de Semana 1. ADR solo si hace falta cambiar arquitectura de verdad.
@@ -106,7 +106,32 @@ Registro de lo acordado al cerrar (o antes de) cada paso:
 |---|---|---|
 | Inicio Semana 2 | Ejecutar **paso a paso** con revisión | Igual que Semanas 0–1 |
 | Plan | Sin ADRs previos; ADR solo si hay cambio estructural | Respetar arquitectura ya fijada |
-| *(ir rellenando)* | | |
+| Paso 1 | Dataset Semana 2 = sindicación `643` (licitaciones perfiles PLACSP, **sin** menores) | Open Data oficial Atom/CODICE; sin scraping; menores/agregación CCAA quedan fuera de este `source_code` |
+| Paso 1 | Acceso = descarga HTTP de ZIP/`.atom` en URI conocidas de `sindicacion_643` | Cumple “fuente oficial primero”; B2B no es el canal de reutilización abierta |
+| Paso 1 | Documentar en `docs/sources/placsp.md`; `source_tender_id` exacto se cierra en parse/upsert | Ficha completa ahora; identidad de expediente requiere ver fixtures reales |
+| Paso 2 | `discover` lista ZIPs mensuales por patrón URI (`…_YYYYMM.zip`); unidad de artefacto = paquete mensual | URI conocidas oficiales; sin scraping HTML; `artifact_key` = nombre de fichero |
+| Paso 2 | Ventana configurable (`from`/`to`/`as_of`) + cursor por `artifact_key`; probe opcional `url_exists` | Incremental sin red en unit tests; HEAD real se podrá inyectar en Pasos 3–8 |
+| Paso 2 | `parse` queda `NotImplementedError` hasta Paso 5; `fetch` en Paso 3 | No adelantar parseo CODICE |
+| Paso 3 | `fetch` con `httpx` (timeout/stream), `tenacity` (reintentos), `max_bytes` y SHA-256 helper | Éxito/fallos controlados sin red vía transport inyectable |
+| Paso 3 | Errores tipados `ArtifactTooLargeError` / `PlacspHttpError` / `PlacspFetchError` | Fallos clasificables para sync/logs posteriores |
+| Paso 4 | `SupabaseStorageArtifactStore` vía Storage HTTP API (`httpx` + service_role); sin cliente `supabase-py` nuevo | Stack ya aprobado; service_role solo en proceso confiable |
+| Paso 4 | Helper `fetch_validate_and_store_raw` (fetch→validate→store) antes del parse canónico | Cumple criterio Paso 4 sin exigir `parse` (Paso 5) |
+| Paso 4 | `validate_artifact` exige magic ZIP (`PK`) para artefactos `.zip` | Evita guardar basura como RAW PLACSP |
+| Paso 4 | Integración live se salta si no hay Docker/`SUPABASE_SERVICE_ROLE_KEY` | CI y máquinas sin stack local siguen verdes |
+| Paso 5 | Parser `lxml` Atom/CODICE → `SourceRecord` con campos neutros (no DDL canónico) | Separación conector/pipeline; normalize en Paso 6 |
+| Paso 5 | Identidad `tax_id|platform_id:ContractFolderID` (doc en placsp.md); sin id → omitir entry | Evita inventar identidad; NIF preferente |
+| Paso 5 | Fixtures anonimizadas: válido, incompleto, sin identidad, XML roto + ZIP | Cumple reglas de testing (válido/incompleto/inesperado) |
+| Paso 6 | `normalize` escribe `payload.canonical` (fechas, importes Decimal, CPV, códigos mapeados) | Listo para upsert sin acoplar DDL al parser |
+| Paso 6 | `resolve_identity`: HIGH=NIF/CIF, MEDIUM=platform_id, LOW=solo nombre, UNRESOLVED=nada | Cumple regla: nombre nunca es identidad única |
+| Paso 6 | Mapas de estado/tipo/procedimiento CODICE→etiquetas estables; se conservan códigos crudos | Útil para UI y trazabilidad |
+| Paso 7 | `PostgresCanonicalRepository` upsert por `(source_code, source_tender_id)`; authority por NIF | Idempotencia canónica; sin migración extra (DDL Semana 1 basta) |
+| Paso 7 | Events `published`/`updated` + document `publication` si hay URL; `register_artifact` devuelve id | Trazabilidad tender ↔ artifact |
+| Paso 7 | `run_pipeline(..., canonical_repo=...)` opcional (sin repo = contadores legacy stub) | No rompe tests Semana 1 |
+| Paso 8 | CLI `run-placsp` con `--fixture` / `--dry-run` / Postgres local | E2E documentado sin depender de red PLACSP |
+| Paso 8 | Fixture `.atom` se empaqueta a ZIP en memoria para respetar el artefacto mensual | Misma forma que el paquete oficial |
+| Paso 9 | `ingest-placsp.yml` con `workflow_dispatch` (dry-run / fixture-db / live) | Controlado; cron comentado hasta acordar destino |
+| Paso 9 | Secretos `EFILICIT_DATABASE_URL` (+ Storage opcional); default sin writes | No quemar prod/red a ciegas |
+| Paso 10 | Regresión completa ingestion (`pytest`); checklist + CHANGELOG; ADR N/A | Cierre Fase 2; verificación UI de Actions tras merge a `main` |
 
 ---
 

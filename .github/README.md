@@ -7,9 +7,25 @@ Workflow: [`.github/workflows/ci.yml`](workflows/ci.yml)
 En cada push/PR a `main` ejecuta:
 
 1. **Web lint / typecheck / build** — pnpm 10.33.0 + Node 24
-2. **Ingestion CLI smoke** — Python 3.12 + uv + `cli --help`
+2. **Ingestion CLI smoke** — Python 3.12 + uv + `cli --help` + pytest
 
 Comprobar runs: https://github.com/tecnico4-dev/efilicit/actions
+
+## Ingesta PLACSP (Semana 2)
+
+Workflow: [`.github/workflows/ingest-placsp.yml`](workflows/ingest-placsp.yml)
+
+- Disparo **manual** (`workflow_dispatch`). Cron **comentado** a propósito (activar solo cuando haya entorno + secrets acordados).
+- Modo por defecto: **`dry-run`** (fixture in-memory; no necesita secretos).
+- Modos con escritura: `fixture-db` / `live` — exigen secrets y fallan si faltan.
+
+| Secret | Uso |
+|---|---|
+| `EFILICIT_DATABASE_URL` | Postgres (fixture-db / live) |
+| `SUPABASE_URL` | API Storage si `upload_storage=true` |
+| `SUPABASE_SERVICE_ROLE_KEY` | Upload RAW si `upload_storage=true` (solo proceso confiable) |
+
+Comprobar: Actions → **Ingest PLACSP** → **Run workflow** → mode `dry-run`.
 
 ## Protección de `main` — decisión del proyecto
 
@@ -52,4 +68,5 @@ Crear Environments (`preview`, `production`) cuando haga falta desplegar. **No**
 | Tokens Vercel | Cuando haya deploy |
 | `RESEND_API_KEY` | Cuando haya alertas |
 
-Ahora mismo el CI **no** necesita secretos.
+Ahora mismo el **CI** (`ci.yml`) **no** necesita secretos.  
+El workflow de ingesta (`ingest-placsp.yml`) solo los exige en modos `fixture-db` / `live` (o si `upload_storage=true`).
