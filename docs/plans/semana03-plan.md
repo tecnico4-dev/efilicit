@@ -193,7 +193,6 @@ Registro de lo acordado al cerrar (o antes de) cada paso:
 | Paso 3.1 | Parametrizar `PlacspConnector` con `PlacspSyndication` | Reuso sin clonar parser; default = `placsp`; agregadas = `PLACSP_AGREGADAS` |
 | Paso 3.1 | Discover agregadas con `artifact_key` estable + tests sin red | Minipaso cerrado antes de fetch |
 | Paso 3.2 | Fetch agregadas reutiliza `download_bytes` + tests sin red | Misma política timeout/retry/`max_bytes`; URL `sindicacion_1044`; sin descarga live en CI |
-| Plan | Desglosar Pasos 3 y 4 en minipasos 3.1–3.2 / 4.1–4.5 | Mismos pasos globales; checklist refleja casillas por minipaso |
 
 ---
 
