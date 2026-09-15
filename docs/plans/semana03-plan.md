@@ -1,9 +1,10 @@
 # Semana 3 — Plan: escalado estatal + primeras CCAA
 
-> **Estado:** pendiente de arrancar (plan y checklist listos).  
+> **Estado:** en curso (Paso 1 cerrado; siguientes pasos pendientes).  
 > **Checklist:** [fase3-checklist.md](fase3-checklist.md)  
 > **Precondición:** Semana 2 cerrada ([fase2-checklist.md](fase2-checklist.md)).  
-> **Norma:** `docs/00`–`04` y `.cursor/rules/`. Reutilizar contrato `SourceConnector` + pipeline + upsert canónico de Semanas 1–2. ADR solo si hace falta cambiar arquitectura de verdad.
+> **Norma:** `docs/00`–`04` y `.cursor/rules/`. Reutilizar contrato `SourceConnector` + pipeline + upsert canónico de Semanas 1–2. ADR solo si hace falta cambiar arquitectura de verdad.  
+> **Rama de trabajo:** `tecnico4/semana-03` (no mergear a `main` hasta OK explícito).
 
 ---
 
@@ -33,12 +34,39 @@ Fuera de esta semana (Semana 4+): cobertura de las 17 CCAA, deduplicación multi
 
 ## Pasos
 
-### 1. Inventario y priorización de fuentes
+### 1. Inventario y priorización de fuentes — HECHO
 
 Listar candidatas estatales (sindicaciones PLACSP compatibles, menores, agregadas) y primeras CCAA propias según catálogo de referencia + documentación oficial.  
 Registrar en este plan (tabla de decisiones) el orden de ataque y el motivo cobertura/esfuerzo. **No** implementar aún.
 
 **Listo cuando:** lista priorizada acordada (estatal + ≥2 CCAA candidatas) con `source_code` provisional y tipo de adaptador esperado (PLACSP-reuse / CSV / REST-Socrata / propio).
+
+**Cómo se usa esta lista:** el criterio de salida exige **≥2 CCAA implementadas**, no “solo documentar dos”. La tabla de CCAA es una **cola priorizada**: se atacan en orden; si una se bloquea, se documenta el bloqueo y se pasa a la **siguiente reserva**. No hace falta implementar todas en Semana 3.
+
+#### Estatal (orden de implementación)
+
+| Orden | `source_code` | Acceso oficial (referencia) | Adaptador | Motivo |
+|---|---|---|---|---|
+| 1 | `placsp_agregadas` | Hacienda `sindicacion_1044` · `PlataformasAgregadasSinMenores_*.zip` | PLACSP-reuse | Máxima cobertura territorial reutilizando Atom/CODICE |
+| 2 | `placsp_menores` | Hacienda `sindicacion_1143` · `contratosMenoresPerfilesContratantes_*.zip` | PLACSP-reuse | Pedido en MVP; mismo patrón de reuso |
+
+#### CCAA propias (cola priorizada: objetivo + reservas)
+
+| Orden | Rol | `source_code` | Acceso oficial (referencia) | Adaptador | Notas |
+|---|---|---|---|---|---|
+| 1 | Objetivo Semana 3 | `catalunya` | Transparència Catalunya (Socrata) `ybgg-dgi6` | REST-Socrata | API madura; alta cobertura |
+| 2 | Objetivo Semana 3 | `euskadi` | Open Data Euskadi / KontratazioA API REST | REST | Segunda CCAA; API oficial distinta |
+| 3 | Reserva | `valencia` | `dadesobertes.gva.es` (CSV Open Data) | CSV | Si cae un objetivo; puede activar conector CSV puntual |
+| 4 | Reserva | `jcyl` | `datosabiertos.jcyl.es` (CSV) | CSV | Alternativa Castilla y León |
+| 5 | Reserva | `canarias` | `datos.canarias.es` (CSV) | CSV | Alternativa Canarias |
+| 6 | Reserva | `asturias` | Perfil contratante / Open Data Asturias (CSV) | CSV | Volumen alto en catálogo de referencia |
+| 7 | Reserva | `andalucia` | Portal datos abiertos Junta (verificar dataset vigente) | CSV / otro | URL previa 404 → validar ficha oficial antes de atacar |
+| 8 | Reserva baja | `aragon` | Aragón Open Data (histórico hasta ~2021; luego PLACSP) | CSV / PLACSP | Cobertura propia limitada; preferir agregadas/PLACSP |
+| 9 | Reserva baja | `madrid` | Feed Atom `contratos-publicos.comunidad.madrid/feed/licitaciones2` | Propio / Atom | Ya cubierto en gran parte vía `placsp_agregadas`; evitar duplicar |
+
+- **CSV genérico de familia:** N/A en Semana 3 como adaptador transversal. Si al bajar por la cola hace falta una reserva CSV, se implementa el conector de esa fuente (y solo entonces se valora factorizar un adaptador CSV reutilizable).
+- Catálogo de referencia: [contratacionabierta.com](https://contratacionabierta.com/); URLs concretas se confirman en la ficha de cada fuente al atacarla.
+- Fuera de alcance Semana 3 (salvo sustitución por bloqueo): encargos `1383`, CPM `1403`, resto de CCAA no listadas aquí (Semana 4).
 
 ### 2. Documentar la primera fuente estatal ampliada
 
@@ -65,10 +93,12 @@ GitHub Actions (o job documentado) manual y controlado; secretos fuera del códi
 
 **Listo cuando:** workflow en repo; ejecución controlada acordada (sin quemar prod/red a ciegas).
 
-### 6. Adaptador CSV genérico (si aplica)
+### 6. Adaptador CSV genérico (si aplica) — N/A (decidido en Paso 1)
 
 Si en el inventario hay una **familia** de fuentes CSV realmente compatible: implementar un adaptador CSV reutilizable (mapeo declarativo donde ayude).  
 Si no hay familia clara: marcar **N/A** en checklist y dejar constancia en decisiones (no forzar un adaptador vacío).
+
+**Decisión Paso 1:** adaptador CSV de **familia** = N/A en Semana 3. La cola de CCAA incluye reservas CSV (`valencia`, `jcyl`, …): si hay que usarlas por bloqueo de Catalunya/Euskadi, se hace el conector de esa fuente y solo entonces se valora factorizar.
 
 **Listo cuando:** o bien un CSV end-to-end con fixture+tests+ficha, o decisión documentada N/A.
 
@@ -110,6 +140,10 @@ Registro de lo acordado al cerrar (o antes de) cada paso:
 | Inicio Semana 3 | Ejecutar **paso a paso** con revisión | Igual que Semanas 0–2 |
 | Plan | Sin ADRs previos; ADR solo si hay cambio estructural | Respetar arquitectura ya fijada |
 | Plan | No fijar aún CCAA/`source_code` concretos en el plan | Se eligen en Paso 1 con evidencia oficial + cobertura/esfuerzo |
+| Paso 1 | Estatal: `placsp_agregadas` → `placsp_menores` | Reuso Atom/CODICE; agregadas primero por cobertura; menores por MVP |
+| Paso 1 | CCAA: cola `catalunya` → `euskadi` → reservas CSV (`valencia`, `jcyl`, `canarias`, `asturias`, …) | Objetivo ≥2 implementadas; reservas para sustituir si hay bloqueo |
+| Paso 1 | Adaptador CSV de familia = **N/A** salvo caída a reserva CSV | No forzar familia vacía; conector puntual si la cola lo exige |
+| Paso 1 | Rama de trabajo = `tecnico4/semana-03` | No mergear a `main` hasta OK explícito |
 
 ---
 
