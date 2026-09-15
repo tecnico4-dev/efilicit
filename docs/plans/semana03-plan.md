@@ -1,6 +1,6 @@
 # Semana 3 — Plan: escalado estatal + primeras CCAA
 
-> **Estado:** en curso (Pasos 1–3 OK; Paso 4.1 RAW OK; siguiente 4.2 parse).  
+> **Estado:** en curso (Pasos 1–3 OK; 4.1–4.2 OK; siguiente 4.3 normalize).  
 > **Checklist:** [fase3-checklist.md](fase3-checklist.md)  
 > **Precondición:** Semana 2 cerrada ([fase2-checklist.md](fase2-checklist.md)).  
 > **Norma:** `docs/00`–`04` y `.cursor/rules/`. Reutilizar contrato `SourceConnector` + pipeline + upsert canónico de Semanas 1–2. ADR solo si hace falta cambiar arquitectura de verdad.  
@@ -109,11 +109,13 @@ Tras el fetch: `validate_artifact` (p. ej. magic ZIP `PK`) → `store_raw` en bu
 
 **Hecho:** reuso del helper Semana 2 con `source_code=placsp_agregadas`; tests sin red (path prefix, validate, fetch→validate→store) + integración live opcional (skip sin Docker).
 
-#### 4.2 Parse Atom/CODICE → `SourceRecord` — pendiente
+#### 4.2 Parse Atom/CODICE → `SourceRecord` — HECHO
 
 Reutilizar el parser `lxml` de Semana 2 sobre el artefacto agregadas (misma familia CODICE). Fixtures propio o reutilizados etiquetados con este `source_code`. Casos válido / incompleto / inesperado; omitir entradas sin identidad estable.
 
 **Listo cuando:** tests de parse en verde sin contaminar el DDL canónico.
+
+**Hecho:** mismo `parse_placsp_artifact` / `PlacspConnector.parse`; tests con fixtures CODICE de Semana 2 + ZIP miembro `PlataformasAgregadasSinMenores.atom`; sin red.
 
 #### 4.3 Normalize + identidad de organismos — pendiente
 
@@ -196,6 +198,7 @@ Registro de lo acordado al cerrar (o antes de) cada paso:
 | Paso 3.1 | Discover agregadas con `artifact_key` estable + tests sin red | Minipaso cerrado antes de fetch |
 | Paso 3.2 | Fetch agregadas reutiliza `download_bytes` + tests sin red | Misma política timeout/retry/`max_bytes`; URL `sindicacion_1044`; sin descarga live en CI |
 | Paso 4.1 | RAW agregadas reutiliza `fetch_validate_and_store_raw` | Prefijo Storage `placsp_agregadas`; validate ZIP; sin parse aún |
+| Paso 4.2 | Parse agregadas reutiliza `parse_placsp_artifact` | Misma familia CODICE; fixtures Semana 2 + nombre ZIP agregadas |
 
 ---
 

@@ -249,6 +249,7 @@ No garantiza el 100 % de todos los contratos locales de cada CCAA. Algunas comun
 - **Reutilizar** el conector PLACSP de Semana 2 parametrizando `source_code`, base de sindicación y `FEED_BASE_NAME` — no clonar el parser.
 - **Discover + fetch:** `PlacspConnector(syndication=PLACSP_AGREGADAS)`; `fetch` reutiliza `download_bytes` con el `source_url` del artefacto (timeout, retry, `max_bytes`, checksum). Tests con `fetch_transport` inyectado — **sin red en unit tests**.
 - **RAW (Paso 4.1):** `fetch_validate_and_store_raw` + `validate_artifact` (magic ZIP) → Storage `raw/placsp_agregadas/AAAA/MM/DD/...` + `source_artifacts`.
+- **Parse (Paso 4.2):** reutilizar `parse_placsp_artifact` (Atom/CODICE); ZIP base `PlataformasAgregadasSinMenores.atom`.
 - Stack aprobado: `httpx` + `lxml` + `tenacity` + Pydantic; RAW en Supabase Storage.
 - Fixtures Atom/ZIP propios de este dataset (o reutilizar fixtures CODICE si la estructura es idéntica y se etiquetan con este `source_code` en tests).
 - Tests unitarios sin red.
