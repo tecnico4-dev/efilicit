@@ -1,6 +1,6 @@
 # Semana 3 — Plan: escalado estatal + primeras CCAA
 
-> **Estado:** en curso (Pasos 1–3 OK; 4.1–4.3 OK; siguiente 4.4 upsert).  
+> **Estado:** en curso — progreso en [fase3-checklist.md](fase3-checklist.md).  
 > **Checklist:** [fase3-checklist.md](fase3-checklist.md)  
 > **Precondición:** Semana 2 cerrada ([fase2-checklist.md](fase2-checklist.md)).  
 > **Norma:** `docs/00`–`04` y `.cursor/rules/`. Reutilizar contrato `SourceConnector` + pipeline + upsert canónico de Semanas 1–2. ADR solo si hace falta cambiar arquitectura de verdad.  
@@ -34,7 +34,7 @@ Fuera de esta semana (Semana 4+): cobertura de las 17 CCAA, deduplicación multi
 
 ## Pasos
 
-### 1. Inventario y priorización de fuentes — HECHO
+### 1. Inventario y priorización de fuentes
 
 Listar candidatas estatales (sindicaciones PLACSP compatibles, menores, agregadas) y primeras CCAA propias según catálogo de referencia + documentación oficial.  
 Registrar en este plan (tabla de decisiones) el orden de ataque y el motivo cobertura/esfuerzo. **No** implementar aún.
@@ -68,28 +68,28 @@ Registrar en este plan (tabla de decisiones) el orden de ataque y el motivo cobe
 - Catálogo de referencia: [contratacionabierta.com](https://contratacionabierta.com/); URLs concretas se confirman en la ficha de cada fuente al atacarla.
 - Fuera de alcance Semana 3 (salvo sustitución por bloqueo): encargos `1383`, CPM `1403`, resto de CCAA no listadas aquí (Semana 4).
 
-### 2. Documentar la primera fuente estatal ampliada — HECHO
+### 2. Documentar la primera fuente estatal ampliada
 
 Crear/actualizar ficha en `docs/sources/` (mismo esquema que `placsp.md`: URL, acceso, formato, frecuencia, incremental, identificadores, límites, cobertura, exclusiones).
 
 **Listo cuando:** documento revisable alineado con el acceso real que usaremos.
 
-**Hecho:** [docs/sources/placsp_agregadas.md](../sources/placsp_agregadas.md) — `sindicacion_1044`, feed `PlataformasAgregadasSinMenores`, ZIP mensuales oficiales, `source_code=placsp_agregadas`, adaptador PLACSP-reuse. Catálogo actualizado en [docs/sources/README.md](../sources/README.md).
+Primera ficha estatal: [docs/sources/placsp_agregadas.md](../sources/placsp_agregadas.md) — `sindicacion_1044`, feed `PlataformasAgregadasSinMenores`, ZIP mensuales oficiales, `source_code=placsp_agregadas`, adaptador PLACSP-reuse. Catálogo: [docs/sources/README.md](../sources/README.md).
 
-### 3. Conector estatal — reutilizar / extender adaptador PLACSP — HECHO
+### 3. Conector estatal — reutilizar / extender adaptador PLACSP
 
 Si la fuente es Atom/CODICE o sindicación compatible: reutilizar el conector/plataforma PLACSP (configuración, URLs, `source_code`) en lugar de copiar el parser.  
 Si no es compatible: documentar por qué y elegir CSV o REST según el Paso 1.
 
-**Listo cuando (paso global):** `discover` y `fetch` listan/descargan artefactos con `artifact_key` estable; tests sin red. → **cumplido para `placsp_agregadas`.**
+**Listo cuando (paso global):** `discover` y `fetch` listan/descargan artefactos con `artifact_key` estable; tests sin red.
 
-#### 3.1 Discover — HECHO
+#### 3.1 Discover
 
 Parametrizar el conector (`PlacspSyndication` / `PLACSP_AGREGADAS`) para que `discover` liste los ZIP mensuales oficiales de `sindicacion_1044` (`PlataformasAgregadasSinMenores_YYYYMM.zip`) con ventana, cursor y probe opcional — **sin clonar** el conector de perfiles.
 
 **Listo cuando:** tests sin red con `artifact_key` / `source_url` estables y `source_code=placsp_agregadas`.
 
-#### 3.2 Fetch — HECHO
+#### 3.2 Fetch
 
 Reutilizar `download_bytes` (timeout, retry, `max_bytes`, checksum) sobre el `source_url` descubierto. Cubrir con `fetch_transport` inyectado (discover→fetch, URL 1044, errores HTTP) — **sin descarga live en CI**.
 
@@ -101,37 +101,31 @@ Misma tubería canónica que Semana 2, aplicada a `placsp_agregadas`: validate �
 
 **Listo cuando (paso global):** corrida local (fixture o muestra controlada) deja sync success, RAW trazable y filas canónicas; reejecutar no duplica.
 
-#### 4.1 Validar artefacto + guardar RAW — HECHO
+#### 4.1 Validar artefacto + guardar RAW
 
 Tras el fetch: `validate_artifact` (p. ej. magic ZIP `PK`) → `store_raw` en bucket `raw` con prefijo `placsp_agregadas/...` → registrar fila en `source_artifacts` (checksum, `storage_path`). Reutilizar `fetch_validate_and_store_raw` / `SupabaseStorageArtifactStore` de Semana 2.
 
 **Listo cuando:** test (mock o integración local) deja RAW + metadata; sin parse todavía.
 
-**Hecho:** reuso del helper Semana 2 con `source_code=placsp_agregadas`; tests sin red (path prefix, validate, fetch→validate→store) + integración live opcional (skip sin Docker).
-
-#### 4.2 Parse Atom/CODICE → `SourceRecord` — HECHO
+#### 4.2 Parse Atom/CODICE → `SourceRecord`
 
 Reutilizar el parser `lxml` de Semana 2 sobre el artefacto agregadas (misma familia CODICE). Fixtures propio o reutilizados etiquetados con este `source_code`. Casos válido / incompleto / inesperado; omitir entradas sin identidad estable.
 
 **Listo cuando:** tests de parse en verde sin contaminar el DDL canónico.
 
-**Hecho:** mismo `parse_placsp_artifact` / `PlacspConnector.parse`; tests con fixtures CODICE de Semana 2 + ZIP miembro `PlataformasAgregadasSinMenores.atom`; sin red.
-
-#### 4.3 Normalize + identidad de organismos — HECHO
+#### 4.3 Normalize + identidad de organismos
 
 Mapear a `payload.canonical` (fechas, importes, CPV, estados…) y `resolve_identity` (NIF/CIF prioritario; confidence HIGH/MEDIUM/LOW/UNRESOLVED). Reutilizar etapas del pipeline común.
 
 **Listo cuando:** tests de normalización/identidad sobre fixtures agregadas (o fixtures CODICE compartidos con este `source_code`).
 
-**Hecho:** `stages.normalize` + `stages.resolve_identity` sin cambios; tests agregadas (válido/incompleto + cadena parse→normalize→identity); sin red.
-
-#### 4.4 Upsert canónico + `source_sync` + trazabilidad — pendiente
+#### 4.4 Upsert canónico + `source_sync` + trazabilidad
 
 Persistir en `tenders` / `tender_sources` / events / documents con unique `(placsp_agregadas, source_tender_id)`; actualizar `source_sync`; enlazar `artifact_id`. Probar reejecución (no duplica).
 
 **Listo cuando:** corrida local con fixture deja filas canónicas + sync success; 2ª pasada → updated, no filas duplicadas.
 
-#### 4.5 Cableado E2E / CLI controlado (opcional de cierre del Paso 4) — pendiente
+#### 4.5 Cableado E2E / CLI controlado (opcional de cierre del Paso 4)
 
 Entrada CLI o helper documentado (p. ej. `run-placsp` parametrizado / `run-placsp-agregadas`) con `--fixture` / `--dry-run` para ejercitar 4.1–4.4 de punta a punta en local **sin** depender de red PLACSP.
 

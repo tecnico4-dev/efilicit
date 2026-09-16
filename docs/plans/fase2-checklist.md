@@ -21,3 +21,5 @@ Plan: [semana02-plan.md](semana02-plan.md). Criterios: `docs/04-roadmap-mvp.md` 
 | CHANGELOG actualizado | OK | Unreleased con entradas Semana 2 |
 
 Cuando esté en OK → Semana 3 (escalado estatal + primeras CCAA).
+
+Verificación posterior con datos reales PLACSP (local): [docs/pruebas.md](../pruebas.md).
