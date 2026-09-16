@@ -153,11 +153,41 @@ Igual criterio que el Paso 6: solo si corresponde a una fuente priorizada. Timeo
 
 **Listo cuando:** o bien API end-to-end con fixture/mock+tests+ficha, o decisión documentada N/A.
 
-### 8. Primera CCAA propia
+### 8. Primera CCAA propia (`catalunya`)
 
-Documentar + conector completo (contrato común, RAW, tests, sync, workflow) para la CCAA #1 del inventario.
+Completar la tubería canónica sobre el adaptador Socrata del Paso 7: documentación E2E, RAW, upsert/`source_sync`, CLI y workflow controlado.
 
-**Listo cuando:** datos reales o fixture representativo poblando canónico; `source_sync` OK; ficha en `docs/sources/`.
+**Listo cuando (paso global):** corrida local (fixture) deja sync success, RAW trazable y filas canónicas; reejecutar no duplica; ficha alineada; job manual seguro.
+
+#### 8.1 Documentación ficha CCAA #1
+
+Completar/actualizar [docs/sources/catalunya.md](../sources/catalunya.md) para el alcance E2E (identificadores, RAW, incremental, límites, cobertura, exclusiones, mapa de minipasos). El adaptador base ya existe desde el Paso 7.
+
+**Listo cuando:** ficha revisable alineada con el pipeline que se va a cablear en 8.2–8.5.
+
+#### 8.2 Validar artefacto + guardar RAW
+
+Tras el fetch: `validate_artifact` (JSON no vacío) → `store_raw` en bucket `raw` con prefijo `catalunya/...` → registrar `source_artifacts`. Reutilizar helpers Semana 2.
+
+**Listo cuando:** tests (mock o integración local) dejan RAW + metadata bajo `raw/catalunya/`.
+
+#### 8.3 Upsert canónico + `source_sync` + trazabilidad
+
+Persistir con unique `(catalunya, source_tender_id)`; actualizar `source_sync`; enlazar `artifact_id`. Parse/normalize ya cubiertos en Paso 7.
+
+**Listo cuando:** corrida fixture → filas canónicas + sync success; 2ª pasada → updated, sin duplicados.
+
+#### 8.4 CLI / E2E local controlado
+
+Entrada CLI documentada (p. ej. `run-catalunya`) con `--fixture` / `--dry-run` para ejercitar 8.2–8.3 sin red SODA.
+
+**Listo cuando:** ejecución documentada reproduce RAW + canónico; base para 8.5.
+
+#### 8.5 Workflow / job controlado
+
+GitHub Actions (o extensión de workflow) manual; dry-run por defecto; secretos fuera del código; cron off.
+
+**Listo cuando:** workflow en repo; ejecución controlada acordada.
 
 ### 9. Segunda (y siguientes) CCAA propia
 
@@ -202,6 +232,7 @@ Registro de lo acordado al cerrar (o antes de) cada paso:
 | Paso 5 | Workflow `ingest-placsp.yml` + input `syndication` | Manual; dry-run default; cron off; mismos secrets que Semana 2 |
 | Tras Paso 5 | Verificación live local `placsp_agregadas` (mes en curso + idempotencia) | Mismo patrón que Semana 2; documentado en [docs/pruebas.md](../pruebas.md) Parte B |
 | Paso 7 | Adaptador Socrata + preset `catalunya` (`ybgg-dgi6`) | `SocrataConnector` discover/fetch/parse; ficha; tests sin red; E2E CLI → Paso 8 |
+| Paso 8.1 | Ficha `catalunya` ampliada a alcance E2E CCAA #1 | RAW/upsert/CLI/workflow documentados como minipasos 8.2–8.5 |
 
 ---
 

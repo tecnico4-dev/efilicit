@@ -1,7 +1,7 @@
 # Catalunya — Contractació pública (PSCP / Transparència)
 
 > **source_code:** `catalunya`  
-> **Estado en el proyecto:** Semana 3 — adaptador REST/Socrata (Paso 7)  
+> **Estado en el proyecto:** Semana 3 — CCAA #1 (Paso 8; adaptador Socrata en Paso 7)  
 > **Última revisión de esta ficha:** 2026-09-16  
 > **Scraping:** no (existe API Open Data SODA / Socrata)  
 > **Adaptador:** Socrata-reuse (`SocrataConnector` + dataset `ybgg-dgi6`)
@@ -34,12 +34,15 @@
 | Dominio SODA | `analisi.transparenciacatalunya.cat` |
 | Endpoint JSON | `https://analisi.transparenciacatalunya.cat/resource/ybgg-dgi6.json` |
 
+Cada fila = una **publicación** (fase) en la plataforma, no necesariamente un expediente “único” de negocio. La clave operativa EfiLicit es `id_intern`.
+
 ### Relación con otras fuentes
 
 | `source_code` | Relación |
 |---|---|
 | `placsp_agregadas` | Puede solapar cobertura territorial; deduplicación multi-fuente → Semana 4 |
 | `placsp` | Perfiles alojados en PLACSP (estatal); no mezclar |
+| Ejecución PSCP (otro dataset) | Fuera de alcance Semana 3 (p. ej. publicaciones de fase de ejecución en otro conjunto Open Data) |
 
 ---
 
@@ -51,7 +54,7 @@
 | 2. Export CSV masivo | Disponible | No es el camino primario del adaptador |
 | 3. Scraping | No | No necesario |
 
-**Decisión:** HTTP GET paginado (`$limit` / `$offset` / `$order`) sobre el resource JSON. Sin autenticación obligatoria para consumo abierto; `X-App-Token` opcional si hace falta más cuota (fuera de código versionado).
+**Decisión:** HTTP GET paginado (`$limit` / `$offset` / `$order`) sobre el resource JSON. Sin autenticación obligatoria para consumo abierto; `X-App-Token` opcional si hace falta más cuota (**solo secrets / entorno**, nunca en código versionado).
 
 ---
 
@@ -71,7 +74,7 @@
 
 | Concepto | Campo / regla |
 |---|---|
-| Clave de artefacto | `{dataset_id}_offset_{offset}_limit_{limit}.json` |
+| Clave de artefacto | `{dataset_id}_offset_{offset:07d}_limit_{limit:04d}.json` |
 | Clave de registro | `id_intern` |
 | Upsert canónico | Unique `(catalunya, source_tender_id)` con `source_tender_id = id_intern` |
 | Organismo | `nom_organ`; `codi_dir3` / `codi_organ` como `platform_id` (NIF/CIF suele ausente → confidence MEDIUM/LOW) |
@@ -96,28 +99,70 @@ El parser emite el mismo shape pre-canónico que PLACSP para reutilizar `stages.
 | `authority.name` | `nom_organ` |
 | `authority.platform_id` | `codi_dir3` o `codi_organ` |
 
----
-
-## 7. Incremental / cursor
-
-- Cursor de sync = último `artifact_key` de página (orden léxico por offset).
-- Ventana de discover: `start_offset` + `max_pages` × `page_size` (configurable en el conector).
-- Filtros SoQL adicionales (`$where` por fechas) → refinamiento en Paso 8 si hace falta.
+Fases/tipos no mapeados → `status` / `contract_type` nulos (el resto del registro puede persistirse).
 
 ---
 
-## 8. Observaciones para el conector
+## 7. Frecuencia, incremental y límites
+
+| Aspecto | Detalle |
+|---|---|
+| Actualización del dataset (portal) | Orden de magnitud semanal (Open Data); verificar en la ficha del portal |
+| Incremental EfiLicit (MVP) | Páginas por `offset` + cursor = último `artifact_key` |
+| Ventana discover | `start_offset` + `max_pages` × `page_size` (configurable) |
+| SoQL `$where` por fechas | Opcional; se valora en minipasos E2E si el volumen lo exige |
+| Rate limit | Cuota anónima SODA; si hay 429 → documentar y considerar App Token en secrets |
+| Tamaño página | Default conector `page_size=1000`; `max_bytes` por página (JSON) |
+
+---
+
+## 8. Cobertura y exclusiones
+
+**Incluye (este `source_code`):** publicaciones PSCP indexadas en `ybgg-dgi6` (licitación, adjudicación, formalización, agregadas, etc., según filas del dataset).
+
+**Excluye / fuera de Semana 3:**
+
+- Deduplicación contra `placsp` / `placsp_agregadas` (Semana 4).
+- Datasets catalanes distintos (ejecución, menores propios si existen en otro ID).
+- Scraping del portal `contractaciopublica.cat` más allá de la URL ya presente en el JSON.
+
+---
+
+## 9. Pipeline EfiLicit (Paso 8)
+
+```text
+discover (páginas) → fetch (JSON) → validate → RAW Storage
+→ parse → normalize / identidad → upsert → source_sync
+```
+
+| Etapa | Estado / nota |
+|---|---|
+| Discover + fetch + parse | OK en Paso 7 (`SocrataConnector`) |
+| Normalize + identidad | OK en Paso 7 (reuso etapas comunes; tests fixture) |
+| RAW `raw/catalunya/…` + `source_artifacts` | Minipaso 8.2 |
+| Upsert + `source_sync` + `artifact_id` | Minipaso 8.3 |
+| CLI `--fixture` / `--dry-run` | Minipaso 8.4 |
+| Workflow Actions manual | Minipaso 8.5 |
+
+**RAW:** cada página JSON es un artefacto inmutable; prefijo Storage `raw/catalunya/AAAA/MM/DD/…`.
+
+**Idempotencia:** reejecutar la misma página no duplica `(catalunya, id_intern)`.
+
+---
+
+## 10. Observaciones para el conector
 
 - **Familia:** `SocrataConnector` en `efilicit_ingestion.connectors.socrata`.
 - **Preset:** `CATALUNYA` (`source_code=catalunya`, dataset `ybgg-dgi6`).
 - **Fetch:** timeout / retry / `max_bytes` / checksum; `fetch_transport` inyectable — **sin red en unit tests**.
-- **RAW:** JSON de página bajo prefijo `raw/catalunya/…` (cableado E2E / CLI en Paso 8).
 - Fixtures: `ingestion/tests/fixtures/catalunya/`.
+- Stack aprobado: `httpx` + `tenacity` + Pydantic; RAW en Supabase Storage; sin Redis/colas.
 
 ---
 
-## 9. Referencias
+## 11. Referencias
 
 1. Dataset Transparència Catalunya: https://analisi.transparenciacatalunya.cat/d/ybgg-dgi6  
 2. SODA Consumer API: https://dev.socrata.com/consumers/getting-started.html  
-3. Catálogo de referencia (no fuente de verdad): https://contratacionabierta.com/
+3. Catálogo de referencia (no fuente de verdad): https://contratacionabierta.com/  
+4. Adaptador: `ingestion/src/efilicit_ingestion/connectors/socrata/`
