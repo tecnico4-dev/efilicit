@@ -196,6 +196,7 @@ Registro de lo acordado al cerrar (o antes de) cada paso:
 | Paso 4.1 | RAW agregadas reutiliza `fetch_validate_and_store_raw` | Prefijo Storage `placsp_agregadas`; validate ZIP; sin parse aún |
 | Paso 4.2 | Parse agregadas reutiliza `parse_placsp_artifact` | Misma familia CODICE; fixtures Semana 2 + nombre ZIP agregadas |
 | Paso 4.3 | Normalize + identidad reutiliza `stages.normalize` / `resolve_identity` | Sin cambios en etapas; tests agregadas HIGH/LOW |
+| Paso 4.4 | Upsert reutiliza `InMemory`/`PostgresCanonicalRepository` + pipeline | Unique `(placsp_agregadas, source_tender_id)`; no colisión con `placsp`; `source_sync` success |
 
 ---
 
