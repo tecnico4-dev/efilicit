@@ -4,7 +4,8 @@
 > **Checklist:** [fase3-checklist.md](fase3-checklist.md)  
 > **Precondición:** Semana 2 cerrada ([fase2-checklist.md](fase2-checklist.md)).  
 > **Norma:** `docs/00`–`04` y `.cursor/rules/`. Reutilizar contrato `SourceConnector` + pipeline + upsert canónico de Semanas 1–2. ADR solo si hace falta cambiar arquitectura de verdad.  
-> **Rama de trabajo:** `tecnico4/semana-03` (no mergear a `main` hasta OK explícito).
+> **Rama de trabajo:** `tecnico4/semana-03` (no mergear a `main` hasta OK explícito).  
+> **Verificación live:** [docs/pruebas.md](../pruebas.md) — Parte B (`placsp_agregadas`).
 
 ---
 
@@ -199,6 +200,7 @@ Registro de lo acordado al cerrar (o antes de) cada paso:
 | Paso 4.4 | Upsert reutiliza `InMemory`/`PostgresCanonicalRepository` + pipeline | Unique `(placsp_agregadas, source_tender_id)`; no colisión con `placsp`; `source_sync` success |
 | Paso 4.5 | CLI `run-placsp --syndication placsp_agregadas` | Fixture Atom wrap con nombre agregadas; dry-run + Postgres opcional |
 | Paso 5 | Workflow `ingest-placsp.yml` + input `syndication` | Manual; dry-run default; cron off; mismos secrets que Semana 2 |
+| Tras Paso 5 | Verificación live local `placsp_agregadas` (mes en curso + idempotencia) | Mismo patrón que Semana 2; documentado en [docs/pruebas.md](../pruebas.md) Parte B |
 
 ---
 
@@ -207,5 +209,6 @@ Registro de lo acordado al cerrar (o antes de) cada paso:
 - [docs/04-roadmap-mvp.md](../04-roadmap-mvp.md) § Semana 3 (y §1 corte MVP: estatales + CCAA)  
 - [docs/01-arquitectura-fija.md](../01-arquitectura-fija.md) §§ 5–8  
 - [docs/00-onboarding.md](../00-onboarding.md) (fuentes, RAW, `source_sync`)  
-- [docs/sources/placsp.md](../sources/placsp.md) · [docs/sources/README.md](../sources/README.md)  
+- [docs/sources/placsp.md](../sources/placsp.md) · [docs/sources/placsp_agregadas.md](../sources/placsp_agregadas.md) · [docs/sources/README.md](../sources/README.md)  
+- [docs/pruebas.md](../pruebas.md) (Parte B: live `placsp_agregadas`)  
 - [fase3-checklist.md](fase3-checklist.md) · [fase2-checklist.md](fase2-checklist.md) · [semana02-plan.md](semana02-plan.md)

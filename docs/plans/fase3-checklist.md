@@ -40,10 +40,12 @@ Los pasos globales (1–10) se mantienen. Los Pasos **3** y **4** se desglosan e
 
 | Ítem | Estado | Notas |
 |---|---|---|
-| Reejecutar no duplica (fuentes nuevas) | — | Unique `(source_code, source_tender_id)` |
-| `source_sync` por cada fuente añadida | — | Status/contadores verificables |
-| Tests en verde (parser / adaptadores / persistencia) | — | Incluir regresión PLACSP Semana 2 |
+| Reejecutar no duplica (fuentes nuevas) | OK | Live `placsp_agregadas`: 2ª corrida `records_new=0`; ver [docs/pruebas.md](../pruebas.md) |
+| `source_sync` por cada fuente añadida | OK | Verificado en live local (`prueba-live-agregadas-*`) |
+| Tests en verde (parser / adaptadores / persistencia) | OK | 74 passed en baseline pre-live (incl. regresión `placsp`) |
 | ADRs estructurales (solo si hubo decisión nueva) | — | Si no → N/A |
-| CHANGELOG actualizado | — | Ir actualizando por hito |
+| CHANGELOG actualizado | OK | Ir actualizando por hito + entrada `docs/pruebas.md` |
 
 Cuando los pasos globales relevantes estén en OK → Semana 4 (cobertura territorial 17 CCAA + deduplicación).
+
+Verificación con datos reales `placsp_agregadas` (local): [docs/pruebas.md](../pruebas.md) (Parte B).
