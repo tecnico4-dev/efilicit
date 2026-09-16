@@ -141,7 +141,7 @@ discover (páginas) → fetch (JSON) → validate → RAW Storage
 | Normalize + identidad | OK en Paso 7 (reuso etapas comunes; tests fixture) |
 | RAW `raw/catalunya/…` + `source_artifacts` | OK (Paso 8.2) |
 | Upsert + `source_sync` + `artifact_id` | OK (Paso 8.3) |
-| CLI `--fixture` / `--dry-run` | Minipaso 8.4 |
+| CLI `--fixture` / `--dry-run` | OK (Paso 8.4) |
 | Workflow Actions manual | Minipaso 8.5 |
 
 **RAW:** cada página JSON es un artefacto inmutable; prefijo Storage `raw/catalunya/AAAA/MM/DD/…`.
@@ -157,6 +157,7 @@ discover (páginas) → fetch (JSON) → validate → RAW Storage
 - **Fetch:** timeout / retry / `max_bytes` / checksum; `fetch_transport` inyectable — **sin red en unit tests**.
 - **RAW (Paso 8.2):** `fetch_validate_and_store_raw` + `validate_artifact` (JSON no vacío) → Storage `raw/catalunya/AAAA/MM/DD/...` + `source_artifacts`.
 - **Upsert (Paso 8.3):** reutilizar `CanonicalRepository` / `run_pipeline`; unique `(catalunya, id_intern)`; `artifact_id` en `tender_sources`; `source_sync` con contadores.
+- **CLI E2E (Paso 8.4):** `run-catalunya --fixture … --dry-run` (JSON SODA; sin red).
 - Fixtures: `ingestion/tests/fixtures/catalunya/`.
 - Stack aprobado: `httpx` + `tenacity` + Pydantic; RAW en Supabase Storage; sin Redis/colas.
 
