@@ -28,6 +28,16 @@ Workflow: [`.github/workflows/ingest-placsp.yml`](workflows/ingest-placsp.yml)
 
 Comprobar: Actions → **Ingest PLACSP** → **Run workflow** → syndication `placsp_agregadas` + mode `dry-run`.
 
+## Ingesta Catalunya (Semana 3)
+
+Workflow: [`.github/workflows/ingest-catalunya.yml`](workflows/ingest-catalunya.yml)
+
+- Disparo **manual** (`workflow_dispatch`). Cron **comentado**.
+- Modo por defecto: **`dry-run`** (fixture JSON in-memory; no necesita secretos).
+- Modos con escritura: `fixture-db` / `live` — mismos secrets que PLACSP; en `live` acotar `max_pages`.
+
+Comprobar: Actions → **Ingest Catalunya** → rama `tecnico4/semana-03` → mode `dry-run`.
+
 ## Protección de `main` — decisión del proyecto
 
 **No se aplica** branch protection / ruleset sobre `main`, **al menos por ahora**.

@@ -236,6 +236,7 @@ Registro de lo acordado al cerrar (o antes de) cada paso:
 | Paso 8.2 | RAW `catalunya` reutiliza `fetch_validate_and_store_raw` | Prefijo Storage `catalunya`; validate JSON; tests sin red |
 | Paso 8.3 | Upsert `catalunya` reutiliza `CanonicalRepository` + pipeline | Unique `(catalunya, id_intern)`; no colisión con `placsp`; sync success |
 | Paso 8.4 | CLI `run-catalunya --fixture --dry-run` | E2E local sin red SODA; Postgres opcional con `--no-storage` |
+| Paso 8.5 | Workflow `ingest-catalunya.yml` | Manual; dry-run default; cron off; mismos secrets que PLACSP |
 
 ---
 

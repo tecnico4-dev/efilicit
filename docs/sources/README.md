@@ -10,4 +10,4 @@ Cada fuente debe indicar: organismo, URL, mecanismo de acceso, formato, frecuenc
 |---|---|---|
 | `placsp` | [placsp.md](placsp.md) | Semana 2 — vertical slice |
 | `placsp_agregadas` | [placsp_agregadas.md](placsp_agregadas.md) | Semana 3 — conector + live local OK |
-| `catalunya` | [catalunya.md](catalunya.md) | Semana 3 — CCAA #1 (8.1–8.4 OK; 8.5 workflow pendiente) |
+| `catalunya` | [catalunya.md](catalunya.md) | Semana 3 — CCAA #1 completa (Pasos 7–8) |

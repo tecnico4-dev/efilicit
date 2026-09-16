@@ -119,6 +119,14 @@ Detalle de secretos: [`.github/README.md`](../.github/README.md).
 
 Tras merge a `main`: Actions → **Ingest PLACSP** → syndication `placsp_agregadas` + mode `dry-run`.
 
+### Catalunya (Paso 8.5)
+
+Workflow: [`.github/workflows/ingest-catalunya.yml`](../.github/workflows/ingest-catalunya.yml)
+
+1. Actions → **Ingest Catalunya** → **Run workflow**.
+2. Rama `tecnico4/semana-03` (hasta merge) + mode **`dry-run`**.
+3. `fixture-db` / `live`: mismos secrets; en live mantener `max_pages` bajo.
+
 ## Cierre Semana 2 (Paso 10)
 
 Regresión local:
