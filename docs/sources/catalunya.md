@@ -139,7 +139,7 @@ discover (páginas) → fetch (JSON) → validate → RAW Storage
 |---|---|
 | Discover + fetch + parse | OK en Paso 7 (`SocrataConnector`) |
 | Normalize + identidad | OK en Paso 7 (reuso etapas comunes; tests fixture) |
-| RAW `raw/catalunya/…` + `source_artifacts` | Minipaso 8.2 |
+| RAW `raw/catalunya/…` + `source_artifacts` | OK (Paso 8.2) |
 | Upsert + `source_sync` + `artifact_id` | Minipaso 8.3 |
 | CLI `--fixture` / `--dry-run` | Minipaso 8.4 |
 | Workflow Actions manual | Minipaso 8.5 |
@@ -155,6 +155,7 @@ discover (páginas) → fetch (JSON) → validate → RAW Storage
 - **Familia:** `SocrataConnector` en `efilicit_ingestion.connectors.socrata`.
 - **Preset:** `CATALUNYA` (`source_code=catalunya`, dataset `ybgg-dgi6`).
 - **Fetch:** timeout / retry / `max_bytes` / checksum; `fetch_transport` inyectable — **sin red en unit tests**.
+- **RAW (Paso 8.2):** `fetch_validate_and_store_raw` + `validate_artifact` (JSON no vacío) → Storage `raw/catalunya/AAAA/MM/DD/...` + `source_artifacts`.
 - Fixtures: `ingestion/tests/fixtures/catalunya/`.
 - Stack aprobado: `httpx` + `tenacity` + Pydantic; RAW en Supabase Storage; sin Redis/colas.
 

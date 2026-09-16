@@ -15,7 +15,7 @@ Los pasos globales (1–10) se mantienen. Los Pasos **3**, **4** y **8** se desg
 | 5. Workflow/job fuente estatal | OK | `ingest-placsp.yml` + input `syndication=placsp_agregadas`; dry-run default; cron off |
 | 6. Adaptador CSV genérico (o N/A) | N/A | Familia CSV no priorizada; reserva CSV → conector puntual |
 | 7. Adaptador REST/Socrata (o N/A) | OK | `SocrataConnector` + preset `CATALUNYA` (`ybgg-dgi6`); ficha + tests sin red |
-| 8. CCAA propia #1 | Parcial | 8.1 OK; siguientes 8.2–8.5 (`catalunya`) |
+| 8. CCAA propia #1 | Parcial | 8.1–8.2 OK; siguientes 8.3–8.5 (`catalunya`) |
 | 9. CCAA propia #2 (+) | — | Objetivo: `euskadi`; si bloqueo → siguiente de la cola |
 | 10. Catálogo + regresión + cierre | — | `docs/sources/README.md`, tests, CHANGELOG, ADR |
 
@@ -43,7 +43,7 @@ Parse/normalize del adaptador ya cubiertos en Paso 7.
 | Minipaso | Estado | Notas |
 |---|---|---|
 | 8.1 Documentación ficha CCAA #1 | OK | `docs/sources/catalunya.md` alcance E2E (RAW/CLI/workflow) |
-| 8.2 Validar + guardar RAW Storage | — | Prefijo `raw/catalunya/`; helpers Semana 2 |
+| 8.2 Validar + guardar RAW Storage | OK | Prefijo `raw/catalunya/`; helpers Semana 2; JSON page; tests mock (+ live skip) |
 | 8.3 Upsert + `source_sync` + trazabilidad | — | Unique `(catalunya, id_intern)`; reejecutar no duplica |
 | 8.4 CLI / E2E local controlado | — | `--fixture` / `--dry-run` sin red SODA |
 | 8.5 Workflow/job controlado | — | Manual; dry-run default; cron off |

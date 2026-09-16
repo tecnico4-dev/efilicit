@@ -233,6 +233,7 @@ Registro de lo acordado al cerrar (o antes de) cada paso:
 | Tras Paso 5 | Verificación live local `placsp_agregadas` (mes en curso + idempotencia) | Mismo patrón que Semana 2; documentado en [docs/pruebas.md](../pruebas.md) Parte B |
 | Paso 7 | Adaptador Socrata + preset `catalunya` (`ybgg-dgi6`) | `SocrataConnector` discover/fetch/parse; ficha; tests sin red; E2E CLI → Paso 8 |
 | Paso 8.1 | Ficha `catalunya` ampliada a alcance E2E CCAA #1 | RAW/upsert/CLI/workflow documentados como minipasos 8.2–8.5 |
+| Paso 8.2 | RAW `catalunya` reutiliza `fetch_validate_and_store_raw` | Prefijo Storage `catalunya`; validate JSON; tests sin red |
 
 ---
 
