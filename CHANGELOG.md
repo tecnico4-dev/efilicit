@@ -55,6 +55,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Semana 3 Paso 7: adaptador REST/Socrata (`SocrataConnector`) + preset `catalunya` (`ybgg-dgi6`); ficha y tests sin red.
 - Semana 3 Paso 8.1: ficha `docs/sources/catalunya.md` ampliada al alcance E2E CCAA #1 (minipasos 8.2–8.5).
 - Semana 3 Paso 8.2: validate + RAW Storage para `catalunya` (prefijo `raw/catalunya/`, tests sin red).
+- Semana 3 Paso 8.3: upsert canónico + `source_sync` + trazabilidad para `catalunya` (idempotente; tests sin red + Postgres opcional).
 
 ### Changed
 
