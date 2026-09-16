@@ -1,6 +1,6 @@
 # Semana 3 — Plan: escalado estatal + primeras CCAA
 
-> **Estado:** en curso (Pasos 1–3 OK; 4.1–4.2 OK; siguiente 4.3 normalize).  
+> **Estado:** en curso (Pasos 1–3 OK; 4.1–4.3 OK; siguiente 4.4 upsert).  
 > **Checklist:** [fase3-checklist.md](fase3-checklist.md)  
 > **Precondición:** Semana 2 cerrada ([fase2-checklist.md](fase2-checklist.md)).  
 > **Norma:** `docs/00`–`04` y `.cursor/rules/`. Reutilizar contrato `SourceConnector` + pipeline + upsert canónico de Semanas 1–2. ADR solo si hace falta cambiar arquitectura de verdad.  
@@ -117,11 +117,13 @@ Reutilizar el parser `lxml` de Semana 2 sobre el artefacto agregadas (misma fami
 
 **Hecho:** mismo `parse_placsp_artifact` / `PlacspConnector.parse`; tests con fixtures CODICE de Semana 2 + ZIP miembro `PlataformasAgregadasSinMenores.atom`; sin red.
 
-#### 4.3 Normalize + identidad de organismos — pendiente
+#### 4.3 Normalize + identidad de organismos — HECHO
 
 Mapear a `payload.canonical` (fechas, importes, CPV, estados…) y `resolve_identity` (NIF/CIF prioritario; confidence HIGH/MEDIUM/LOW/UNRESOLVED). Reutilizar etapas del pipeline común.
 
 **Listo cuando:** tests de normalización/identidad sobre fixtures agregadas (o fixtures CODICE compartidos con este `source_code`).
+
+**Hecho:** `stages.normalize` + `stages.resolve_identity` sin cambios; tests agregadas (válido/incompleto + cadena parse→normalize→identity); sin red.
 
 #### 4.4 Upsert canónico + `source_sync` + trazabilidad — pendiente
 
@@ -199,6 +201,7 @@ Registro de lo acordado al cerrar (o antes de) cada paso:
 | Paso 3.2 | Fetch agregadas reutiliza `download_bytes` + tests sin red | Misma política timeout/retry/`max_bytes`; URL `sindicacion_1044`; sin descarga live en CI |
 | Paso 4.1 | RAW agregadas reutiliza `fetch_validate_and_store_raw` | Prefijo Storage `placsp_agregadas`; validate ZIP; sin parse aún |
 | Paso 4.2 | Parse agregadas reutiliza `parse_placsp_artifact` | Misma familia CODICE; fixtures Semana 2 + nombre ZIP agregadas |
+| Paso 4.3 | Normalize + identidad reutiliza `stages.normalize` / `resolve_identity` | Sin cambios en etapas; tests agregadas HIGH/LOW |
 
 ---
 
