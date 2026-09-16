@@ -14,7 +14,7 @@ Los pasos globales (1–10) se mantienen. Los Pasos **3** y **4** se desglosan e
 | 4. RAW + parse + normalize + upsert (estatal) | OK | 4.1–4.5; `run-placsp --syndication placsp_agregadas` |
 | 5. Workflow/job fuente estatal | OK | `ingest-placsp.yml` + input `syndication=placsp_agregadas`; dry-run default; cron off |
 | 6. Adaptador CSV genérico (o N/A) | N/A | Familia CSV no priorizada; reserva CSV → conector puntual |
-| 7. Adaptador REST/Socrata (o N/A) | — | Motivado por `catalunya` (+ `euskadi` REST) |
+| 7. Adaptador REST/Socrata (o N/A) | OK | `SocrataConnector` + preset `CATALUNYA` (`ybgg-dgi6`); ficha + tests sin red |
 | 8. CCAA propia #1 | — | Objetivo: `catalunya`; si bloqueo → siguiente de la cola |
 | 9. CCAA propia #2 (+) | — | Objetivo: `euskadi`; si bloqueo → siguiente de la cola |
 | 10. Catálogo + regresión + cierre | — | `docs/sources/README.md`, tests, CHANGELOG, ADR |

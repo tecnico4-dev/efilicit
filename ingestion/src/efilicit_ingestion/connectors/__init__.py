@@ -2,6 +2,13 @@
 
 from efilicit_ingestion.connectors.placsp import PlacspConnector
 from efilicit_ingestion.connectors.protocol import SourceConnector
+from efilicit_ingestion.connectors.socrata import CATALUNYA, SocrataConnector
 from efilicit_ingestion.connectors.stub import StubSourceConnector
 
-__all__ = ["SourceConnector", "StubSourceConnector", "PlacspConnector"]
+__all__ = [
+    "SourceConnector",
+    "StubSourceConnector",
+    "PlacspConnector",
+    "SocrataConnector",
+    "CATALUNYA",
+]

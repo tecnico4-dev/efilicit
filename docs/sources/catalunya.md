@@ -1,0 +1,123 @@
+# Catalunya — Contractació pública (PSCP / Transparència)
+
+> **source_code:** `catalunya`  
+> **Estado en el proyecto:** Semana 3 — adaptador REST/Socrata (Paso 7)  
+> **Última revisión de esta ficha:** 2026-09-16  
+> **Scraping:** no (existe API Open Data SODA / Socrata)  
+> **Adaptador:** Socrata-reuse (`SocrataConnector` + dataset `ybgg-dgi6`)
+
+---
+
+## 1. Organismo / fuente
+
+| Campo | Valor |
+|---|---|
+| Nombre corto | Catalunya PSCP |
+| Nombre completo | Contractació pública a Catalunya — publicacions a la Plataforma de serveis de contractació pública |
+| Organismo / portal Open Data | Transparència Catalunya / Generalitat |
+| Portal datos | https://analisi.transparenciacatalunya.cat/ |
+| Dataset (vista) | https://analisi.transparenciacatalunya.cat/d/ybgg-dgi6 |
+| Catálogo datos.gob.es | https://datos.gob.es/es/catalogo/a09002970-contratacion-publica-en-catalunya-publicaciones-en-la-plataforma-de-servicios-de-contratacion-publica |
+
+---
+
+## 2. Qué dataset usamos
+
+**Conjunto objetivo:**
+
+> Publicaciones de la actividad contractual de los órganos de contratación de Catalunya en la PSCP (anuncios de licitación, adjudicación, formalización, etc.).
+
+| Campo | Valor |
+|---|---|
+| `source_code` | `catalunya` |
+| Dataset ID (Socrata) | `ybgg-dgi6` |
+| Dominio SODA | `analisi.transparenciacatalunya.cat` |
+| Endpoint JSON | `https://analisi.transparenciacatalunya.cat/resource/ybgg-dgi6.json` |
+
+### Relación con otras fuentes
+
+| `source_code` | Relación |
+|---|---|
+| `placsp_agregadas` | Puede solapar cobertura territorial; deduplicación multi-fuente → Semana 4 |
+| `placsp` | Perfiles alojados en PLACSP (estatal); no mezclar |
+
+---
+
+## 3. Mecanismo de acceso
+
+| Preferencia | ¿Aplica? | Detalle |
+|---|---|---|
+| 1. API oficial Open Data | Sí — **elegido** | SODA / Socrata Consumer API (JSON) |
+| 2. Export CSV masivo | Disponible | No es el camino primario del adaptador |
+| 3. Scraping | No | No necesario |
+
+**Decisión:** HTTP GET paginado (`$limit` / `$offset` / `$order`) sobre el resource JSON. Sin autenticación obligatoria para consumo abierto; `X-App-Token` opcional si hace falta más cuota (fuera de código versionado).
+
+---
+
+## 4. Formato
+
+| Aspecto | Detalle |
+|---|---|
+| Transporte | JSON array (una página SODA) |
+| Encoding | UTF-8 |
+| Paginación | `$limit` (máx. práctico ≤ 50 000) + `$offset` |
+| Identidad de fila | `id_intern` (UUID de publicación) → `source_record_id` |
+| Filas sin `id_intern` | Se omiten |
+
+---
+
+## 5. Identificadores
+
+| Concepto | Campo / regla |
+|---|---|
+| Clave de artefacto | `{dataset_id}_offset_{offset}_limit_{limit}.json` |
+| Clave de registro | `id_intern` |
+| Upsert canónico | Unique `(catalunya, source_tender_id)` con `source_tender_id = id_intern` |
+| Organismo | `nom_organ`; `codi_dir3` / `codi_organ` como `platform_id` (NIF/CIF suele ausente → confidence MEDIUM/LOW) |
+
+---
+
+## 6. Campos canónicos (mapeo MVP)
+
+El parser emite el mismo shape pre-canónico que PLACSP para reutilizar `stages.normalize` / `resolve_identity`:
+
+| Canónico / payload | Origen Socrata |
+|---|---|
+| `title` | `denominacio` / `objecte_contracte` |
+| `status` | `fase_publicacio` → códigos tipo `PUB` / `ADJ` / … |
+| `contract_type` | `tipus_contracte` → `1`/`2`/`3` |
+| `estimated_value` | `valor_estimat_contracte` / `pressupost_licitacio_sense` |
+| `cpv_codes` | `codi_cpv` |
+| `nuts_codes` | `codi_nuts` |
+| `deadline_at` | `termini_presentacio_ofertes` |
+| `updated_at` | `data_publicacio_anunci` / `data_publicacio_contracte` |
+| `publication_url` | `enllac_publicacio.url` |
+| `authority.name` | `nom_organ` |
+| `authority.platform_id` | `codi_dir3` o `codi_organ` |
+
+---
+
+## 7. Incremental / cursor
+
+- Cursor de sync = último `artifact_key` de página (orden léxico por offset).
+- Ventana de discover: `start_offset` + `max_pages` × `page_size` (configurable en el conector).
+- Filtros SoQL adicionales (`$where` por fechas) → refinamiento en Paso 8 si hace falta.
+
+---
+
+## 8. Observaciones para el conector
+
+- **Familia:** `SocrataConnector` en `efilicit_ingestion.connectors.socrata`.
+- **Preset:** `CATALUNYA` (`source_code=catalunya`, dataset `ybgg-dgi6`).
+- **Fetch:** timeout / retry / `max_bytes` / checksum; `fetch_transport` inyectable — **sin red en unit tests**.
+- **RAW:** JSON de página bajo prefijo `raw/catalunya/…` (cableado E2E / CLI en Paso 8).
+- Fixtures: `ingestion/tests/fixtures/catalunya/`.
+
+---
+
+## 9. Referencias
+
+1. Dataset Transparència Catalunya: https://analisi.transparenciacatalunya.cat/d/ybgg-dgi6  
+2. SODA Consumer API: https://dev.socrata.com/consumers/getting-started.html  
+3. Catálogo de referencia (no fuente de verdad): https://contratacionabierta.com/

@@ -201,6 +201,7 @@ Registro de lo acordado al cerrar (o antes de) cada paso:
 | Paso 4.5 | CLI `run-placsp --syndication placsp_agregadas` | Fixture Atom wrap con nombre agregadas; dry-run + Postgres opcional |
 | Paso 5 | Workflow `ingest-placsp.yml` + input `syndication` | Manual; dry-run default; cron off; mismos secrets que Semana 2 |
 | Tras Paso 5 | Verificación live local `placsp_agregadas` (mes en curso + idempotencia) | Mismo patrón que Semana 2; documentado en [docs/pruebas.md](../pruebas.md) Parte B |
+| Paso 7 | Adaptador Socrata + preset `catalunya` (`ybgg-dgi6`) | `SocrataConnector` discover/fetch/parse; ficha; tests sin red; E2E CLI → Paso 8 |
 
 ---
 
@@ -209,6 +210,6 @@ Registro de lo acordado al cerrar (o antes de) cada paso:
 - [docs/04-roadmap-mvp.md](../04-roadmap-mvp.md) § Semana 3 (y §1 corte MVP: estatales + CCAA)  
 - [docs/01-arquitectura-fija.md](../01-arquitectura-fija.md) §§ 5–8  
 - [docs/00-onboarding.md](../00-onboarding.md) (fuentes, RAW, `source_sync`)  
-- [docs/sources/placsp.md](../sources/placsp.md) · [docs/sources/placsp_agregadas.md](../sources/placsp_agregadas.md) · [docs/sources/README.md](../sources/README.md)  
+- [docs/sources/placsp.md](../sources/placsp.md) · [docs/sources/placsp_agregadas.md](../sources/placsp_agregadas.md) · [docs/sources/catalunya.md](../sources/catalunya.md) · [docs/sources/README.md](../sources/README.md)  
 - [docs/pruebas.md](../pruebas.md) (Parte B: live `placsp_agregadas`)  
 - [fase3-checklist.md](fase3-checklist.md) · [fase2-checklist.md](fase2-checklist.md) · [semana02-plan.md](semana02-plan.md)

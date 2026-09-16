@@ -1,0 +1,52 @@
+[
+  {
+    "codi_ambit": "1500002",
+    "nom_ambit": "Entitats de l'administració local",
+    "codi_organ": "00000001",
+    "nom_organ": "Ajuntament Fixture de Proves",
+    "codi_dir3": "L01000001",
+    "codi_expedient": "EXP/2026/0001",
+    "tipus_contracte": "Subministraments",
+    "procediment": "Obert",
+    "fase_publicacio": "Anunci de licitació",
+    "denominacio": "Suministro de material de oficina fixture",
+    "objecte_contracte": "Adquisición de material de oficina para pruebas EfiLicit",
+    "valor_estimat_contracte": "12500.50",
+    "codi_nuts": "ES511",
+    "codi_cpv": "30192700",
+    "termini_presentacio_ofertes": "2026-10-01T14:00:00.000",
+    "data_publicacio_anunci": "2026-09-10T10:00:00.000",
+    "enllac_publicacio": {
+      "url": "https://example.invalid/catalunya/publicacio/fixture-1"
+    },
+    "es_agregada": "NO",
+    "id_intern": "aaaaaaaa-bbbb-cccc-dddd-000000000001"
+  },
+  {
+    "codi_ambit": "1500002",
+    "nom_ambit": "Entitats de l'administració local",
+    "codi_organ": "00000002",
+    "nom_organ": "Consell Fixture Sense Id",
+    "codi_expedient": "EXP/2026/SKIP",
+    "fase_publicacio": "Anunci de licitació",
+    "denominacio": "Fila sin identidad estable (debe omitirse)",
+    "objecte_contracte": "Sin id_intern"
+  },
+  {
+    "codi_organ": "00000003",
+    "nom_organ": "Diputació Fixture",
+    "codi_dir3": "L01000003",
+    "codi_expedient": "EXP/2026/0002",
+    "tipus_contracte": "Serveis",
+    "fase_publicacio": "Adjudicació",
+    "denominacio": "Servei de manteniment fixture",
+    "objecte_contracte": "Manteniment d'instal·lacions",
+    "pressupost_licitacio_sense": "9800.00",
+    "codi_cpv": "50000000",
+    "data_publicacio_anunci": "2026-09-12T09:30:00.000",
+    "enllac_publicacio": {
+      "url": "https://example.invalid/catalunya/publicacio/fixture-2"
+    },
+    "id_intern": "aaaaaaaa-bbbb-cccc-dddd-000000000002"
+  }
+]

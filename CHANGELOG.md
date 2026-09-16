@@ -52,6 +52,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Semana 3 Paso 4.4: upsert canónico + `source_sync` + trazabilidad para `placsp_agregadas` (idempotente; tests sin red + Postgres opcional).
 - Semana 3 Paso 4.5: CLI `run-placsp --syndication placsp_agregadas` con `--fixture` / `--dry-run` (E2E local sin red PLACSP).
 - Semana 3 Paso 5: workflow `ingest-placsp.yml` admite `syndication=placsp_agregadas` (manual, dry-run por defecto, cron off).
+- Semana 3 Paso 7: adaptador REST/Socrata (`SocrataConnector`) + preset `catalunya` (`ybgg-dgi6`); ficha y tests sin red.
 
 ### Changed
 
