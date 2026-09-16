@@ -8,13 +8,19 @@ from datetime import date
 from pathlib import Path
 
 from efilicit_ingestion import __version__
+from efilicit_ingestion.connectors.placsp.urls import PLACSP, PLACSP_AGREGADAS, PlacspSyndication
 from efilicit_ingestion.run_placsp import PlacspRunConfig, format_result, run_placsp
+
+_SYNDICATIONS: dict[str, PlacspSyndication] = {
+    PLACSP.source_code: PLACSP,
+    PLACSP_AGREGADAS.source_code: PLACSP_AGREGADAS,
+}
 
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="efilicit-ingestion",
-        description="EfiLicit ingestion CLI (PLACSP vertical slice in Semana 2).",
+        description="EfiLicit ingestion CLI (PLACSP syndications).",
     )
     parser.add_argument(
         "--version",
@@ -27,6 +33,12 @@ def build_parser() -> argparse.ArgumentParser:
     placsp = sub.add_parser(
         "run-placsp",
         help="Run PLACSP pipeline end-to-end (fixture and/or local Supabase).",
+    )
+    placsp.add_argument(
+        "--syndication",
+        choices=sorted(_SYNDICATIONS),
+        default=PLACSP.source_code,
+        help="PLACSP dataset (default: placsp perfiles; placsp_agregadas = Semana 3).",
     )
     placsp.add_argument(
         "--fixture",
@@ -105,6 +117,7 @@ def _cmd_run_placsp(args: argparse.Namespace) -> int:
         dry_run=bool(args.dry_run),
         run_id=args.run_id,
         use_storage=not bool(args.no_storage),
+        syndication=_SYNDICATIONS[args.syndication],
     )
 
     try:

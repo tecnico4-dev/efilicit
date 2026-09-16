@@ -252,6 +252,7 @@ No garantiza el 100 % de todos los contratos locales de cada CCAA. Algunas comun
 - **Parse (Paso 4.2):** reutilizar `parse_placsp_artifact` (Atom/CODICE); ZIP base `PlataformasAgregadasSinMenores.atom`.
 - **Normalize + identidad (Paso 4.3):** reutilizar `stages.normalize` / `stages.resolve_identity` (NIF/CIF prioritario; confidence HIGH/MEDIUM/LOW).
 - **Upsert (Paso 4.4):** reutilizar `CanonicalRepository` / `run_pipeline`; unique `(placsp_agregadas, source_tender_id)`; `artifact_id` en `tender_sources`; `source_sync` con contadores.
+- **CLI E2E (Paso 4.5):** `run-placsp --syndication placsp_agregadas --fixture … --dry-run` (mismo entrypoint que perfiles).
 - Stack aprobado: `httpx` + `lxml` + `tenacity` + Pydantic; RAW en Supabase Storage.
 - Fixtures Atom/ZIP propios de este dataset (o reutilizar fixtures CODICE si la estructura es idéntica y se etiquetan con este `source_code` en tests).
 - Tests unitarios sin red.

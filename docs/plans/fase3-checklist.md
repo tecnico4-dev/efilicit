@@ -11,7 +11,7 @@ Los pasos globales (1–10) se mantienen. Los Pasos **3** y **4** se desglosan e
 | 1. Inventario priorizado (estatal + primeras CCAA) | OK | Estatal: agregadas→menores. CCAA cola: catalunya→euskadi + reservas |
 | 2. Ficha `docs/sources/` fuente estatal ampliada | OK | `placsp_agregadas.md` (`sindicacion_1044`) |
 | 3. Conector estatal (discover + fetch) | OK | Minipasos 3.1–3.2; ver tabla abajo |
-| 4. RAW + parse + normalize + upsert (estatal) | Parcial | 4.1–4.4 OK; siguiente 4.5 CLI/E2E |
+| 4. RAW + parse + normalize + upsert (estatal) | OK | 4.1–4.5; `run-placsp --syndication placsp_agregadas` |
 | 5. Workflow/job fuente estatal | — | Manual/controlado; secretos fuera del código |
 | 6. Adaptador CSV genérico (o N/A) | N/A | Familia CSV no priorizada; reserva CSV → conector puntual |
 | 7. Adaptador REST/Socrata (o N/A) | — | Motivado por `catalunya` (+ `euskadi` REST) |
@@ -34,7 +34,7 @@ Los pasos globales (1–10) se mantienen. Los Pasos **3** y **4** se desglosan e
 | 4.2 Parse Atom/CODICE → `SourceRecord` | OK | Reuso parser Semana 2; ZIP `PlataformasAgregadasSinMenores.atom`; tests sin red |
 | 4.3 Normalize + identidad organismos | OK | Reuso etapas Semana 2; tests agregadas HIGH/LOW; sin red |
 | 4.4 Upsert canónico + `source_sync` + trazabilidad | OK | Reuso repo Semana 2; unique `(placsp_agregadas, …)`; pipeline sync + tests |
-| 4.5 CLI / E2E local controlado | — | Fixture/dry-run; base para el Paso 5 (workflow) |
+| 4.5 CLI / E2E local controlado | OK | `run-placsp --syndication placsp_agregadas --fixture --dry-run` |
 
 ## Criterios transversales (cierre Semana 3)
 

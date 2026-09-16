@@ -11,15 +11,15 @@ uv run python -c "import sys; print(sys.version)"
 uv run python -m efilicit_ingestion.cli --help
 ```
 
-## Estado (Semana 2)
+## Estado
 
-PLACSP vertical slice cableado en CLI:
+PLACSP cableado en CLI (`run-placsp`): perfiles (`placsp`) y agregadas (`placsp_agregadas` vía `--syndication`).
 
 `discover` → `fetch` → RAW → `parse` → normalize/identidad → upsert canónico.
 
-## Corrida E2E local (Paso 8)
+## Corrida E2E local
 
-### Dry-run (sin escribir DB)
+### Dry-run perfiles (sin escribir DB)
 
 ```powershell
 cd ingestion
@@ -29,7 +29,20 @@ uv run python -m efilicit_ingestion.cli run-placsp `
   --as-of 2026-09-11
 ```
 
-Esperado: `status=success`, `records_seen=1`, `raw_path=raw/placsp/...`.
+Esperado: `status=success`, `source_code=placsp`, `records_seen=1`, `raw_path=raw/placsp/...`.
+
+### Dry-run agregadas (Semana 3 Paso 4.5)
+
+```powershell
+cd ingestion
+uv run python -m efilicit_ingestion.cli run-placsp `
+  --syndication placsp_agregadas `
+  --fixture tests/fixtures/placsp/valid_single_entry.atom `
+  --dry-run `
+  --as-of 2026-09-15
+```
+
+Esperado: `status=success`, `source_code=placsp_agregadas`, `raw_path=raw/placsp_agregadas/...`.
 
 ### Contra Supabase local (Studio)
 
@@ -44,13 +57,24 @@ uv run python -m efilicit_ingestion.cli run-placsp `
   --run-id demo-placsp-1
 ```
 
+Agregadas (mismo fixture CODICE; distinto `source_code`):
+
+```powershell
+uv run python -m efilicit_ingestion.cli run-placsp `
+  --syndication placsp_agregadas `
+  --fixture tests/fixtures/placsp/valid_single_entry.atom `
+  --no-storage `
+  --as-of 2026-09-15 `
+  --run-id demo-agregadas-1
+```
+
 (`--no-storage` evita depender de la service_role; añade Storage omitiendo ese flag si tienes `SUPABASE_SERVICE_ROLE_KEY`.)
 
 Luego en Studio (`http://127.0.0.1:54323`):
 
-1. `source_sync` → `run_id` = `demo-placsp-1`, status `success`
+1. `source_sync` → `run_id` indicado, status `success`
 2. `source_artifacts` → path/checksum del ZIP fixture
-3. `tenders` / `tender_sources` → licitación fixture
+3. `tenders` / `tender_sources` → licitación fixture (`source_code` = `placsp` o `placsp_agregadas`)
 4. Reejecutar el mismo comando con otro `--run-id` → no duplica `tender_sources`
 
 ### Live PLACSP (opcional, red real)
