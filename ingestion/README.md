@@ -85,18 +85,18 @@ uv run python -m efilicit_ingestion.cli run-placsp --from-month 2026-09 --to-mon
 
 Solo cuando quieras probar descarga oficial (ZIPs pueden ser grandes).
 
-## GitHub Actions (Paso 9)
+## GitHub Actions
 
 Workflow: [`.github/workflows/ingest-placsp.yml`](../.github/workflows/ingest-placsp.yml)
 
 1. Repo → **Actions** → **Ingest PLACSP** → **Run workflow**.
-2. Empieza con mode **`dry-run`** (sin secretos).
+2. Elige **syndication** (`placsp` o `placsp_agregadas`) y mode **`dry-run`** (sin secretos).
 3. Para escribir en un entorno remoto: configura secrets (`EFILICIT_DATABASE_URL`, y si subes RAW también `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY`) y elige `fixture-db` o `live`.
 4. Cron desactivado en el YAML hasta acordar horario y destino.
 
 Detalle de secretos: [`.github/README.md`](../.github/README.md).
 
-Tras merge a `main`: Actions → **Ingest PLACSP** → **Run workflow** → mode `dry-run` (comprueba el YAML en GitHub).
+Tras merge a `main`: Actions → **Ingest PLACSP** → syndication `placsp_agregadas` + mode `dry-run`.
 
 ## Cierre Semana 2 (Paso 10)
 

@@ -1,11 +1,19 @@
-# Semana 2 / Paso 9 — ingesta PLACSP vía GitHub Actions.
+# Semana 2 / Paso 9 + Semana 3 / Paso 5 — ingesta PLACSP vía GitHub Actions.
 # Por defecto: dry-run con fixture (sin secretos, sin writes).
 # Escritura a DB/Storage o descarga live: solo workflow_dispatch explícito + secrets.
+# syndication: placsp (perfiles) o placsp_agregadas (Semana 3 estatal).
 name: Ingest PLACSP
 
 on:
   workflow_dispatch:
     inputs:
+      syndication:
+        description: "Dataset PLACSP (placsp = perfiles 643; placsp_agregadas = sindicación 1044)"
+        type: choice
+        options:
+          - placsp
+          - placsp_agregadas
+        default: placsp
       mode:
         description: >
           dry-run = fixture in-memory (safe).
@@ -42,12 +50,12 @@ on:
   #   - cron: "0 5 * * 1"
 
 concurrency:
-  group: ingest-placsp
+  group: ingest-placsp-${{ inputs.syndication }}-${{ inputs.mode }}
   cancel-in-progress: false
 
 jobs:
   ingest:
-    name: Run PLACSP (${{ inputs.mode }})
+    name: Run ${{ inputs.syndication }} (${{ inputs.mode }})
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -94,9 +102,10 @@ jobs:
         run: |
           set -euo pipefail
           MODE="${{ inputs.mode }}"
+          SYNDICATION="${{ inputs.syndication }}"
           AS_OF="${{ inputs.as_of }}"
           RUN_ID="${{ inputs.run_id }}"
-          EXTRA=()
+          EXTRA=(--syndication "$SYNDICATION")
           if [ -n "$AS_OF" ]; then
             EXTRA+=(--as-of "$AS_OF")
           fi

@@ -11,11 +11,12 @@ En cada push/PR a `main` ejecuta:
 
 Comprobar runs: https://github.com/tecnico4-dev/efilicit/actions
 
-## Ingesta PLACSP (Semana 2)
+## Ingesta PLACSP (Semana 2 + Semana 3)
 
 Workflow: [`.github/workflows/ingest-placsp.yml`](workflows/ingest-placsp.yml)
 
 - Disparo **manual** (`workflow_dispatch`). Cron **comentado** a propósito (activar solo cuando haya entorno + secrets acordados).
+- Input **`syndication`**: `placsp` (perfiles, default) o `placsp_agregadas` (estatal Semana 3).
 - Modo por defecto: **`dry-run`** (fixture in-memory; no necesita secretos).
 - Modos con escritura: `fixture-db` / `live` — exigen secrets y fallan si faltan.
 
@@ -25,7 +26,7 @@ Workflow: [`.github/workflows/ingest-placsp.yml`](workflows/ingest-placsp.yml)
 | `SUPABASE_URL` | API Storage si `upload_storage=true` |
 | `SUPABASE_SERVICE_ROLE_KEY` | Upload RAW si `upload_storage=true` (solo proceso confiable) |
 
-Comprobar: Actions → **Ingest PLACSP** → **Run workflow** → mode `dry-run`.
+Comprobar: Actions → **Ingest PLACSP** → **Run workflow** → syndication `placsp_agregadas` + mode `dry-run`.
 
 ## Protección de `main` — decisión del proyecto
 

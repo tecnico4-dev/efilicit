@@ -12,7 +12,7 @@ Los pasos globales (1–10) se mantienen. Los Pasos **3** y **4** se desglosan e
 | 2. Ficha `docs/sources/` fuente estatal ampliada | OK | `placsp_agregadas.md` (`sindicacion_1044`) |
 | 3. Conector estatal (discover + fetch) | OK | Minipasos 3.1–3.2; ver tabla abajo |
 | 4. RAW + parse + normalize + upsert (estatal) | OK | 4.1–4.5; `run-placsp --syndication placsp_agregadas` |
-| 5. Workflow/job fuente estatal | — | Manual/controlado; secretos fuera del código |
+| 5. Workflow/job fuente estatal | OK | `ingest-placsp.yml` + input `syndication=placsp_agregadas`; dry-run default; cron off |
 | 6. Adaptador CSV genérico (o N/A) | N/A | Familia CSV no priorizada; reserva CSV → conector puntual |
 | 7. Adaptador REST/Socrata (o N/A) | — | Motivado por `catalunya` (+ `euskadi` REST) |
 | 8. CCAA propia #1 | — | Objetivo: `catalunya`; si bloqueo → siguiente de la cola |

@@ -198,6 +198,7 @@ Registro de lo acordado al cerrar (o antes de) cada paso:
 | Paso 4.3 | Normalize + identidad reutiliza `stages.normalize` / `resolve_identity` | Sin cambios en etapas; tests agregadas HIGH/LOW |
 | Paso 4.4 | Upsert reutiliza `InMemory`/`PostgresCanonicalRepository` + pipeline | Unique `(placsp_agregadas, source_tender_id)`; no colisión con `placsp`; `source_sync` success |
 | Paso 4.5 | CLI `run-placsp --syndication placsp_agregadas` | Fixture Atom wrap con nombre agregadas; dry-run + Postgres opcional |
+| Paso 5 | Workflow `ingest-placsp.yml` + input `syndication` | Manual; dry-run default; cron off; mismos secrets que Semana 2 |
 
 ---
 
