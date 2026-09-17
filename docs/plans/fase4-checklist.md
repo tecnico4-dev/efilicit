@@ -10,7 +10,7 @@ El estado se marca **aquí**, no con “— OK” en el plan.
 | Ítem | Estado | Notas |
 |---|---|---|
 | 1. Inventario cobertura 17 CCAA + leftover `placsp_menores` | OK | Docs en `docs/sources/`; 0 CCAA extra |
-| 2. `placsp_menores` (reuso PLACSP) | Pendiente | Minipasos 2.1–2.4 (ficha 2.1 ya OK) |
+| 2. `placsp_menores` (reuso PLACSP) | Pendiente | Minipasos 2.1–2.4 (2.1–2.3 OK) |
 | 3. Matriz 17 CCAA + CCAA propia extra (o N/A) | OK | [cobertura-ccaa.md](../sources/cobertura-ccaa.md); 3.2 N/A |
 | 4. Esquema matching (`tender_sources` / migración) | Pendiente | `match_method`, `match_score`, `matched_at`, `review_status` |
 | 5. Matching en pipeline común | Pendiente | Sustituir pass-through; lookup canónico |
@@ -24,7 +24,7 @@ El estado se marca **aquí**, no con “— OK” en el plan.
 |---|---|---|
 | 2.1 Ficha `docs/sources/placsp_menores.md` | OK | Misma profundidad que agregadas/perfiles |
 | 2.2 Discover + fetch | OK | `PLACSP_MENORES` / `sindicacion_1143`; tests sin red |
-| 2.3 RAW + parse + normalize + upsert | Pendiente | Prefijo `raw/placsp_menores/`; unique `(placsp_menores, …)` |
+| 2.3 RAW + parse + normalize + upsert | OK | Prefijo `raw/placsp_menores/`; unique `(placsp_menores, …)`; tests sin red |
 | 2.4 CLI + workflow | Pendiente | `run-placsp --syndication placsp_menores`; dry-run default; cron off |
 
 ## Paso 3 — minipasos (cobertura territorial)

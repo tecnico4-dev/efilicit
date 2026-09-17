@@ -1,4 +1,4 @@
-"""Tests for RAW validate + Supabase Storage store (placsp + placsp_agregadas)."""
+"""Tests for RAW validate + Supabase Storage store (placsp + agregadas + menores)."""
 
 from __future__ import annotations
 
@@ -10,7 +10,11 @@ import httpx
 import psycopg
 import pytest
 
-from efilicit_ingestion.connectors.placsp import PLACSP_AGREGADAS, PlacspConnector
+from efilicit_ingestion.connectors.placsp import (
+    PLACSP_AGREGADAS,
+    PLACSP_MENORES,
+    PlacspConnector,
+)
 from efilicit_ingestion.connectors.placsp.fetch import sha256_hex
 from efilicit_ingestion.connectors.placsp.urls import (
     monthly_package_filename,
@@ -34,6 +38,7 @@ from efilicit_ingestion.pipeline.supabase_storage import (
 
 SOURCE_CODE = "placsp"
 AGREGADAS_SOURCE = "placsp_agregadas"
+MENORES_SOURCE = "placsp_menores"
 FAKE_ZIP = b"PK\x03\x04-efilicit-raw-fixture"
 
 
@@ -49,6 +54,14 @@ def _agregadas_artifact() -> RemoteArtifact:
     return RemoteArtifact(
         artifact_key=monthly_package_filename(2026, 9, PLACSP_AGREGADAS),
         source_url=monthly_package_url(2026, 9, PLACSP_AGREGADAS),
+        content_type="application/zip",
+    )
+
+
+def _menores_artifact() -> RemoteArtifact:
+    return RemoteArtifact(
+        artifact_key=monthly_package_filename(2026, 9, PLACSP_MENORES),
+        source_url=monthly_package_url(2026, 9, PLACSP_MENORES),
         content_type="application/zip",
     )
 
@@ -98,6 +111,27 @@ def test_build_raw_storage_path_agregadas_prefix() -> None:
         "placsp_agregadas/2026/09/15/PlataformasAgregadasSinMenores_202609.zip"
     )
     assert storage_path == f"raw/{object_key}"
+
+
+def test_build_raw_storage_path_menores_prefix() -> None:
+    storage_path, object_key = build_raw_storage_path(
+        MENORES_SOURCE,
+        "contratosMenoresPerfilesContratantes_202609.zip",
+        day="2026/09/17",
+    )
+    assert object_key == (
+        "placsp_menores/2026/09/17/contratosMenoresPerfilesContratantes_202609.zip"
+    )
+    assert storage_path == f"raw/{object_key}"
+
+
+def test_validate_artifact_menores_rejects_non_zip() -> None:
+    with pytest.raises(ValueError, match="ZIP"):
+        stages.validate_artifact(b"html-error-page", _menores_artifact())
+
+
+def test_validate_artifact_menores_accepts_zip_magic() -> None:
+    assert stages.validate_artifact(FAKE_ZIP, _menores_artifact()) == FAKE_ZIP
 
 
 def test_supabase_storage_upload_with_mock_http() -> None:
@@ -267,6 +301,72 @@ def test_fetch_validate_and_store_raw_agregadas_rejects_bad_payload() -> None:
         fetch_validate_and_store_raw(
             connector,
             _agregadas_artifact(),
+            artifact_store=store,
+        )
+    http.close()
+
+
+def test_fetch_validate_and_store_raw_menores_without_network() -> None:
+    """Paso 2.3: validate ZIP + store under raw/placsp_menores/."""
+    uploaded: dict[str, bytes] = {}
+
+    def storage_handler(request: httpx.Request) -> httpx.Response:
+        assert "/storage/v1/object/raw/placsp_menores/" in str(request.url)
+        uploaded[str(request.url)] = request.content
+        return httpx.Response(200, json={"ok": True})
+
+    def fetch_transport(url: str) -> tuple[int, dict[str, str], bytes]:
+        assert "sindicacion_1143" in url
+        assert url.endswith("contratosMenoresPerfilesContratantes_202609.zip")
+        return 200, {"content-type": "application/zip"}, FAKE_ZIP
+
+    http = httpx.Client(transport=httpx.MockTransport(storage_handler))
+    store = SupabaseStorageArtifactStore(
+        base_url="http://storage.test",
+        service_role_key="test-service-role",
+        http_client=http,
+    )
+    connector = PlacspConnector(
+        syndication=PLACSP_MENORES,
+        as_of=date(2026, 9, 17),
+        fetch_transport=fetch_transport,
+    )
+
+    stored = fetch_validate_and_store_raw(
+        connector,
+        _menores_artifact(),
+        artifact_store=store,
+    )
+    http.close()
+
+    assert connector.source_code == MENORES_SOURCE
+    assert stored.checksum == sha256_hex(FAKE_ZIP)
+    assert stored.storage_path.startswith("raw/placsp_menores/")
+    assert stored.artifact_key == "contratosMenoresPerfilesContratantes_202609.zip"
+    assert FAKE_ZIP in uploaded.values()
+
+
+def test_fetch_validate_and_store_raw_menores_rejects_bad_payload() -> None:
+    def fetch_transport(url: str) -> tuple[int, dict[str, str], bytes]:
+        _ = url
+        return 200, {"content-type": "application/zip"}, b"not-zip"
+
+    http = httpx.Client(
+        transport=httpx.MockTransport(lambda r: httpx.Response(200)),
+    )
+    connector = PlacspConnector(
+        syndication=PLACSP_MENORES,
+        fetch_transport=fetch_transport,
+    )
+    store = SupabaseStorageArtifactStore(
+        base_url="http://storage.test",
+        service_role_key="test-service-role",
+        http_client=http,
+    )
+    with pytest.raises(ValueError, match="ZIP"):
+        fetch_validate_and_store_raw(
+            connector,
+            _menores_artifact(),
             artifact_store=store,
         )
     http.close()
