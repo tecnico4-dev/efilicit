@@ -40,8 +40,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CLI `run-placsp`: pipeline PLACSP E2E local con `--fixture` / `--dry-run` (y escritura a Supabase local).
 - Workflow GitHub Actions `ingest-placsp.yml`: ingesta PLACSP manual (`dry-run` / `fixture-db` / `live`); cron desactivado; secretos fuera del código.
 - Cierre Semana 2: checklist Fase 2 completo; sin ADR nuevo (N/A — se implementó la arquitectura ya fijada).
-- Documento `docs/pruebas.md`: verificación local E2E con datos reales — `placsp` (Semana 2), `placsp_agregadas` y `catalunya` (Semana 3 / Paso 8.6); RAW → canónico + idempotencia.
+- Documento `docs/pruebas.md`: verificación local E2E con datos reales — `placsp` (Semana 2), `placsp_agregadas`, `catalunya` (8.6) y `euskadi` (9.5); RAW → canónico + idempotencia.
 - Semana 3 Paso 8.6: verificación live SODA `catalunya` (1 página × 1000 + idempotencia) documentada en `docs/pruebas.md` Parte C.
+- Semana 3 Paso 9.5: verificación live API `euskadi` (1 página × 10 + idempotencia) documentada en `docs/pruebas.md` Parte D.
 - Plan y checklist Semana 3 (`semana03-plan`, `fase3-checklist`): escalado estatal + primeras CCAA.
 - Semana 3 Paso 1: inventario priorizado (estatal `placsp_agregadas` → `placsp_menores`; cola CCAA `catalunya` → `euskadi` + reservas).
 - Semana 3 Paso 2: ficha `docs/sources/placsp_agregadas.md` (sindicación `1044`, Atom/CODICE, sin scraping).
@@ -59,7 +60,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Semana 3 Paso 8.3: upsert canónico + `source_sync` + trazabilidad para `catalunya` (idempotente; tests sin red + Postgres opcional).
 - Semana 3 Paso 8.4: CLI `run-catalunya` con `--fixture` / `--dry-run` (E2E local sin red SODA).
 - Semana 3 Paso 8.5: workflow `ingest-catalunya.yml` (manual, dry-run por defecto, cron off).
-- Semana 3 Paso 9: CCAA #2 `euskadi` — conector KontratazioA REST (`contracting-notices`), ficha, RAW `raw/euskadi/`, CLI `run-euskadi`, workflow `ingest-euskadi.yml`, tests sin red; live documentado en `docs/pruebas.md` Parte D.
+- Semana 3 Paso 9: CCAA #2 `euskadi` — conector KontratazioA REST (`contracting-notices`), ficha, RAW `raw/euskadi/`, CLI `run-euskadi`, workflow `ingest-euskadi.yml`, tests sin red; live en Paso 9.5 / `docs/pruebas.md` Parte D.
 
 ### Changed
 

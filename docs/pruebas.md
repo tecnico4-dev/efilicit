@@ -1,7 +1,7 @@
 # Pruebas de verificación — fuentes reales (local)
 
 > **Estado:** OK  
-> **Ámbito:** verificaciones E2E en **Supabase local** con datos oficiales (PLACSP Open Data + SODA Catalunya).  
+> **Ámbito:** verificaciones E2E en **Supabase local** con datos oficiales (PLACSP Open Data, SODA Catalunya, REST Euskadi).  
 > **Norma:** `docs/00`–`04` y `.cursor/rules/`. No se tocó producción ni el esquema remoto.
 
 | Fuente | `source_code` | Acceso | Momento | Estado |
@@ -9,7 +9,7 @@
 | Perfiles alojados (sin menores) | `placsp` | Sindicación `643` (ZIP mensual) | Tras cierre Semana 2 | OK |
 | Agregación (sin menores) | `placsp_agregadas` | Sindicación `1044` (ZIP mensual) | Semana 3 estatal | OK |
 | Catalunya (PSCP / Transparència) | `catalunya` | Socrata `ybgg-dgi6` (páginas JSON) | Semana 3 Paso 8.6 | OK |
-| Euskadi (KontratazioA) | `euskadi` | REST `contracting-notices` (10 ítems/página) | Semana 3 Paso 9 | Pendiente live (Parte D) |
+| Euskadi (KontratazioA) | `euskadi` | REST `contracting-notices` (10 ítems/página) | Semana 3 Paso 9.5 | OK |
 
 Pipeline comprobado en todos los casos:
 
@@ -372,6 +372,15 @@ uv run python -m efilicit_ingestion.cli run-catalunya `
   --page-size 1000 --max-pages 1 --start-offset 0 --run-id <id>
 ```
 
+### `euskadi`
+
+```powershell
+uv run python -m efilicit_ingestion.cli run-euskadi `
+  --max-pages 1 --start-page 1 --run-id <id>
+```
+
+(La API fija 10 ítems/página; subir `--max-pages` para más volumen.)
+
 Pasos comunes: stack local → (opcional) `db reset` + limpiar Storage → pytest / dry-run → live acotado → Studio → 2ª corrida con otro `run_id`.
 
 ### Límites conscientes
@@ -380,13 +389,12 @@ Pasos comunes: stack local → (opcional) `db reset` + limpiar Storage → pytes
 - No valida UI de búsqueda, Auth ni alertas.
 - Un mes / una página ≠ histórico completo del dataset.
 - `placsp_menores` y resto de CCAA no listadas aquí no forman parte de estas corridas.
-- Live `euskadi` (Parte D): procedimiento listo; rellenar resultados tras la corrida local.
 
 ---
 
-# Parte D — `euskadi` (Semana 3 / Paso 9)
+# Parte D — `euskadi` (Semana 3 / Paso 9.5)
 
-> Con `EuskadiConnector` + CLI `run-euskadi`. La API fija **10 ítems/página** (`currentPage`). Acotar con `--max-pages` / `--start-page`.
+> Con `EuskadiConnector` + CLI `run-euskadi`. La API KontratazioA fija **10 ítems/página** (`currentPage`); no hay parámetro de tamaño de página. Acotar con `--max-pages` / `--start-page`.
 
 ## D.1 Cómo se aisló el trabajo
 
@@ -394,24 +402,30 @@ Pasos comunes: stack local → (opcional) `db reset` + limpiar Storage → pytes
 - Destino: **Supabase local**.
 - Recuperación: `supabase db reset` + vaciar `raw/euskadi/`.
 
-## D.2 Fase A — Baseline (sin red API)
+## D.2 Fase A — Baseline
+
+1. Confirmar rama + Docker + Supabase local.
+2. `supabase db reset`.
+3. `uv sync --extra dev` + `uv run pytest -q` → **112 passed**.
+4. Dry-run:
 
 ```powershell
 cd ingestion
-uv sync --extra dev
-uv run pytest -q tests/test_euskadi_connector.py tests/test_euskadi_pipeline.py tests/test_run_euskadi_cli.py
 uv run python -m efilicit_ingestion.cli run-euskadi `
   --fixture tests/fixtures/euskadi/valid_page.json `
   --dry-run `
   --run-id fase-a-euskadi-dry
 ```
 
-| Comprobación | Esperado |
+| Comprobación | Resultado |
 |---|---|
-| Pytest Euskadi | passed |
-| Dry-run | `status=success`, `source_code=euskadi`, `records_seen=2`, path `raw/euskadi/...` |
+| Migraciones + seed | OK |
+| Pytest | **112 passed** |
+| Dry-run | `status=success`, `source_code=euskadi`, `records_seen=2`, path `raw/euskadi/.../contracting-notices_page_000001.json` |
 
 ## D.3 Fase B — Live (1 página API)
+
+Equivalente al “un mes” / “una página SODA”: **página 1** (= 10 avisos reales).
 
 ```powershell
 cd ingestion
@@ -421,14 +435,36 @@ uv run python -m efilicit_ingestion.cli run-euskadi `
   --run-id prueba-live-euskadi-1
 ```
 
-| Campo | Valor (rellenar tras corrida) |
+| Campo | Valor |
 |---|---|
-| `status` | |
-| `records_seen` / `records_new` | |
-| RAW Storage | `raw/euskadi/...` |
-| Studio `source_sync` | |
+| `status` | **success** |
+| `run_id` | `prueba-live-euskadi-1` |
+| `source_code` | `euskadi` |
+| `records_seen` | 10 |
+| `records_new` | 10 |
+| `records_updated` | 0 |
+| `artifacts` | 1 |
+| Tamaño del JSON | ~29 KB |
+| Checksum (SHA-256) | `15462d2448e57805e4dd12160bd8674af2c9fc689d9f7af2d59787d19d40dec5` |
+| Path RAW | `raw/euskadi/<año>/<mes>/<día>/contracting-notices_page_000001.json` |
 
-## D.4 Idempotencia
+| Tabla / métrica | Cantidad (aprox.) |
+|---|---|
+| `tender_sources` (`euskadi`) | ~12 |
+
+*(2 filas extra pueden venir de tests de integración Postgres con fixture en la Fase A; el live aportó exactamente 10.)*
+
+### Studio (checklist)
+
+| Dónde | Qué verificar |
+|---|---|
+| Storage → `raw` | JSON bajo `euskadi/…contracting-notices_page_…` |
+| `source_sync` | `prueba-live-euskadi-1`, `success` |
+| `source_artifacts` | `artifact_key` de la página, checksum |
+| `tender_sources` | filtro `source_code = euskadi` |
+| `tenders` | títulos reales (avisos KontratazioA) |
+
+## D.4 Segunda corrida — idempotencia
 
 ```powershell
 uv run python -m efilicit_ingestion.cli run-euskadi `
@@ -437,7 +473,25 @@ uv run python -m efilicit_ingestion.cli run-euskadi `
   --run-id prueba-live-euskadi-2
 ```
 
-Esperado: `records_new=0`, `records_updated` = mismos avisos de la página 1.
+| Campo | 1ª | 2ª |
+|---|---|---|
+| `status` | success | **success** |
+| `records_seen` | 10 | **10** |
+| `records_new` | 10 | **0** |
+| `records_updated` | 0 | **10** |
+| Checksum | — | **igual** |
+
+Sin duplicados `(euskadi, source_tender_id)`; el conteo de `tender_sources` no creció.
+
+## D.5 Veredicto `euskadi`
+
+| Criterio | Estado |
+|---|---|
+| Pipeline E2E con página API real | OK |
+| Prefijo RAW `raw/euskadi/` | OK |
+| Upsert `(euskadi, id)` | OK |
+| Idempotencia | OK |
+| Remoto intacto | OK |
 
 ---
 

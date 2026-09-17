@@ -5,7 +5,7 @@
 > **Precondición:** Semana 2 cerrada ([fase2-checklist.md](fase2-checklist.md)).  
 > **Norma:** `docs/00`–`04` y `.cursor/rules/`. Reutilizar contrato `SourceConnector` + pipeline + upsert canónico de Semanas 1–2. ADR solo si hace falta cambiar arquitectura de verdad.  
 > **Rama de trabajo:** `tecnico4/semana-03` (no mergear a `main` hasta OK explícito).  
-> **Verificación live:** [docs/pruebas.md](../pruebas.md) — Parte B (`placsp_agregadas`) · Parte C (`catalunya` / Paso 8.6) · Parte D (`euskadi` / Paso 9).
+> **Verificación live:** [docs/pruebas.md](../pruebas.md) — Parte B (`placsp_agregadas`) · Parte C (`catalunya` / 8.6) · Parte D (`euskadi` / 9.5).
 
 ---
 
@@ -208,9 +208,9 @@ Si una se bloquea: documentar y sustituir por la siguiente del inventario.
 
 #### 9.5 Verificación live
 
-Procedimiento en [docs/pruebas.md](../pruebas.md) Parte D (`--max-pages 1` + 2ª corrida idempotente).
+Mismo patrón A/B que PLACSP/Catalunya, adaptado a páginas KontratazioA (10 ítems/página): Fase A → Fase B (`run-euskadi --max-pages 1`) → 2ª corrida → Studio. Resultados en [docs/pruebas.md](../pruebas.md) Parte D.
 
-**Listo cuando:** ≥2 CCAA con ficha + tests + sync + corrida verificable (`catalunya` + `euskadi`).
+**Listo cuando:** live success + `records_new=0` en reejecución; sin duplicados `(euskadi, id)`; entrada en `docs/pruebas.md`. Criterio de salida Semana 3: ≥2 CCAA verificables (`catalunya` + `euskadi`).
 
 ### 10. Homogeneizar catálogo + regresión + cierre
 
@@ -254,7 +254,8 @@ Registro de lo acordado al cerrar (o antes de) cada paso:
 | Paso 8.4 | CLI `run-catalunya --fixture --dry-run` | E2E local sin red SODA; Postgres opcional con `--no-storage` |
 | Paso 8.5 | Workflow `ingest-catalunya.yml` | Manual; dry-run default; cron off; mismos secrets que PLACSP |
 | Paso 8.6 | Verificación live SODA `catalunya` (1 página + idempotencia) | Mismo patrón A/B que PLACSP; documentado en [docs/pruebas.md](../pruebas.md) Parte C |
-| Paso 9 | CCAA #2 `euskadi` (KontratazioA REST) | Conector propio; página fija 10; CLI + workflow; live → Parte D |
+| Paso 9 | CCAA #2 `euskadi` (KontratazioA REST) | Conector propio; página fija 10; CLI + workflow |
+| Paso 9.5 | Verificación live API `euskadi` (1 página + idempotencia) | Documentado en [docs/pruebas.md](../pruebas.md) Parte D |
 
 ---
 
@@ -264,5 +265,5 @@ Registro de lo acordado al cerrar (o antes de) cada paso:
 - [docs/01-arquitectura-fija.md](../01-arquitectura-fija.md) §§ 5–8  
 - [docs/00-onboarding.md](../00-onboarding.md) (fuentes, RAW, `source_sync`)  
 - [docs/sources/placsp.md](../sources/placsp.md) · [docs/sources/placsp_agregadas.md](../sources/placsp_agregadas.md) · [docs/sources/catalunya.md](../sources/catalunya.md) · [docs/sources/euskadi.md](../sources/euskadi.md) · [docs/sources/README.md](../sources/README.md)  
-- [docs/pruebas.md](../pruebas.md) (Parte B: `placsp_agregadas` · Parte C: `catalunya` / 8.6 · Parte D: `euskadi` / 9)  
+- [docs/pruebas.md](../pruebas.md) (Parte B: `placsp_agregadas` · Parte C: `catalunya` / 8.6 · Parte D: `euskadi` / 9.5)  
 - [fase3-checklist.md](fase3-checklist.md) · [fase2-checklist.md](fase2-checklist.md) · [semana02-plan.md](semana02-plan.md)

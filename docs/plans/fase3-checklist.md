@@ -16,7 +16,7 @@ Los pasos globales (1–10) se mantienen. Los Pasos **3**, **4** y **8** se desg
 | 6. Adaptador CSV genérico (o N/A) | N/A | Familia CSV no priorizada; reserva CSV → conector puntual |
 | 7. Adaptador REST/Socrata (o N/A) | OK | `SocrataConnector` + preset `CATALUNYA` (`ybgg-dgi6`); ficha + tests sin red |
 | 8. CCAA propia #1 | OK | `catalunya` 8.1–8.6; live SODA + idempotencia en [docs/pruebas.md](../pruebas.md) |
-| 9. CCAA propia #2 (+) | OK | `euskadi` (KontratazioA REST); ficha + tests + CLI + workflow; live → [docs/pruebas.md](../pruebas.md) Parte D |
+| 9. CCAA propia #2 (+) | OK | `euskadi` 9.1–9.5; live API + idempotencia en [docs/pruebas.md](../pruebas.md) Parte D |
 | 10. Catálogo + regresión + cierre | — | `docs/sources/README.md`, tests, CHANGELOG, ADR |
 
 ## Paso 3 — minipasos (conector estatal)
@@ -57,15 +57,15 @@ Parse/normalize del adaptador ya cubiertos en Paso 7.
 | 9.2 RAW + upsert + `source_sync` | OK | Prefijo `raw/euskadi/`; unique `(euskadi, id)`; tests |
 | 9.3 CLI / E2E local | OK | `run-euskadi --fixture --dry-run` |
 | 9.4 Workflow | OK | `ingest-euskadi.yml`; dry-run default; cron off |
-| 9.5 Verificación live API + idempotencia | — | Procedimiento en [docs/pruebas.md](../pruebas.md) Parte D |
+| 9.5 Verificación live API + idempotencia | OK | 1×10 avisos reales; 2ª corrida `records_new=0`; [docs/pruebas.md](../pruebas.md) Parte D |
 
 ## Criterios transversales (cierre Semana 3)
 
 | Ítem | Estado | Notas |
 |---|---|---|
-| Reejecutar no duplica (fuentes nuevas) | OK | Live `placsp_agregadas` + `catalunya`: 2ª corrida `records_new=0`; ver [docs/pruebas.md](../pruebas.md). `euskadi` live pendiente Parte D |
-| `source_sync` por cada fuente añadida | OK | Live local: `prueba-live-agregadas-*`, `prueba-live-catalunya-*`; `euskadi` tras Parte D |
-| Tests en verde (parser / adaptadores / persistencia) | OK | Incluye suite `euskadi` + regresión PLACSP/Catalunya |
+| Reejecutar no duplica (fuentes nuevas) | OK | Live `placsp_agregadas` + `catalunya` + `euskadi`: 2ª corrida `records_new=0`; ver [docs/pruebas.md](../pruebas.md) |
+| `source_sync` por cada fuente añadida | OK | Live local: `prueba-live-agregadas-*`, `prueba-live-catalunya-*`, `prueba-live-euskadi-*` |
+| Tests en verde (parser / adaptadores / persistencia) | OK | 112 passed en baseline pre-live `euskadi` (incl. regresión PLACSP/Catalunya) |
 | ADRs estructurales (solo si hubo decisión nueva) | — | Si no → N/A |
 | CHANGELOG actualizado | OK | Ir actualizando por hito + entradas `docs/pruebas.md` |
 

@@ -140,7 +140,7 @@ discover (páginas) → fetch (JSON) → validate → RAW Storage
 | Upsert + `source_sync` + `artifact_id` | OK |
 | CLI `--fixture` / `--dry-run` | OK |
 | Workflow Actions manual | OK (`ingest-euskadi.yml`) |
-| Verificación live API + idempotencia | Procedimiento en [docs/pruebas.md](../pruebas.md) Parte D |
+| Verificación live API + idempotencia | OK (Paso 9.5) → [docs/pruebas.md](../pruebas.md) Parte D |
 
 **RAW:** cada página JSON es un artefacto inmutable; prefijo Storage `raw/euskadi/AAAA/MM/DD/…`.
 
@@ -155,6 +155,7 @@ discover (páginas) → fetch (JSON) → validate → RAW Storage
 - **Fetch:** timeout / retry / `max_bytes` / checksum; `fetch_transport` inyectable — **sin red en unit tests**.
 - **CLI E2E:** `run-euskadi --fixture … --dry-run` (JSON page; sin red).
 - **Workflow:** [`.github/workflows/ingest-euskadi.yml`](../../.github/workflows/ingest-euskadi.yml); default `dry-run`; cron desactivado.
+- **Live (Paso 9.5):** 1 página API real + reejecución idempotente; resultados en [docs/pruebas.md](../pruebas.md) Parte D.
 - Fixtures: `ingestion/tests/fixtures/euskadi/`.
 - Stack aprobado: `httpx` + `tenacity` + Pydantic; RAW en Supabase Storage; sin Redis/colas.
 
