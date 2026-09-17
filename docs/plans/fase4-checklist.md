@@ -2,15 +2,16 @@
 
 Plan: [semana04-plan.md](semana04-plan.md). Criterios: `docs/04-roadmap-mvp.md` § Semana 4.
 
-Los pasos globales (1–8) se mantienen. Los Pasos **2** y **3** se desglosan en minipasos verificables.
+Los pasos globales (1–8) se mantienen. Los Pasos **2** y **3** se desglosan en minipasos verificables.  
+El estado se marca **aquí**, no con “— OK” en el plan.
 
 ## Pasos globales
 
 | Ítem | Estado | Notas |
 |---|---|---|
-| 1. Inventario cobertura 17 CCAA + leftover `placsp_menores` | OK | Matriz en plan + catálogo; menores confirmado; 0 CCAA extra |
-| 2. `placsp_menores` (reuso PLACSP) | Pendiente | Minipasos 2.1–2.4 |
-| 3. Matriz 17 CCAA + CCAA propia extra (o N/A) | OK | 3.1 catálogo; 3.2 N/A (decisión Paso 1) |
+| 1. Inventario cobertura 17 CCAA + leftover `placsp_menores` | OK | Docs en `docs/sources/`; 0 CCAA extra |
+| 2. `placsp_menores` (reuso PLACSP) | Pendiente | Minipasos 2.1–2.4 (ficha 2.1 ya OK) |
+| 3. Matriz 17 CCAA + CCAA propia extra (o N/A) | OK | [cobertura-ccaa.md](../sources/cobertura-ccaa.md); 3.2 N/A |
 | 4. Esquema matching (`tender_sources` / migración) | Pendiente | `match_method`, `match_score`, `matched_at`, `review_status` |
 | 5. Matching en pipeline común | Pendiente | Sustituir pass-through; lookup canónico |
 | 6. Upsert respeta matching (auto / pending / unmatched) | Pendiente | Idempotente; no fusionar ambiguos |
@@ -21,7 +22,7 @@ Los pasos globales (1–8) se mantienen. Los Pasos **2** y **3** se desglosan en
 
 | Minipaso | Estado | Notas |
 |---|---|---|
-| 2.1 Ficha `docs/sources/placsp_menores.md` | Pendiente | `sindicacion_1143` |
+| 2.1 Ficha `docs/sources/placsp_menores.md` | OK | Misma profundidad que agregadas/perfiles |
 | 2.2 Discover + fetch | Pendiente | `PlacspSyndication`; tests sin red |
 | 2.3 RAW + parse + normalize + upsert | Pendiente | Prefijo `raw/placsp_menores/`; unique `(placsp_menores, …)` |
 | 2.4 CLI + workflow | Pendiente | `run-placsp --syndication placsp_menores`; dry-run default; cron off |
@@ -30,8 +31,8 @@ Los pasos globales (1–8) se mantienen. Los Pasos **2** y **3** se desglosan en
 
 | Minipaso | Estado | Notas |
 |---|---|---|
-| 3.1 Matriz 17 CCAA en catálogo | OK | [docs/sources/README.md](../sources/README.md) § Cobertura territorial |
-| 3.2 CCAA propia extra (ficha + conector E2E) | N/A | Paso 1: 0 conectores; cobertura vía `placsp_agregadas` |
+| 3.1 Matriz 17 CCAA en catálogo | OK | [cobertura-ccaa.md](../sources/cobertura-ccaa.md) |
+| 3.2 CCAA propia extra (ficha + conector E2E) | N/A | 0 conectores; cobertura vía agregadas |
 
 ## Criterios transversales (cierre Semana 4)
 
@@ -48,7 +49,7 @@ Los pasos globales (1–8) se mantienen. Los Pasos **2** y **3** se desglosan en
 
 | Criterio | Estado | Evidencia |
 |---|---|---|
-| Las 17 CCAA tienen una ruta de fuente identificada | OK | Matriz Paso 1 / catálogo README |
+| Las 17 CCAA tienen una ruta de fuente identificada | OK | [cobertura-ccaa.md](../sources/cobertura-ccaa.md) |
 | Las fuentes integradas muestran datos reales | Pendiente | Live previo A–D; nuevas según se implementen |
 | Una licitación en dos fuentes compatibles → una fila canónica si hay confianza | Pendiente | Tests Paso 6–7 |
 | Casos ambiguos quedan pendientes de revisión | Pendiente | `review_status = pending` |

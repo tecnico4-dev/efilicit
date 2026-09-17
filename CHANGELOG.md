@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Plan y checklist Semana 4 (`semana04-plan`, `fase4-checklist`): cobertura territorial 17 CCAA + deduplicación; leftover `placsp_menores`; rama `tecnico4/semana-04`.
-- Semana 4 Paso 1: matriz de cobertura de las 17 CCAA en catálogo; `placsp_menores` confirmado; 0 CCAA propias extra (N/A) esta semana.
+- Semana 4 Paso 1: cobertura 17 CCAA en `docs/sources/cobertura-ccaa.md`; ficha `placsp_menores.md`; 0 CCAA propias extra esta semana. Plan sin duplicar fichas (solo decisiones breves).
 - Documentación base de onboarding, arquitectura, setup, reglas Cursor y roadmap MVP.
 - Cimientos del monorepo: `.gitignore`, `.env.example`, `package.json`, `pnpm-workspace.yaml`, árbol de carpetas y guías `README` / `CONTRIBUTING`.
 - Reglas Cursor en `.cursor/rules/` (`00`–`08`) según `docs/03-reglas-cursor.md`.
