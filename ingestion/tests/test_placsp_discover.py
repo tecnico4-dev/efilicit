@@ -1,4 +1,4 @@
-"""Unit tests for PLACSP discover (Semana 2 Paso 2). No live network."""
+"""Unit tests for PLACSP discover (perfiles + agregadas). No live network."""
 
 from __future__ import annotations
 
@@ -7,7 +7,10 @@ from datetime import date
 import pytest
 
 from efilicit_ingestion.connectors import SourceConnector
-from efilicit_ingestion.connectors.placsp import PlacspConnector
+from efilicit_ingestion.connectors.placsp import (
+    PLACSP_AGREGADAS,
+    PlacspConnector,
+)
 from efilicit_ingestion.connectors.placsp.urls import (
     monthly_package_url,
     parse_year_month,
@@ -36,6 +39,7 @@ def test_discover_default_current_month_stable_key() -> None:
     )
     assert art.content_type == "application/zip"
     assert art.metadata["package_kind"] == "monthly"
+    assert art.metadata["sindicacion"] == "643"
     assert art.metadata["year"] == 2026
     assert art.metadata["month"] == 9
 
@@ -98,6 +102,66 @@ def test_discover_probe_skips_missing_packages() -> None:
         "licitacionesPerfilesContratanteCompleto3_202608.zip",
         "licitacionesPerfilesContratanteCompleto3_202609.zip",
     ]
+
+
+def test_agregadas_is_source_connector() -> None:
+    connector = PlacspConnector(
+        syndication=PLACSP_AGREGADAS,
+        as_of=date(2026, 9, 11),
+    )
+    assert isinstance(connector, SourceConnector)
+    assert connector.source_code == "placsp_agregadas"
+
+
+def test_discover_agregadas_current_month_stable_key() -> None:
+    connector = PlacspConnector(
+        syndication=PLACSP_AGREGADAS,
+        as_of=date(2026, 9, 15),
+    )
+    artifacts = connector.discover(
+        SyncContext(source_code="placsp_agregadas", run_id="discover-agregadas-1")
+    )
+
+    assert len(artifacts) == 1
+    art = artifacts[0]
+    assert art.artifact_key == "PlataformasAgregadasSinMenores_202609.zip"
+    assert art.source_url == (
+        "https://contrataciondelsectorpublico.gob.es/sindicacion/"
+        "sindicacion_1044/PlataformasAgregadasSinMenores_202609.zip"
+    )
+    assert art.content_type == "application/zip"
+    assert art.metadata["feed_base"] == "PlataformasAgregadasSinMenores"
+    assert art.metadata["sindicacion"] == "1044"
+    assert art.metadata["package_kind"] == "monthly"
+    assert art.metadata["year"] == 2026
+    assert art.metadata["month"] == 9
+
+
+def test_discover_agregadas_range_cursor_and_probe() -> None:
+    available = {
+        monthly_package_url(2026, 8, PLACSP_AGREGADAS),
+        monthly_package_url(2026, 9, PLACSP_AGREGADAS),
+    }
+    connector = PlacspConnector(
+        syndication=PLACSP_AGREGADAS,
+        from_year_month="2026-07",
+        to_year_month="2026-09",
+        url_exists=lambda url: url in available,
+    )
+    cursor = "PlataformasAgregadasSinMenores_202607.zip"
+    artifacts = connector.discover(
+        SyncContext(
+            source_code="placsp_agregadas",
+            run_id="discover-agregadas-cursor",
+            cursor=cursor,
+        )
+    )
+
+    assert [a.artifact_key for a in artifacts] == [
+        "PlataformasAgregadasSinMenores_202608.zip",
+        "PlataformasAgregadasSinMenores_202609.zip",
+    ]
+    assert all(a.metadata["sindicacion"] == "1044" for a in artifacts)
 
 
 def test_parse_year_month_formats() -> None:

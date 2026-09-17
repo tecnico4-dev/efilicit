@@ -1,4 +1,4 @@
-"""Run PLACSP ingestion end-to-end (Semana 2 Paso 8)."""
+"""Run PLACSP ingestion end-to-end (Semana 2 Paso 8; Semana 3 agregadas)."""
 
 from __future__ import annotations
 
@@ -10,6 +10,7 @@ from io import BytesIO
 from pathlib import Path
 
 from efilicit_ingestion.connectors.placsp import PlacspConnector
+from efilicit_ingestion.connectors.placsp.urls import PLACSP, PlacspSyndication
 from efilicit_ingestion.models import SyncContext
 from efilicit_ingestion.pipeline.canonical_repo import (
     InMemoryCanonicalRepository,
@@ -37,34 +38,42 @@ class PlacspRunConfig:
     dry_run: bool = False
     run_id: str | None = None
     use_storage: bool = True
+    syndication: PlacspSyndication = PLACSP
 
 
-def load_fixture_bytes(path: Path) -> bytes:
+def load_fixture_bytes(
+    path: Path,
+    *,
+    syndication: PlacspSyndication = PLACSP,
+) -> bytes:
     """Load a ``.atom`` or ``.zip`` fixture; wrap bare Atom into a ZIP package."""
     raw = path.read_bytes()
     if path.suffix.lower() == ".zip" or raw.startswith(b"PK"):
         return raw
     if path.suffix.lower() in {".atom", ".xml"}:
+        member = f"{syndication.feed_base_name}.atom"
         buf = BytesIO()
         with zipfile.ZipFile(buf, "w", compression=zipfile.ZIP_DEFLATED) as zf:
-            zf.writestr("licitacionesPerfilesContratanteCompleto3.atom", raw)
+            zf.writestr(member, raw)
         return buf.getvalue()
     raise ValueError(f"unsupported fixture type: {path}")
 
 
 def run_placsp(config: PlacspRunConfig) -> PipelineResult:
-    """Execute discover→…→upsert for PLACSP.
+    """Execute discover→…→upsert for a PLACSP syndication.
 
     - ``fixture_path``: offline E2E (no live PLACSP network).
     - without fixture: live discover/fetch for the configured month window.
     - ``dry_run``: in-memory sync/canonical/storage (no Postgres/Storage writes).
+    - ``syndication``: default ``PLACSP`` (perfiles); use ``PLACSP_AGREGADAS`` for Semana 3.
     """
     as_of = config.as_of or date.today()
-    run_id = config.run_id or f"placsp-{uuid.uuid4()}"
+    feed = config.syndication
+    run_id = config.run_id or f"{feed.source_code}-{uuid.uuid4()}"
 
     fetch_transport = None
     if config.fixture_path is not None:
-        fixture_bytes = load_fixture_bytes(config.fixture_path)
+        fixture_bytes = load_fixture_bytes(config.fixture_path, syndication=feed)
         fetch_transport = lambda url, data=fixture_bytes: (
             200,
             {"content-type": "application/zip", "content-length": str(len(data))},
@@ -78,6 +87,7 @@ def run_placsp(config: PlacspRunConfig) -> PipelineResult:
         to_ym = config.to_year_month
 
     connector = PlacspConnector(
+        syndication=feed,
         from_year_month=from_ym,
         to_year_month=to_ym,
         as_of=as_of,

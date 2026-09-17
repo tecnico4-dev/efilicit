@@ -1,0 +1,129 @@
+# Semana 3 / Paso 8.5 — ingesta Catalunya (Socrata) vía GitHub Actions.
+# Por defecto: dry-run con fixture JSON (sin secretos, sin writes).
+# Escritura a DB/Storage o SODA live: solo workflow_dispatch explícito + secrets.
+name: Ingest Catalunya
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: >
+          dry-run = fixture in-memory (safe).
+          fixture-db = fixture → Postgres (needs EFILICIT_DATABASE_URL).
+          live = página(s) SODA reales (needs secrets; acotar max_pages).
+        type: choice
+        options:
+          - dry-run
+          - fixture-db
+          - live
+        default: dry-run
+      page_size:
+        description: "SODA $limit por página (default 1000)"
+        required: false
+        default: "1000"
+      max_pages:
+        description: "Páginas a descubrir (default 1; en live mantener bajo)"
+        required: false
+        default: "1"
+      start_offset:
+        description: "SODA $offset inicial (default 0)"
+        required: false
+        default: "0"
+      run_id:
+        description: "run_id opcional (fixture-db/live); vacío = UUID"
+        required: false
+        default: ""
+      upload_storage:
+        description: "Subir RAW a Storage (requiere SUPABASE_SERVICE_ROLE_KEY + SUPABASE_URL)"
+        type: boolean
+        default: false
+  # Cron desactivado a propósito: no quemar SODA/prod hasta acordar entorno + secrets.
+  # schedule:
+  #   - cron: "0 6 * * 1"
+
+concurrency:
+  group: ingest-catalunya-${{ inputs.mode }}
+  cancel-in-progress: false
+
+jobs:
+  ingest:
+    name: Run catalunya (${{ inputs.mode }})
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ingestion
+    env:
+      EFILICIT_DATABASE_URL: ${{ secrets.EFILICIT_DATABASE_URL }}
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Sync dependencies
+        run: uv sync --frozen
+
+      - name: Guard secrets for write modes
+        if: inputs.mode != 'dry-run'
+        run: |
+          set -euo pipefail
+          if [ -z "${EFILICIT_DATABASE_URL:-}" ]; then
+            echo "::error::Missing repository secret EFILICIT_DATABASE_URL (required for ${{ inputs.mode }})"
+            exit 1
+          fi
+          if [ "${{ inputs.upload_storage }}" = "true" ]; then
+            if [ -z "${SUPABASE_SERVICE_ROLE_KEY:-}" ]; then
+              echo "::error::upload_storage=true requires secret SUPABASE_SERVICE_ROLE_KEY"
+              exit 1
+            fi
+            if [ -z "${SUPABASE_URL:-}" ]; then
+              echo "::error::upload_storage=true requires secret SUPABASE_URL"
+              exit 1
+            fi
+          fi
+
+      - name: Run Catalunya CLI
+        run: |
+          set -euo pipefail
+          MODE="${{ inputs.mode }}"
+          PAGE_SIZE="${{ inputs.page_size }}"
+          MAX_PAGES="${{ inputs.max_pages }}"
+          START_OFFSET="${{ inputs.start_offset }}"
+          RUN_ID="${{ inputs.run_id }}"
+          EXTRA=(--page-size "$PAGE_SIZE" --max-pages "$MAX_PAGES" --start-offset "$START_OFFSET")
+          if [ -n "$RUN_ID" ]; then
+            EXTRA+=(--run-id "$RUN_ID")
+          fi
+          if [ "${{ inputs.upload_storage }}" != "true" ] && [ "$MODE" != "dry-run" ]; then
+            EXTRA+=(--no-storage)
+          fi
+
+          case "$MODE" in
+            dry-run)
+              uv run python -m efilicit_ingestion.cli run-catalunya \
+                --fixture tests/fixtures/catalunya/valid_page.json \
+                --dry-run \
+                "${EXTRA[@]}"
+              ;;
+            fixture-db)
+              uv run python -m efilicit_ingestion.cli run-catalunya \
+                --fixture tests/fixtures/catalunya/valid_page.json \
+                "${EXTRA[@]}"
+              ;;
+            live)
+              uv run python -m efilicit_ingestion.cli run-catalunya \
+                "${EXTRA[@]}"
+              ;;
+            *)
+              echo "::error::Unknown mode: $MODE"
+              exit 1
+              ;;
+          esac

@@ -1,4 +1,4 @@
-"""Tests for RAW validate + Supabase Storage store (Semana 2 Paso 4)."""
+"""Tests for RAW validate + Supabase Storage store (placsp + placsp_agregadas)."""
 
 from __future__ import annotations
 
@@ -10,13 +10,13 @@ import httpx
 import psycopg
 import pytest
 
-from efilicit_ingestion.connectors.placsp import PlacspConnector
+from efilicit_ingestion.connectors.placsp import PLACSP_AGREGADAS, PlacspConnector
 from efilicit_ingestion.connectors.placsp.fetch import sha256_hex
 from efilicit_ingestion.connectors.placsp.urls import (
     monthly_package_filename,
     monthly_package_url,
 )
-from efilicit_ingestion.models import RemoteArtifact, SyncContext
+from efilicit_ingestion.models import RemoteArtifact
 from efilicit_ingestion.pipeline import stages
 from efilicit_ingestion.pipeline.paths import build_raw_storage_path
 from efilicit_ingestion.pipeline.postgres import (
@@ -33,6 +33,7 @@ from efilicit_ingestion.pipeline.supabase_storage import (
 )
 
 SOURCE_CODE = "placsp"
+AGREGADAS_SOURCE = "placsp_agregadas"
 FAKE_ZIP = b"PK\x03\x04-efilicit-raw-fixture"
 
 
@@ -40,6 +41,14 @@ def _artifact() -> RemoteArtifact:
     return RemoteArtifact(
         artifact_key=monthly_package_filename(2026, 9),
         source_url=monthly_package_url(2026, 9),
+        content_type="application/zip",
+    )
+
+
+def _agregadas_artifact() -> RemoteArtifact:
+    return RemoteArtifact(
+        artifact_key=monthly_package_filename(2026, 9, PLACSP_AGREGADAS),
+        source_url=monthly_package_url(2026, 9, PLACSP_AGREGADAS),
         content_type="application/zip",
     )
 
@@ -58,6 +67,15 @@ def test_validate_artifact_accepts_zip_magic() -> None:
     assert stages.validate_artifact(FAKE_ZIP, _artifact()) == FAKE_ZIP
 
 
+def test_validate_artifact_agregadas_rejects_non_zip() -> None:
+    with pytest.raises(ValueError, match="ZIP"):
+        stages.validate_artifact(b"html-error-page", _agregadas_artifact())
+
+
+def test_validate_artifact_agregadas_accepts_zip_magic() -> None:
+    assert stages.validate_artifact(FAKE_ZIP, _agregadas_artifact()) == FAKE_ZIP
+
+
 def test_build_raw_storage_path_convention() -> None:
     storage_path, object_key = build_raw_storage_path(
         "placsp",
@@ -66,6 +84,18 @@ def test_build_raw_storage_path_convention() -> None:
     )
     assert object_key == (
         "placsp/2026/09/11/licitacionesPerfilesContratanteCompleto3_202609.zip"
+    )
+    assert storage_path == f"raw/{object_key}"
+
+
+def test_build_raw_storage_path_agregadas_prefix() -> None:
+    storage_path, object_key = build_raw_storage_path(
+        AGREGADAS_SOURCE,
+        "PlataformasAgregadasSinMenores_202609.zip",
+        day="2026/09/15",
+    )
+    assert object_key == (
+        "placsp_agregadas/2026/09/15/PlataformasAgregadasSinMenores_202609.zip"
     )
     assert storage_path == f"raw/{object_key}"
 
@@ -95,6 +125,34 @@ def test_supabase_storage_upload_with_mock_http() -> None:
     assert stored.artifact_key.endswith("202609.zip")
     assert len(uploaded) == 1
     assert next(iter(uploaded.values())) == FAKE_ZIP
+
+
+def test_supabase_storage_upload_agregadas_prefix_with_mock_http() -> None:
+    uploaded_urls: list[str] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        uploaded_urls.append(str(request.url))
+        assert "/storage/v1/object/raw/placsp_agregadas/" in str(request.url)
+        assert "PlataformasAgregadasSinMenores_202609.zip" in str(request.url)
+        return httpx.Response(200, json={"ok": True})
+
+    client = httpx.Client(transport=httpx.MockTransport(handler))
+    store = SupabaseStorageArtifactStore(
+        base_url="http://storage.test",
+        service_role_key="test-service-role",
+        http_client=client,
+    )
+    stored = store.store(
+        source_code=AGREGADAS_SOURCE,
+        artifact=_agregadas_artifact(),
+        raw=FAKE_ZIP,
+    )
+    client.close()
+
+    assert stored.storage_path.startswith("raw/placsp_agregadas/")
+    assert stored.artifact_key == "PlataformasAgregadasSinMenores_202609.zip"
+    assert stored.checksum == sha256_hex(FAKE_ZIP)
+    assert len(uploaded_urls) == 1
 
 
 def test_supabase_storage_upload_error() -> None:
@@ -146,6 +204,72 @@ def test_fetch_validate_and_store_raw_roundtrip_memory_style() -> None:
     assert stored.checksum == hashlib.sha256(FAKE_ZIP).hexdigest()
     assert stored.storage_path.startswith("raw/placsp/")
     assert FAKE_ZIP in uploaded.values()
+
+
+def test_fetch_validate_and_store_raw_agregadas_without_network() -> None:
+    """Paso 4.1 for placsp_agregadas: validate ZIP + store under raw/placsp_agregadas/."""
+    uploaded: dict[str, bytes] = {}
+
+    def storage_handler(request: httpx.Request) -> httpx.Response:
+        assert "/storage/v1/object/raw/placsp_agregadas/" in str(request.url)
+        uploaded[str(request.url)] = request.content
+        return httpx.Response(200, json={"ok": True})
+
+    def fetch_transport(url: str) -> tuple[int, dict[str, str], bytes]:
+        assert "sindicacion_1044" in url
+        assert url.endswith("PlataformasAgregadasSinMenores_202609.zip")
+        return 200, {"content-type": "application/zip"}, FAKE_ZIP
+
+    http = httpx.Client(transport=httpx.MockTransport(storage_handler))
+    store = SupabaseStorageArtifactStore(
+        base_url="http://storage.test",
+        service_role_key="test-service-role",
+        http_client=http,
+    )
+    connector = PlacspConnector(
+        syndication=PLACSP_AGREGADAS,
+        as_of=date(2026, 9, 15),
+        fetch_transport=fetch_transport,
+    )
+
+    stored = fetch_validate_and_store_raw(
+        connector,
+        _agregadas_artifact(),
+        artifact_store=store,
+    )
+    http.close()
+
+    assert connector.source_code == AGREGADAS_SOURCE
+    assert stored.checksum == sha256_hex(FAKE_ZIP)
+    assert stored.storage_path.startswith("raw/placsp_agregadas/")
+    assert stored.artifact_key == "PlataformasAgregadasSinMenores_202609.zip"
+    assert FAKE_ZIP in uploaded.values()
+
+
+def test_fetch_validate_and_store_raw_agregadas_rejects_bad_payload() -> None:
+    def fetch_transport(url: str) -> tuple[int, dict[str, str], bytes]:
+        _ = url
+        return 200, {"content-type": "application/zip"}, b"not-zip"
+
+    http = httpx.Client(
+        transport=httpx.MockTransport(lambda r: httpx.Response(200)),
+    )
+    connector = PlacspConnector(
+        syndication=PLACSP_AGREGADAS,
+        fetch_transport=fetch_transport,
+    )
+    store = SupabaseStorageArtifactStore(
+        base_url="http://storage.test",
+        service_role_key="test-service-role",
+        http_client=http,
+    )
+    with pytest.raises(ValueError, match="ZIP"):
+        fetch_validate_and_store_raw(
+            connector,
+            _agregadas_artifact(),
+            artifact_store=store,
+        )
+    http.close()
 
 
 def _db_available() -> bool:
@@ -258,6 +382,82 @@ def test_placsp_fetch_stores_raw_and_registers_source_artifact() -> None:
         conn.execute(
             "delete from public.source_sync where source_code = %s and run_id = %s",
             (SOURCE_CODE, run_id),
+        )
+        conn.commit()
+
+
+@pytest.mark.skipif(
+    _live_raw_skip_reason() is not None,
+    reason=_live_raw_skip_reason() or "live Supabase unavailable",
+)
+def test_placsp_agregadas_fetch_stores_raw_and_registers_source_artifact() -> None:
+    """Live local: placsp_agregadas RAW under prefix + source_artifacts row."""
+    run_id = f"raw-agregadas-itest-{uuid.uuid4()}"
+    key = default_service_role_key()
+    assert key is not None
+
+    def fetch_transport(url: str) -> tuple[int, dict[str, str], bytes]:
+        assert "sindicacion_1044" in url
+        return 200, {"content-type": "application/zip"}, FAKE_ZIP
+
+    connector = PlacspConnector(
+        syndication=PLACSP_AGREGADAS,
+        as_of=date(2026, 9, 15),
+        fetch_transport=fetch_transport,
+    )
+    store = SupabaseStorageArtifactStore(
+        base_url=default_supabase_url(),
+        service_role_key=key,
+    )
+
+    with connect() as conn:
+        sync_repo = PostgresSyncRepository(conn)
+        run = sync_repo.start_run(
+            source_code=AGREGADAS_SOURCE,
+            run_id=run_id,
+            cursor=None,
+        )
+        stored = fetch_validate_and_store_raw(
+            connector,
+            _agregadas_artifact(),
+            artifact_store=store,
+        )
+        sync_repo.register_artifact(run, stored)
+        sync_repo.finish_run(run, status="success")
+        conn.commit()
+
+        assert stored.storage_path.startswith("raw/placsp_agregadas/")
+        row = conn.execute(
+            """
+            select storage_path, checksum, byte_size
+            from public.source_artifacts
+            where source_code = %s and artifact_key = %s
+            """,
+            (AGREGADAS_SOURCE, stored.artifact_key),
+        ).fetchone()
+        assert row is not None
+        assert row[0] == stored.storage_path
+        assert row[1] == stored.checksum
+
+        object_key = stored.storage_path.removeprefix("raw/")
+        with httpx.Client(timeout=30.0) as client:
+            downloaded = client.get(
+                f"{default_supabase_url()}/storage/v1/object/{store._bucket}/{object_key}",
+                headers={
+                    "Authorization": f"Bearer {key}",
+                    "apikey": key,
+                },
+            )
+        assert downloaded.status_code == 200
+        assert downloaded.content == FAKE_ZIP
+
+        conn.execute(
+            "delete from public.source_artifacts where source_code = %s and artifact_key = %s",
+            (AGREGADAS_SOURCE, stored.artifact_key),
+        )
+        conn.execute(
+            "delete from public.source_sync where source_code = %s and run_id = %s",
+            (AGREGADAS_SOURCE, run_id),
         )
         conn.commit()
 

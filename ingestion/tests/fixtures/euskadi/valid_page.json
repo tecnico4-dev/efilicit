@@ -1,0 +1,52 @@
+{
+  "totalItems": 2,
+  "totalPages": 1,
+  "currentPage": 1,
+  "itemsOfPage": 2,
+  "items": [
+    {
+      "id": 900001,
+      "code": "EXP/2026/EUS-001",
+      "object": "Suministro de material de oficina fixture Euskadi",
+      "entity": {"id": 1, "name": "Departamento Fixture"},
+      "contractingAuthority": {
+        "id": 101,
+        "identificationNumber": "S4833001C",
+        "name": "Organismo Fixture de Euskadi S.A.",
+        "codNUTS": "ES21"
+      },
+      "contractType": {"id": 1, "name": "Suministros"},
+      "contractProcedureStatus": {"id": 1, "name": "Publicación"},
+      "contractProcedureType": {"id": 1, "name": "Abierto"},
+      "budgetWithoutVAT": 12500.5,
+      "minorContract": false,
+      "_links": {
+        "self": {
+          "href": "https://api.euskadi.eus/procurements/contracting-notices/900001"
+        }
+      }
+    },
+    {
+      "id": 900002,
+      "code": "EXP/2026/EUS-002",
+      "object": "Servicio de mantenimiento fixture",
+      "contractingAuthority": {
+        "id": 102,
+        "name": "Ayuntamiento Fixture Sin NIF",
+        "codNUTS": "ES213"
+      },
+      "contractType": {"id": 2, "name": "Servicios"},
+      "contractProcedureStatus": {"id": 5, "name": "Adjudicación"},
+      "budgetWithoutVAT": 9800,
+      "_links": {
+        "self": {
+          "href": "https://api.euskadi.eus/procurements/contracting-notices/900002"
+        }
+      }
+    },
+    {
+      "code": "SKIP-NO-ID",
+      "object": "Fila sin id (debe omitirse)"
+    }
+  ]
+}

@@ -1,41 +1,43 @@
-# Pruebas de verificación — Semanas 0–2 (PLACSP real)
+# Pruebas de verificación — fuentes reales (local)
 
-> **Estado:** OK (verificación local con datos reales)  
-> **Cuándo:** tras cerrar el checklist de Semana 2 (`docs/plans/fase2-checklist.md`), antes de multiplicar fuentes.  
-> **Ámbito:** vertical slice PLACSP (`source_code = placsp`, sindicación `643`) en **Supabase local**.  
+> **Estado:** OK  
+> **Ámbito:** verificaciones E2E en **Supabase local** con datos oficiales (PLACSP Open Data, SODA Catalunya, REST Euskadi).  
 > **Norma:** `docs/00`–`04` y `.cursor/rules/`. No se tocó producción ni el esquema remoto.
 
----
+| Fuente | `source_code` | Acceso | Momento | Estado |
+|---|---|---|---|---|
+| Perfiles alojados (sin menores) | `placsp` | Sindicación `643` (ZIP mensual) | Tras cierre Semana 2 | OK |
+| Agregación (sin menores) | `placsp_agregadas` | Sindicación `1044` (ZIP mensual) | Semana 3 estatal | OK |
+| Catalunya (PSCP / Transparència) | `catalunya` | Socrata `ybgg-dgi6` (páginas JSON) | Semana 3 Paso 8.6 | OK |
+| Euskadi (KontratazioA) | `euskadi` | REST `contracting-notices` (10 ítems/página) | Semana 3 Paso 9.5 | OK |
 
-## 1. Objetivo
-
-Comprobar que el código de las Semanas 0–2 no solo pasa fixtures y tests unitarios, sino que la tubería completa funciona con un **paquete oficial real** de PLACSP:
+Pipeline comprobado en todos los casos:
 
 ```text
 discover → fetch → validate → RAW (Storage) → parse → normalize / identidad
 → upsert canónico → source_sync / source_artifacts
 ```
 
-Y que **reejecutar** la misma ventana no duplica licitaciones (idempotencia).
+Más **reejecución idempotente** de la misma ventana (mes o página SODA).
 
 ---
 
-## 2. Cómo se aisló el trabajo
+# Parte A — `placsp` (Semanas 0–2)
+
+> Tras cerrar el checklist de Semana 2 (`docs/plans/fase2-checklist.md`), antes de multiplicar fuentes.
+
+## A.1 Cómo se aisló el trabajo
 
 - Se usó una rama dedicada de verificación (`pruebas`), creada desde `main` tras el cierre de Semana 2.
-- Toda la corrida apuntó a **Supabase local** (Postgres + Storage). No se usó el proyecto remoto como destino de escritura.
-- Si algo hubiera fallado, el estado local se podía limpiar con `supabase db reset` y vaciando el prefijo `placsp/` del bucket `raw`, sin afectar `main`.
+- Toda la corrida apuntó a **Supabase local** (Postgres + Storage).
+- Recuperación: `supabase db reset` + vaciar el prefijo `placsp/` del bucket `raw`.
 
----
+## A.2 Fase A — Baseline (sin red PLACSP)
 
-## 3. Fase A — Baseline del entorno (sin red PLACSP)
-
-### Qué se hizo
-
-1. Confirmar Docker y `supabase status` (stack local arriba).
-2. `supabase db reset` — migraciones Semanas 0–1 + seed locales aplicadas sin error.
-3. En `ingestion/`: `uv sync --extra dev` y `uv run pytest -q`.
-4. Smoke CLI con fixture (sin descarga live):
+1. Docker + `supabase status`.
+2. `supabase db reset` — migraciones Semanas 0–1 + seed OK.
+3. `uv sync --extra dev` + `uv run pytest -q` en `ingestion/`.
+4. Dry-run con fixture:
 
 ```powershell
 cd ingestion
@@ -45,25 +47,17 @@ uv run python -m efilicit_ingestion.cli run-placsp `
   --run-id fase-a-dry-run
 ```
 
-### Resultado
-
 | Comprobación | Resultado |
 |---|---|
 | Migraciones + seed locales | OK |
 | Pytest (ingestion, con stack local) | OK (suite en verde) |
 | Dry-run fixture | `status=success`, 1 registro visto/nuevo |
 
-**Nota:** `supabase db reset` reconstruye la base local; **no vacía** por sí solo los objetos ya subidos al bucket Storage `raw`. Antes de la corrida live conviene partir de un Storage limpio (o borrar el prefijo `placsp/` si hubiera restos de tests de integración).
+**Nota:** `db reset` no vacía Storage. Conviene limpiar `raw/placsp/` antes del live si hay restos.
 
----
+## A.3 Fase B — Live (un mes)
 
-## 4. Fase B — Corrida live acotada (un mes)
-
-### Por qué un solo mes
-
-Los ZIP mensuales de PLACSP pueden ser grandes. Se eligió el **paquete mensual del mes en curso (septiembre)** (`licitacionesPerfilesContratanteCompleto3_YYYYMM.zip` vía URI conocida de `sindicacion_643`), por ser una ventana acotada y, en un mes aún abierto, típicamente más manejable que un mes cerrado completo.
-
-### Comando (primera corrida)
+Paquete del **mes en curso (septiembre)** vía `sindicacion_643` (`licitacionesPerfilesContratanteCompleto3_YYYYMM.zip`).
 
 ```powershell
 cd ingestion
@@ -72,11 +66,6 @@ uv run python -m efilicit_ingestion.cli run-placsp `
   --to-month YYYY-MM `
   --run-id prueba-live-sep-1
 ```
-
-Sustituir `YYYY-MM` por el mes del paquete elegido (en esta verificación: **septiembre del año en curso**).  
-Sin `--fixture` ni `--dry-run`: descarga real + escritura a Postgres/Storage locales.
-
-### Resultado de la primera corrida
 
 | Campo | Valor |
 |---|---|
@@ -91,105 +80,424 @@ Sin `--fixture` ni `--dry-run`: descarga real + escritura a Postgres/Storage loc
 | Checksum (SHA-256) | `726e2b0d09781d0b439b6f2fcbc3a265b319dafbd72efcd3d667891fc48823a9` |
 | Path RAW | `raw/placsp/<año>/<mes>/<día>/licitacionesPerfilesContratanteCompleto3_<YYYYMM>.zip` |
 
-`records_updated` en la primera pasada es esperable: el feed Atom/CODICE trae **actualizaciones** del mismo expediente dentro del mismo paquete; el upsert canónico las consolida por `(source_code, source_tender_id)`.
-
-### Contadores en Postgres local (tras la 1ª)
+`records_updated` en la 1ª pasada es esperable (varias actualizaciones del mismo expediente en el feed).
 
 | Tabla / métrica | Cantidad |
 |---|---|
 | `tenders` | 20.517 |
 | `tender_sources` (`placsp`) | 20.517 |
-| `contracting_authorities` | 3.125 (confianza `HIGH` cuando aplica NIF/CIF) |
+| `contracting_authorities` | 3.125 (`HIGH` cuando aplica NIF/CIF) |
 | `tender_events` | ~25.154 |
 | `documents` | 20.517 |
 
-### Comprobación visual en Supabase Studio
-
-Studio local: URL que indique `supabase status` (habitualmente `http://127.0.0.1:54323`).
+### Studio (checklist)
 
 | Dónde | Qué verificar |
 |---|---|
-| Storage → bucket `raw` | ZIP mensual real bajo `placsp/…` (~decenas de MB) |
-| `source_sync` | Fila `prueba-live-sep-1`, `status=success`, contadores coherentes |
-| `source_artifacts` | `artifact_key` del ZIP, checksum y `storage_path` |
-| `tenders` | Miles de filas con títulos/importes/CPV reales (no fixtures) |
-| `tender_sources` | `source_code=placsp` y `source_tender_id` rellenos |
-| `contracting_authorities` | Organismos con `tax_id` cuando la fuente lo aporta |
+| Storage → `raw` | ZIP bajo `placsp/…` (~decenas de MB) |
+| `source_sync` | `prueba-live-sep-1`, `success` |
+| `source_artifacts` | checksum + `storage_path` |
+| `tenders` / `tender_sources` | datos reales, `source_code=placsp` |
 
----
-
-## 5. Segunda corrida — idempotencia
-
-### Comando
-
-Mismo mes que la primera corrida; otro `run_id`:
+## A.4 Segunda corrida — idempotencia
 
 ```powershell
-cd ingestion
 uv run python -m efilicit_ingestion.cli run-placsp `
   --from-month YYYY-MM `
   --to-month YYYY-MM `
   --run-id prueba-live-sep-2
 ```
 
-### Resultado
-
-| Campo | 1ª corrida | 2ª corrida |
+| Campo | 1ª | 2ª |
 |---|---|---|
 | `status` | success | **success** |
 | `records_seen` | 25.151 | **25.151** |
 | `records_new` | 20.516 | **0** |
 | `records_updated` | 4.635 | **25.151** |
-| Checksum del artefacto | (mismo ZIP) | **igual** |
+| Checksum | — | **igual** |
 
-Tras la 2ª:
+Sin crecimiento de `tenders` / `tender_sources`; sin duplicados `(placsp, source_tender_id)`.
 
-- `tenders` y `tender_sources` **no crecieron** (siguen en 20.517).
-- Sin duplicados por `(source_code, source_tender_id)`.
+## A.5 Veredicto `placsp`
 
-**Conclusión:** reejecutar el mismo mes no duplica el modelo canónico; solo actualiza.
-
----
-
-## 6. Veredicto
-
-| Criterio Semana 2 (datos reales) | Estado |
+| Criterio | Estado |
 |---|---|
-| Pipeline E2E con paquete oficial PLACSP | OK |
-| RAW en Storage + registro en `source_artifacts` | OK |
-| Upsert canónico poblado | OK |
-| `source_sync` refleja la ejecución | OK |
-| Trazabilidad licitación → artefacto | OK |
-| Reejecución idempotente | OK |
-| Producción / remoto intactos | OK |
-
-El vertical slice de Semanas 0–2 queda **validado fuera de fixtures** para PLACSP, listo como base antes de escalar fuentes (Semana 3+).
+| Pipeline E2E con paquete oficial | OK |
+| RAW + `source_artifacts` | OK |
+| Upsert canónico | OK |
+| Idempotencia | OK |
+| Remoto intacto | OK |
 
 ---
 
-## 7. Cómo repetir la prueba
+# Parte B — `placsp_agregadas` (Semana 3)
 
-1. Rama limpia desde `main` (o la rama de verificación acordada).
-2. Docker + `supabase start` +, si hace falta, `supabase db reset`.
-3. Limpiar Storage `raw/placsp/` si se quiere un punto de partida vacío.
-4. Fase A: `pytest` + dry-run con fixture.
-5. Fase B: `run-placsp --from-month YYYY-MM --to-month YYYY-MM --run-id <id>` (un solo mes).
-6. Revisar Studio (tablas + Storage).
-7. Segunda corrida con otro `--run-id` y mismos meses → esperar `records_new=0` y sin crecimiento de `tender_sources`.
+> Con el conector/CLI de agregadas ya cableado en la rama de Semana 3 (`--syndication placsp_agregadas`), mismo patrón de verificación que la Parte A.
 
-Si falla: anotar `source_sync.error_message` / salida CLI, resetear local si hace falta, y aislar etapa (`discover` / `fetch` / parse / upsert) sin tocar remoto.
+## B.1 Cómo se aisló el trabajo
+
+- Rama de trabajo: `tecnico4/semana-03` (no se mezcló con `main` durante la corrida).
+- Destino: **Supabase local** únicamente.
+- Recuperación: `supabase db reset` + vaciar `raw/placsp_agregadas/` (y, si aplica, otros prefijos `raw/` de pruebas previas).
+
+## B.2 Fase A — Baseline
+
+1. Confirmar rama + Docker + Supabase local.
+2. `supabase db reset`.
+3. `uv sync --extra dev` + `uv run pytest -q` → **74 passed**.
+4. Dry-run agregadas:
+
+```powershell
+cd ingestion
+uv run python -m efilicit_ingestion.cli run-placsp `
+  --syndication placsp_agregadas `
+  --fixture tests/fixtures/placsp/valid_single_entry.atom `
+  --dry-run `
+  --run-id fase-a-agregadas-dry
+```
+
+| Comprobación | Resultado |
+|---|---|
+| Migraciones + seed | OK |
+| Pytest | **74 passed** |
+| Dry-run | `status=success`, `source_code=placsp_agregadas`, `raw_path=raw/placsp_agregadas/...` |
+
+El dry-run no escribe en DB/Storage.
+
+## B.3 Fase B — Live (un mes)
+
+Mismo criterio: **paquete mensual de septiembre** (`PlataformasAgregadasSinMenores_YYYYMM.zip`, `sindicacion_1044`).
+
+```powershell
+cd ingestion
+uv run python -m efilicit_ingestion.cli run-placsp `
+  --syndication placsp_agregadas `
+  --from-month YYYY-MM `
+  --to-month YYYY-MM `
+  --run-id prueba-live-agregadas-1
+```
+
+| Campo | Valor |
+|---|---|
+| `status` | **success** |
+| `run_id` | `prueba-live-agregadas-1` |
+| `source_code` | `placsp_agregadas` |
+| `records_seen` | 11.458 |
+| `records_new` | 8.652 |
+| `records_updated` | 2.806 |
+| `artifacts` | 1 |
+| Tamaño del ZIP | ~6,3 MB |
+| Checksum (SHA-256) | `aa1b888036a89cbab15b58e16b2c6aba263a77ae641b165df4b79de9863547ef` |
+| Path RAW | `raw/placsp_agregadas/<año>/<mes>/<día>/PlataformasAgregadasSinMenores_<YYYYMM>.zip` |
+
+| Tabla / métrica | Cantidad |
+|---|---|
+| `tenders` | ~8.654 |
+| `tender_sources` (`placsp_agregadas`) | ~8.653 |
+| `contracting_authorities` | ~7.793 (`HIGH` ~442; en agregadas muchos órganos vienen sin NIF/CIF) |
+| `tender_events` | ~11.464 |
+| `documents` | ~9.440 |
+
+### Studio (checklist)
+
+| Dónde | Qué verificar |
+|---|---|
+| Storage → `raw` | ZIP bajo `placsp_agregadas/…` (~6 MB) |
+| `source_sync` | `prueba-live-agregadas-1`, `success` |
+| `source_artifacts` | `artifact_key` del ZIP agregadas, checksum |
+| `tender_sources` | filtro `source_code = placsp_agregadas` |
+| `tenders` | títulos reales (CCAA / entidades agregadas) |
+
+**Nota:** no se exige deduplicación cross-source con `placsp` (Semana 4). Los `source_code` conviven sin mezclarse en `tender_sources`.
+
+## B.4 Segunda corrida — idempotencia
+
+```powershell
+uv run python -m efilicit_ingestion.cli run-placsp `
+  --syndication placsp_agregadas `
+  --from-month YYYY-MM `
+  --to-month YYYY-MM `
+  --run-id prueba-live-agregadas-2
+```
+
+| Campo | 1ª | 2ª |
+|---|---|---|
+| `status` | success | **success** |
+| `records_seen` | 11.458 | **11.458** |
+| `records_new` | 8.652 | **0** |
+| `records_updated` | 2.806 | **11.458** |
+| Checksum | — | **igual** |
+
+Sin crecimiento de `tenders` / `tender_sources`; sin duplicados `(placsp_agregadas, source_tender_id)`.
+
+## B.5 Veredicto `placsp_agregadas`
+
+| Criterio | Estado |
+|---|---|
+| Pipeline E2E con paquete oficial de agregación | OK |
+| Prefijo RAW `raw/placsp_agregadas/` | OK |
+| Upsert con `source_code` distinto de `placsp` | OK |
+| Idempotencia | OK |
+| Remoto intacto | OK |
+
+---
+
+# Parte C — `catalunya` (Semana 3 / Paso 8.6)
+
+> Con `SocrataConnector` + CLI `run-catalunya` ya cableados (Pasos 7–8.5). Aquí no hay ZIP mensual: el live se acota por **páginas SODA** (`--page-size` / `--max-pages` / `--start-offset`).
+
+## C.1 Cómo se aisló el trabajo
+
+- Rama: `tecnico4/semana-03`.
+- Destino: **Supabase local**.
+- Recuperación: `supabase db reset` + vaciar `raw/catalunya/`.
+
+## C.2 Fase A — Baseline
+
+1. Confirmar rama + Docker + Supabase local.
+2. `supabase db reset`.
+3. `uv sync --extra dev` + `uv run pytest -q` → **98 passed**.
+4. Dry-run:
+
+```powershell
+cd ingestion
+uv run python -m efilicit_ingestion.cli run-catalunya `
+  --fixture tests/fixtures/catalunya/valid_page.json `
+  --dry-run `
+  --run-id fase-a-catalunya-dry
+```
+
+| Comprobación | Resultado |
+|---|---|
+| Migraciones + seed | OK |
+| Pytest | **98 passed** |
+| Dry-run | `status=success`, `source_code=catalunya`, `records_seen=2`, path `raw/catalunya/...` |
+
+## C.3 Fase B — Live (una página SODA)
+
+Equivalente al “un mes” de PLACSP: **1 página × 1000 filas** desde offset 0 del dataset `ybgg-dgi6`.
+
+```powershell
+cd ingestion
+uv run python -m efilicit_ingestion.cli run-catalunya `
+  --page-size 1000 `
+  --max-pages 1 `
+  --start-offset 0 `
+  --run-id prueba-live-catalunya-1
+```
+
+| Campo | Valor |
+|---|---|
+| `status` | **success** |
+| `run_id` | `prueba-live-catalunya-1` |
+| `source_code` | `catalunya` |
+| `records_seen` | 1000 |
+| `records_new` | 1000 |
+| `records_updated` | 0 |
+| `artifacts` | 1 |
+| Tamaño del JSON | ~2,9 MB |
+| Checksum (SHA-256) | `317b1ee5cbc69d85863af5ea8dacdec8add246a1ee483af255c628b5efc4713c` |
+| Path RAW | `raw/catalunya/<año>/<mes>/<día>/ybgg-dgi6_offset_0000000_limit_1000.json` |
+
+| Tabla / métrica | Cantidad (aprox.) |
+|---|---|
+| `tender_sources` (`catalunya`) | ~1002 |
+| `tenders` | ~1004 |
+
+*(Un par de filas extra pueden venir de tests de integración Postgres con fixture ejecutados en la Fase A tras el reset; el live aportó exactamente 1000.)*
+
+### Studio (checklist)
+
+| Dónde | Qué verificar |
+|---|---|
+| Storage → `raw` | JSON bajo `catalunya/…ybgg-dgi6_offset_…` |
+| `source_sync` | `prueba-live-catalunya-1`, `success` |
+| `source_artifacts` | `artifact_key` de la página, checksum |
+| `tender_sources` | filtro `source_code = catalunya` |
+| `tenders` | títulos PSCP / catalán reales |
+
+## C.4 Segunda corrida — idempotencia
+
+```powershell
+uv run python -m efilicit_ingestion.cli run-catalunya `
+  --page-size 1000 `
+  --max-pages 1 `
+  --start-offset 0 `
+  --run-id prueba-live-catalunya-2
+```
+
+| Campo | 1ª | 2ª |
+|---|---|---|
+| `status` | success | **success** |
+| `records_seen` | 1000 | **1000** |
+| `records_new` | 1000 | **0** |
+| `records_updated` | 0 | **1000** |
+| Checksum | — | **igual** |
+
+Sin duplicados `(catalunya, source_tender_id)`; el conteo de `tender_sources` no creció.
+
+## C.5 Veredicto `catalunya`
+
+| Criterio | Estado |
+|---|---|
+| Pipeline E2E con página SODA real | OK |
+| Prefijo RAW `raw/catalunya/` | OK |
+| Upsert `(catalunya, id_intern)` | OK |
+| Idempotencia | OK |
+| Remoto intacto | OK |
+
+---
+
+# Cómo repetir
+
+### `placsp`
+
+```powershell
+uv run python -m efilicit_ingestion.cli run-placsp `
+  --from-month YYYY-MM --to-month YYYY-MM --run-id <id>
+```
+
+### `placsp_agregadas`
+
+```powershell
+uv run python -m efilicit_ingestion.cli run-placsp `
+  --syndication placsp_agregadas `
+  --from-month YYYY-MM --to-month YYYY-MM --run-id <id>
+```
+
+### `catalunya`
+
+```powershell
+uv run python -m efilicit_ingestion.cli run-catalunya `
+  --page-size 1000 --max-pages 1 --start-offset 0 --run-id <id>
+```
+
+### `euskadi`
+
+```powershell
+uv run python -m efilicit_ingestion.cli run-euskadi `
+  --max-pages 1 --start-page 1 --run-id <id>
+```
+
+(La API fija 10 ítems/página; subir `--max-pages` para más volumen.)
+
+Pasos comunes: stack local → (opcional) `db reset` + limpiar Storage → pytest / dry-run → live acotado → Studio → 2ª corrida con otro `run_id`.
 
 ### Límites conscientes
 
-- No es un test de CI automatizado con red a PLACSP (los unitarios siguen sin red).
-- No valida UI de búsqueda, Auth de producto ni alertas (fuera de Semana 2).
-- Un mes ≠ cobertura histórica completa; solo demuestra la tubería con volumen real.
+- No sustituye CI sin red (unitarios siguen offline).
+- No valida UI de búsqueda, Auth ni alertas.
+- Un mes / una página ≠ histórico completo del dataset.
+- `placsp_menores` y resto de CCAA no listadas aquí no forman parte de estas corridas.
+
+---
+
+# Parte D — `euskadi` (Semana 3 / Paso 9.5)
+
+> Con `EuskadiConnector` + CLI `run-euskadi`. La API KontratazioA fija **10 ítems/página** (`currentPage`); no hay parámetro de tamaño de página. Acotar con `--max-pages` / `--start-page`.
+
+## D.1 Cómo se aisló el trabajo
+
+- Rama: `tecnico4/semana-03`.
+- Destino: **Supabase local**.
+- Recuperación: `supabase db reset` + vaciar `raw/euskadi/`.
+
+## D.2 Fase A — Baseline
+
+1. Confirmar rama + Docker + Supabase local.
+2. `supabase db reset`.
+3. `uv sync --extra dev` + `uv run pytest -q` → **112 passed**.
+4. Dry-run:
+
+```powershell
+cd ingestion
+uv run python -m efilicit_ingestion.cli run-euskadi `
+  --fixture tests/fixtures/euskadi/valid_page.json `
+  --dry-run `
+  --run-id fase-a-euskadi-dry
+```
+
+| Comprobación | Resultado |
+|---|---|
+| Migraciones + seed | OK |
+| Pytest | **112 passed** |
+| Dry-run | `status=success`, `source_code=euskadi`, `records_seen=2`, path `raw/euskadi/.../contracting-notices_page_000001.json` |
+
+## D.3 Fase B — Live (1 página API)
+
+Equivalente al “un mes” / “una página SODA”: **página 1** (= 10 avisos reales).
+
+```powershell
+cd ingestion
+uv run python -m efilicit_ingestion.cli run-euskadi `
+  --max-pages 1 `
+  --start-page 1 `
+  --run-id prueba-live-euskadi-1
+```
+
+| Campo | Valor |
+|---|---|
+| `status` | **success** |
+| `run_id` | `prueba-live-euskadi-1` |
+| `source_code` | `euskadi` |
+| `records_seen` | 10 |
+| `records_new` | 10 |
+| `records_updated` | 0 |
+| `artifacts` | 1 |
+| Tamaño del JSON | ~29 KB |
+| Checksum (SHA-256) | `15462d2448e57805e4dd12160bd8674af2c9fc689d9f7af2d59787d19d40dec5` |
+| Path RAW | `raw/euskadi/<año>/<mes>/<día>/contracting-notices_page_000001.json` |
+
+| Tabla / métrica | Cantidad (aprox.) |
+|---|---|
+| `tender_sources` (`euskadi`) | ~12 |
+
+*(2 filas extra pueden venir de tests de integración Postgres con fixture en la Fase A; el live aportó exactamente 10.)*
+
+### Studio (checklist)
+
+| Dónde | Qué verificar |
+|---|---|
+| Storage → `raw` | JSON bajo `euskadi/…contracting-notices_page_…` |
+| `source_sync` | `prueba-live-euskadi-1`, `success` |
+| `source_artifacts` | `artifact_key` de la página, checksum |
+| `tender_sources` | filtro `source_code = euskadi` |
+| `tenders` | títulos reales (avisos KontratazioA) |
+
+## D.4 Segunda corrida — idempotencia
+
+```powershell
+uv run python -m efilicit_ingestion.cli run-euskadi `
+  --max-pages 1 `
+  --start-page 1 `
+  --run-id prueba-live-euskadi-2
+```
+
+| Campo | 1ª | 2ª |
+|---|---|---|
+| `status` | success | **success** |
+| `records_seen` | 10 | **10** |
+| `records_new` | 10 | **0** |
+| `records_updated` | 0 | **10** |
+| Checksum | — | **igual** |
+
+Sin duplicados `(euskadi, source_tender_id)`; el conteo de `tender_sources` no creció.
+
+## D.5 Veredicto `euskadi`
+
+| Criterio | Estado |
+|---|---|
+| Pipeline E2E con página API real | OK |
+| Prefijo RAW `raw/euskadi/` | OK |
+| Upsert `(euskadi, id)` | OK |
+| Idempotencia | OK |
+| Remoto intacto | OK |
 
 ---
 
 ## Referencias
 
-- Plan / checklist Semana 2: [plans/semana02-plan.md](plans/semana02-plan.md), [plans/fase2-checklist.md](plans/fase2-checklist.md)
-- Fuente: [sources/placsp.md](sources/placsp.md)
-- CLI: `ingestion/README.md` (`run-placsp`)
-- Roadmap: [04-roadmap-mvp.md](04-roadmap-mvp.md) § Semana 2
+- Semana 2: [plans/semana02-plan.md](plans/semana02-plan.md), [plans/fase2-checklist.md](plans/fase2-checklist.md), [sources/placsp.md](sources/placsp.md)
+- Semana 3: [plans/semana03-plan.md](plans/semana03-plan.md), [plans/fase3-checklist.md](plans/fase3-checklist.md), [sources/placsp_agregadas.md](sources/placsp_agregadas.md), [sources/catalunya.md](sources/catalunya.md), [sources/euskadi.md](sources/euskadi.md)
+- CLI: `ingestion/README.md` (`run-placsp`, `run-catalunya`, `run-euskadi`)
+- Roadmap: [04-roadmap-mvp.md](04-roadmap-mvp.md) § Semanas 2–3

@@ -11,15 +11,17 @@ uv run python -c "import sys; print(sys.version)"
 uv run python -m efilicit_ingestion.cli --help
 ```
 
-## Estado (Semana 2)
+## Estado
 
-PLACSP vertical slice cableado en CLI:
+PLACSP cableado en CLI (`run-placsp`): perfiles (`placsp`) y agregadas (`placsp_agregadas` vía `--syndication`).  
+Catalunya Socrata: `run-catalunya` (Semana 3 Paso 8).  
+Euskadi KontratazioA: `run-euskadi` (Semana 3 Paso 9).
 
 `discover` → `fetch` → RAW → `parse` → normalize/identidad → upsert canónico.
 
-## Corrida E2E local (Paso 8)
+## Corrida E2E local
 
-### Dry-run (sin escribir DB)
+### Dry-run perfiles (sin escribir DB)
 
 ```powershell
 cd ingestion
@@ -29,7 +31,42 @@ uv run python -m efilicit_ingestion.cli run-placsp `
   --as-of 2026-09-11
 ```
 
-Esperado: `status=success`, `records_seen=1`, `raw_path=raw/placsp/...`.
+Esperado: `status=success`, `source_code=placsp`, `records_seen=1`, `raw_path=raw/placsp/...`.
+
+### Dry-run agregadas (Semana 3 Paso 4.5)
+
+```powershell
+cd ingestion
+uv run python -m efilicit_ingestion.cli run-placsp `
+  --syndication placsp_agregadas `
+  --fixture tests/fixtures/placsp/valid_single_entry.atom `
+  --dry-run `
+  --as-of 2026-09-15
+```
+
+Esperado: `status=success`, `source_code=placsp_agregadas`, `raw_path=raw/placsp_agregadas/...`.
+
+### Dry-run Catalunya (Semana 3 Paso 8.4)
+
+```powershell
+cd ingestion
+uv run python -m efilicit_ingestion.cli run-catalunya `
+  --fixture tests/fixtures/catalunya/valid_page.json `
+  --dry-run
+```
+
+Esperado: `status=success`, `source_code=catalunya`, `records_seen=2`, `raw_path=raw/catalunya/...`.
+
+### Dry-run Euskadi (Semana 3 Paso 9)
+
+```powershell
+cd ingestion
+uv run python -m efilicit_ingestion.cli run-euskadi `
+  --fixture tests/fixtures/euskadi/valid_page.json `
+  --dry-run
+```
+
+Esperado: `status=success`, `source_code=euskadi`, `records_seen=2`, `raw_path=raw/euskadi/...`.
 
 ### Contra Supabase local (Studio)
 
@@ -44,13 +81,42 @@ uv run python -m efilicit_ingestion.cli run-placsp `
   --run-id demo-placsp-1
 ```
 
+Agregadas (mismo fixture CODICE; distinto `source_code`):
+
+```powershell
+uv run python -m efilicit_ingestion.cli run-placsp `
+  --syndication placsp_agregadas `
+  --fixture tests/fixtures/placsp/valid_single_entry.atom `
+  --no-storage `
+  --as-of 2026-09-15 `
+  --run-id demo-agregadas-1
+```
+
+Catalunya:
+
+```powershell
+uv run python -m efilicit_ingestion.cli run-catalunya `
+  --fixture tests/fixtures/catalunya/valid_page.json `
+  --no-storage `
+  --run-id demo-catalunya-1
+```
+
+Euskadi:
+
+```powershell
+uv run python -m efilicit_ingestion.cli run-euskadi `
+  --fixture tests/fixtures/euskadi/valid_page.json `
+  --no-storage `
+  --run-id demo-euskadi-1
+```
+
 (`--no-storage` evita depender de la service_role; añade Storage omitiendo ese flag si tienes `SUPABASE_SERVICE_ROLE_KEY`.)
 
 Luego en Studio (`http://127.0.0.1:54323`):
 
-1. `source_sync` → `run_id` = `demo-placsp-1`, status `success`
+1. `source_sync` → `run_id` indicado, status `success`
 2. `source_artifacts` → path/checksum del ZIP fixture
-3. `tenders` / `tender_sources` → licitación fixture
+3. `tenders` / `tender_sources` → licitación fixture (`source_code` = `placsp` o `placsp_agregadas`)
 4. Reejecutar el mismo comando con otro `--run-id` → no duplica `tender_sources`
 
 ### Live PLACSP (opcional, red real)
@@ -61,18 +127,26 @@ uv run python -m efilicit_ingestion.cli run-placsp --from-month 2026-09 --to-mon
 
 Solo cuando quieras probar descarga oficial (ZIPs pueden ser grandes).
 
-## GitHub Actions (Paso 9)
+## GitHub Actions
 
 Workflow: [`.github/workflows/ingest-placsp.yml`](../.github/workflows/ingest-placsp.yml)
 
 1. Repo → **Actions** → **Ingest PLACSP** → **Run workflow**.
-2. Empieza con mode **`dry-run`** (sin secretos).
+2. Elige **syndication** (`placsp` o `placsp_agregadas`) y mode **`dry-run`** (sin secretos).
 3. Para escribir en un entorno remoto: configura secrets (`EFILICIT_DATABASE_URL`, y si subes RAW también `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY`) y elige `fixture-db` o `live`.
 4. Cron desactivado en el YAML hasta acordar horario y destino.
 
 Detalle de secretos: [`.github/README.md`](../.github/README.md).
 
-Tras merge a `main`: Actions → **Ingest PLACSP** → **Run workflow** → mode `dry-run` (comprueba el YAML en GitHub).
+Tras merge a `main`: Actions → **Ingest PLACSP** → syndication `placsp_agregadas` + mode `dry-run`.
+
+### Catalunya (Paso 8.5)
+
+Workflow: [`.github/workflows/ingest-catalunya.yml`](../.github/workflows/ingest-catalunya.yml)
+
+1. Actions → **Ingest Catalunya** → **Run workflow**.
+2. Rama `tecnico4/semana-03` (hasta merge) + mode **`dry-run`**.
+3. `fixture-db` / `live`: mismos secrets; en live mantener `max_pages` bajo.
 
 ## Cierre Semana 2 (Paso 10)
 

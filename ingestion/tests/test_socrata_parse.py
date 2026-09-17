@@ -1,0 +1,66 @@
+"""Socrata / Catalunya parse + normalize tests (Semana 3 Paso 7). No live network."""
+
+from __future__ import annotations
+
+from decimal import Decimal
+from pathlib import Path
+
+import pytest
+
+from efilicit_ingestion.connectors.socrata import SocrataConnector, SocrataParseError
+from efilicit_ingestion.connectors.socrata.parser import parse_socrata_artifact
+from efilicit_ingestion.models import RemoteArtifact
+from efilicit_ingestion.pipeline import stages
+
+FIXTURE = Path(__file__).parent / "fixtures" / "catalunya" / "valid_page.json"
+
+
+def _artifact() -> RemoteArtifact:
+    return RemoteArtifact(
+        artifact_key="ybgg-dgi6_offset_0000000_limit_1000.json",
+        source_url=(
+            "https://analisi.transparenciacatalunya.cat/resource/"
+            "ybgg-dgi6.json?$limit=1000&$offset=0"
+        ),
+        content_type="application/json",
+        metadata={"dataset_id": "ybgg-dgi6"},
+    )
+
+
+def test_catalunya_parse_maps_rows_and_skips_without_id() -> None:
+    records = list(parse_socrata_artifact(FIXTURE.read_bytes(), _artifact()))
+    assert len(records) == 2
+    assert records[0].source_record_id == "aaaaaaaa-bbbb-cccc-dddd-000000000001"
+    assert records[0].payload["title"].startswith("Suministro")
+    assert records[0].payload["status"] == "PUB"
+    assert records[0].payload["contract_type"] == "1"
+    assert records[0].payload["estimated_value"] == "12500.50"
+    assert records[0].payload["cpv_codes"] == ["30192700"]
+    assert records[0].payload["authority"]["platform_id"] == "L01000001"
+    assert records[1].source_record_id == "aaaaaaaa-bbbb-cccc-dddd-000000000002"
+    assert records[1].payload["status"] == "ADJ"
+    assert records[1].payload["contract_type"] == "2"
+
+
+def test_catalunya_parse_malformed_raises() -> None:
+    with pytest.raises(SocrataParseError):
+        list(parse_socrata_artifact(b"not-json", _artifact()))
+
+
+def test_catalunya_connector_parse_normalize_identity() -> None:
+    connector = SocrataConnector()
+    records = list(connector.parse(FIXTURE.read_bytes(), _artifact()))
+    identified = stages.resolve_identity(stages.normalize(records))
+
+    assert connector.source_code == "catalunya"
+    assert len(identified) == 2
+    first = identified[0].payload["canonical"]
+    assert first["title"].startswith("Suministro")
+    assert first["status"] == "published"
+    assert first["contract_type"] == "supplies"
+    assert first["estimated_value"] == Decimal("12500.50")
+    assert first["cpv_code"] == "30192700"
+    assert first["nuts_code"] == "ES511"
+    assert first["authority"]["platform_id"] == "L01000001"
+    assert first["authority"]["identity_confidence"] == "MEDIUM"
+    assert first["source_url"].startswith("https://example.invalid/")
