@@ -20,7 +20,7 @@ Aquí se documenta **cómo se ha decidido ejecutar** cada semana del roadmap (or
 | Semana 0 / Fase 0 (setup) | [semana00-plan.md](semana00-plan.md) | [fase0-checklist.md](fase0-checklist.md) | Cerrada |
 | Semana 1 / Fase 1 (canónico + ingesta) | [semana01-plan.md](semana01-plan.md) | [fase1-checklist.md](fase1-checklist.md) | Cerrada |
 | Semana 2 / Fase 2 (PLACSP vertical slice) | [semana02-plan.md](semana02-plan.md) | [fase2-checklist.md](fase2-checklist.md) | Cerrada |
-| Semana 3 / Fase 3 (escalado estatal + primeras CCAA) | [semana03-plan.md](semana03-plan.md) | [fase3-checklist.md](fase3-checklist.md) | En curso (1–5 + 7–9.5 OK; 6 N/A; siguiente Paso 10) |
+| Semana 3 / Fase 3 (escalado estatal + primeras CCAA) | [semana03-plan.md](semana03-plan.md) | [fase3-checklist.md](fase3-checklist.md) | Cerrada |
 | Semana 4+ | Se añadirán `semana04-plan.md` / `fase4-checklist.md` al arrancar | — | Pendiente |
 
 ## Relación con el roadmap

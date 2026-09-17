@@ -1,6 +1,6 @@
 # Semana 3 — Plan: escalado estatal + primeras CCAA
 
-> **Estado:** en curso — progreso en [fase3-checklist.md](fase3-checklist.md).  
+> **Estado:** cerrada (Pasos 1–10; Paso 6 N/A). Siguiente: Semana 4 (cobertura territorial + deduplicación).  
 > **Checklist:** [fase3-checklist.md](fase3-checklist.md)  
 > **Precondición:** Semana 2 cerrada ([fase2-checklist.md](fase2-checklist.md)).  
 > **Norma:** `docs/00`–`04` y `.cursor/rules/`. Reutilizar contrato `SourceConnector` + pipeline + upsert canónico de Semanas 1–2. ADR solo si hace falta cambiar arquitectura de verdad.  
@@ -216,9 +216,11 @@ Mismo patrón A/B que PLACSP/Catalunya, adaptado a páginas KontratazioA (10 ít
 
 Actualizar `docs/sources/README.md`. Batería de tests (todas las fuentes nuevas). Marcar [fase3-checklist.md](fase3-checklist.md). CHANGELOG. ADR `N/A` o nuevo ADR si hubo decisión estructural.
 
-**Listo cuando:** criterios de salida de `docs/04` § Semana 3 cumplidos.
+**Hecho:** catálogo homogéneo; regresión `112 passed`; checklist completo; ADR N/A; CHANGELOG con cierre Semana 3.
 
-**Fuera de alcance:** resto de las 17 CCAA, dedup multi-fuente avanzada (Semana 4), TED, FTS/Auth/alertas UI, subvenciones, infra nueva sin ADR.
+**Listo cuando:** criterios de salida de `docs/04` § Semana 3 cumplidos → **cumplidos** (ver tabla en checklist).
+
+**Fuera de alcance (→ Semana 4+):** `placsp_menores`, resto de las 17 CCAA, dedup multi-fuente avanzada, TED, FTS/Auth/alertas UI, subvenciones, infra nueva sin ADR.
 
 ---
 
@@ -256,6 +258,7 @@ Registro de lo acordado al cerrar (o antes de) cada paso:
 | Paso 8.6 | Verificación live SODA `catalunya` (1 página + idempotencia) | Mismo patrón A/B que PLACSP; documentado en [docs/pruebas.md](../pruebas.md) Parte C |
 | Paso 9 | CCAA #2 `euskadi` (KontratazioA REST) | Conector propio; página fija 10; CLI + workflow |
 | Paso 9.5 | Verificación live API `euskadi` (1 página + idempotencia) | Documentado en [docs/pruebas.md](../pruebas.md) Parte D |
+| Paso 10 | Catálogo + regresión `112 passed` + cierre | ADR N/A; `placsp_menores` diferido a Semana 4+; Semana 3 cerrada |
 
 ---
 

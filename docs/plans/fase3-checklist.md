@@ -17,7 +17,7 @@ Los pasos globales (1–10) se mantienen. Los Pasos **3**, **4** y **8** se desg
 | 7. Adaptador REST/Socrata (o N/A) | OK | `SocrataConnector` + preset `CATALUNYA` (`ybgg-dgi6`); ficha + tests sin red |
 | 8. CCAA propia #1 | OK | `catalunya` 8.1–8.6; live SODA + idempotencia en [docs/pruebas.md](../pruebas.md) |
 | 9. CCAA propia #2 (+) | OK | `euskadi` 9.1–9.5; live API + idempotencia en [docs/pruebas.md](../pruebas.md) Parte D |
-| 10. Catálogo + regresión + cierre | — | `docs/sources/README.md`, tests, CHANGELOG, ADR |
+| 10. Catálogo + regresión + cierre | OK | Catálogo homogéneo; `112 passed`; CHANGELOG; ADR N/A |
 
 ## Paso 3 — minipasos (conector estatal)
 
@@ -65,10 +65,19 @@ Parse/normalize del adaptador ya cubiertos en Paso 7.
 |---|---|---|
 | Reejecutar no duplica (fuentes nuevas) | OK | Live `placsp_agregadas` + `catalunya` + `euskadi`: 2ª corrida `records_new=0`; ver [docs/pruebas.md](../pruebas.md) |
 | `source_sync` por cada fuente añadida | OK | Live local: `prueba-live-agregadas-*`, `prueba-live-catalunya-*`, `prueba-live-euskadi-*` |
-| Tests en verde (parser / adaptadores / persistencia) | OK | 112 passed en baseline pre-live `euskadi` (incl. regresión PLACSP/Catalunya) |
-| ADRs estructurales (solo si hubo decisión nueva) | — | Si no → N/A |
-| CHANGELOG actualizado | OK | Ir actualizando por hito + entradas `docs/pruebas.md` |
+| Tests en verde (parser / adaptadores / persistencia) | OK | Regresión Paso 10: `112 passed` (PLACSP + agregadas + catalunya + euskadi) |
+| ADRs estructurales (solo si hubo decisión nueva) | N/A | Sin cambio de arquitectura; se implementó lo fijado en `docs/01`–`04` |
+| CHANGELOG actualizado | OK | Unreleased con entradas Semana 3 + cierre |
 
-Cuando los pasos globales relevantes estén en OK → Semana 4 (cobertura territorial 17 CCAA + deduplicación).
+## Criterios de salida `docs/04` § Semana 3
+
+| Criterio | Estado | Evidencia |
+|---|---|---|
+| Fuentes estatales priorizadas ingiriendo | OK | `placsp_agregadas` live ([pruebas.md](../pruebas.md) Parte B). `placsp_menores` queda para Semana 4+ |
+| Varias CCAA propias con datos reales | OK | `catalunya` + `euskadi` live (Partes C–D) |
+| Cada fuente añadida: tests + `source_sync` | OK | Fixtures/tests + sync live por fuente |
+| Sin modelo de datos alternativo por fuente | OK | Mismo canónico / pipeline común |
+
+**Semana 3 cerrada.** Siguiente: Semana 4 (cobertura territorial 17 CCAA + deduplicación).
 
 Verificación con datos reales (local): [docs/pruebas.md](../pruebas.md) — Parte B (`placsp_agregadas`) · Parte C (`catalunya`) · Parte D (`euskadi`).

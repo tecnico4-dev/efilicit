@@ -1,7 +1,7 @@
 # Euskadi — KontratazioA / Open Data Euskadi
 
 > **source_code:** `euskadi`  
-> **Estado en el proyecto:** Semana 3 — CCAA #2 (Paso 9)  
+> **Estado en el proyecto:** Semana 3 — CCAA #2 completa (Paso 9; live 9.5)  
 > **Última revisión de esta ficha:** 2026-09-17  
 > **Scraping:** no (existe API REST oficial)  
 > **Adaptador:** `EuskadiConnector` (familia REST propia; no Socrata)
