@@ -1,6 +1,6 @@
 # Semana 4 — Plan: cobertura territorial + deduplicación
 
-> **Estado:** en curso (plan de arranque; sin implementación de conectores/dedup todavía).  
+> **Estado:** en curso (Paso 1 cerrado; siguiente = Paso 2 `placsp_menores`).  
 > **Checklist:** [fase4-checklist.md](fase4-checklist.md)  
 > **Precondición:** Semana 3 cerrada ([fase3-checklist.md](fase3-checklist.md)).  
 > **Norma:** `docs/00`–`04` y `.cursor/rules/`. Reutilizar contrato `SourceConnector` + pipeline + upsert canónico de Semanas 1–3. ADR solo si hace falta cambiar arquitectura de verdad.  
@@ -50,36 +50,62 @@ Fuera de esta semana (Semana 5+): FTS / Auth / alertas UI, TED, subvenciones, mo
 
 ## Pasos
 
-### 1. Inventario de cobertura de las 17 CCAA (solo documentación)
+### 1. Inventario de cobertura de las 17 CCAA (solo documentación) — OK
 
-Contrastar catálogo de referencia + fichas oficiales + lo ya integrado. Registrar en este plan (tabla de decisiones) la **ruta de cada CCAA**:
+Contrastar catálogo de referencia + fichas oficiales + lo ya integrado. Registrar en este plan (tabla de decisiones) la **ruta de cada CCAA**.
 
-- fuente propia ya integrada;
-- cobertura vía `placsp_agregadas` (y limitaciones);
-- candidata a conector propio esta semana (solo si aporta cobertura real frente a agregadas);
-- hueco documentado.
+**Hecho:** matriz cerrada abajo; leftover `placsp_menores` confirmado; **0 CCAA propias extra** en Semana 4 (Paso 3.2 = N/A). Catálogo: [docs/sources/README.md](../sources/README.md).
 
-También confirmar el leftover estatal `placsp_menores` (`sindicacion_1143`) como siguiente sindicación PLACSP-reuse.
+#### Leftover estatal confirmado
 
-**No** implementar aún.
+| `source_code` | Acceso oficial | Adaptador | Decisión Semana 4 |
+|---|---|---|---|
+| `placsp_menores` | Hacienda [Contratos menores](https://www.hacienda.gob.es/es-ES/GobiernoAbierto/Datos%20Abiertos/Paginas/ContratosMenores.aspx) · `sindicacion_1143` · `contratosMenoresPerfilesContratantes_YYYYMM.zip` | PLACSP-reuse | **Implementar en Paso 2** (mismo patrón que `placsp` / `placsp_agregadas`) |
 
-**Listo cuando:** matriz 17 CCAA acordada + orden de ataque (menores + 0–N CCAA propias extra) con `source_code` provisional y tipo de adaptador.
+Ámbito: menores de perfiles **alojados en PLACSP** (no menores de plataformas agregadas). Atom/CODICE; sin scraping. Cobertura desde ~2018.
 
-#### Hipótesis de partida (a confirmar / corregir en este paso)
+#### Matriz 17 CCAA (ruta MVP)
 
-Cola heredada de Semana 3 y lectura del roadmap (no es todavía la decisión cerrada):
+Criterio del roadmap: cada CCAA tiene **ruta de datos oficial identificada** (propia o agregada). No exige conector propio por comunidad.
 
-| CCAA | Ruta hipotética | Notas |
+| # | CCAA | Ruta MVP | `source_code` / mecanismo | Conector propio Semana 4 | Notas / limitaciones |
+|---|---|---|---|---|---|
+| 1 | Andalucía | Agregada | `placsp_agregadas` | No | Open Data Junta: validar dataset vigente antes de un conector futuro; reserva Semana 3 |
+| 2 | Aragón | Agregada | `placsp_agregadas` | No | Open Data propio histórico hasta ~2021; después vía PLACSP |
+| 3 | Asturias | Agregada | `placsp_agregadas` | No | Reserva CSV Semana 3; no aporta más que agregadas para el MVP |
+| 4 | Illes Balears | Agregada | `placsp_agregadas` | No | Sin conector propio prioritario |
+| 5 | Canarias | Agregada | `placsp_agregadas` | No | Reserva CSV Semana 3 (`datos.canarias.es`) |
+| 6 | Cantabria | Agregada | `placsp_agregadas` | No | Sin conector propio prioritario |
+| 7 | Castilla-La Mancha | Agregada | `placsp_agregadas` | No | Portal regional de consulta ≠ fuente Open Data priorizada para ETL |
+| 8 | Castilla y León | Agregada | `placsp_agregadas` | No | Reserva CSV Semana 3 (`jcyl`) |
+| 9 | Catalunya | Propia + solape | `catalunya` (+ posible `placsp_agregadas`) | Ya integrado | Dedup multi-fuente = Pasos 4–7 |
+| 10 | Comunidad de Madrid | Agregada | `placsp_agregadas` | No | Feed Atom propio evita duplicar (decisión Semana 3) |
+| 11 | Comunitat Valenciana | Agregada | `placsp_agregadas` | No | Reserva CSV Semana 3 (`valencia` / `dadesobertes.gva.es`) |
+| 12 | Extremadura | Agregada | `placsp_agregadas` | No | Sin conector propio prioritario |
+| 13 | Galicia | Agregada | `placsp_agregadas` | No | Posible Open Data propio futuro; MVP = agregadas |
+| 14 | Región de Murcia | Agregada | `placsp_agregadas` | No | Sin conector propio prioritario |
+| 15 | Comunidad Foral de Navarra | Agregada | `placsp_agregadas` | No | Sin conector propio prioritario |
+| 16 | País Vasco | Propia + solape | `euskadi` (+ posible `placsp_agregadas`) | Ya integrado | Dedup multi-fuente = Pasos 4–7 |
+| 17 | La Rioja | Agregada | `placsp_agregadas` | No | Sin conector propio prioritario |
+
+**Limitaciones comunes de la ruta agregada** (documentadas en [placsp_agregadas.md](../sources/placsp_agregadas.md)):
+
+- No incluye contratos menores.
+- Solo entidades que publican por **agregación** (perfil no alojado en PLACSP).
+- No garantiza el 100 % de contratos locales de cada CCAA.
+- La composición de entidades agregadas varía en el tiempo.
+
+#### Orden de ataque Semana 4 (conectores)
+
+| Orden | Qué | Motivo |
 |---|---|---|
-| Catalunya | propia `catalunya` (+ posible solape agregadas) | Ya integrada |
-| País Vasco | propia `euskadi` (+ posible solape agregadas) | Ya integrada |
-| Madrid | `placsp_agregadas` | Semana 3: Atom propio duplicaría; evitar |
-| Aragón | `placsp_agregadas` | Open Data propio histórico hasta ~2021 |
-| Andalucía, Asturias, Canarias, Castilla y León, C. Valenciana | `placsp_agregadas` por defecto; reserva CSV de Semana 3 solo si el inventario demuestra cobertura extra | No forzar conector |
-| Resto (Balears, Cantabria, CLM, Extremadura, Galicia, Murcia, Navarra, La Rioja) | `placsp_agregadas` salvo fuente oficial propia clara y de alto valor | Confirmar en Paso 1 |
+| 1 | `placsp_menores` (Paso 2) | Leftover estatal MVP; máximo reuso Atom/CODICE |
+| 2 | Deduplicación (Pasos 4–7) | Criterio de salida Semana 4; solape `catalunya`/`euskadi` ↔ agregadas |
+| — | CCAA propia extra | **N/A** esta semana (0 conectores) |
 
-- **Objetivo de conectores nuevos:** el mínimo que mejore cobertura real. Default: `placsp_menores` + **cero o pocas** CCAA propias extra.
-- Adaptador CSV de familia: sigue **N/A** hasta que el Paso 1 elija una reserva CSV.
+Reservas CSV Semana 3 (`valencia`, `jcyl`, `canarias`, `asturias`, `andalucia`, …) quedan como **backlog post-MVP / Semana 4+** si `placsp_agregadas` deja un hueco medible. Adaptador CSV de familia: sigue **N/A**.
+
+**Listo cuando:** matriz 17 CCAA acordada + orden de ataque — **cumplido**.
 
 ### 2. Leftover estatal — `placsp_menores` (reuso PLACSP)
 
@@ -111,16 +137,15 @@ Prefijo Storage `raw/placsp_menores/`. Reutilizar parser CODICE + etapas del pip
 
 **Listo cuando:** CLI documentado; workflow en repo.
 
-### 3. Matriz de cobertura 17 CCAA + CCAA propias extra (si el Paso 1 las eligió)
+### 3. Matriz de cobertura 17 CCAA + CCAA propias extra — OK (3.2 N/A)
 
-Actualizar `docs/sources/README.md` (y fichas existentes) con la ruta de cada comunidad: propia / agregada / hueco.
+Actualizar `docs/sources/README.md` con la ruta de cada comunidad: propia / agregada / hueco.
 
-Si el Paso 1 selecciona **una** CCAA propia extra (p. ej. reserva CSV `valencia`): repetir el patrón Semana 3 (ficha → conector → RAW → upsert → CLI → workflow → tests).  
-Si no selecciona ninguna: marcar minipasos de conector extra como **N/A** y dejar constancia.
+**Hecho (con Paso 1):** matriz de las 17 CCAA en el catálogo. Paso 1 eligió **0 CCAA propias extra** → minipaso 3.2 = **N/A** (no ficha/conector nuevo de CCAA esta semana).
 
-**No** implementar 15 conectores “para llegar a 17”.
+Reservas CSV quedan en backlog del catálogo; no se implementan 15 conectores “para llegar a 17”.
 
-**Listo cuando:** las 17 CCAA figuran en el catálogo con ruta identificada; cada conector extra (si existe) cumple el contrato habitual; huecos reales registrados.
+**Listo cuando:** las 17 CCAA figuran en el catálogo con ruta identificada — **cumplido**; conector extra N/A.
 
 ### 4. Deduplicación — esquema de matching
 
@@ -201,6 +226,10 @@ Registro de lo acordado al cerrar (o antes de) cada paso:
 | Plan | No adelantar `pg_trgm`/FTS | Eso es Semana 5; similitud de título en el ETL |
 | Plan | `placsp_menores` antes de CCAA extra | Reuso máximo; leftover explícito de Semana 3 |
 | Plan | CCAA extra = 0–N según Paso 1 | No ampliar alcance por iniciativa |
+| Paso 1 | `placsp_menores` = `sindicacion_1143` / `contratosMenoresPerfilesContratantes` | Confirmado en ficha Hacienda; implementar en Paso 2 |
+| Paso 1 | 15 CCAA vía `placsp_agregadas`; Catalunya + Euskadi propias | Cumple “ruta identificada” del roadmap sin 17 conectores |
+| Paso 1 | CCAA propia extra Semana 4 = **0 (N/A)** | Priorizar menores + dedup; reservas CSV = backlog |
+| Paso 1 | Matriz publicada en `docs/sources/README.md` | Catálogo = fuente de verdad de cobertura territorial |
 
 ---
 

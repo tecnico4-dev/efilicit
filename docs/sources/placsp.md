@@ -45,7 +45,7 @@ licitacionesPerfilesContratanteCompleto3
 Otros datasets oficiales de PLACSP se documentan / conectan con **otro** `source_code` (no mezclar paquetes aquí):
 
 - licitaciones por **agregación** (sin menores) → [placsp_agregadas.md](placsp_agregadas.md) (`sindicacion_1044`);
-- **contratos menores** → previsto `placsp_menores` (`sindicacion_1143`, Semana 3);
+- **contratos menores** → previsto `placsp_menores` (`sindicacion_1143`, Semana 4 Paso 2);
 - catálogo de **perfiles de contratante** → fuera del alcance actual.
 
 ---

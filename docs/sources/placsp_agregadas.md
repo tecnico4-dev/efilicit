@@ -47,7 +47,7 @@ PlataformasAgregadasSinMenores
 | `source_code` | Dataset | Mezclar aquí |
 |---|---|---|
 | `placsp` | Perfiles alojados en PLACSP, sin menores (`sindicacion_643`) | No |
-| `placsp_menores` | Contratos menores de perfiles alojados (`sindicacion_1143`) | No (Semana 3, siguiente fuente estatal) |
+| `placsp_menores` | Contratos menores de perfiles alojados (`sindicacion_1143`) | No (Semana 4 Paso 2) |
 | `placsp_agregadas` | Este dataset (`sindicacion_1044`) | — |
 
 No mezclar paquetes de distintas sindicaciones en el mismo `source_code`.
