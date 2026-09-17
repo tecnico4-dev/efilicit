@@ -348,50 +348,6 @@ Sin duplicados `(catalunya, source_tender_id)`; el conteo de `tender_sources` no
 
 ---
 
-# Cómo repetir
-
-### `placsp`
-
-```powershell
-uv run python -m efilicit_ingestion.cli run-placsp `
-  --from-month YYYY-MM --to-month YYYY-MM --run-id <id>
-```
-
-### `placsp_agregadas`
-
-```powershell
-uv run python -m efilicit_ingestion.cli run-placsp `
-  --syndication placsp_agregadas `
-  --from-month YYYY-MM --to-month YYYY-MM --run-id <id>
-```
-
-### `catalunya`
-
-```powershell
-uv run python -m efilicit_ingestion.cli run-catalunya `
-  --page-size 1000 --max-pages 1 --start-offset 0 --run-id <id>
-```
-
-### `euskadi`
-
-```powershell
-uv run python -m efilicit_ingestion.cli run-euskadi `
-  --max-pages 1 --start-page 1 --run-id <id>
-```
-
-(La API fija 10 ítems/página; subir `--max-pages` para más volumen.)
-
-Pasos comunes: stack local → (opcional) `db reset` + limpiar Storage → pytest / dry-run → live acotado → Studio → 2ª corrida con otro `run_id`.
-
-### Límites conscientes
-
-- No sustituye CI sin red (unitarios siguen offline).
-- No valida UI de búsqueda, Auth ni alertas.
-- Un mes / una página ≠ histórico completo del dataset.
-- `placsp_menores` y resto de CCAA no listadas aquí no forman parte de estas corridas.
-
----
-
 # Parte D — `euskadi` (Semana 3 / Paso 9.5)
 
 > Con `EuskadiConnector` + CLI `run-euskadi`. La API KontratazioA fija **10 ítems/página** (`currentPage`); no hay parámetro de tamaño de página. Acotar con `--max-pages` / `--start-page`.
@@ -492,6 +448,50 @@ Sin duplicados `(euskadi, source_tender_id)`; el conteo de `tender_sources` no c
 | Upsert `(euskadi, id)` | OK |
 | Idempotencia | OK |
 | Remoto intacto | OK |
+
+---
+
+# Cómo repetir
+
+### `placsp`
+
+```powershell
+uv run python -m efilicit_ingestion.cli run-placsp `
+  --from-month YYYY-MM --to-month YYYY-MM --run-id <id>
+```
+
+### `placsp_agregadas`
+
+```powershell
+uv run python -m efilicit_ingestion.cli run-placsp `
+  --syndication placsp_agregadas `
+  --from-month YYYY-MM --to-month YYYY-MM --run-id <id>
+```
+
+### `catalunya`
+
+```powershell
+uv run python -m efilicit_ingestion.cli run-catalunya `
+  --page-size 1000 --max-pages 1 --start-offset 0 --run-id <id>
+```
+
+### `euskadi`
+
+```powershell
+uv run python -m efilicit_ingestion.cli run-euskadi `
+  --max-pages 1 --start-page 1 --run-id <id>
+```
+
+(La API fija 10 ítems/página; subir `--max-pages` para más volumen.)
+
+Pasos comunes: stack local → (opcional) `db reset` + limpiar Storage → pytest / dry-run → live acotado → Studio → 2ª corrida con otro `run_id`.
+
+### Límites conscientes
+
+- No sustituye CI sin red (unitarios siguen offline).
+- No valida UI de búsqueda, Auth ni alertas.
+- Un mes / una página ≠ histórico completo del dataset.
+- `placsp_menores` y resto de CCAA no listadas aquí no forman parte de estas corridas.
 
 ---
 
