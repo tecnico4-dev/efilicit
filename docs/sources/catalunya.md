@@ -143,6 +143,7 @@ discover (páginas) → fetch (JSON) → validate → RAW Storage
 | Upsert + `source_sync` + `artifact_id` | OK (Paso 8.3) |
 | CLI `--fixture` / `--dry-run` | OK (Paso 8.4) |
 | Workflow Actions manual | OK (Paso 8.5) |
+| Verificación live SODA + idempotencia | OK (Paso 8.6) → [docs/pruebas.md](../pruebas.md) Parte C |
 
 **RAW:** cada página JSON es un artefacto inmutable; prefijo Storage `raw/catalunya/AAAA/MM/DD/…`.
 
@@ -159,6 +160,7 @@ discover (páginas) → fetch (JSON) → validate → RAW Storage
 - **Upsert (Paso 8.3):** reutilizar `CanonicalRepository` / `run_pipeline`; unique `(catalunya, id_intern)`; `artifact_id` en `tender_sources`; `source_sync` con contadores.
 - **CLI E2E (Paso 8.4):** `run-catalunya --fixture … --dry-run` (JSON SODA; sin red).
 - **Workflow (Paso 8.5):** [`.github/workflows/ingest-catalunya.yml`](../../.github/workflows/ingest-catalunya.yml); default `dry-run`; cron desactivado.
+- **Live (Paso 8.6):** página SODA real + reejecución idempotente; resultados en [docs/pruebas.md](../pruebas.md) Parte C.
 - Fixtures: `ingestion/tests/fixtures/catalunya/`.
 - Stack aprobado: `httpx` + `tenacity` + Pydantic; RAW en Supabase Storage; sin Redis/colas.
 
