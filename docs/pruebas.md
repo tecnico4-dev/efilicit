@@ -9,6 +9,7 @@
 | Perfiles alojados (sin menores) | `placsp` | Sindicación `643` (ZIP mensual) | Tras cierre Semana 2 | OK |
 | Agregación (sin menores) | `placsp_agregadas` | Sindicación `1044` (ZIP mensual) | Semana 3 estatal | OK |
 | Catalunya (PSCP / Transparència) | `catalunya` | Socrata `ybgg-dgi6` (páginas JSON) | Semana 3 Paso 8.6 | OK |
+| Euskadi (KontratazioA) | `euskadi` | REST `contracting-notices` (10 ítems/página) | Semana 3 Paso 9 | Pendiente live (Parte D) |
 
 Pipeline comprobado en todos los casos:
 
@@ -378,13 +379,71 @@ Pasos comunes: stack local → (opcional) `db reset` + limpiar Storage → pytes
 - No sustituye CI sin red (unitarios siguen offline).
 - No valida UI de búsqueda, Auth ni alertas.
 - Un mes / una página ≠ histórico completo del dataset.
-- `placsp_menores`, `euskadi` y resto de CCAA no forman parte de estas corridas.
+- `placsp_menores` y resto de CCAA no listadas aquí no forman parte de estas corridas.
+- Live `euskadi` (Parte D): procedimiento listo; rellenar resultados tras la corrida local.
+
+---
+
+# Parte D — `euskadi` (Semana 3 / Paso 9)
+
+> Con `EuskadiConnector` + CLI `run-euskadi`. La API fija **10 ítems/página** (`currentPage`). Acotar con `--max-pages` / `--start-page`.
+
+## D.1 Cómo se aisló el trabajo
+
+- Rama: `tecnico4/semana-03`.
+- Destino: **Supabase local**.
+- Recuperación: `supabase db reset` + vaciar `raw/euskadi/`.
+
+## D.2 Fase A — Baseline (sin red API)
+
+```powershell
+cd ingestion
+uv sync --extra dev
+uv run pytest -q tests/test_euskadi_connector.py tests/test_euskadi_pipeline.py tests/test_run_euskadi_cli.py
+uv run python -m efilicit_ingestion.cli run-euskadi `
+  --fixture tests/fixtures/euskadi/valid_page.json `
+  --dry-run `
+  --run-id fase-a-euskadi-dry
+```
+
+| Comprobación | Esperado |
+|---|---|
+| Pytest Euskadi | passed |
+| Dry-run | `status=success`, `source_code=euskadi`, `records_seen=2`, path `raw/euskadi/...` |
+
+## D.3 Fase B — Live (1 página API)
+
+```powershell
+cd ingestion
+uv run python -m efilicit_ingestion.cli run-euskadi `
+  --max-pages 1 `
+  --start-page 1 `
+  --run-id prueba-live-euskadi-1
+```
+
+| Campo | Valor (rellenar tras corrida) |
+|---|---|
+| `status` | |
+| `records_seen` / `records_new` | |
+| RAW Storage | `raw/euskadi/...` |
+| Studio `source_sync` | |
+
+## D.4 Idempotencia
+
+```powershell
+uv run python -m efilicit_ingestion.cli run-euskadi `
+  --max-pages 1 `
+  --start-page 1 `
+  --run-id prueba-live-euskadi-2
+```
+
+Esperado: `records_new=0`, `records_updated` = mismos avisos de la página 1.
 
 ---
 
 ## Referencias
 
 - Semana 2: [plans/semana02-plan.md](plans/semana02-plan.md), [plans/fase2-checklist.md](plans/fase2-checklist.md), [sources/placsp.md](sources/placsp.md)
-- Semana 3: [plans/semana03-plan.md](plans/semana03-plan.md), [plans/fase3-checklist.md](plans/fase3-checklist.md), [sources/placsp_agregadas.md](sources/placsp_agregadas.md), [sources/catalunya.md](sources/catalunya.md)
-- CLI: `ingestion/README.md` (`run-placsp`, `run-catalunya`)
+- Semana 3: [plans/semana03-plan.md](plans/semana03-plan.md), [plans/fase3-checklist.md](plans/fase3-checklist.md), [sources/placsp_agregadas.md](sources/placsp_agregadas.md), [sources/catalunya.md](sources/catalunya.md), [sources/euskadi.md](sources/euskadi.md)
+- CLI: `ingestion/README.md` (`run-placsp`, `run-catalunya`, `run-euskadi`)
 - Roadmap: [04-roadmap-mvp.md](04-roadmap-mvp.md) § Semanas 2–3

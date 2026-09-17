@@ -1,5 +1,6 @@
 """Connector package: SourceConnector protocol, stubs, and real sources."""
 
+from efilicit_ingestion.connectors.euskadi import EUSKADI, EuskadiConnector
 from efilicit_ingestion.connectors.placsp import PlacspConnector
 from efilicit_ingestion.connectors.protocol import SourceConnector
 from efilicit_ingestion.connectors.socrata import CATALUNYA, SocrataConnector
@@ -11,4 +12,6 @@ __all__ = [
     "PlacspConnector",
     "SocrataConnector",
     "CATALUNYA",
+    "EuskadiConnector",
+    "EUSKADI",
 ]

@@ -1,0 +1,122 @@
+# Semana 3 / Paso 9 — ingesta Euskadi (KontratazioA REST) vía GitHub Actions.
+# Por defecto: dry-run con fixture JSON (sin secretos, sin writes).
+name: Ingest Euskadi
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: >
+          dry-run = fixture in-memory (safe).
+          fixture-db = fixture → Postgres (needs EFILICIT_DATABASE_URL).
+          live = página(s) API reales (needs secrets; acotar max_pages; 10 items/página).
+        type: choice
+        options:
+          - dry-run
+          - fixture-db
+          - live
+        default: dry-run
+      max_pages:
+        description: "Páginas a descubrir (default 1; API = 10 items/página)"
+        required: false
+        default: "1"
+      start_page:
+        description: "currentPage inicial 1-based (default 1)"
+        required: false
+        default: "1"
+      run_id:
+        description: "run_id opcional (fixture-db/live); vacío = UUID"
+        required: false
+        default: ""
+      upload_storage:
+        description: "Subir RAW a Storage (requiere SUPABASE_SERVICE_ROLE_KEY + SUPABASE_URL)"
+        type: boolean
+        default: false
+  # schedule:
+  #   - cron: "0 7 * * 1"
+
+concurrency:
+  group: ingest-euskadi-${{ inputs.mode }}
+  cancel-in-progress: false
+
+jobs:
+  ingest:
+    name: Run euskadi (${{ inputs.mode }})
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ingestion
+    env:
+      EFILICIT_DATABASE_URL: ${{ secrets.EFILICIT_DATABASE_URL }}
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Sync dependencies
+        run: uv sync --frozen
+
+      - name: Guard secrets for write modes
+        if: inputs.mode != 'dry-run'
+        run: |
+          set -euo pipefail
+          if [ -z "${EFILICIT_DATABASE_URL:-}" ]; then
+            echo "::error::Missing repository secret EFILICIT_DATABASE_URL (required for ${{ inputs.mode }})"
+            exit 1
+          fi
+          if [ "${{ inputs.upload_storage }}" = "true" ]; then
+            if [ -z "${SUPABASE_SERVICE_ROLE_KEY:-}" ]; then
+              echo "::error::upload_storage=true requires secret SUPABASE_SERVICE_ROLE_KEY"
+              exit 1
+            fi
+            if [ -z "${SUPABASE_URL:-}" ]; then
+              echo "::error::upload_storage=true requires secret SUPABASE_URL"
+              exit 1
+            fi
+          fi
+
+      - name: Run Euskadi CLI
+        run: |
+          set -euo pipefail
+          MODE="${{ inputs.mode }}"
+          MAX_PAGES="${{ inputs.max_pages }}"
+          START_PAGE="${{ inputs.start_page }}"
+          RUN_ID="${{ inputs.run_id }}"
+          EXTRA=(--max-pages "$MAX_PAGES" --start-page "$START_PAGE")
+          if [ -n "$RUN_ID" ]; then
+            EXTRA+=(--run-id "$RUN_ID")
+          fi
+          if [ "${{ inputs.upload_storage }}" != "true" ] && [ "$MODE" != "dry-run" ]; then
+            EXTRA+=(--no-storage)
+          fi
+
+          case "$MODE" in
+            dry-run)
+              uv run python -m efilicit_ingestion.cli run-euskadi \
+                --fixture tests/fixtures/euskadi/valid_page.json \
+                --dry-run \
+                "${EXTRA[@]}"
+              ;;
+            fixture-db)
+              uv run python -m efilicit_ingestion.cli run-euskadi \
+                --fixture tests/fixtures/euskadi/valid_page.json \
+                "${EXTRA[@]}"
+              ;;
+            live)
+              uv run python -m efilicit_ingestion.cli run-euskadi \
+                "${EXTRA[@]}"
+              ;;
+            *)
+              echo "::error::Unknown mode: $MODE"
+              exit 1
+              ;;
+          esac

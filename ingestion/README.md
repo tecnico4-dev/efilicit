@@ -14,7 +14,8 @@ uv run python -m efilicit_ingestion.cli --help
 ## Estado
 
 PLACSP cableado en CLI (`run-placsp`): perfiles (`placsp`) y agregadas (`placsp_agregadas` vía `--syndication`).  
-Catalunya Socrata: `run-catalunya` (Semana 3 Paso 8.4).
+Catalunya Socrata: `run-catalunya` (Semana 3 Paso 8).  
+Euskadi KontratazioA: `run-euskadi` (Semana 3 Paso 9).
 
 `discover` → `fetch` → RAW → `parse` → normalize/identidad → upsert canónico.
 
@@ -56,6 +57,17 @@ uv run python -m efilicit_ingestion.cli run-catalunya `
 
 Esperado: `status=success`, `source_code=catalunya`, `records_seen=2`, `raw_path=raw/catalunya/...`.
 
+### Dry-run Euskadi (Semana 3 Paso 9)
+
+```powershell
+cd ingestion
+uv run python -m efilicit_ingestion.cli run-euskadi `
+  --fixture tests/fixtures/euskadi/valid_page.json `
+  --dry-run
+```
+
+Esperado: `status=success`, `source_code=euskadi`, `records_seen=2`, `raw_path=raw/euskadi/...`.
+
 ### Contra Supabase local (Studio)
 
 Con Docker + `supabase start`:
@@ -87,6 +99,15 @@ uv run python -m efilicit_ingestion.cli run-catalunya `
   --fixture tests/fixtures/catalunya/valid_page.json `
   --no-storage `
   --run-id demo-catalunya-1
+```
+
+Euskadi:
+
+```powershell
+uv run python -m efilicit_ingestion.cli run-euskadi `
+  --fixture tests/fixtures/euskadi/valid_page.json `
+  --no-storage `
+  --run-id demo-euskadi-1
 ```
 
 (`--no-storage` evita depender de la service_role; añade Storage omitiendo ese flag si tienes `SUPABASE_SERVICE_ROLE_KEY`.)
