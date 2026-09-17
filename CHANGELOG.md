@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Plan y checklist Semana 4 (`semana04-plan`, `fase4-checklist`): cobertura territorial 17 CCAA + deduplicación; leftover `placsp_menores`; rama `tecnico4/semana-04`.
 - Documentación base de onboarding, arquitectura, setup, reglas Cursor y roadmap MVP.
 - Cimientos del monorepo: `.gitignore`, `.env.example`, `package.json`, `pnpm-workspace.yaml`, árbol de carpetas y guías `README` / `CONTRIBUTING`.
 - Reglas Cursor en `.cursor/rules/` (`00`–`08`) según `docs/03-reglas-cursor.md`.
