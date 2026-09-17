@@ -15,7 +15,7 @@ Los pasos globales (1–10) se mantienen. Los Pasos **3**, **4** y **8** se desg
 | 5. Workflow/job fuente estatal | OK | `ingest-placsp.yml` + input `syndication=placsp_agregadas`; dry-run default; cron off |
 | 6. Adaptador CSV genérico (o N/A) | N/A | Familia CSV no priorizada; reserva CSV → conector puntual |
 | 7. Adaptador REST/Socrata (o N/A) | OK | `SocrataConnector` + preset `CATALUNYA` (`ybgg-dgi6`); ficha + tests sin red |
-| 8. CCAA propia #1 | OK | `catalunya` 8.1–8.5; `run-catalunya` + `ingest-catalunya.yml` |
+| 8. CCAA propia #1 | OK | `catalunya` 8.1–8.6; live SODA + idempotencia en [docs/pruebas.md](../pruebas.md) |
 | 9. CCAA propia #2 (+) | — | Objetivo: `euskadi`; si bloqueo → siguiente de la cola |
 | 10. Catálogo + regresión + cierre | — | `docs/sources/README.md`, tests, CHANGELOG, ADR |
 
@@ -47,17 +47,18 @@ Parse/normalize del adaptador ya cubiertos en Paso 7.
 | 8.3 Upsert + `source_sync` + trazabilidad | OK | Unique `(catalunya, id_intern)`; pipeline sync + tests; sin red |
 | 8.4 CLI / E2E local controlado | OK | `run-catalunya --fixture --dry-run`; sin red SODA |
 | 8.5 Workflow/job controlado | OK | `ingest-catalunya.yml`; dry-run default; cron off |
+| 8.6 Verificación live SODA + idempotencia | OK | 1×1000 filas reales; 2ª corrida `records_new=0`; [docs/pruebas.md](../pruebas.md) Parte C |
 
 ## Criterios transversales (cierre Semana 3)
 
 | Ítem | Estado | Notas |
 |---|---|---|
-| Reejecutar no duplica (fuentes nuevas) | OK | Live `placsp_agregadas`: 2ª corrida `records_new=0`; ver [docs/pruebas.md](../pruebas.md) |
-| `source_sync` por cada fuente añadida | OK | Verificado en live local (`prueba-live-agregadas-*`) |
-| Tests en verde (parser / adaptadores / persistencia) | OK | 74 passed en baseline pre-live (incl. regresión `placsp`) |
+| Reejecutar no duplica (fuentes nuevas) | OK | Live `placsp_agregadas` + `catalunya`: 2ª corrida `records_new=0`; ver [docs/pruebas.md](../pruebas.md) |
+| `source_sync` por cada fuente añadida | OK | Live local: `prueba-live-agregadas-*`, `prueba-live-catalunya-*` |
+| Tests en verde (parser / adaptadores / persistencia) | OK | 98 passed en baseline pre-live `catalunya` (incl. regresión PLACSP) |
 | ADRs estructurales (solo si hubo decisión nueva) | — | Si no → N/A |
-| CHANGELOG actualizado | OK | Ir actualizando por hito + entrada `docs/pruebas.md` |
+| CHANGELOG actualizado | OK | Ir actualizando por hito + entradas `docs/pruebas.md` |
 
 Cuando los pasos globales relevantes estén en OK → Semana 4 (cobertura territorial 17 CCAA + deduplicación).
 
-Verificación con datos reales `placsp_agregadas` (local): [docs/pruebas.md](../pruebas.md) (Parte B).
+Verificación con datos reales (local): [docs/pruebas.md](../pruebas.md) — Parte B (`placsp_agregadas`) · Parte C (`catalunya`).

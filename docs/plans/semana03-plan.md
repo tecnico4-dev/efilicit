@@ -5,7 +5,7 @@
 > **Precondición:** Semana 2 cerrada ([fase2-checklist.md](fase2-checklist.md)).  
 > **Norma:** `docs/00`–`04` y `.cursor/rules/`. Reutilizar contrato `SourceConnector` + pipeline + upsert canónico de Semanas 1–2. ADR solo si hace falta cambiar arquitectura de verdad.  
 > **Rama de trabajo:** `tecnico4/semana-03` (no mergear a `main` hasta OK explícito).  
-> **Verificación live:** [docs/pruebas.md](../pruebas.md) — Parte B (`placsp_agregadas`).
+> **Verificación live:** [docs/pruebas.md](../pruebas.md) — Parte B (`placsp_agregadas`) · Parte C (`catalunya` / Paso 8.6).
 
 ---
 
@@ -157,7 +157,7 @@ Igual criterio que el Paso 6: solo si corresponde a una fuente priorizada. Timeo
 
 Completar la tubería canónica sobre el adaptador Socrata del Paso 7: documentación E2E, RAW, upsert/`source_sync`, CLI y workflow controlado.
 
-**Listo cuando (paso global):** corrida local (fixture) deja sync success, RAW trazable y filas canónicas; reejecutar no duplica; ficha alineada; job manual seguro.
+**Listo cuando (paso global):** corrida local (fixture) deja sync success, RAW trazable y filas canónicas; reejecutar no duplica; ficha alineada; job manual seguro; verificación live documentada (8.6).
 
 #### 8.1 Documentación ficha CCAA #1
 
@@ -188,6 +188,12 @@ Entrada CLI documentada (p. ej. `run-catalunya`) con `--fixture` / `--dry-run` p
 GitHub Actions (o extensión de workflow) manual; dry-run por defecto; secretos fuera del código; cron off.
 
 **Listo cuando:** workflow en repo; ejecución controlada acordada.
+
+#### 8.6 Verificación live local (SODA real + idempotencia)
+
+Mismo patrón que Semana 2 / `placsp_agregadas`, adaptado a páginas SODA: Fase A (reset + pytest + dry-run fixture) → Fase B (`run-catalunya` sin fixture, `--page-size` / `--max-pages` acotados) → 2ª corrida con otro `run_id` → Studio (`raw/catalunya/`, `source_sync`, `tender_sources`). Documentar resultados en [docs/pruebas.md](../pruebas.md) Parte C.
+
+**Listo cuando:** live success + `records_new=0` en reejecución; sin duplicados `(catalunya, source_tender_id)`; entrada en `docs/pruebas.md`.
 
 ### 9. Segunda (y siguientes) CCAA propia
 
@@ -237,6 +243,7 @@ Registro de lo acordado al cerrar (o antes de) cada paso:
 | Paso 8.3 | Upsert `catalunya` reutiliza `CanonicalRepository` + pipeline | Unique `(catalunya, id_intern)`; no colisión con `placsp`; sync success |
 | Paso 8.4 | CLI `run-catalunya --fixture --dry-run` | E2E local sin red SODA; Postgres opcional con `--no-storage` |
 | Paso 8.5 | Workflow `ingest-catalunya.yml` | Manual; dry-run default; cron off; mismos secrets que PLACSP |
+| Paso 8.6 | Verificación live SODA `catalunya` (1 página + idempotencia) | Mismo patrón A/B que PLACSP; documentado en [docs/pruebas.md](../pruebas.md) Parte C |
 
 ---
 
@@ -246,5 +253,5 @@ Registro de lo acordado al cerrar (o antes de) cada paso:
 - [docs/01-arquitectura-fija.md](../01-arquitectura-fija.md) §§ 5–8  
 - [docs/00-onboarding.md](../00-onboarding.md) (fuentes, RAW, `source_sync`)  
 - [docs/sources/placsp.md](../sources/placsp.md) · [docs/sources/placsp_agregadas.md](../sources/placsp_agregadas.md) · [docs/sources/catalunya.md](../sources/catalunya.md) · [docs/sources/README.md](../sources/README.md)  
-- [docs/pruebas.md](../pruebas.md) (Parte B: live `placsp_agregadas`)  
+- [docs/pruebas.md](../pruebas.md) (Parte B: `placsp_agregadas` · Parte C: `catalunya` / 8.6)  
 - [fase3-checklist.md](fase3-checklist.md) · [fase2-checklist.md](fase2-checklist.md) · [semana02-plan.md](semana02-plan.md)
