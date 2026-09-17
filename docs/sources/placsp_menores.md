@@ -1,7 +1,7 @@
 # PLACSP — Contratos menores (perfiles alojados)
 
 > **source_code:** `placsp_menores`  
-> **Estado en el proyecto:** Semana 4 — leftover estatal (Paso 2; ficha desde Paso 1)  
+> **Estado en el proyecto:** Semana 4 — leftover estatal completo (Pasos 2.1–2.4)  
 > **Última revisión de esta ficha:** 2026-09-17  
 > **Scraping:** no (existe feed / descarga oficial)  
 > **Adaptador previsto:** PLACSP-reuse (Atom/CODICE; parametrizar conector Semana 2)

@@ -8,7 +8,12 @@ from datetime import date
 from pathlib import Path
 
 from efilicit_ingestion import __version__
-from efilicit_ingestion.connectors.placsp.urls import PLACSP, PLACSP_AGREGADAS, PlacspSyndication
+from efilicit_ingestion.connectors.placsp.urls import (
+    PLACSP,
+    PLACSP_AGREGADAS,
+    PLACSP_MENORES,
+    PlacspSyndication,
+)
 from efilicit_ingestion.run_catalunya import CatalunyaRunConfig, run_catalunya
 from efilicit_ingestion.run_euskadi import EuskadiRunConfig, run_euskadi
 from efilicit_ingestion.run_placsp import PlacspRunConfig, format_result, run_placsp
@@ -16,6 +21,7 @@ from efilicit_ingestion.run_placsp import PlacspRunConfig, format_result, run_pl
 _SYNDICATIONS: dict[str, PlacspSyndication] = {
     PLACSP.source_code: PLACSP,
     PLACSP_AGREGADAS.source_code: PLACSP_AGREGADAS,
+    PLACSP_MENORES.source_code: PLACSP_MENORES,
 }
 
 
@@ -40,7 +46,10 @@ def build_parser() -> argparse.ArgumentParser:
         "--syndication",
         choices=sorted(_SYNDICATIONS),
         default=PLACSP.source_code,
-        help="PLACSP dataset (default: placsp perfiles; placsp_agregadas = Semana 3).",
+        help=(
+            "PLACSP dataset: placsp (perfiles), placsp_agregadas, "
+            "placsp_menores (Semana 4)."
+        ),
     )
     placsp.add_argument(
         "--fixture",

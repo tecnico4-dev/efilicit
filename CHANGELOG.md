@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Semana 4 Paso 1: cobertura 17 CCAA en `docs/sources/cobertura-ccaa.md`; ficha `placsp_menores.md`; 0 CCAA propias extra esta semana. Plan sin duplicar fichas (solo decisiones breves).
 - Semana 4 Paso 2.2: `PLACSP_MENORES` (`sindicacion_1143`) en discover/fetch con tests sin red.
 - Semana 4 Paso 2.3: RAW Storage `raw/placsp_menores/`, parse/normalize/upsert canónico e idempotente para menores (tests sin red).
+- Semana 4 Paso 2.4: CLI `run-placsp --syndication placsp_menores` + workflow `ingest-placsp.yml` (dry-run default, cron off).
 - Documentación base de onboarding, arquitectura, setup, reglas Cursor y roadmap MVP.
 - Cimientos del monorepo: `.gitignore`, `.env.example`, `package.json`, `pnpm-workspace.yaml`, árbol de carpetas y guías `README` / `CONTRIBUTING`.
 - Reglas Cursor en `.cursor/rules/` (`00`–`08`) según `docs/03-reglas-cursor.md`.

@@ -13,7 +13,8 @@ uv run python -m efilicit_ingestion.cli --help
 
 ## Estado
 
-PLACSP cableado en CLI (`run-placsp`): perfiles (`placsp`) y agregadas (`placsp_agregadas` vía `--syndication`).  
+PLACSP cableado en CLI (`run-placsp`): perfiles (`placsp`), agregadas (`placsp_agregadas`)
+y menores (`placsp_menores`) vía `--syndication`.  
 Catalunya Socrata: `run-catalunya` (Semana 3 Paso 8).  
 Euskadi KontratazioA: `run-euskadi` (Semana 3 Paso 9).
 
@@ -45,6 +46,19 @@ uv run python -m efilicit_ingestion.cli run-placsp `
 ```
 
 Esperado: `status=success`, `source_code=placsp_agregadas`, `raw_path=raw/placsp_agregadas/...`.
+
+### Dry-run menores (Semana 4 Paso 2.4)
+
+```powershell
+cd ingestion
+uv run python -m efilicit_ingestion.cli run-placsp `
+  --syndication placsp_menores `
+  --fixture tests/fixtures/placsp/valid_single_entry.atom `
+  --dry-run `
+  --as-of 2026-09-17
+```
+
+Esperado: `status=success`, `source_code=placsp_menores`, `raw_path=raw/placsp_menores/...`.
 
 ### Dry-run Catalunya (Semana 3 Paso 8.4)
 

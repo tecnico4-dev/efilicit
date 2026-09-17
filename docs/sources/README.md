@@ -10,7 +10,7 @@ Cada fuente debe indicar: organismo, URL, mecanismo de acceso, formato, frecuenc
 |---|---|---|
 | `placsp` | [placsp.md](placsp.md) | Semana 2 — vertical slice + live local OK |
 | `placsp_agregadas` | [placsp_agregadas.md](placsp_agregadas.md) | Semana 3 — estatal ampliada + live local OK |
-| `placsp_menores` | [placsp_menores.md](placsp_menores.md) | Semana 4 — ficha lista; conector Paso 2 |
+| `placsp_menores` | [placsp_menores.md](placsp_menores.md) | Semana 4 — conector completo (Paso 2) |
 | `catalunya` | [catalunya.md](catalunya.md) | Semana 3 — CCAA #1 completa + live OK |
 | `euskadi` | [euskadi.md](euskadi.md) | Semana 3 — CCAA #2 completa + live OK |
 
@@ -41,7 +41,7 @@ Resultados y comandos: [docs/pruebas.md](../pruebas.md).
 
 | Tema | Notas |
 |---|---|
-| Conector `placsp_menores` | Implementación Semana 4 Paso 2 (ficha ya en [placsp_menores.md](placsp_menores.md)) |
+| Conector `placsp_menores` | Completo Semana 4 Paso 2 (ficha + CLI + workflow) |
 | Deduplicación multi-fuente | Semana 4 Pasos 4–7 |
 | Reservas CSV / Open Data CCAA | Backlog — ver [cobertura-ccaa.md](cobertura-ccaa.md) §5 |
 | TED y otras | Semanas posteriores según roadmap |

@@ -65,7 +65,8 @@ def run_placsp(config: PlacspRunConfig) -> PipelineResult:
     - ``fixture_path``: offline E2E (no live PLACSP network).
     - without fixture: live discover/fetch for the configured month window.
     - ``dry_run``: in-memory sync/canonical/storage (no Postgres/Storage writes).
-    - ``syndication``: default ``PLACSP`` (perfiles); use ``PLACSP_AGREGADAS`` for Semana 3.
+    - ``syndication``: default ``PLACSP`` (perfiles); also ``PLACSP_AGREGADAS``,
+      ``PLACSP_MENORES``.
     """
     as_of = config.as_of or date.today()
     feed = config.syndication
