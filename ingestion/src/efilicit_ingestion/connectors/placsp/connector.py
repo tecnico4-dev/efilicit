@@ -41,7 +41,8 @@ class PlacspConnector:
     """PLACSP Open Data connector for Atom/CODICE ZIP syndications.
 
     Default syndication is perfiles alojados (``placsp`` / ``sindicacion_643``).
-    Pass ``syndication=PLACSP_AGREGADAS`` (or another config) for Semana 3+ datasets.
+    Pass ``syndication=PLACSP_AGREGADAS`` / ``PLACSP_MENORES`` (or another config)
+    for additional Atom/CODICE syndications.
     Discovery uses well-known URI patterns from ``docs/sources/placsp*.md``.
     Fetch downloads with timeout, retries, and a size budget.
     """

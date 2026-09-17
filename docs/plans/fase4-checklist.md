@@ -23,7 +23,7 @@ El estado se marca **aquí**, no con “— OK” en el plan.
 | Minipaso | Estado | Notas |
 |---|---|---|
 | 2.1 Ficha `docs/sources/placsp_menores.md` | OK | Misma profundidad que agregadas/perfiles |
-| 2.2 Discover + fetch | Pendiente | `PlacspSyndication`; tests sin red |
+| 2.2 Discover + fetch | OK | `PLACSP_MENORES` / `sindicacion_1143`; tests sin red |
 | 2.3 RAW + parse + normalize + upsert | Pendiente | Prefijo `raw/placsp_menores/`; unique `(placsp_menores, …)` |
 | 2.4 CLI + workflow | Pendiente | `run-placsp --syndication placsp_menores`; dry-run default; cron off |
 

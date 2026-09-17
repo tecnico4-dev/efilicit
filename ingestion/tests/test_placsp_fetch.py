@@ -1,4 +1,4 @@
-"""Unit tests for PLACSP fetch (perfiles + agregadas). No live network."""
+"""Unit tests for PLACSP fetch (perfiles + agregadas + menores). No live network."""
 
 from __future__ import annotations
 
@@ -7,7 +7,11 @@ from datetime import date
 import httpx
 import pytest
 
-from efilicit_ingestion.connectors.placsp import PLACSP_AGREGADAS, PlacspConnector
+from efilicit_ingestion.connectors.placsp import (
+    PLACSP_AGREGADAS,
+    PLACSP_MENORES,
+    PlacspConnector,
+)
 from efilicit_ingestion.connectors.placsp.errors import (
     ArtifactTooLargeError,
     PlacspFetchError,
@@ -33,6 +37,14 @@ def _agregadas_artifact(year: int = 2026, month: int = 9) -> RemoteArtifact:
     return RemoteArtifact(
         artifact_key=monthly_package_filename(year, month, PLACSP_AGREGADAS),
         source_url=monthly_package_url(year, month, PLACSP_AGREGADAS),
+        content_type="application/zip",
+    )
+
+
+def _menores_artifact(year: int = 2026, month: int = 9) -> RemoteArtifact:
+    return RemoteArtifact(
+        artifact_key=monthly_package_filename(year, month, PLACSP_MENORES),
+        source_url=monthly_package_url(year, month, PLACSP_MENORES),
         content_type="application/zip",
     )
 
@@ -188,4 +200,63 @@ def test_fetch_agregadas_http_error_classified() -> None:
     )
     with pytest.raises(PlacspHttpError) as exc_info:
         connector.fetch(_agregadas_artifact())
+    assert exc_info.value.status_code == 503
+
+
+def test_fetch_menores_uses_sindicacion_1143_url() -> None:
+    payload = b"PK\x03\x04-menores-fake-zip"
+    seen: list[str] = []
+
+    def transport(url: str) -> tuple[int, dict[str, str], bytes]:
+        seen.append(url)
+        return 200, {"content-type": "application/zip"}, payload
+
+    connector = PlacspConnector(
+        syndication=PLACSP_MENORES,
+        fetch_transport=transport,
+    )
+    raw = connector.fetch(_menores_artifact())
+
+    assert raw == payload
+    assert sha256_hex(raw) == sha256_hex(payload)
+    assert seen == [
+        "https://contrataciondelsectorpublico.gob.es/sindicacion/"
+        "sindicacion_1143/contratosMenoresPerfilesContratantes_202609.zip"
+    ]
+
+
+def test_discover_then_fetch_menores_without_network() -> None:
+    """End-to-end micro-path: discover menores keys, then fetch via fake transport."""
+    payload = b"PK\x03\x04-menores-from-discover"
+
+    def transport(url: str) -> tuple[int, dict[str, str], bytes]:
+        assert "sindicacion_1143" in url
+        assert url.endswith("contratosMenoresPerfilesContratantes_202609.zip")
+        return 200, {}, payload
+
+    connector = PlacspConnector(
+        syndication=PLACSP_MENORES,
+        as_of=date(2026, 9, 17),
+        fetch_transport=transport,
+    )
+    artifacts = connector.discover(
+        SyncContext(source_code="placsp_menores", run_id="fetch-menores-e2e")
+    )
+    assert len(artifacts) == 1
+    raw = connector.fetch(artifacts[0])
+    assert raw == payload
+    assert connector.source_code == "placsp_menores"
+
+
+def test_fetch_menores_http_error_classified() -> None:
+    def transport(url: str) -> tuple[int, dict[str, str], bytes]:
+        assert "sindicacion_1143" in url
+        return 503, {}, b"busy"
+
+    connector = PlacspConnector(
+        syndication=PLACSP_MENORES,
+        fetch_transport=transport,
+    )
+    with pytest.raises(PlacspHttpError) as exc_info:
+        connector.fetch(_menores_artifact())
     assert exc_info.value.status_code == 503

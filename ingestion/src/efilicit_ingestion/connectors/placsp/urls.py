@@ -12,6 +12,7 @@ __all__ = [
     "PlacspSyndication",
     "PLACSP",
     "PLACSP_AGREGADAS",
+    "PLACSP_MENORES",
     "PLACSP_SINDICACION_BASE",
     "FEED_BASE_NAME",
     "monthly_package_filename",
@@ -51,6 +52,13 @@ PLACSP_AGREGADAS = PlacspSyndication(
     source_code="placsp_agregadas",
     sindicacion="1044",
     feed_base_name="PlataformasAgregadasSinMenores",
+)
+
+# Semana 4 — contratos menores de perfiles alojados (docs/sources/placsp_menores.md).
+PLACSP_MENORES = PlacspSyndication(
+    source_code="placsp_menores",
+    sindicacion="1143",
+    feed_base_name="contratosMenoresPerfilesContratantes",
 )
 
 # Backward-compatible aliases for the default (perfiles) syndication.

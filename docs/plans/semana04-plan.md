@@ -1,6 +1,6 @@
 # Semana 4 — Plan: cobertura territorial + deduplicación
 
-> **Estado:** en curso (Paso 1 cerrado; siguiente = Paso 2 `placsp_menores`).  
+> **Estado:** en curso (Paso 2.2 cerrado; siguiente = Paso 2.3 RAW→upsert).  
 > **Checklist:** [fase4-checklist.md](fase4-checklist.md)  
 > **Precondición:** Semana 3 cerrada ([fase3-checklist.md](fase3-checklist.md)).  
 > **Norma:** `docs/00`–`04` y `.cursor/rules/`. Reutilizar contrato `SourceConnector` + pipeline + upsert canónico de Semanas 1–3. ADR solo si hace falta cambiar arquitectura de verdad.  
@@ -193,6 +193,7 @@ Registro de lo acordado al cerrar (o antes de) cada paso:
 | Paso 1 | 15 CCAA vía `placsp_agregadas`; Catalunya + Euskadi propias | Cumple “ruta identificada” sin 17 conectores |
 | Paso 1 | CCAA propia extra Semana 4 = **0 (N/A)** | Priorizar menores + dedup; reservas CSV = backlog |
 | Paso 1 | Fichas en `cobertura-ccaa.md` + `placsp_menores.md` | Detalle en catálogo de fuentes, no en el plan |
+| Paso 2.2 | `PLACSP_MENORES` en `PlacspSyndication` | Reuso discover/fetch; keys `contratosMenoresPerfilesContratantes_YYYYMM.zip` |
 
 ---
 
