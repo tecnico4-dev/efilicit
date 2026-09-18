@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Any, Protocol
+from typing import Any, Callable, Protocol
 from uuid import uuid4
 
 import psycopg
@@ -13,6 +13,9 @@ from psycopg.types.json import Json
 
 from efilicit_ingestion.models import SourceRecord
 from efilicit_ingestion.pipeline.matching import (
+    REVIEW_AUTO,
+    REVIEW_PENDING,
+    REVIEW_UNMATCHED,
     MatchCandidate,
     expediente_from_source_tender_id,
 )
@@ -24,6 +27,17 @@ class UpsertStats:
     new: int = 0
     updated: int = 0
     tender_ids: list[str] = field(default_factory=list)
+
+
+@dataclass(frozen=True, slots=True)
+class _MatchLink:
+    """How upsert should link this source row to a canonical tender (Paso 6)."""
+
+    review_status: str
+    match_method: str | None
+    match_score: float | None
+    reuse_tender_id: str | None
+    matched_at: datetime | None
 
 
 class CanonicalRepository(Protocol):
@@ -77,18 +91,26 @@ class InMemoryCanonicalRepository:
 
             existing = self.tender_sources.get(key)
             if existing is None:
-                tender_id = str(uuid4())
-                self.tenders[tender_id] = _tender_row(canonical, authority_id)
+                link = _match_link_from_payload(
+                    record.payload,
+                    tender_exists=lambda tid: tid in self.tenders,
+                )
+                if link.reuse_tender_id is not None:
+                    tender_id = link.reuse_tender_id
+                    self.tenders[tender_id] = _tender_row(canonical, authority_id)
+                else:
+                    tender_id = str(uuid4())
+                    self.tenders[tender_id] = _tender_row(canonical, authority_id)
                 self.tender_sources[key] = {
                     "tender_id": tender_id,
                     "source_code": source_code,
                     "source_tender_id": source_tender_id,
                     "source_url": canonical.get("source_url"),
                     "artifact_id": artifact_id,
-                    "review_status": "unmatched",
-                    "match_method": None,
-                    "match_score": None,
-                    "matched_at": None,
+                    "review_status": link.review_status,
+                    "match_method": link.match_method,
+                    "match_score": link.match_score,
+                    "matched_at": link.matched_at,
                 }
                 self.events.append(
                     {
@@ -305,13 +327,25 @@ class PostgresCanonicalRepository:
             ).fetchone()
 
             if existing is None:
-                tender_id = self._insert_tender(canonical, authority_id)
+                link = _match_link_from_payload(
+                    record.payload,
+                    tender_exists=self._tender_exists,
+                )
+                if link.reuse_tender_id is not None:
+                    tender_id = link.reuse_tender_id
+                    self._update_tender(tender_id, canonical, authority_id)
+                else:
+                    tender_id = self._insert_tender(canonical, authority_id)
                 self._insert_tender_source(
                     tender_id=tender_id,
                     source_code=source_code,
                     source_tender_id=source_tender_id,
                     source_url=canonical.get("source_url"),
                     artifact_id=artifact_id,
+                    review_status=link.review_status,
+                    match_method=link.match_method,
+                    match_score=link.match_score,
+                    matched_at=link.matched_at,
                 )
                 self._insert_event(
                     tender_id=tender_id,
@@ -353,6 +387,13 @@ class PostgresCanonicalRepository:
                 stats.updated += 1
                 stats.tender_ids.append(tender_id)
         return stats
+
+    def _tender_exists(self, tender_id: str) -> bool:
+        row = self._conn.execute(
+            "select 1 from public.tenders where id = %s::uuid",
+            (tender_id,),
+        ).fetchone()
+        return row is not None
 
     def _upsert_authority(self, authority: dict[str, Any]) -> str | None:
         name = (authority.get("name") or "Unknown authority").strip()
@@ -469,15 +510,30 @@ class PostgresCanonicalRepository:
         source_tender_id: str,
         source_url: str | None,
         artifact_id: str | None,
+        review_status: str = REVIEW_UNMATCHED,
+        match_method: str | None = None,
+        match_score: float | None = None,
+        matched_at: datetime | None = None,
     ) -> None:
         self._conn.execute(
             """
             insert into public.tender_sources (
-              tender_id, source_code, source_tender_id, source_url, artifact_id
+              tender_id, source_code, source_tender_id, source_url, artifact_id,
+              review_status, match_method, match_score, matched_at
             )
-            values (%s::uuid, %s, %s, %s, %s::uuid)
+            values (%s::uuid, %s, %s, %s, %s::uuid, %s, %s, %s, %s)
             """,
-            (tender_id, source_code, source_tender_id, source_url, artifact_id),
+            (
+                tender_id,
+                source_code,
+                source_tender_id,
+                source_url,
+                artifact_id,
+                review_status,
+                match_method,
+                match_score,
+                matched_at,
+            ),
         )
 
     def _touch_tender_source(
@@ -548,6 +604,53 @@ class PostgresCanonicalRepository:
             """,
             (tender_id, canonical.get("title"), url, source_code, artifact_id),
         )
+
+
+def _match_link_from_payload(
+    payload: dict[str, Any] | None,
+    *,
+    tender_exists: Callable[[str], bool],
+) -> _MatchLink:
+    """Map ``payload['match']`` to upsert link behaviour (Semana 4 Paso 6)."""
+    match = (payload or {}).get("match") or {}
+    status = match.get("review_status") or REVIEW_UNMATCHED
+    method = match.get("match_method")
+    score = match.get("match_score")
+    candidate = match.get("matched_tender_id")
+    candidate_id = str(candidate) if candidate else None
+
+    if status == REVIEW_AUTO and candidate_id and tender_exists(candidate_id):
+        return _MatchLink(
+            review_status=REVIEW_AUTO,
+            match_method=method,
+            match_score=float(score) if score is not None else None,
+            reuse_tender_id=candidate_id,
+            matched_at=datetime.now().astimezone(),
+        )
+    if status == REVIEW_AUTO:
+        # Stale / missing target → do not invent a merge.
+        return _MatchLink(
+            review_status=REVIEW_UNMATCHED,
+            match_method=None,
+            match_score=None,
+            reuse_tender_id=None,
+            matched_at=None,
+        )
+    if status == REVIEW_PENDING:
+        return _MatchLink(
+            review_status=REVIEW_PENDING,
+            match_method=method,
+            match_score=float(score) if score is not None else None,
+            reuse_tender_id=None,
+            matched_at=datetime.now().astimezone(),
+        )
+    return _MatchLink(
+        review_status=REVIEW_UNMATCHED,
+        match_method=None,
+        match_score=None,
+        reuse_tender_id=None,
+        matched_at=None,
+    )
 
 
 def _tender_row(canonical: dict[str, Any], authority_id: str) -> dict[str, Any]:
