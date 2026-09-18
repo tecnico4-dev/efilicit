@@ -10,6 +10,7 @@ from efilicit_ingestion.pipeline.paths import build_raw_storage_path
 from efilicit_ingestion.pipeline.types import StoredArtifact, SyncRun, utc_now
 
 
+# Protocolo para guardar el RAW
 class ArtifactStore(Protocol):
     def store(
         self,
@@ -22,6 +23,7 @@ class ArtifactStore(Protocol):
         ...
 
 
+# Protocolo para "apuntar a la ejecución" de la sincronización (cuándo empezó/acabó, qué artefactos...).
 class SyncRepository(Protocol):
     def start_run(self, *, source_code: str, run_id: str, cursor: str | None) -> SyncRun:
         ...
