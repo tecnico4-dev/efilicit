@@ -1,6 +1,6 @@
 # Semana 4 — Plan: cobertura territorial + deduplicación
 
-> **Estado:** en curso (Paso 4 cerrado; siguiente = Paso 5 matching en pipeline).  
+> **Estado:** en curso (Paso 5 cerrado; siguiente = Paso 6 upsert respeta matching).  
 > **Checklist:** [fase4-checklist.md](fase4-checklist.md)  
 > **Precondición:** Semana 3 cerrada ([fase3-checklist.md](fase3-checklist.md)).  
 > **Norma:** `docs/00`–`04` y `.cursor/rules/`. Reutilizar contrato `SourceConnector` + pipeline + upsert canónico de Semanas 1–3. ADR solo si hace falta cambiar arquitectura de verdad.  
@@ -21,7 +21,7 @@ Semana 3 dejó **cuatro fuentes reales** sobre la misma tubería:
 | `euskadi` | `EuskadiConnector` REST | Semana 3 — live OK |
 
 El upsert es idempotente **dentro de una fuente** por `(source_code, source_tender_id)`.  
-`stages.deduplicate()` es todavía un **pass-through**. Cada fuente crea su propia fila en `tenders`; no hay matching multi-fuente.
+`stages.deduplicate()` anota `payload['match']` vía lookup canónico (Paso 5). El upsert aún **no** reutiliza `tenders.id` (Paso 6).
 
 Meta de Semana 4 (`docs/04` § Semana 4):
 
@@ -197,6 +197,7 @@ Registro de lo acordado al cerrar (o antes de) cada paso:
 | Paso 2.3 | RAW/parse/normalize/upsert reutilizan pipeline PLACSP | Prefijo `raw/placsp_menores/`; unique `(placsp_menores, source_tender_id)` |
 | Paso 2.4 | CLI + `ingest-placsp.yml` admiten `placsp_menores` | Dry-run default; cron off |
 | Paso 4 | Matching en columnas de `tender_sources` (migración) | `unmatched`/`auto`/`pending`; sin tabla auxiliar; ADR N/A |
+| Paso 5 | `stages.deduplicate` + `MatchLookup` en repo canónico | Anota `payload['match']`; título solo → `pending`; fusión = Paso 6 |
 
 ---
 

@@ -53,9 +53,30 @@ def resolve_identity(records: list[SourceRecord]) -> list[SourceRecord]:
     return resolve_identity_records(records)
 
 
-def deduplicate(records: list[SourceRecord]) -> list[SourceRecord]:
-    """Placeholder: cross-source dedup later (Semana 4)."""
-    return records
+def deduplicate(
+    records: list[SourceRecord],
+    *,
+    source_code: str | None = None,
+    canonical_repo: object | None = None,
+) -> list[SourceRecord]:
+    """Cross-source matching: annotate ``payload['match']`` (Semana 4 Paso 5).
+
+    Without a lookup repo, marks every record as ``unmatched``.
+    Does not merge tenders yet — that is Paso 6 (upsert).
+    """
+    from efilicit_ingestion.pipeline.matching import MatchLookup, match_records
+
+    lookup: MatchLookup | None = None
+    if canonical_repo is not None and hasattr(
+        canonical_repo, "find_match_candidates"
+    ):
+        lookup = canonical_repo  # type: ignore[assignment]
+
+    return match_records(
+        records,
+        source_code=source_code or "",
+        lookup=lookup,
+    )
 
 
 def quality_checks(records: list[SourceRecord]) -> list[SourceRecord]:

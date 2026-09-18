@@ -45,7 +45,11 @@ def run_pipeline(
             records = stages.normalize(records)
             records = stages.enrich(records)
             records = stages.resolve_identity(records)
-            records = stages.deduplicate(records)
+            records = stages.deduplicate(
+                records,
+                source_code=connector.source_code,
+                canonical_repo=canonical_repo,
+            )
             records = stages.quality_checks(records)
             seen, new, updated = stages.upsert(
                 records,

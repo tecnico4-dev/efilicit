@@ -13,7 +13,7 @@ El estado se marca **aquí**, no con “— OK” en el plan.
 | 2. `placsp_menores` (reuso PLACSP) | OK | Minipasos 2.1–2.4 |
 | 3. Matriz 17 CCAA + CCAA propia extra (o N/A) | OK | [cobertura-ccaa.md](../sources/cobertura-ccaa.md); 3.2 N/A |
 | 4. Esquema matching (`tender_sources` / migración) | OK | `match_method`, `match_score`, `matched_at`, `review_status` |
-| 5. Matching en pipeline común | Pendiente | Sustituir pass-through; lookup canónico |
+| 5. Matching en pipeline común | OK | `matching.py` + lookup repo; tests auto/unmatched/pending |
 | 6. Upsert respeta matching (auto / pending / unmatched) | Pendiente | Idempotente; no fusionar ambiguos |
 | 7. Fixtures de solape + regresión | Pendiente | No debilitar tests Semanas 1–3 |
 | 8. Catálogo + cierre | Pendiente | CHANGELOG; ADR N/A o nuevo |
@@ -52,8 +52,8 @@ El estado se marca **aquí**, no con “— OK” en el plan.
 | Las 17 CCAA tienen una ruta de fuente identificada | OK | [cobertura-ccaa.md](../sources/cobertura-ccaa.md) |
 | Las fuentes integradas muestran datos reales | Pendiente | Live previo A–D; nuevas según se implementen |
 | Una licitación en dos fuentes compatibles → una fila canónica si hay confianza | Pendiente | Tests Paso 6–7 |
-| Casos ambiguos quedan pendientes de revisión | Pendiente | `review_status = pending` |
-| Tests de dedup en verde | Pendiente | |
+| Casos ambiguos quedan pendientes de revisión | Pendiente | Anotación `pending` en Paso 5; persistencia en Paso 6 |
+| Tests de dedup en verde | Pendiente | Matching unitario OK; fusión = Paso 6–7 |
 | Sin modelo de datos alternativo por fuente | Pendiente | Mismo canónico / pipeline común |
 
 **Semana 4 abierta.** No mergear a `main` hasta OK explícito.

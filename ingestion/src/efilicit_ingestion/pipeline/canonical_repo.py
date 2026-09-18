@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import date, datetime
+from decimal import Decimal
 from typing import Any, Protocol
 from uuid import uuid4
 
@@ -11,6 +12,10 @@ import psycopg
 from psycopg.types.json import Json
 
 from efilicit_ingestion.models import SourceRecord
+from efilicit_ingestion.pipeline.matching import (
+    MatchCandidate,
+    expediente_from_source_tender_id,
+)
 
 
 @dataclass
@@ -30,6 +35,18 @@ class CanonicalRepository(Protocol):
         artifact_id: str | None = None,
     ) -> UpsertStats:
         """Persist canonical rows. Idempotent on (source_code, source_tender_id)."""
+        ...
+
+    def find_match_candidates(
+        self,
+        *,
+        exclude_source_code: str,
+        tax_id: str | None = None,
+        expediente: str | None = None,
+        cpv_code: str | None = None,
+        limit: int = 50,
+    ) -> list[MatchCandidate]:
+        """Candidates from other sources for cross-source matching (Semana 4)."""
         ...
 
 
@@ -68,6 +85,10 @@ class InMemoryCanonicalRepository:
                     "source_tender_id": source_tender_id,
                     "source_url": canonical.get("source_url"),
                     "artifact_id": artifact_id,
+                    "review_status": "unmatched",
+                    "match_method": None,
+                    "match_score": None,
+                    "matched_at": None,
                 }
                 self.events.append(
                     {
@@ -105,6 +126,67 @@ class InMemoryCanonicalRepository:
                 stats.tender_ids.append(tender_id)
         return stats
 
+    def find_match_candidates(
+        self,
+        *,
+        exclude_source_code: str,
+        tax_id: str | None = None,
+        expediente: str | None = None,
+        cpv_code: str | None = None,
+        limit: int = 50,
+    ) -> list[MatchCandidate]:
+        out: list[MatchCandidate] = []
+        seen_tenders: set[str] = set()
+        for (src, source_tender_id), link in self.tender_sources.items():
+            if src == exclude_source_code:
+                continue
+            tender_id = link["tender_id"]
+            if tender_id in seen_tenders:
+                continue
+            tender = self.tenders.get(tender_id) or {}
+            authority = self._authority_by_id(tender.get("contracting_authority_id"))
+            cand_tax = authority.get("tax_id") if authority else None
+            cand_exp = expediente_from_source_tender_id(source_tender_id)
+            cand_cpv = tender.get("cpv_code")
+
+            if tax_id and cand_tax == tax_id:
+                pass
+            elif expediente and cand_exp == expediente:
+                pass
+            elif cpv_code and cand_cpv == cpv_code:
+                pass
+            else:
+                # Still include when no filters (broad scan) — but we always pass
+                # at least one filter from match_records. Skip if none match.
+                if tax_id or expediente or cpv_code:
+                    continue
+
+            out.append(
+                MatchCandidate(
+                    tender_id=tender_id,
+                    source_code=src,
+                    source_tender_id=source_tender_id,
+                    title=tender.get("title"),
+                    tax_id=cand_tax,
+                    expediente=cand_exp,
+                    cpv_code=cand_cpv,
+                    estimated_value=_as_decimal(tender.get("estimated_value")),
+                    publication_date=_as_date(tender.get("publication_date")),
+                )
+            )
+            seen_tenders.add(tender_id)
+            if len(out) >= limit:
+                break
+        return out
+
+    def _authority_by_id(self, authority_id: str | None) -> dict[str, Any] | None:
+        if not authority_id:
+            return None
+        for auth in self.authorities.values():
+            if auth.get("id") == authority_id:
+                return auth
+        return None
+
     def _upsert_authority(self, authority: dict[str, Any]) -> str:
         tax_id = authority.get("tax_id")
         if tax_id:
@@ -125,6 +207,77 @@ class PostgresCanonicalRepository:
 
     def __init__(self, conn: psycopg.Connection) -> None:
         self._conn = conn
+
+    def find_match_candidates(
+        self,
+        *,
+        exclude_source_code: str,
+        tax_id: str | None = None,
+        expediente: str | None = None,
+        cpv_code: str | None = None,
+        limit: int = 50,
+    ) -> list[MatchCandidate]:
+        clauses = ["ts.source_code <> %s"]
+        params: list[Any] = [exclude_source_code]
+        filters: list[str] = []
+        if tax_id:
+            filters.append("a.tax_id = %s")
+            params.append(tax_id)
+        if expediente:
+            # source_tender_id may be ``tax:EXP`` or a bare expediente.
+            filters.append(
+                "(ts.source_tender_id = %s OR ts.source_tender_id LIKE %s)"
+            )
+            params.append(expediente)
+            params.append(f"%:{expediente}")
+        if cpv_code:
+            filters.append("t.cpv_code = %s")
+            params.append(cpv_code)
+        if not filters:
+            return []
+        clauses.append("(" + " OR ".join(filters) + ")")
+        params.append(limit)
+        sql = f"""
+            select distinct on (t.id)
+              t.id::text,
+              ts.source_code,
+              ts.source_tender_id,
+              t.title,
+              a.tax_id,
+              t.cpv_code,
+              t.estimated_value,
+              t.publication_date
+            from public.tender_sources ts
+            join public.tenders t on t.id = ts.tender_id
+            left join public.contracting_authorities a
+              on a.id = t.contracting_authority_id
+            where {" AND ".join(clauses)}
+            order by t.id, ts.last_seen_at desc
+            limit %s
+        """
+        rows = self._conn.execute(sql, params).fetchall()
+        out: list[MatchCandidate] = []
+        for row in rows:
+            source_tender_id = str(row[2])
+            out.append(
+                MatchCandidate(
+                    tender_id=str(row[0]),
+                    source_code=str(row[1]),
+                    source_tender_id=source_tender_id,
+                    title=row[3],
+                    tax_id=row[4],
+                    expediente=expediente_from_source_tender_id(source_tender_id)
+                    or (
+                        source_tender_id
+                        if expediente and source_tender_id == expediente
+                        else None
+                    ),
+                    cpv_code=row[5],
+                    estimated_value=_as_decimal(row[6]),
+                    publication_date=_as_date(row[7]),
+                )
+            )
+        return out
 
     def upsert_records(
         self,
@@ -411,3 +564,28 @@ def _tender_row(canonical: dict[str, Any], authority_id: str) -> dict[str, Any]:
         "deadline_at": canonical.get("deadline_at"),
         "contracting_authority_id": authority_id,
     }
+
+
+def _as_decimal(value: Any) -> Decimal | None:
+    if value is None or value == "":
+        return None
+    try:
+        return Decimal(str(value))
+    except Exception:  # noqa: BLE001
+        return None
+
+
+def _as_date(value: Any) -> date | None:
+    if value is None:
+        return None
+    if isinstance(value, datetime):
+        return value.date()
+    if isinstance(value, date):
+        return value
+    text = str(value).strip()
+    if not text:
+        return None
+    try:
+        return date.fromisoformat(text[:10])
+    except ValueError:
+        return None
