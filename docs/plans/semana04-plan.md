@@ -1,6 +1,6 @@
 # Semana 4 — Plan: cobertura territorial + deduplicación
 
-> **Estado:** en curso (Paso 2 cerrado; siguiente = Paso 4 deduplicación).  
+> **Estado:** en curso (Paso 4 cerrado; siguiente = Paso 5 matching en pipeline).  
 > **Checklist:** [fase4-checklist.md](fase4-checklist.md)  
 > **Precondición:** Semana 3 cerrada ([fase3-checklist.md](fase3-checklist.md)).  
 > **Norma:** `docs/00`–`04` y `.cursor/rules/`. Reutilizar contrato `SourceConnector` + pipeline + upsert canónico de Semanas 1–3. ADR solo si hace falta cambiar arquitectura de verdad.  
@@ -196,6 +196,7 @@ Registro de lo acordado al cerrar (o antes de) cada paso:
 | Paso 2.2 | `PLACSP_MENORES` en `PlacspSyndication` | Reuso discover/fetch; keys `contratosMenoresPerfilesContratantes_YYYYMM.zip` |
 | Paso 2.3 | RAW/parse/normalize/upsert reutilizan pipeline PLACSP | Prefijo `raw/placsp_menores/`; unique `(placsp_menores, source_tender_id)` |
 | Paso 2.4 | CLI + `ingest-placsp.yml` admiten `placsp_menores` | Dry-run default; cron off |
+| Paso 4 | Matching en columnas de `tender_sources` (migración) | `unmatched`/`auto`/`pending`; sin tabla auxiliar; ADR N/A |
 
 ---
 

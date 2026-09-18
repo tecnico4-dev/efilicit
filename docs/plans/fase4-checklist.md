@@ -12,7 +12,7 @@ El estado se marca **aquí**, no con “— OK” en el plan.
 | 1. Inventario cobertura 17 CCAA + leftover `placsp_menores` | OK | Docs en `docs/sources/`; 0 CCAA extra |
 | 2. `placsp_menores` (reuso PLACSP) | OK | Minipasos 2.1–2.4 |
 | 3. Matriz 17 CCAA + CCAA propia extra (o N/A) | OK | [cobertura-ccaa.md](../sources/cobertura-ccaa.md); 3.2 N/A |
-| 4. Esquema matching (`tender_sources` / migración) | Pendiente | `match_method`, `match_score`, `matched_at`, `review_status` |
+| 4. Esquema matching (`tender_sources` / migración) | OK | `match_method`, `match_score`, `matched_at`, `review_status` |
 | 5. Matching en pipeline común | Pendiente | Sustituir pass-through; lookup canónico |
 | 6. Upsert respeta matching (auto / pending / unmatched) | Pendiente | Idempotente; no fusionar ambiguos |
 | 7. Fixtures de solape + regresión | Pendiente | No debilitar tests Semanas 1–3 |
