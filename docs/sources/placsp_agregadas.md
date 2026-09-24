@@ -226,9 +226,10 @@ Misma estrategia que `placsp`, con prefijo RAW distinto:
 | Ámbito | Entidades que publican en PLACSP **por agregación** (perfil **no** alojado en PLACSP) |
 | Exclusiones | Contratos menores; perfiles alojados en PLACSP (van en `placsp`) |
 | Periodo | Desde **2016** (la composición de entidades agregadas **varía en el tiempo**) |
-| Territorial | Complementa cobertura de CCAA/entes con plataforma propia (p. ej. Madrid vía agregación); no sustituye fuentes autonómicas propias del catálogo |
+| Territorial | CCAA/entes con **plataforma propia** que interconectan con PLACSP (Andalucía, Galicia, Madrid, Navarra, La Rioja; solape con Catalunya/Euskadi). Matriz: [cobertura-ccaa.md](cobertura-ccaa.md). **No** es la ruta de CCAA con perfiles alojados (esas van en `placsp`) |
+| Menores | Excluidos de este dataset; tampoco entran en `placsp_menores` (solo perfiles alojados) → backlog si se priorizan |
 
-No garantiza el 100 % de todos los contratos locales de cada CCAA. Algunas comunidades tendrán además (o en su lugar) fuente propia en Semana 3–4.
+No garantiza el 100 % de todos los contratos locales de cada CCAA. Catalunya y Euskadi tienen además conector propio; el resto de CCAA con plataforma propia usan este canal como ruta MVP no-menores.
 
 ---
 

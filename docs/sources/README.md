@@ -18,12 +18,13 @@ Cada fuente debe indicar: organismo, URL, mecanismo de acceso, formato, frecuenc
 
 Inventario Semana 4: [cobertura-ccaa.md](cobertura-ccaa.md).
 
-Criterio MVP: ruta oficial identificada (propia **o** agregada), no un conector por comunidad.
+Criterio MVP: ruta oficial identificada (propia, agregación PLACSP o perfiles alojados), no un conector por comunidad.
 
 | Resumen | Detalle |
 |---|---|
 | Propias integradas | Catalunya (`catalunya`), País Vasco (`euskadi`) |
-| Ruta agregada | Las otras 15 CCAA vía `placsp_agregadas` |
+| Agregación (`placsp_agregadas`) | Andalucía, Galicia, Madrid, Navarra, La Rioja |
+| Perfiles alojados (`placsp`) | Aragón, Asturias, Illes Balears, Canarias, Cantabria, Castilla-La Mancha, Castilla y León, Comunitat Valenciana, Extremadura, Región de Murcia |
 | CCAA extra Semana 4 | N/A (0 conectores nuevos) |
 
 ## Verificación live (local)

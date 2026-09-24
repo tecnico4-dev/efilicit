@@ -215,7 +215,7 @@ Misma estrategia que `placsp` / `placsp_agregadas`, con prefijo RAW distinto:
 | Ámbito | Contratos menores de órganos con perfil **alojado en PLACSP** |
 | Exclusiones | Licitaciones no-menores (`placsp`); agregación (`placsp_agregadas`); menores de plataformas solo-agregadas |
 | Periodo | Desde **2018** (según ficha Hacienda) |
-| Territorial | Nacional sobre perfiles alojados; no sustituye Open Data autonómico propio |
+| Territorial | Nacional sobre perfiles alojados (incl. CCAA sin plataforma propia — [cobertura-ccaa.md](cobertura-ccaa.md)); no cubre menores de plataformas solo-agregadas |
 
 Pedido explícito del corte MVP (`docs/04`): contratos menores cuando estén disponibles en la fuente integrada.
 

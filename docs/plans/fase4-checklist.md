@@ -32,7 +32,7 @@ El estado se marca **aquí**, no con “— OK” en el plan.
 | Minipaso | Estado | Notas |
 |---|---|---|
 | 3.1 Matriz 17 CCAA en catálogo | OK | [cobertura-ccaa.md](../sources/cobertura-ccaa.md) |
-| 3.2 CCAA propia extra (ficha + conector E2E) | N/A | 0 conectores; cobertura vía agregadas |
+| 3.2 CCAA propia extra (ficha + conector E2E) | N/A | 0 conectores; cobertura vía `placsp` + `placsp_agregadas` |
 
 ## Criterios transversales (cierre Semana 4)
 

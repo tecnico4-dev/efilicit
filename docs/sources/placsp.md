@@ -212,9 +212,9 @@ No reprocesar todo el histórico cada día si el cursor/paquetes permiten avanza
 | Ámbito | Órganos con perfil de contratante **alojado en PLACSP** |
 | Exclusiones de este dataset | Contratos menores; (este canal) no es el de agregación CCAA |
 | Periodo | Actualizaciones desde ~2012 (cobertura por entidad no homogénea: entidades se han ido sumando) |
-| Territorial | Nacional vía perfiles alojados; CCAA con plataforma propia pueden no estar completas aquí (usan agregación u otras fuentes) |
+| Territorial | Nacional vía perfiles alojados; incluye CCAA **sin** plataforma propia (p. ej. Valencia, CyL, Canarias, Asturias, … — ver [cobertura-ccaa.md](cobertura-ccaa.md)). CCAA con plataforma propia publican por agregación → [placsp_agregadas.md](placsp_agregadas.md) |
 
-Definición de cobertura del MVP del proyecto: ver `docs/04-roadmap-mvp.md`. Esta ficha no garantiza el 100 % de todos los contratos locales de España.
+Definición de cobertura del MVP del proyecto: ver `docs/04-roadmap-mvp.md` y [cobertura-ccaa.md](cobertura-ccaa.md). Esta ficha no garantiza el 100 % de todos los contratos locales de España.
 
 ---
 

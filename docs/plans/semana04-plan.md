@@ -25,7 +25,7 @@ El upsert es idempotente **dentro de una fuente** por `(source_code, source_tend
 
 Meta de Semana 4 (`docs/04` § Semana 4):
 
-1. **Cobertura territorial:** las 17 CCAA tienen una **ruta de datos oficial identificada** (propia o agregada) y documentada.
+1. **Cobertura territorial:** las 17 CCAA tienen una **ruta de datos oficial identificada** (propia, agregación o perfiles alojados) y documentada.
 2. **Deduplicación funcional:** una licitación vista en dos fuentes compatibles se representa **una sola vez** cuando hay confianza suficiente; lo ambiguo queda `review_status = pending`.
 
 Fuera de esta semana (Semana 5+): FTS / Auth / alertas UI, TED, subvenciones, motor de revisión humana, cron de producción.
@@ -35,7 +35,7 @@ Fuera de esta semana (Semana 5+): FTS / Auth / alertas UI, TED, subvenciones, mo
 ## Cómo lo hacemos
 
 1. Cumplir tareas y criterios de `docs/04-roadmap-mvp.md` § Semana 4.
-2. **No** interpretar “17 CCAA cubiertas” como “17 conectores nuevos”. El roadmap define cobertura como **ruta de fuente identificada** (propia **o** agregada). `placsp_agregadas` ya es la vía territorial principal para muchas CCAA.
+2. **No** interpretar “17 CCAA cubiertas” como “17 conectores nuevos”. El roadmap define cobertura como **ruta de fuente identificada**: conector propio, **agregación** (`placsp_agregadas`) o **perfiles alojados** (`placsp`). Ver matriz en [cobertura-ccaa.md](../sources/cobertura-ccaa.md).
 3. Cada fuente **nueva que se implemente**: ficha en `docs/sources/`, `source_sync`, fixture, tests, config de acceso y workflow/job.
 4. La documentación de fuentes y cobertura vive en `docs/sources/` (no en este plan). Aquí solo estructura + [Decisiones durante la ejecución](#decisiones-durante-la-ejecución).
 5. Reutilizar adaptadores **solo** con compatibilidad técnica y semántica real (PLACSP Atom/CODICE, Socrata, REST propio, CSV puntual).
@@ -55,7 +55,7 @@ Fuera de esta semana (Semana 5+): FTS / Auth / alertas UI, TED, subvenciones, mo
 
 Contrastar catálogo de referencia + fichas oficiales + lo ya integrado. Documentar en `docs/sources/`:
 
-- cobertura territorial de las 17 CCAA (ruta propia / agregada / hueco);
+- cobertura territorial de las 17 CCAA (ruta propia / agregación / perfiles alojados / hueco);
 - leftover estatal `placsp_menores` (ficha al estilo de las fuentes Semanas 2–3).
 
 Registrar en [Decisiones](#decisiones-durante-la-ejecución) el orden de ataque y si hay CCAA propia extra esta semana. **No** implementar conectores aún.
@@ -106,7 +106,7 @@ Asegurar que [docs/sources/cobertura-ccaa.md](../sources/cobertura-ccaa.md) y el
 Si el Paso 1 selecciona **una** CCAA propia extra: repetir el patrón Semana 3 (ficha → conector → RAW → upsert → CLI → workflow → tests).  
 Si no selecciona ninguna: marcar minipaso 3.2 como **N/A** en el checklist.
 
-**No** implementar 15 conectores “para llegar a 17”.
+**No** implementar un conector por CCAA “para llegar a 17”: la mayoría ya tiene ruta vía `placsp` o `placsp_agregadas`.
 
 **Listo cuando:** las 17 CCAA figuran documentadas en `docs/sources/`; cada conector extra (si existe) cumple el contrato habitual.
 
@@ -190,8 +190,8 @@ Registro de lo acordado al cerrar (o antes de) cada paso:
 | Plan | `placsp_menores` antes de CCAA extra | Reuso máximo; leftover explícito de Semana 3 |
 | Plan | Documentación de fuentes/cobertura solo en `docs/sources/` | El plan no acumula fichas ni matrices largas |
 | Paso 1 | `placsp_menores` = `sindicacion_1143` / `contratosMenoresPerfilesContratantes` | Confirmado en ficha Hacienda; conector en Paso 2 |
-| Paso 1 | 15 CCAA vía `placsp_agregadas`; Catalunya + Euskadi propias | Cumple “ruta identificada” sin 17 conectores |
-| Paso 1 | CCAA propia extra Semana 4 = **0 (N/A)** | Priorizar menores + dedup; reservas CSV = backlog |
+| Paso 1 | 2 propias (Cat, Euskadi) + 5 agregación + 10 perfiles alojados `placsp` | Cumple “ruta identificada” sin 17 conectores; ver [cobertura-ccaa.md](../sources/cobertura-ccaa.md) |
+| Paso 1 | CCAA propia extra Semana 4 = **0 (N/A)** | Priorizar menores + dedup; Open Data / menores de agregadas = backlog |
 | Paso 1 | Fichas en `cobertura-ccaa.md` + `placsp_menores.md` | Detalle en catálogo de fuentes, no en el plan |
 | Paso 2.2 | `PLACSP_MENORES` en `PlacspSyndication` | Reuso discover/fetch; keys `contratosMenoresPerfilesContratantes_YYYYMM.zip` |
 | Paso 2.3 | RAW/parse/normalize/upsert reutilizan pipeline PLACSP | Prefijo `raw/placsp_menores/`; unique `(placsp_menores, source_tender_id)` |
