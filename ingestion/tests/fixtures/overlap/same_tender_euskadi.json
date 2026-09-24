@@ -1,0 +1,30 @@
+{
+  "totalItems": 1,
+  "totalPages": 1,
+  "currentPage": 1,
+  "itemsOfPage": 1,
+  "items": [
+    {
+      "id": 910001,
+      "code": "EXP/2026/OVERLAP-001",
+      "object": "Suministro de material de laboratorio (overlap fixture Euskadi)",
+      "entity": {"id": 1, "name": "Departamento Overlap"},
+      "contractingAuthority": {
+        "id": 201,
+        "identificationNumber": "B76543210",
+        "name": "Organismo Overlap Fixture S.A.",
+        "codNUTS": "ES21"
+      },
+      "contractType": {"id": 1, "name": "Suministros"},
+      "contractProcedureStatus": {"id": 1, "name": "Publicación"},
+      "contractProcedureType": {"id": 1, "name": "Abierto"},
+      "budgetWithoutVAT": 8400.0,
+      "minorContract": false,
+      "_links": {
+        "self": {
+          "href": "https://api.euskadi.eus/procurements/contracting-notices/910001"
+        }
+      }
+    }
+  ]
+}

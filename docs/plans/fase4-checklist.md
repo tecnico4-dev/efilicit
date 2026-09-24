@@ -15,7 +15,7 @@ El estado se marca **aquí**, no con “— OK” en el plan.
 | 4. Esquema matching (`tender_sources` / migración) | OK | `match_method`, `match_score`, `matched_at`, `review_status` |
 | 5. Matching en pipeline común | OK | `matching.py` + lookup repo; tests auto/unmatched/pending |
 | 6. Upsert respeta matching (auto / pending / unmatched) | OK | Reusa `tenders.id` en auto; no fusiona pending; idempotente |
-| 7. Fixtures de solape + regresión | Pendiente | No debilitar tests Semanas 1–3 |
+| 7. Fixtures de solape + regresión | OK | `fixtures/overlap/` + `test_overlap_dedup`; suite ingestion verde |
 | 8. Catálogo + cierre | Pendiente | CHANGELOG; ADR N/A o nuevo |
 
 ## Paso 2 — minipasos (`placsp_menores`)
@@ -38,9 +38,9 @@ El estado se marca **aquí**, no con “— OK” en el plan.
 
 | Ítem | Estado | Notas |
 |---|---|---|
-| Reejecutar no duplica (fuentes nuevas / matching) | Pendiente | Idempotencia upsert matching OK; cierre en Paso 7–8 |
-| `source_sync` por cada fuente añadida | Pendiente | |
-| Tests en verde (parser / matching / persistencia) | Pendiente | Matching + upsert unitarios OK; regresión = Paso 7 |
+| Reejecutar no duplica (fuentes nuevas / matching) | OK | Cubierto en matching upsert + overlap (2ª pasada) |
+| `source_sync` por cada fuente añadida | Pendiente | Cierre Paso 8 |
+| Tests en verde (parser / matching / persistencia) | OK | Suite ingestion completa en verde (Paso 7) |
 | No fusionar ambigüedades a ciegas | OK | `pending` → nueva fila `tenders` + `review_status` |
 | ADRs estructurales (solo si hubo decisión nueva) | Pendiente | Default esperado: N/A |
 | CHANGELOG actualizado | Pendiente | |
@@ -51,9 +51,9 @@ El estado se marca **aquí**, no con “— OK” en el plan.
 |---|---|---|
 | Las 17 CCAA tienen una ruta de fuente identificada | OK | [cobertura-ccaa.md](../sources/cobertura-ccaa.md) |
 | Las fuentes integradas muestran datos reales | Pendiente | Live previo A–D; nuevas según se implementen |
-| Una licitación en dos fuentes compatibles → una fila canónica si hay confianza | Pendiente | Upsert auto OK (Paso 6); fixtures = Paso 7 |
+| Una licitación en dos fuentes compatibles → una fila canónica si hay confianza | OK | Fixtures overlap PLACSP↔Euskadi (`test_overlap_dedup`) |
 | Casos ambiguos quedan pendientes de revisión | OK | `pending` no fusiona; `review_status` persistido |
-| Tests de dedup en verde | Pendiente | Matching+upsert unitarios OK; fixtures/regresión = Paso 7 |
+| Tests de dedup en verde | OK | Matching + upsert + overlap; regresión suite ingestion |
 | Sin modelo de datos alternativo por fuente | Pendiente | Mismo canónico / pipeline común |
 
 **Semana 4 abierta.** No mergear a `main` hasta OK explícito.

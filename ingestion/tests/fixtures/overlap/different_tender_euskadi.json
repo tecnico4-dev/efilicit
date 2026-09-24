@@ -1,0 +1,28 @@
+{
+  "totalItems": 1,
+  "totalPages": 1,
+  "currentPage": 1,
+  "itemsOfPage": 1,
+  "items": [
+    {
+      "id": 910099,
+      "code": "EXP/2026/DISTINCT-099",
+      "object": "Servicio de limpieza industrial (no overlap)",
+      "contractingAuthority": {
+        "id": 299,
+        "identificationNumber": "A11111111",
+        "name": "Ayuntamiento Distinct Fixture",
+        "codNUTS": "ES213"
+      },
+      "contractType": {"id": 2, "name": "Servicios"},
+      "contractProcedureStatus": {"id": 1, "name": "Publicación"},
+      "budgetWithoutVAT": 1500.0,
+      "minorContract": false,
+      "_links": {
+        "self": {
+          "href": "https://api.euskadi.eus/procurements/contracting-notices/910099"
+        }
+      }
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 # Semana 4 — Plan: cobertura territorial + deduplicación
 
-> **Estado:** en curso (Paso 6 cerrado; siguiente = Paso 7 fixtures de solape + regresión).  
+> **Estado:** en curso (Paso 7 cerrado; siguiente = Paso 8 catálogo + cierre).  
 > **Checklist:** [fase4-checklist.md](fase4-checklist.md)  
 > **Precondición:** Semana 3 cerrada ([fase3-checklist.md](fase3-checklist.md)).  
 > **Norma:** `docs/00`–`04` y `.cursor/rules/`. Reutilizar contrato `SourceConnector` + pipeline + upsert canónico de Semanas 1–3. ADR solo si hace falta cambiar arquitectura de verdad.  
@@ -199,6 +199,7 @@ Registro de lo acordado al cerrar (o antes de) cada paso:
 | Paso 4 | Matching en columnas de `tender_sources` (migración) | `unmatched`/`auto`/`pending`; sin tabla auxiliar; ADR N/A |
 | Paso 5 | `stages.deduplicate` + `MatchLookup` en repo canónico | Anota `payload['match']`; título solo → `pending`; fusión = Paso 6 |
 | Paso 6 | Upsert respeta `payload['match']` | `auto` reusa `tenders.id`; `pending`/`unmatched` crean fila; idempotente |
+| Paso 7 | Fixtures solape PLACSP↔Euskadi + regresión | Auto-merge / no-merge; Catalunya sin NIF no auto; suite ingestion verde |
 
 ---
 
