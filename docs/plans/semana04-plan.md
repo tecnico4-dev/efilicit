@@ -200,6 +200,7 @@ Registro de lo acordado al cerrar (o antes de) cada paso:
 | Paso 5 | `stages.deduplicate` + `MatchLookup` en repo canónico | Anota `payload['match']`; título solo → `pending`; fusión = Paso 6 |
 | Paso 6 | Upsert respeta `payload['match']` | `auto` reusa `tenders.id`; `pending`/`unmatched` crean fila; idempotente |
 | Paso 7 | Fixtures solape PLACSP↔Euskadi + regresión | Auto-merge / no-merge; Catalunya sin NIF no auto; suite ingestion verde |
+| Pruebas live (post Paso 6–7) | Columna `match_candidate_tender_id` en `tender_sources` (candidato **best** en `pending`) | Sin ella no se ve en Studio a qué tender se parece un `pending`; no cambia `auto`/`unmatched`. Evolución prevista cuando exista UI de revisión humana: tabla `match_suggestions` (varios candidatos por fila pending, no solo el best) |
 
 ---
 

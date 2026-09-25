@@ -451,6 +451,22 @@ Sin duplicados `(euskadi, source_tender_id)`; el conteo de `tender_sources` no c
 
 ---
 
+# Semana 4 — matching en Studio (nota)
+
+Tras deduplicación multi-fuente, en Table Editor → `tender_sources`:
+
+| Qué mirar | Esperado |
+|---|---|
+| `review_status = auto` | Varias filas (`source_code` distintos) con el **mismo** `tender_id`; `match_candidate_tender_id` = null |
+| `review_status = pending` | Fila propia (no fusionada); si el matching eligió best → `match_candidate_tender_id` apunta a ese `tenders.id` |
+| `review_status = unmatched` | `match_candidate_tender_id` = null |
+
+Filas `pending` creadas **antes** de la columna pueden tener el candidato vacío hasta re-ingerir esa fuente.
+
+Si más adelante hace falta guardar **varios** candidatos (no solo el best), el camino previsto es una tabla auxiliar tipo `match_suggestions` ligada a la fila `pending`, sin sustituir el criterio de no fusionar a ciegas.
+
+---
+
 # Cómo repetir
 
 ### `placsp`

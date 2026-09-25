@@ -91,40 +91,126 @@ def test_upsert_auto_reuses_single_tender_across_sources() -> None:
     assert cat_link["review_status"] == REVIEW_AUTO
     assert cat_link["match_method"] is not None
     assert cat_link["matched_at"] is not None
+    assert cat_link["match_candidate_tender_id"] is None
 
 
 def test_upsert_pending_creates_separate_tender() -> None:
+    """Title similarity + shared CPV → pending with best candidate id persisted."""
     repo = InMemoryCanonicalRepository()
-    shared = dict(
-        title="Contrato marco de suministros",
-        tax_id="P0800000B",
-        expediente="EXP-AMB-1",
-        cpv_code="30190000",
-    )
     repo.upsert_records(
         source_code="placsp",
-        records=[_record(source_record_id="p1", **shared)],
+        records=[
+            _record(
+                source_record_id="p1",
+                title="Contrato marco de suministros especiales XYZ",
+                tax_id="P0800000B",
+                expediente="EXP-PLACSP-1",
+                cpv_code="30213000",
+                estimated_value="1000.00",
+                publication_date="2024-06-01",
+            )
+        ],
     )
-    repo.upsert_records(
-        source_code="euskadi",
-        records=[_record(source_record_id="e1", **shared)],
-    )
-    assert len(repo.tenders) == 2
+    prior_id = next(iter(repo.tenders))
 
-    incoming = _record(source_record_id="c1", **shared)
+    incoming = _record(
+        source_record_id="c1",
+        title="Contrato marco de suministros especiales XYZ",
+        tax_id="B99999999",
+        expediente="EXP-CAT-9",
+        cpv_code="30213000",
+        estimated_value="9.99",
+        publication_date="2020-01-01",
+    )
     annotated = match_records([incoming], source_code="catalunya", lookup=repo)
     assert annotated[0].payload["match"]["review_status"] == REVIEW_PENDING
+    suggested = annotated[0].payload["match"].get("matched_tender_id")
+    assert suggested == prior_id
 
     repo.upsert_records(source_code="catalunya", records=annotated)
-    assert len(repo.tenders) == 3
-    cat_link = repo.tender_sources[("catalunya", "P0800000B:EXP-AMB-1")]
+    assert len(repo.tenders) == 2
+    cat_link = next(v for k, v in repo.tender_sources.items() if k[0] == "catalunya")
     assert cat_link["review_status"] == REVIEW_PENDING
-    existing_ids = {
-        link["tender_id"]
-        for (src, _), link in repo.tender_sources.items()
-        if src != "catalunya"
-    }
-    assert cat_link["tender_id"] not in existing_ids
+    assert cat_link["match_candidate_tender_id"] == prior_id
+    assert cat_link["tender_id"] != prior_id
+
+
+def test_upsert_auto_leaves_match_candidate_null() -> None:
+    repo = InMemoryCanonicalRepository()
+    first = _record(
+        source_record_id="p1",
+        title="Suministro compartido",
+        tax_id="P2800000A",
+        expediente="EXP-SHARE-1",
+    )
+    repo.upsert_records(source_code="placsp", records=[first])
+    second = _record(
+        source_record_id="c1",
+        title="Suministro compartido (CAT)",
+        tax_id="P2800000A",
+        expediente="EXP-SHARE-1",
+    )
+    annotated = match_records([second], source_code="catalunya", lookup=repo)
+    repo.upsert_records(source_code="catalunya", records=annotated)
+    cat_link = repo.tender_sources[("catalunya", "P2800000A:EXP-SHARE-1")]
+    assert cat_link["review_status"] == REVIEW_AUTO
+    assert cat_link["match_candidate_tender_id"] is None
+
+
+def test_pending_reingest_refreshes_match_candidate() -> None:
+    repo = InMemoryCanonicalRepository()
+    title = "Servicio de limpieza edificios municipales UNIQUE"
+    repo.upsert_records(
+        source_code="placsp",
+        records=[
+            _record(
+                source_record_id="p1",
+                title=title,
+                tax_id="P0800000B",
+                expediente="EXP-REFR-P",
+                cpv_code="30213000",
+                estimated_value="1000.00",
+                publication_date="2024-06-01",
+            )
+        ],
+    )
+    placsp_id = next(iter(repo.tenders))
+    incoming = _record(
+        source_record_id="c1",
+        title=title,
+        tax_id="B11111111",
+        expediente="EXP-REFR-C",
+        cpv_code="30213000",
+        estimated_value="9.99",
+        publication_date="2019-01-01",
+    )
+    annotated = match_records([incoming], source_code="catalunya", lookup=repo)
+    assert annotated[0].payload["match"]["review_status"] == REVIEW_PENDING
+    repo.upsert_records(source_code="catalunya", records=annotated)
+    key = ("catalunya", "B11111111:EXP-REFR-C")
+    assert repo.tender_sources[key]["match_candidate_tender_id"] == placsp_id
+
+    repo.upsert_records(
+        source_code="euskadi",
+        records=[
+            _record(
+                source_record_id="e1",
+                title=title,
+                tax_id="P22222222",
+                expediente="EXP-REFR-E",
+                cpv_code="30213000",
+                estimated_value="9.99",
+                publication_date="2019-01-01",
+            )
+        ],
+    )
+    reannotated = match_records([incoming], source_code="catalunya", lookup=repo)
+    assert reannotated[0].payload["match"]["review_status"] == REVIEW_PENDING
+    new_best = reannotated[0].payload["match"].get("matched_tender_id")
+    assert new_best is not None
+    repo.upsert_records(source_code="catalunya", records=reannotated)
+    assert repo.tender_sources[key]["review_status"] == REVIEW_PENDING
+    assert repo.tender_sources[key]["match_candidate_tender_id"] == new_best
 
 
 def test_upsert_unmatched_creates_new_tender() -> None:
@@ -159,6 +245,7 @@ def test_upsert_unmatched_creates_new_tender() -> None:
     assert len(repo.tender_sources) == 2
     cat_link = next(v for k, v in repo.tender_sources.items() if k[0] == "catalunya")
     assert cat_link["review_status"] == REVIEW_UNMATCHED
+    assert cat_link.get("match_candidate_tender_id") is None
 
 
 def test_upsert_second_pass_does_not_duplicate_tender_sources() -> None:
@@ -259,7 +346,7 @@ def test_postgres_upsert_auto_merges_and_is_idempotent() -> None:
 
         links = conn.execute(
             """
-            select source_code, review_status, match_method
+            select source_code, review_status, match_method, match_candidate_tender_id
             from public.tender_sources
             where source_tender_id = %s
             order by source_code
@@ -270,3 +357,4 @@ def test_postgres_upsert_auto_merges_and_is_idempotent() -> None:
         by_source = {row[0]: row for row in links}
         assert by_source["catalunya"][1] == REVIEW_AUTO
         assert by_source["catalunya"][2] is not None
+        assert by_source["catalunya"][3] is None

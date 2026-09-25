@@ -74,4 +74,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Semana 4 (ajuste tras pruebas live): el matching en `tender_sources` ahora persiste `match_candidate_tender_id` — candidato best cuando `review_status=pending` (Studio / revisión humana futura); `auto`/`unmatched` → null; re-ingesta actualiza el best si sigue `pending`. Evolución prevista: tabla `match_suggestions` (N candidatos) cuando exista UI de revisión.
 - Decisión documentada: no aplicar branch protection en `main` por ahora (repo privado de prueba; no se contratará plan GitHub Team solo para ese bloqueo). Ver `.github/README.md`.

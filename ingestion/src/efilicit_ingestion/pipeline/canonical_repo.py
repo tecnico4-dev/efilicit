@@ -38,6 +38,8 @@ class _MatchLink:
     match_score: float | None
     reuse_tender_id: str | None
     matched_at: datetime | None
+    # Best cross-source candidate when pending (not merged). Null for auto/unmatched.
+    match_candidate_tender_id: str | None = None
 
 
 class CanonicalRepository(Protocol):
@@ -111,6 +113,7 @@ class InMemoryCanonicalRepository:
                     "match_method": link.match_method,
                     "match_score": link.match_score,
                     "matched_at": link.matched_at,
+                    "match_candidate_tender_id": link.match_candidate_tender_id,
                 }
                 self.events.append(
                     {
@@ -137,6 +140,7 @@ class InMemoryCanonicalRepository:
                 self.tenders[tender_id] = _tender_row(canonical, authority_id)
                 existing["source_url"] = canonical.get("source_url")
                 existing["artifact_id"] = artifact_id
+                _apply_match_refresh_in_memory(existing, record.payload, self.tenders)
                 self.events.append(
                     {
                         "tender_id": tender_id,
@@ -346,6 +350,7 @@ class PostgresCanonicalRepository:
                     match_method=link.match_method,
                     match_score=link.match_score,
                     matched_at=link.matched_at,
+                    match_candidate_tender_id=link.match_candidate_tender_id,
                 )
                 self._insert_event(
                     tender_id=tender_id,
@@ -370,6 +375,7 @@ class PostgresCanonicalRepository:
                     source_tender_id=source_tender_id,
                     source_url=canonical.get("source_url"),
                     artifact_id=artifact_id,
+                    payload=record.payload,
                 )
                 self._insert_event(
                     tender_id=tender_id,
@@ -514,14 +520,16 @@ class PostgresCanonicalRepository:
         match_method: str | None = None,
         match_score: float | None = None,
         matched_at: datetime | None = None,
+        match_candidate_tender_id: str | None = None,
     ) -> None:
         self._conn.execute(
             """
             insert into public.tender_sources (
               tender_id, source_code, source_tender_id, source_url, artifact_id,
-              review_status, match_method, match_score, matched_at
+              review_status, match_method, match_score, matched_at,
+              match_candidate_tender_id
             )
-            values (%s::uuid, %s, %s, %s, %s::uuid, %s, %s, %s, %s)
+            values (%s::uuid, %s, %s, %s, %s::uuid, %s, %s, %s, %s, %s::uuid)
             """,
             (
                 tender_id,
@@ -533,6 +541,7 @@ class PostgresCanonicalRepository:
                 match_method,
                 match_score,
                 matched_at,
+                match_candidate_tender_id,
             ),
         )
 
@@ -543,7 +552,74 @@ class PostgresCanonicalRepository:
         source_tender_id: str,
         source_url: str | None,
         artifact_id: str | None,
+        payload: dict[str, Any] | None = None,
     ) -> None:
+        link = _match_link_from_payload(
+            payload,
+            tender_exists=self._tender_exists,
+        )
+        # Refresh match metadata while still pending (or clear candidate if unmatched).
+        if link.review_status == REVIEW_PENDING:
+            self._conn.execute(
+                """
+                update public.tender_sources set
+                  source_url = coalesce(%s, source_url),
+                  artifact_id = coalesce(%s::uuid, artifact_id),
+                  last_seen_at = now(),
+                  review_status = %s,
+                  match_method = %s,
+                  match_score = %s,
+                  matched_at = %s,
+                  match_candidate_tender_id = %s::uuid
+                where source_code = %s and source_tender_id = %s
+                """,
+                (
+                    source_url,
+                    artifact_id,
+                    REVIEW_PENDING,
+                    link.match_method,
+                    link.match_score,
+                    link.matched_at,
+                    link.match_candidate_tender_id,
+                    source_code,
+                    source_tender_id,
+                ),
+            )
+            return
+
+        if link.review_status == REVIEW_UNMATCHED:
+            self._conn.execute(
+                """
+                update public.tender_sources set
+                  source_url = coalesce(%s, source_url),
+                  artifact_id = coalesce(%s::uuid, artifact_id),
+                  last_seen_at = now(),
+                  review_status = case
+                    when review_status = 'pending' then 'unmatched'
+                    else review_status
+                  end,
+                  match_method = case
+                    when review_status = 'pending' then null
+                    else match_method
+                  end,
+                  match_score = case
+                    when review_status = 'pending' then null
+                    else match_score
+                  end,
+                  matched_at = case
+                    when review_status = 'pending' then null
+                    else matched_at
+                  end,
+                  match_candidate_tender_id = case
+                    when review_status = 'pending' then null
+                    else match_candidate_tender_id
+                  end
+                where source_code = %s and source_tender_id = %s
+                """,
+                (source_url, artifact_id, source_code, source_tender_id),
+            )
+            return
+
         self._conn.execute(
             """
             update public.tender_sources set
@@ -618,6 +694,8 @@ def _match_link_from_payload(
     score = match.get("match_score")
     candidate = match.get("matched_tender_id")
     candidate_id = str(candidate) if candidate else None
+    if candidate_id and not tender_exists(candidate_id):
+        candidate_id = None
 
     if status == REVIEW_AUTO and candidate_id and tender_exists(candidate_id):
         return _MatchLink(
@@ -626,6 +704,7 @@ def _match_link_from_payload(
             match_score=float(score) if score is not None else None,
             reuse_tender_id=candidate_id,
             matched_at=datetime.now().astimezone(),
+            match_candidate_tender_id=None,
         )
     if status == REVIEW_AUTO:
         # Stale / missing target → do not invent a merge.
@@ -635,6 +714,7 @@ def _match_link_from_payload(
             match_score=None,
             reuse_tender_id=None,
             matched_at=None,
+            match_candidate_tender_id=None,
         )
     if status == REVIEW_PENDING:
         return _MatchLink(
@@ -643,6 +723,7 @@ def _match_link_from_payload(
             match_score=float(score) if score is not None else None,
             reuse_tender_id=None,
             matched_at=datetime.now().astimezone(),
+            match_candidate_tender_id=candidate_id,
         )
     return _MatchLink(
         review_status=REVIEW_UNMATCHED,
@@ -650,7 +731,35 @@ def _match_link_from_payload(
         match_score=None,
         reuse_tender_id=None,
         matched_at=None,
+        match_candidate_tender_id=None,
     )
+
+
+def _apply_match_refresh_in_memory(
+    existing: dict[str, Any],
+    payload: dict[str, Any] | None,
+    tenders: dict[str, dict[str, Any]],
+) -> None:
+    """Refresh pending candidate on re-ingest (in-memory repo)."""
+    link = _match_link_from_payload(
+        payload,
+        tender_exists=lambda tid: tid in tenders,
+    )
+    if link.review_status == REVIEW_PENDING:
+        existing["review_status"] = REVIEW_PENDING
+        existing["match_method"] = link.match_method
+        existing["match_score"] = link.match_score
+        existing["matched_at"] = link.matched_at
+        existing["match_candidate_tender_id"] = link.match_candidate_tender_id
+        return
+    if link.review_status == REVIEW_UNMATCHED and existing.get("review_status") == (
+        REVIEW_PENDING
+    ):
+        existing["review_status"] = REVIEW_UNMATCHED
+        existing["match_method"] = None
+        existing["match_score"] = None
+        existing["matched_at"] = None
+        existing["match_candidate_tender_id"] = None
 
 
 def _tender_row(canonical: dict[str, Any], authority_id: str) -> dict[str, Any]:
