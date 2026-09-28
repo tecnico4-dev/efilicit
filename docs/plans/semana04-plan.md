@@ -1,10 +1,10 @@
 # Semana 4 — Plan: cobertura territorial + deduplicación
 
-> **Estado:** en curso (Paso 7 cerrado; siguiente = Paso 8 catálogo + cierre).  
+> **Estado:** **cerrada** (Pasos 1–8). Siguiente = Semana 5 ([semana05-plan.md](semana05-plan.md)).  
 > **Checklist:** [fase4-checklist.md](fase4-checklist.md)  
 > **Precondición:** Semana 3 cerrada ([fase3-checklist.md](fase3-checklist.md)).  
 > **Norma:** `docs/00`–`04` y `.cursor/rules/`. Reutilizar contrato `SourceConnector` + pipeline + upsert canónico de Semanas 1–3. ADR solo si hace falta cambiar arquitectura de verdad.  
-> **Rama de trabajo:** `tecnico4/semana-04` (no mergear a `main` hasta OK explícito).  
+> **Rama de trabajo:** `tecnico4/semana-04` (mergeada a `main` al cierre).  
 > **Verificación live previa:** [docs/pruebas.md](../pruebas.md) — Partes A–D (`placsp`, `placsp_agregadas`, `catalunya`, `euskadi`).
 
 ---
@@ -200,6 +200,7 @@ Registro de lo acordado al cerrar (o antes de) cada paso:
 | Paso 5 | `stages.deduplicate` + `MatchLookup` en repo canónico | Anota `payload['match']`; título solo → `pending`; fusión = Paso 6 |
 | Paso 6 | Upsert respeta `payload['match']` | `auto` reusa `tenders.id`; `pending`/`unmatched` crean fila; idempotente |
 | Paso 7 | Fixtures solape PLACSP↔Euskadi + regresión | Auto-merge / no-merge; Catalunya sin NIF no auto; suite ingestion verde |
+| Paso 8 | Catálogo + cierre | ADR N/A; checklist cerrado; handoff Semana 5 |
 | Pruebas live (post Paso 6–7) | Columna `match_candidate_tender_id` en `tender_sources` (candidato **best** en `pending`) | Sin ella no se ve en Studio a qué tender se parece un `pending`; no cambia `auto`/`unmatched`. Evolución prevista cuando exista UI de revisión humana: tabla `match_suggestions` (varios candidatos por fila pending, no solo el best) |
 
 ---

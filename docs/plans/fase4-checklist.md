@@ -16,7 +16,7 @@ El estado se marca **aquí**, no con “— OK” en el plan.
 | 5. Matching en pipeline común | OK | `matching.py` + lookup repo; tests auto/unmatched/pending |
 | 6. Upsert respeta matching (auto / pending / unmatched) | OK | Reusa `tenders.id` en auto; no fusiona pending; persiste candidato best; idempotente |
 | 7. Fixtures de solape + regresión | OK | `fixtures/overlap/` + `test_overlap_dedup`; suite ingestion verde |
-| 8. Catálogo + cierre | Pendiente | CHANGELOG; ADR N/A o nuevo |
+| 8. Catálogo + cierre | OK | Catálogo; CHANGELOG; ADR N/A; handoff Semana 5 |
 
 ## Paso 2 — minipasos (`placsp_menores`)
 
@@ -38,25 +38,25 @@ El estado se marca **aquí**, no con “— OK” en el plan.
 
 | Ítem | Estado | Notas |
 |---|---|---|
-| Reejecutar no duplica (fuentes nuevas / matching) | OK | Cubierto en matching upsert + overlap (2ª pasada) |
-| `source_sync` por cada fuente añadida | Pendiente | Cierre Paso 8 |
-| Tests en verde (parser / matching / persistencia) | OK | Suite ingestion completa en verde (Paso 7) |
+| Reejecutar no duplica (fuentes nuevas / matching) | OK | Matching upsert + overlap (2ª pasada); pipeline `placsp_menores` |
+| `source_sync` por cada fuente añadida | OK | `placsp_menores` vía pipeline/tests (`test_placsp_menores_upsert`); A–D live previo |
+| Tests en verde (parser / matching / persistencia) | OK | Suite ingestion completa en verde (Paso 7 + cierre) |
 | No fusionar ambigüedades a ciegas | OK | `pending` → nueva fila `tenders` + `review_status` |
 | Candidato best en `pending` (`match_candidate_tender_id`) | OK | Migración + upsert; tests; evolución `match_suggestions` anotada |
-| ADRs estructurales (solo si hubo decisión nueva) | Pendiente | Default esperado: N/A |
-| CHANGELOG actualizado | Pendiente | |
+| ADRs estructurales (solo si hubo decisión nueva) | N/A | Sin cambio de arquitectura; se implementó lo fijado en `docs/01`–`04` |
+| CHANGELOG actualizado | OK | Unreleased con entradas Semana 4 + cierre |
 
 ## Criterios de salida `docs/04` § Semana 4
 
 | Criterio | Estado | Evidencia |
 |---|---|---|
 | Las 17 CCAA tienen una ruta de fuente identificada | OK | [cobertura-ccaa.md](../sources/cobertura-ccaa.md) |
-| Las fuentes integradas muestran datos reales | Pendiente | Live previo A–D; nuevas según se implementen |
+| Las fuentes integradas muestran datos reales | OK | Live A–D ([pruebas.md](../pruebas.md)); `placsp_menores` mismo canal PLACSP + tests/CLI |
 | Una licitación en dos fuentes compatibles → una fila canónica si hay confianza | OK | Fixtures overlap PLACSP↔Euskadi (`test_overlap_dedup`) |
 | Casos ambiguos quedan pendientes de revisión | OK | `pending` no fusiona; `review_status` + `match_candidate_tender_id` (best) |
 | Tests de dedup en verde | OK | Matching + upsert + overlap; regresión suite ingestion |
-| Sin modelo de datos alternativo por fuente | Pendiente | Mismo canónico / pipeline común |
+| Sin modelo de datos alternativo por fuente | OK | Mismo canónico / pipeline común |
 
-**Semana 4 abierta.** No mergear a `main` hasta OK explícito.
+**Semana 4 cerrada.** Siguiente: Semana 5 (búsqueda + Auth + alertas) — [semana05-plan.md](semana05-plan.md).
 
-Verificación con datos reales (local, cuando toque): [docs/pruebas.md](../pruebas.md).
+Verificación con datos reales (local): [docs/pruebas.md](../pruebas.md).

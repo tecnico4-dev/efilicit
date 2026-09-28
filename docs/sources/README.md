@@ -42,9 +42,16 @@ Resultados y comandos: [docs/pruebas.md](../pruebas.md).
 
 | Tema | Notas |
 |---|---|
-| Conector `placsp_menores` | Completo Semana 4 Paso 2 (ficha + CLI + workflow) |
-| Deduplicación multi-fuente | Semana 4 Pasos 4–7 |
 | Reservas CSV / Open Data CCAA | Backlog — ver [cobertura-ccaa.md](cobertura-ccaa.md) §5 |
+| UI de revisión humana de matches `pending` | Semana 5+ (evolución prevista: `match_suggestions`) |
 | TED y otras | Semanas posteriores según roadmap |
+
+## Completado en Semana 4
+
+| Tema | Notas |
+|---|---|
+| Conector `placsp_menores` | Completo (ficha + CLI + workflow) |
+| Cobertura 17 CCAA | [cobertura-ccaa.md](cobertura-ccaa.md) — rutas identificadas |
+| Deduplicación multi-fuente | Matching + upsert (`auto` / `pending` / `unmatched`) + fixtures de solape |
 
 Catálogo de referencia externo (no verdad única): [contratacionabierta.com](https://contratacionabierta.com/).
