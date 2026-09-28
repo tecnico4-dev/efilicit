@@ -1,6 +1,6 @@
 # Semana 5 — Plan: búsqueda + autenticación + alertas
 
-> **Estado:** en curso (Paso 1 cerrado; siguiente = Paso 2 FTS + `pg_trgm`).  
+> **Estado:** en curso (Paso 2 cerrado; siguiente = Paso 3 queries).  
 > **Checklist:** [fase5-checklist.md](fase5-checklist.md)  
 > **Precondición:** Semana 4 cerrada ([fase4-checklist.md](fase4-checklist.md)).  
 > **Norma:** `docs/00`–`04` y `.cursor/rules/`. Consumir el **modelo canónico** ya poblado; no inventar motor de búsqueda externo ni colas fuera de PostgreSQL. ADR solo si hace falta cambiar arquitectura de verdad.  
@@ -224,6 +224,8 @@ Registro de lo acordado al cerrar (o antes de) cada paso:
 | Paso 1 | Criteria v1 compartido (TS + Python + comments SQL) | Sin columnas tipadas; `jsonb` + `version: 1`; AND/OR; alerta vacía = sin matches |
 | Paso 1 | Mismos campos para `alerts` y `saved_searches` | Roadmap: keywords, CPV, organismo, geo, importe, tipo (+ opcionales) |
 | Paso 1 | Organismo: `tax_ids` primario; `name_contains` débil | Alineado con identidad canónica (NIF/CIF) |
+| Paso 2 | `search_vector` generated stored (spanish A/B) + GIN + `title` trgm | Sin trigger manual; B-tree filtros Semana 1 reutilizados; geo vía join |
+| Paso 2 | Extensión `pg_trgm` en schema `extensions` | Convención Supabase (`extra_search_path`) |
 
 ---
 

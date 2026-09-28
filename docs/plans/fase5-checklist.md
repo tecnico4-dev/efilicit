@@ -10,7 +10,7 @@ El estado se marca **aquí**, no con “— OK” en el plan.
 | Ítem | Estado | Notas |
 |---|---|---|
 | 1. Contrato de criterios (`alerts` / `saved_searches`) | OK | v1 en `packages/types/src/criteria.ts` + `efilicit_ingestion.alerts.criteria`; comments SQL |
-| 2. Esquema FTS + `pg_trgm` (migración) | Pendiente | Minipasos 2.1–2.2 |
+| 2. Esquema FTS + `pg_trgm` (migración) | OK | Minipasos 2.1–2.2; tipos TS regenerados |
 | 3. Capa `apps/web/src/lib/queries` | Pendiente | FTS + filtros + ranking básico |
 | 4. UI mínima de búsqueda | Pendiente | Verificable; sin dashboard |
 | 5. Auth — sesión + perfil `public.users` | Pendiente | Minipasos 5.1–5.2 |
@@ -25,8 +25,8 @@ El estado se marca **aquí**, no con “— OK” en el plan.
 
 | Minipaso | Estado | Notas |
 |---|---|---|
-| 2.1 Extensión + `search_vector` (+ trigger/generated) | Pendiente | Título > descripción |
-| 2.2 Índices GIN + `pg_trgm` + B-tree filtros | Pendiente | Geo vía join u otro campo justificado |
+| 2.1 Extensión + `search_vector` (+ trigger/generated) | OK | generated stored; título A > descripción B (`spanish`) |
+| 2.2 Índices GIN + `pg_trgm` + B-tree filtros | OK | `tenders_search_vector_gin_idx` + `tenders_title_trgm_idx`; B-tree S1 intactos |
 
 ## Paso 5 — minipasos (Auth base)
 
