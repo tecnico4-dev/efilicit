@@ -1,6 +1,6 @@
 # Semana 5 — Plan: búsqueda + autenticación + alertas
 
-> **Estado:** pendiente de inicio (precondición: Semana 4 **cerrada**).  
+> **Estado:** en curso (Paso 1 cerrado; siguiente = Paso 2 FTS + `pg_trgm`).  
 > **Checklist:** [fase5-checklist.md](fase5-checklist.md)  
 > **Precondición:** Semana 4 cerrada ([fase4-checklist.md](fase4-checklist.md)).  
 > **Norma:** `docs/00`–`04` y `.cursor/rules/`. Consumir el **modelo canónico** ya poblado; no inventar motor de búsqueda externo ni colas fuera de PostgreSQL. ADR solo si hace falta cambiar arquitectura de verdad.  
@@ -221,6 +221,9 @@ Registro de lo acordado al cerrar (o antes de) cada paso:
 | Plan | Criteria de alerta/búsqueda en `jsonb` con shape acordado (Paso 1) | Esqueleto ya usa `criteria jsonb`; evitar DDL prematuro |
 | Plan | Geografía en búsqueda vía join a organismo / campo justificado | `tenders` hoy sin columna geo; no inventar catálogo NUTS |
 | Plan | Favoritos / dashboard / ficha completa → Semana 6 | Fuera del corte S5 del roadmap |
+| Paso 1 | Criteria v1 compartido (TS + Python + comments SQL) | Sin columnas tipadas; `jsonb` + `version: 1`; AND/OR; alerta vacía = sin matches |
+| Paso 1 | Mismos campos para `alerts` y `saved_searches` | Roadmap: keywords, CPV, organismo, geo, importe, tipo (+ opcionales) |
+| Paso 1 | Organismo: `tax_ids` primario; `name_contains` débil | Alineado con identidad canónica (NIF/CIF) |
 
 ---
 
@@ -232,3 +235,4 @@ Registro de lo acordado al cerrar (o antes de) cada paso:
 - [docs/02-setup-entorno.md](../02-setup-entorno.md) §9 secretos · §13 prueba Auth/RLS  
 - Migración esqueleto: `supabase/migrations/20260909133000_semana1_users_alerts_skeleton.sql`  
 - [fase5-checklist.md](fase5-checklist.md) · [semana04-plan.md](semana04-plan.md) · [fase4-checklist.md](fase4-checklist.md)
+- Contrato criteria v1: [`packages/types/src/criteria.ts`](../../packages/types/src/criteria.ts) · `efilicit_ingestion.alerts.criteria`

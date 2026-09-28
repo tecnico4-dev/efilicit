@@ -22,7 +22,7 @@ Aquí se documenta **cómo se ha decidido ejecutar** cada semana del roadmap (or
 | Semana 2 / Fase 2 (PLACSP vertical slice) | [semana02-plan.md](semana02-plan.md) | [fase2-checklist.md](fase2-checklist.md) | Cerrada |
 | Semana 3 / Fase 3 (escalado estatal + primeras CCAA) | [semana03-plan.md](semana03-plan.md) | [fase3-checklist.md](fase3-checklist.md) | Cerrada |
 | Semana 4 / Fase 4 (cobertura territorial + deduplicación) | [semana04-plan.md](semana04-plan.md) | [fase4-checklist.md](fase4-checklist.md) | Cerrada |
-| Semana 5 / Fase 5 (búsqueda + Auth + alertas) | [semana05-plan.md](semana05-plan.md) | [fase5-checklist.md](fase5-checklist.md) | Pendiente |
+| Semana 5 / Fase 5 (búsqueda + Auth + alertas) | [semana05-plan.md](semana05-plan.md) | [fase5-checklist.md](fase5-checklist.md) | En curso |
 
 ## Relación con el roadmap
 

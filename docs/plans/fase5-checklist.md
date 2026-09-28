@@ -9,7 +9,7 @@ El estado se marca **aquí**, no con “— OK” en el plan.
 
 | Ítem | Estado | Notas |
 |---|---|---|
-| 1. Contrato de criterios (`alerts` / `saved_searches`) | Pendiente | Shape JSON acordado |
+| 1. Contrato de criterios (`alerts` / `saved_searches`) | OK | v1 en `packages/types/src/criteria.ts` + `efilicit_ingestion.alerts.criteria`; comments SQL |
 | 2. Esquema FTS + `pg_trgm` (migración) | Pendiente | Minipasos 2.1–2.2 |
 | 3. Capa `apps/web/src/lib/queries` | Pendiente | FTS + filtros + ranking básico |
 | 4. UI mínima de búsqueda | Pendiente | Verificable; sin dashboard |

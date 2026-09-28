@@ -1,0 +1,122 @@
+"""Contrato de criteria (jsonb) para alerts y saved_searches — Semana 5 Paso 1.
+
+Misma forma que ``packages/types/src/criteria.ts``.
+No contiene el motor de matching (Paso 7); solo el shape y validación ligera.
+"""
+
+from __future__ import annotations
+
+from typing import Any, Literal
+
+from pydantic import BaseModel, ConfigDict, model_validator
+
+CriteriaVersion = Literal[1]
+
+
+class AuthorityCriteria(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    tax_ids: list[str] | None = None
+    ids: list[str] | None = None
+    name_contains: str | None = None
+
+
+class GeographyCriteria(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    municipalities: list[str] | None = None
+    countries: list[str] | None = None
+
+
+class SearchCriteria(BaseModel):
+    """Shape de ``alerts.criteria`` / ``saved_searches.criteria`` (version 1)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    version: CriteriaVersion = 1
+    keywords: list[str] | None = None
+    cpv_codes: list[str] | None = None
+    authority: AuthorityCriteria | None = None
+    geography: GeographyCriteria | None = None
+    estimated_value_min: float | None = None
+    estimated_value_max: float | None = None
+    contract_types: list[str] | None = None
+    procedure_types: list[str] | None = None
+    statuses: list[str] | None = None
+    publication_date_from: str | None = None
+    publication_date_to: str | None = None
+    deadline_from: str | None = None
+    deadline_to: str | None = None
+
+    @model_validator(mode="after")
+    def _value_range_ok(self) -> SearchCriteria:
+        lo, hi = self.estimated_value_min, self.estimated_value_max
+        if lo is not None and hi is not None and lo > hi:
+            raise ValueError("estimated_value_min no puede ser mayor que estimated_value_max")
+        return self
+
+    def has_filters(self) -> bool:
+        """True si hay alguna dimensión de filtrado (además de version)."""
+        data = self.model_dump(exclude={"version"}, exclude_none=True)
+        for key, value in data.items():
+            if value in (None, [], {}, ""):
+                continue
+            if isinstance(value, dict) and not any(value.values()):
+                continue
+            return True
+        return False
+
+
+AlertCriteria = SearchCriteria
+
+CRITERIA_EXAMPLE_V1: dict[str, Any] = {
+    "version": 1,
+    "keywords": ["software", "mantenimiento"],
+    "cpv_codes": ["72000000"],
+    "authority": {"tax_ids": ["P2807900B"]},
+    "geography": {"municipalities": ["Madrid"], "countries": ["ES"]},
+    "estimated_value_min": 10_000,
+    "estimated_value_max": 500_000,
+    "contract_types": ["services"],
+    "procedure_types": ["open"],
+    "publication_date_from": "2026-01-01",
+    "publication_date_to": "2026-12-31",
+}
+
+
+def parse_criteria(raw: Any) -> SearchCriteria:
+    """Parsea y valida un JSON/dict de criteria (falla si hay claves desconocidas)."""
+    if raw is None:
+        return SearchCriteria(version=1)
+    return SearchCriteria.model_validate(raw)
+
+
+KNOWN_CRITERIA_KEYS: frozenset[str] = frozenset(
+    {
+        "version",
+        "keywords",
+        "cpv_codes",
+        "authority",
+        "geography",
+        "estimated_value_min",
+        "estimated_value_max",
+        "contract_types",
+        "procedure_types",
+        "statuses",
+        "publication_date_from",
+        "publication_date_to",
+        "deadline_from",
+        "deadline_to",
+    }
+)
+
+__all__ = [
+    "AlertCriteria",
+    "AuthorityCriteria",
+    "CRITERIA_EXAMPLE_V1",
+    "CriteriaVersion",
+    "GeographyCriteria",
+    "KNOWN_CRITERIA_KEYS",
+    "SearchCriteria",
+    "parse_criteria",
+]
