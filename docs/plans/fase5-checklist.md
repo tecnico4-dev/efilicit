@@ -12,7 +12,7 @@ El estado se marca **aquí**, no con “— OK” en el plan.
 | 1. Contrato de criterios (`alerts` / `saved_searches`) | OK | v1 en `packages/types/src/criteria.ts` + `efilicit_ingestion.alerts.criteria`; comments SQL |
 | 2. Esquema FTS + `pg_trgm` (migración) | OK | Minipasos 2.1–2.2; tipos TS regenerados |
 | 3. Capa `apps/web/src/lib/queries` | OK | `searchTenders` → RPC `search_tenders`; FTS + trgm + filtros |
-| 4. UI mínima de búsqueda | Pendiente | Verificable; sin dashboard |
+| 4. UI mínima de búsqueda | OK | `/search`: texto + CPV + importe; usa `searchTenders` |
 | 5. Auth — sesión + perfil `public.users` | Pendiente | Minipasos 5.1–5.2 |
 | 6. Auth UI + RLS verificado (A≠B) | Pendiente | saved_searches / alerts propios |
 | 7. Matching batch → `notification_queue` | Pendiente | Minipasos 7.1–7.2 |

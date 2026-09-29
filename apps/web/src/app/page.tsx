@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { createSupabaseClient } from "@/lib/supabase/client";
 
 export const dynamic = "force-dynamic";
@@ -8,14 +9,12 @@ async function checkLocalSupabase(): Promise<{
 }> {
   try {
     const supabase = createSupabaseClient();
-    // Anon cannot read setup_rls_smoke (RLS) — we only care that the API answers.
     const { error } = await supabase
       .from("setup_rls_smoke")
       .select("id")
       .limit(1);
 
     if (error) {
-      // Permission / RLS errors still prove we reached local Supabase.
       if (
         error.code === "PGRST301" ||
         error.message.toLowerCase().includes("permission") ||
@@ -51,7 +50,15 @@ export default async function Home() {
         EfiLicit
       </h1>
       <p className="mt-3 max-w-md text-center text-zinc-600">
-        Fase 0 — web en blanco conectada a Supabase <strong>local</strong>.
+        Vigilancia de contratación pública — Semana 5 (búsqueda canónica).
+      </p>
+      <p className="mt-6">
+        <Link
+          href="/search"
+          className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800"
+        >
+          Ir a búsqueda
+        </Link>
       </p>
       <p
         className={`mt-8 max-w-lg rounded-md px-4 py-3 text-sm ${
