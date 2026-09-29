@@ -665,7 +665,47 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      search_tenders: {
+        Args: {
+          p_authority_ids?: string[]
+          p_authority_name_contains?: string
+          p_authority_tax_ids?: string[]
+          p_contract_types?: string[]
+          p_countries?: string[]
+          p_cpv_codes?: string[]
+          p_deadline_from?: string
+          p_deadline_to?: string
+          p_estimated_value_max?: number
+          p_estimated_value_min?: number
+          p_keywords?: string[]
+          p_limit?: number
+          p_municipalities?: string[]
+          p_offset?: number
+          p_procedure_types?: string[]
+          p_publication_date_from?: string
+          p_publication_date_to?: string
+          p_query?: string
+          p_statuses?: string[]
+        }
+        Returns: {
+          contract_type: string
+          contracting_authority_id: string
+          cpv_code: string
+          created_at: string
+          currency: string
+          deadline_at: string
+          description: string
+          estimated_value: number
+          id: string
+          match_kind: string
+          procedure_type: string
+          publication_date: string
+          rank: number
+          status: string
+          title: string
+          updated_at: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never

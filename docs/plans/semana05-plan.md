@@ -1,6 +1,6 @@
 # Semana 5 — Plan: búsqueda + autenticación + alertas
 
-> **Estado:** en curso (Paso 2 cerrado; siguiente = Paso 3 queries).  
+> **Estado:** en curso (Paso 3 cerrado; siguiente = Paso 4 UI búsqueda).  
 > **Checklist:** [fase5-checklist.md](fase5-checklist.md)  
 > **Precondición:** Semana 4 cerrada ([fase4-checklist.md](fase4-checklist.md)).  
 > **Norma:** `docs/00`–`04` y `.cursor/rules/`. Consumir el **modelo canónico** ya poblado; no inventar motor de búsqueda externo ni colas fuera de PostgreSQL. ADR solo si hace falta cambiar arquitectura de verdad.  
@@ -226,6 +226,7 @@ Registro de lo acordado al cerrar (o antes de) cada paso:
 | Paso 1 | Organismo: `tax_ids` primario; `name_contains` débil | Alineado con identidad canónica (NIF/CIF) |
 | Paso 2 | `search_vector` generated stored (spanish A/B) + GIN + `title` trgm | Sin trigger manual; B-tree filtros Semana 1 reutilizados; geo vía join |
 | Paso 2 | Extensión `pg_trgm` en schema `extensions` | Convención Supabase (`extra_search_path`) |
+| Paso 3 | RPC `search_tenders` (SECURITY INVOKER) + `lib/queries` | FTS + trgm + filtros Criteria v1; ranking `greatest(ts_rank, similarity)`; no motor externo |
 
 ---
 
@@ -238,3 +239,4 @@ Registro de lo acordado al cerrar (o antes de) cada paso:
 - Migración esqueleto: `supabase/migrations/20260909133000_semana1_users_alerts_skeleton.sql`  
 - [fase5-checklist.md](fase5-checklist.md) · [semana04-plan.md](semana04-plan.md) · [fase4-checklist.md](fase4-checklist.md)
 - Contrato criteria v1: [`packages/types/src/criteria.ts`](../../packages/types/src/criteria.ts) · `efilicit_ingestion.alerts.criteria`
+- Búsqueda Paso 3: [`apps/web/src/lib/queries/search-tenders.ts`](../../apps/web/src/lib/queries/search-tenders.ts) · RPC `public.search_tenders`
