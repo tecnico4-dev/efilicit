@@ -14,7 +14,7 @@ El estado se marca **aquí**, no con “— OK” en el plan.
 | 3. Capa `apps/web/src/lib/queries` | OK | `searchTenders` → RPC `search_tenders`; FTS + trgm + filtros |
 | 4. UI mínima de búsqueda | OK | `/search`: texto + CPV + importe; usa `searchTenders` |
 | 5. Auth — sesión + perfil `public.users` | OK | Minipasos 5.1–5.2; login/account mínimos |
-| 6. Auth UI + RLS verificado (A≠B) | Pendiente | saved_searches / alerts propios |
+| 6. Auth UI + RLS verificado (A≠B) | OK | `/register` `/alerts`; `verify:rls` Alice≠Bob |
 | 7. Matching batch → `notification_queue` | Pendiente | Minipasos 7.1–7.2 |
 | 8. Resend + digest diario (idempotente) | Pendiente | Secretos fuera de Git; `instant` N/A o diferido |
 | 9. CLI + workflow alertas | Pendiente | Dry-run default; cron off |
@@ -47,10 +47,8 @@ El estado se marca **aquí**, no con “— OK” en el plan.
 | Ítem | Estado | Notas |
 |---|---|---|
 | Sin motor de búsqueda externo | Pendiente | Solo PostgreSQL FTS/GIN/trgm |
-| `service_role` fuera del frontend | Pendiente | |
-| Alertas batch-first (no email por INSERT bruto) | Pendiente | |
-| Reejecutar batch no reenvía notificaciones `sent` | Pendiente | |
-| RLS owner-only verificado (usuario A ≠ B) | Pendiente | |
+| RLS owner-only verificado (usuario A ≠ B) | OK | `apps/web/scripts/verify-rls-alerts.mjs` |
+| `service_role` fuera del frontend | OK | Solo publishable en web |
 | Tests relevantes en verde (queries / matching / RLS) | Pendiente | |
 | ADRs estructurales (solo si hubo decisión nueva) | Pendiente | Default esperado: N/A |
 | CHANGELOG actualizado | Pendiente | |
@@ -61,8 +59,8 @@ El estado se marca **aquí**, no con “— OK” en el plan.
 |---|---|---|
 | Búsqueda de términos normales → resultados relevantes | Pendiente | |
 | Errata razonable cubierta por `pg_trgm` | Pendiente | |
-| Un usuario no accede a datos privados de otro | Pendiente | |
+| Un usuario no accede a datos privados de otro | OK | `verify:rls` Alice crea alerta; Bob no la ve |
 | Crear alerta → ejecutar batch → recibir email | Pendiente | |
 | Reejecutar el batch no reenvía notificaciones ya enviadas | Pendiente | |
 
-**Semana 5 no iniciada** hasta cerrar Semana 4 y OK explícito para abrir esta fase. No mergear a `main` hasta OK explícito.
+**Semana 5 en curso.** No mergear a `main` hasta OK explícito.

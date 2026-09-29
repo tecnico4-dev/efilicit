@@ -24,3 +24,10 @@ const { data, error } = await searchTenders(client, {
 ```
 
 Comprobación SQL directa: ver plan Semana 5 / checklist Paso 3.
+
+## Alertas / búsquedas (Semana 5 / Paso 6)
+
+- `createOwnAlert` / `listOwnAlerts` / `createOwnSavedSearch` / `listOwnSavedSearches`
+- UI: `/alerts` (requiere login)
+- Prueba RLS Alice≠Bob: `pnpm --filter @efilicit/web verify:rls`
+

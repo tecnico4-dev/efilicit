@@ -77,6 +77,10 @@ export default async function AccountPage() {
         <Link href="/search" className="text-zinc-900 underline">
           Ir a búsqueda
         </Link>
+        {" · "}
+        <Link href="/alerts" className="text-zinc-900 underline">
+          Alertas
+        </Link>
       </p>
     </main>
   );

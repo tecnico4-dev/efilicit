@@ -60,10 +60,22 @@ export default async function Home() {
           Ir a búsqueda
         </Link>
         <Link
+          href="/alerts"
+          className="rounded-md border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-900 hover:bg-zinc-100"
+        >
+          Alertas
+        </Link>
+        <Link
           href="/login"
           className="rounded-md border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-900 hover:bg-zinc-100"
         >
           Login
+        </Link>
+        <Link
+          href="/register"
+          className="rounded-md border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-900 hover:bg-zinc-100"
+        >
+          Registro
         </Link>
         <Link
           href="/account"

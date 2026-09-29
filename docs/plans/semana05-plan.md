@@ -1,6 +1,6 @@
 # Semana 5 — Plan: búsqueda + autenticación + alertas
 
-> **Estado:** en curso (Paso 5 cerrado; siguiente = Paso 6 Auth UI + RLS A≠B).  
+> **Estado:** en curso (Paso 6 cerrado; siguiente = Paso 7 motor alertas batch).  
 > **Checklist:** [fase5-checklist.md](fase5-checklist.md)  
 > **Precondición:** Semana 4 cerrada ([fase4-checklist.md](fase4-checklist.md)).  
 > **Norma:** `docs/00`–`04` y `.cursor/rules/`. Consumir el **modelo canónico** ya poblado; no inventar motor de búsqueda externo ni colas fuera de PostgreSQL. ADR solo si hace falta cambiar arquitectura de verdad.  
@@ -229,6 +229,7 @@ Registro de lo acordado al cerrar (o antes de) cada paso:
 | Paso 3 | RPC `search_tenders` (SECURITY INVOKER) + `lib/queries` | FTS + trgm + filtros Criteria v1; ranking `greatest(ts_rank, similarity)`; no motor externo |
 | Paso 4 | UI mínima `/search` (form GET + `searchTenders`) | Texto + CPV + importe; badge FTS/errata/filtro; sin ficha/dashboard |
 | Paso 5 | `@supabase/ssr` + middleware + trigger `handle_new_user` | Login/account mínimos; seed Alice/Bob → `public.users`; sin service_role |
+| Paso 6 | `/register` + `/alerts` CRUD mínimo + script RLS | `pnpm --filter @efilicit/web verify:rls` → Alice≠Bob OK; fondo blanco fijo hasta Semana 6 |
 
 ---
 

@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "verify:rls": "node --env-file=.env.local scripts/verify-rls-alerts.mjs"
   },
   "dependencies": {
     "@efilicit/types": "workspace:*",

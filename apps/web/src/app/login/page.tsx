@@ -35,6 +35,12 @@ export default async function LoginPage({
         <code className="font-mono">public.users</code>.
       </p>
       <LoginForm nextPath={nextPath.startsWith("/") ? nextPath : "/account"} />
+      <p className="mt-6 text-sm text-zinc-600">
+        ¿No tienes cuenta?{" "}
+        <Link href="/register" className="underline">
+          Registrarse
+        </Link>
+      </p>
     </main>
   );
 }
