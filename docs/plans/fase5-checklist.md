@@ -15,7 +15,7 @@ El estado se marca **aquí**, no con “— OK” en el plan.
 | 4. UI mínima de búsqueda | OK | `/search`: texto + CPV + importe; usa `searchTenders` |
 | 5. Auth — sesión + perfil `public.users` | OK | Minipasos 5.1–5.2; login/account mínimos |
 | 6. Auth UI + RLS verificado (A≠B) | OK | `/register` `/alerts`; `verify:rls` Alice≠Bob |
-| 7. Matching batch → `notification_queue` | Pendiente | Minipasos 7.1–7.2 |
+| 7. Matching batch → `notification_queue` | OK | Minipasos 7.1–7.2; tests sin red |
 | 8. Resend + digest diario (idempotente) | Pendiente | Secretos fuera de Git; `instant` N/A o diferido |
 | 9. CLI + workflow alertas | Pendiente | Dry-run default; cron off |
 | 10. Recorrido E2E local (buscar → alerta → email) | Pendiente | |
@@ -39,8 +39,8 @@ El estado se marca **aquí**, no con “— OK” en el plan.
 
 | Minipaso | Estado | Notas |
 |---|---|---|
-| 7.1 Evaluador de reglas (criteria → tenders) | Pendiente | Tests sin red |
-| 7.2 Encolado idempotente (`idempotency_key`) | Pendiente | 2ª pasada no duplica / no reenvía |
+| 7.1 Evaluador de reglas (criteria → tenders) | OK | `alerts/match.py`; `test_alert_match` |
+| 7.2 Encolado idempotente (`idempotency_key`) | OK | `alerts/queue.py` + `batch.py`; 2ª pasada no reabre `sent` |
 
 ## Criterios transversales (cierre Semana 5)
 
