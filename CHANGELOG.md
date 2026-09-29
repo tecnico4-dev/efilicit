@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Semana 5 Paso 5: Auth SSR (`@supabase/ssr`, middleware), sync `auth.users` → `public.users` (trigger), login/account mínimos; seed perfiles Alice/Bob.
 - Semana 5 Paso 4: UI mínima de búsqueda en `apps/web` (`/search`) sobre `searchTenders` (texto, CPV, importe; badge FTS/errata).
 - Semana 5 Paso 3: capa `searchTenders` en `apps/web/src/lib/queries` + RPC `public.search_tenders` (FTS + `pg_trgm` + filtros Criteria v1); tipos regenerados.
 - Semana 5 Paso 2: FTS en `tenders` (`search_vector` generated spanish A/B, GIN) + `pg_trgm` en `title`; tipos TS regenerados.

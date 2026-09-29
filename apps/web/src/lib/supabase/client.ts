@@ -1,11 +1,7 @@
-import { createClient } from "@supabase/supabase-js";
+import { createBrowserClient } from "@supabase/ssr";
 import type { Database } from "@efilicit/types";
 
-/**
- * Browser/server client for local development.
- * Uses publishable/anon key only — never the service role.
- */
-export function createSupabaseClient() {
+function requirePublicEnv() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 
@@ -15,5 +11,21 @@ export function createSupabaseClient() {
     );
   }
 
-  return createClient<Database>(url, key);
+  return { url, key };
+}
+
+/**
+ * Browser client (Client Components). Publishable/anon key only — never service_role.
+ */
+export function createSupabaseBrowserClient() {
+  const { url, key } = requirePublicEnv();
+  return createBrowserClient<Database>(url, key);
+}
+
+/**
+ * @deprecated Prefer createSupabaseBrowserClient or createSupabaseServerClient.
+ * Kept for call sites that only need anon public reads without cookies.
+ */
+export function createSupabaseClient() {
+  return createSupabaseBrowserClient();
 }

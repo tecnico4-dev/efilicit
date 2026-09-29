@@ -103,4 +103,11 @@ begin
   values
     (user_a, 'Nota de Alice — solo ella debe verla con RLS'),
     (user_b, 'Nota de Bob — solo él debe verla con RLS');
+
+  -- Semana 5: perfiles de aplicación (el trigger on_auth_user_created también los crea).
+  insert into public.users (auth_user_id, display_name)
+  values
+    (user_a, 'Alice'),
+    (user_b, 'Bob')
+  on conflict (auth_user_id) do nothing;
 end $$;

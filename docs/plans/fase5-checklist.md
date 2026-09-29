@@ -13,7 +13,7 @@ El estado se marca **aquí**, no con “— OK” en el plan.
 | 2. Esquema FTS + `pg_trgm` (migración) | OK | Minipasos 2.1–2.2; tipos TS regenerados |
 | 3. Capa `apps/web/src/lib/queries` | OK | `searchTenders` → RPC `search_tenders`; FTS + trgm + filtros |
 | 4. UI mínima de búsqueda | OK | `/search`: texto + CPV + importe; usa `searchTenders` |
-| 5. Auth — sesión + perfil `public.users` | Pendiente | Minipasos 5.1–5.2 |
+| 5. Auth — sesión + perfil `public.users` | OK | Minipasos 5.1–5.2; login/account mínimos |
 | 6. Auth UI + RLS verificado (A≠B) | Pendiente | saved_searches / alerts propios |
 | 7. Matching batch → `notification_queue` | Pendiente | Minipasos 7.1–7.2 |
 | 8. Resend + digest diario (idempotente) | Pendiente | Secretos fuera de Git; `instant` N/A o diferido |
@@ -32,8 +32,8 @@ El estado se marca **aquí**, no con “— OK” en el plan.
 
 | Minipaso | Estado | Notas |
 |---|---|---|
-| 5.1 Clientes Supabase browser/server + sesión | Pendiente | Sin `service_role` en frontend |
-| 5.2 Sync `auth.users` → `public.users` | Pendiente | Unique `auth_user_id` |
+| 5.1 Clientes Supabase browser/server + sesión | OK | `@supabase/ssr` + middleware; `/login` `/account` |
+| 5.2 Sync `auth.users` → `public.users` | OK | trigger `handle_new_user` + seed Alice/Bob |
 
 ## Paso 7 — minipasos (motor alertas)
 

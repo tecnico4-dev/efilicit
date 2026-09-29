@@ -50,16 +50,28 @@ export default async function Home() {
         EfiLicit
       </h1>
       <p className="mt-3 max-w-md text-center text-zinc-600">
-        Vigilancia de contratación pública — Semana 5 (búsqueda canónica).
+        Vigilancia de contratación pública — Semana 5 (búsqueda + Auth).
       </p>
-      <p className="mt-6">
+      <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
         <Link
           href="/search"
           className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800"
         >
           Ir a búsqueda
         </Link>
-      </p>
+        <Link
+          href="/login"
+          className="rounded-md border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-900 hover:bg-zinc-100"
+        >
+          Login
+        </Link>
+        <Link
+          href="/account"
+          className="rounded-md border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-900 hover:bg-zinc-100"
+        >
+          Cuenta
+        </Link>
+      </div>
       <p
         className={`mt-8 max-w-lg rounded-md px-4 py-3 text-sm ${
           health.ok

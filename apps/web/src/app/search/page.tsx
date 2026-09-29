@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { createSupabaseClient } from "@/lib/supabase/client";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { searchTenders, type SearchTenderRow } from "@/lib/queries";
 
 export const dynamic = "force-dynamic";
@@ -120,7 +120,7 @@ export default async function SearchPage({
 
   if (hasParams) {
     try {
-      const client = createSupabaseClient();
+      const client = await createSupabaseServerClient();
       const result = await searchTenders(client, {
         query: q || undefined,
         criteria: {
