@@ -47,8 +47,10 @@ El estado se marca **aquí**, no con “— OK” en el plan.
 | Ítem | Estado | Notas |
 |---|---|---|
 | Sin motor de búsqueda externo | Pendiente | Solo PostgreSQL FTS/GIN/trgm |
-| RLS owner-only verificado (usuario A ≠ B) | OK | `apps/web/scripts/verify-rls-alerts.mjs` |
 | `service_role` fuera del frontend | OK | Solo publishable en web |
+| Alertas batch-first (no email por INSERT bruto) | Pendiente | |
+| Reejecutar batch no reenvía notificaciones `sent` | Pendiente | |
+| RLS owner-only verificado (usuario A ≠ B) | OK | `apps/web/scripts/verify-rls-alerts.mjs` |
 | Tests relevantes en verde (queries / matching / RLS) | Pendiente | |
 | ADRs estructurales (solo si hubo decisión nueva) | Pendiente | Default esperado: N/A |
 | CHANGELOG actualizado | Pendiente | |
