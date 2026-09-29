@@ -48,7 +48,7 @@ El estado se marca **aquí**, no con “— OK” en el plan.
 |---|---|---|
 | Sin motor de búsqueda externo | Pendiente | Solo PostgreSQL FTS/GIN/trgm |
 | `service_role` fuera del frontend | OK | Solo publishable en web |
-| Alertas batch-first (no email por INSERT bruto) | Pendiente | |
+| Alertas batch-first (no email por INSERT bruto) | OK | Match → cola; email = Paso 8 |
 | Reejecutar batch no reenvía notificaciones `sent` | Pendiente | |
 | RLS owner-only verificado (usuario A ≠ B) | OK | `apps/web/scripts/verify-rls-alerts.mjs` |
 | Tests relevantes en verde (queries / matching / RLS) | Pendiente | |
