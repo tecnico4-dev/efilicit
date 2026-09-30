@@ -73,7 +73,11 @@ class ResendEmailSender:
         if message.html:
             body["html"] = message.html
         if message.tags:
-            body["tags"] = [{"name": "efilicit", "value": t} for t in message.tags]
+            # Resend exige nombres de tag únicos por email (no repetir "efilicit").
+            body["tags"] = [
+                {"name": f"efilicit_{i}", "value": str(t)[:256]}
+                for i, t in enumerate(message.tags)
+            ]
 
         try:
             response = httpx.post(
