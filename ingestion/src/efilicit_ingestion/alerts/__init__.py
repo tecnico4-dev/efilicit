@@ -14,6 +14,7 @@ from efilicit_ingestion.alerts.digest import (
 from efilicit_ingestion.alerts.email import FakeEmailSender, ResendEmailSender
 from efilicit_ingestion.alerts.match import evaluate_tender, match_alert_to_tenders
 from efilicit_ingestion.alerts.models import AlertMatch, AlertRule, TenderCandidate
+from efilicit_ingestion.alerts.postgres import PostgresNotificationQueue
 from efilicit_ingestion.alerts.queue import (
     InMemoryNotificationQueue,
     make_idempotency_key,
@@ -26,6 +27,7 @@ __all__ = [
     "CRITERIA_EXAMPLE_V1",
     "FakeEmailSender",
     "InMemoryNotificationQueue",
+    "PostgresNotificationQueue",
     "ResendEmailSender",
     "SearchCriteria",
     "TenderCandidate",

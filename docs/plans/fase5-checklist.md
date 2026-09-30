@@ -17,7 +17,7 @@ El estado se marca **aquí**, no con “— OK” en el plan.
 | 6. Auth UI + RLS verificado (A≠B) | OK | `/register` `/alerts`; `verify:rls` Alice≠Bob |
 | 7. Matching batch → `notification_queue` | OK | Minipasos 7.1–7.2; tests sin red |
 | 8. Resend + digest diario (idempotente) | OK | `alerts/digest.py` + `email.py`; tests FakeSender; secretos solo env |
-| 9. CLI + workflow alertas | Pendiente | Dry-run default; cron off |
+| 9. CLI + workflow alertas | OK | `run-alerts` dry-run default; `alerts-digest.yml` cron off |
 | 10. Recorrido E2E local (buscar → alerta → email) | Pendiente | |
 | 11. Cierre (CHANGELOG / tipos / ADR) | Pendiente | ADR N/A salvo decisión estructural |
 

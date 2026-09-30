@@ -1,0 +1,115 @@
+# Semana 5 / Paso 9 — alertas batch + digest diario vía GitHub Actions.
+# Por defecto: dry-run in-memory (FakeEmailSender, sin secretos, sin writes).
+# Escritura a Postgres o envío Resend: solo workflow_dispatch explícito + secrets.
+name: Alerts digest
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: >
+          dry-run = fixtures in-memory + Fake (safe).
+          write-fake = Postgres match→cola→digest con FakeEmailSender (needs EFILICIT_DATABASE_URL).
+          write-resend = igual + Resend real (needs DB + RESEND_API_KEY + ALERT_FROM_EMAIL).
+        type: choice
+        options:
+          - dry-run
+          - write-fake
+          - write-resend
+        default: dry-run
+      digest:
+        description: "Día de digest YYYY-MM-DD (vacío = hoy UTC)"
+        required: false
+        default: ""
+      since_days:
+        description: "Ventana de tenders en días (solo write-*)"
+        required: false
+        default: "1"
+  # Cron desactivado a propósito: no envío diario hasta OK explícito + secrets.
+  # schedule:
+  #   - cron: "0 7 * * *"
+
+concurrency:
+  group: alerts-digest-${{ inputs.mode }}
+  cancel-in-progress: false
+
+jobs:
+  alerts:
+    name: Run alerts (${{ inputs.mode }})
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ingestion
+    env:
+      EFILICIT_DATABASE_URL: ${{ secrets.EFILICIT_DATABASE_URL }}
+      RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+      ALERT_FROM_EMAIL: ${{ secrets.ALERT_FROM_EMAIL }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Sync dependencies
+        run: uv sync --frozen
+
+      - name: Guard secrets for write modes
+        if: inputs.mode != 'dry-run'
+        run: |
+          set -euo pipefail
+          if [ -z "${EFILICIT_DATABASE_URL:-}" ]; then
+            echo "::error::Missing repository secret EFILICIT_DATABASE_URL (required for ${{ inputs.mode }})"
+            exit 1
+          fi
+          if [ "${{ inputs.mode }}" = "write-resend" ]; then
+            if [ -z "${RESEND_API_KEY:-}" ]; then
+              echo "::error::write-resend requires secret RESEND_API_KEY"
+              exit 1
+            fi
+            if [ -z "${ALERT_FROM_EMAIL:-}" ]; then
+              echo "::error::write-resend requires secret ALERT_FROM_EMAIL"
+              exit 1
+            fi
+          fi
+
+      - name: Run alerts CLI
+        run: |
+          set -euo pipefail
+          MODE="${{ inputs.mode }}"
+          DIGEST="${{ inputs.digest }}"
+          SINCE="${{ inputs.since_days }}"
+          EXTRA=()
+          if [ -n "$DIGEST" ]; then
+            EXTRA+=(--digest "$DIGEST")
+          fi
+
+          case "$MODE" in
+            dry-run)
+              uv run python -m efilicit_ingestion.cli run-alerts \
+                --dry-run \
+                "${EXTRA[@]}"
+              ;;
+            write-fake)
+              uv run python -m efilicit_ingestion.cli run-alerts \
+                --write \
+                --since-days "$SINCE" \
+                "${EXTRA[@]}"
+              ;;
+            write-resend)
+              uv run python -m efilicit_ingestion.cli run-alerts \
+                --write \
+                --send \
+                --since-days "$SINCE" \
+                "${EXTRA[@]}"
+              ;;
+            *)
+              echo "::error::Unknown mode: $MODE"
+              exit 1
+              ;;
+          esac

@@ -1,6 +1,6 @@
 # Semana 5 — Plan: búsqueda + autenticación + alertas
 
-> **Estado:** en curso (Paso 8 cerrado; siguiente = Paso 9 CLI + workflow).  
+> **Estado:** en curso (Paso 9 cerrado; siguiente = Paso 10 E2E local).  
 > **Checklist:** [fase5-checklist.md](fase5-checklist.md)  
 > **Precondición:** Semana 4 cerrada ([fase4-checklist.md](fase4-checklist.md)).  
 > **Norma:** `docs/00`–`04` y `.cursor/rules/`. Consumir el **modelo canónico** ya poblado; no inventar motor de búsqueda externo ni colas fuera de PostgreSQL. ADR solo si hace falta cambiar arquitectura de verdad.  
@@ -232,6 +232,7 @@ Registro de lo acordado al cerrar (o antes de) cada paso:
 | Paso 6 | `/register` + `/alerts` CRUD mínimo + script RLS | `pnpm --filter @efilicit/web verify:rls` → Alice≠Bob OK; fondo blanco fijo hasta Semana 6 |
 | Paso 7 | Motor batch Python `alerts/` (match → cola) | Tests sin red; `idempotency_key` por alerta+tender+digest; sin email aún |
 | Paso 8 | Digest diario + Resend (`FakeEmailSender` / `ResendEmailSender`) | Drain por usuario+día; marca `sent`/`failed`; Edge Function N/A (envío desde job Python); `instant` diferido |
+| Paso 9 | CLI `run-alerts` + workflow `alerts-digest.yml` | Dry-run default (fixtures+Fake); `--write` / `--send`; cron off |
 
 ---
 

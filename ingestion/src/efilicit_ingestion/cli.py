@@ -14,6 +14,7 @@ from efilicit_ingestion.connectors.placsp.urls import (
     PLACSP_MENORES,
     PlacspSyndication,
 )
+from efilicit_ingestion.run_alerts import AlertsRunConfig, format_result as format_alerts_result, run_alerts
 from efilicit_ingestion.run_catalunya import CatalunyaRunConfig, run_catalunya
 from efilicit_ingestion.run_euskadi import EuskadiRunConfig, run_euskadi
 from efilicit_ingestion.run_placsp import PlacspRunConfig, format_result, run_placsp
@@ -28,7 +29,7 @@ _SYNDICATIONS: dict[str, PlacspSyndication] = {
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="efilicit-ingestion",
-        description="EfiLicit ingestion CLI (PLACSP + Catalunya + Euskadi).",
+        description="EfiLicit ingestion CLI (PLACSP + Catalunya + Euskadi + alerts).",
     )
     parser.add_argument(
         "--version",
@@ -162,6 +163,42 @@ def build_parser() -> argparse.ArgumentParser:
         "--run-id",
         help="Optional stable run_id (default: generated UUID).",
     )
+
+    alerts = sub.add_parser(
+        "run-alerts",
+        help=(
+            "Alert batch + daily digest (Semana 5). "
+            "Default: dry-run in-memory with FakeEmailSender (no DB / no Resend)."
+        ),
+    )
+    alerts.set_defaults(dry_run=True)
+    alerts.add_argument(
+        "--dry-run",
+        action="store_true",
+        dest="dry_run",
+        help="In-memory fixtures + FakeEmailSender (default).",
+    )
+    alerts.add_argument(
+        "--write",
+        action="store_false",
+        dest="dry_run",
+        help="Load alerts/tenders from Postgres, enqueue, drain (needs EFILICIT_DATABASE_URL).",
+    )
+    alerts.add_argument(
+        "--send",
+        action="store_true",
+        help="With --write: send via Resend (RESEND_API_KEY + ALERT_FROM_EMAIL). Else Fake.",
+    )
+    alerts.add_argument(
+        "--digest",
+        help="Digest day YYYY-MM-DD (default: today UTC).",
+    )
+    alerts.add_argument(
+        "--since-days",
+        type=int,
+        default=1,
+        help="With --write: tender window in days (default: 1).",
+    )
     return parser
 
 
@@ -179,6 +216,8 @@ def main(argv: list[str] | None = None) -> int:
         return _cmd_run_catalunya(args)
     if args.command == "run-euskadi":
         return _cmd_run_euskadi(args)
+    if args.command == "run-alerts":
+        return _cmd_run_alerts(args)
 
     parser.print_help()
     return 2
@@ -288,6 +327,45 @@ def _cmd_run_euskadi(args: argparse.Namespace) -> int:
 
     print(format_result(result))
     return 0 if result.sync.status == "success" else 1
+
+
+def _cmd_run_alerts(args: argparse.Namespace) -> int:
+    digest = None
+    if args.digest:
+        try:
+            digest = date.fromisoformat(args.digest)
+        except ValueError:
+            print("error: --digest must be YYYY-MM-DD", file=sys.stderr)
+            return 2
+
+    if args.since_days < 0:
+        print("error: --since-days must be >= 0", file=sys.stderr)
+        return 2
+
+    if args.send and args.dry_run:
+        print(
+            "error: --send requires --write (dry-run never calls Resend)",
+            file=sys.stderr,
+        )
+        return 2
+
+    config = AlertsRunConfig(
+        dry_run=bool(args.dry_run),
+        send=bool(args.send),
+        digest=digest,
+        since_days=int(args.since_days),
+    )
+
+    try:
+        result = run_alerts(config)
+    except Exception as exc:  # noqa: BLE001 — surface to CLI
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
+
+    print(format_alerts_result(result))
+    if result.drain.digests_failed and not result.dry_run:
+        return 1
+    return 0
 
 
 if __name__ == "__main__":

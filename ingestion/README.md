@@ -25,10 +25,20 @@ Euskadi KontratazioA: `run-euskadi` (Semana 3 Paso 9).
 - Matching batch → cola: `efilicit_ingestion.alerts` (`run_alert_batch`).
 - Digest diario (Paso 8): `drain_daily_digests` + `FakeEmailSender` (tests) /
   `ResendEmailSender` (`RESEND_API_KEY`, `ALERT_FROM_EMAIL` solo en entorno).
-- CLI/workflow de producción: Paso 9.
+- CLI (Paso 9): `run-alerts` — **dry-run por defecto** (fixtures + Fake, sin DB/Resend).
+- Workflow: `.github/workflows/alerts-digest.yml` (`workflow_dispatch`; cron off).
 
 ```powershell
-uv run pytest tests/test_alert_match.py tests/test_alert_batch.py tests/test_alert_digest.py -q
+uv run pytest tests/test_alert_match.py tests/test_alert_batch.py tests/test_alert_digest.py tests/test_run_alerts_cli.py -q
+
+# Dry-run (seguro; default)
+uv run python -m efilicit_ingestion.cli run-alerts
+
+# Postgres local + Fake (sin Resend)
+uv run python -m efilicit_ingestion.cli run-alerts --write --since-days 7
+
+# Postgres + Resend (secretos en entorno)
+# uv run python -m efilicit_ingestion.cli run-alerts --write --send
 ```
 
 ## Corrida E2E local
