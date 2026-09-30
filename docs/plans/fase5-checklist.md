@@ -18,7 +18,7 @@ El estado se marca **aquí**, no con “— OK” en el plan.
 | 7. Matching batch → `notification_queue` | OK | Minipasos 7.1–7.2; tests sin red |
 | 8. Resend + digest diario (idempotente) | OK | `alerts/digest.py` + `email.py`; tests FakeSender; secretos solo env |
 | 9. CLI + workflow alertas | OK | `run-alerts` dry-run default; `alerts-digest.yml` cron off |
-| 10. Recorrido E2E local (buscar → alerta → email) | Pendiente | |
+| 10. Recorrido E2E local (buscar → alerta → email) | OK | Guía `semana05-e2e-local.md`; Fake digest; Resend diferido; errata corta `softwar` pendiente (word_similarity) |
 | 11. Cierre (CHANGELOG / tipos / ADR) | Pendiente | ADR N/A salvo decisión estructural |
 
 ## Paso 2 — minipasos (búsqueda DB)
@@ -46,23 +46,23 @@ El estado se marca **aquí**, no con “— OK” en el plan.
 
 | Ítem | Estado | Notas |
 |---|---|---|
-| Sin motor de búsqueda externo | Pendiente | Solo PostgreSQL FTS/GIN/trgm |
+| Sin motor de búsqueda externo | OK | Solo PostgreSQL FTS/GIN/trgm |
 | `service_role` fuera del frontend | OK | Solo publishable en web |
 | Alertas batch-first (no email por INSERT bruto) | OK | Match → cola; email = Paso 8 |
 | Reejecutar batch no reenvía notificaciones `sent` | OK | Digest drain + idempotency; `test_alert_digest` |
 | RLS owner-only verificado (usuario A ≠ B) | OK | `apps/web/scripts/verify-rls-alerts.mjs` |
-| Tests relevantes en verde (queries / matching / RLS) | Pendiente | |
-| ADRs estructurales (solo si hubo decisión nueva) | Pendiente | Default esperado: N/A |
-| CHANGELOG actualizado | Pendiente | |
+| Tests relevantes en verde (queries / matching / RLS) | OK | alert match/batch/digest + run-alerts CLI; verify:rls |
+| ADRs estructurales (solo si hubo decisión nueva) | Pendiente | Default esperado: N/A (Paso 11) |
+| CHANGELOG actualizado | Pendiente | Paso 11 cierre |
 
 ## Criterios de salida `docs/04` § Semana 5
 
 | Criterio | Estado | Evidencia |
 |---|---|---|
-| Búsqueda de términos normales → resultados relevantes | Pendiente | |
-| Errata razonable cubierta por `pg_trgm` | Pendiente | |
+| Búsqueda de términos normales → resultados relevantes | OK | `/search` `software` → resultados locales |
+| Errata razonable cubierta por `pg_trgm` | OK | p. ej. `mntenimiento`; nota: `softwar` solo no pasa umbral 0.3 (mejora word_similarity pendiente) |
 | Un usuario no accede a datos privados de otro | OK | `verify:rls` Alice crea alerta; Bob no la ve |
-| Crear alerta → ejecutar batch → recibir email | Pendiente | |
-| Reejecutar el batch no reenvía notificaciones ya enviadas | OK | `test_drain_twice_does_not_resend` |
+| Crear alerta → ejecutar batch → recibir email | OK | Alerta UI + `--write` Fake → cola `sent`; Resend real diferido |
+| Reejecutar el batch no reenvía notificaciones ya enviadas | OK | 2ª `--write` mismo digest: `enqueued_new=0`, drain `sent=0` |
 
 **Semana 5 en curso.** No mergear a `main` hasta OK explícito.
