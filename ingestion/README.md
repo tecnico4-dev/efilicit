@@ -20,6 +20,17 @@ Euskadi KontratazioA: `run-euskadi` (Semana 3 Paso 9).
 
 `discover` → `fetch` → RAW → `parse` → normalize/identidad → upsert canónico.
 
+## Alertas (Semana 5)
+
+- Matching batch → cola: `efilicit_ingestion.alerts` (`run_alert_batch`).
+- Digest diario (Paso 8): `drain_daily_digests` + `FakeEmailSender` (tests) /
+  `ResendEmailSender` (`RESEND_API_KEY`, `ALERT_FROM_EMAIL` solo en entorno).
+- CLI/workflow de producción: Paso 9.
+
+```powershell
+uv run pytest tests/test_alert_match.py tests/test_alert_batch.py tests/test_alert_digest.py -q
+```
+
 ## Corrida E2E local
 
 ### Dry-run perfiles (sin escribir DB)

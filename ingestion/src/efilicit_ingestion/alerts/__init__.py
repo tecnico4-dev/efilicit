@@ -1,4 +1,4 @@
-"""Alertas de usuario (Semana 5). Contrato + motor batch (Paso 7)."""
+"""Alertas de usuario (Semana 5). Contrato + batch + digest email."""
 
 from efilicit_ingestion.alerts.batch import run_alert_batch
 from efilicit_ingestion.alerts.criteria import (
@@ -7,6 +7,11 @@ from efilicit_ingestion.alerts.criteria import (
     SearchCriteria,
     parse_criteria,
 )
+from efilicit_ingestion.alerts.digest import (
+    UserEmailDirectory,
+    drain_daily_digests,
+)
+from efilicit_ingestion.alerts.email import FakeEmailSender, ResendEmailSender
 from efilicit_ingestion.alerts.match import evaluate_tender, match_alert_to_tenders
 from efilicit_ingestion.alerts.models import AlertMatch, AlertRule, TenderCandidate
 from efilicit_ingestion.alerts.queue import (
@@ -19,9 +24,13 @@ __all__ = [
     "AlertMatch",
     "AlertRule",
     "CRITERIA_EXAMPLE_V1",
+    "FakeEmailSender",
     "InMemoryNotificationQueue",
+    "ResendEmailSender",
     "SearchCriteria",
     "TenderCandidate",
+    "UserEmailDirectory",
+    "drain_daily_digests",
     "evaluate_tender",
     "make_idempotency_key",
     "match_alert_to_tenders",

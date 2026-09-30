@@ -16,7 +16,7 @@ El estado se marca **aquí**, no con “— OK” en el plan.
 | 5. Auth — sesión + perfil `public.users` | OK | Minipasos 5.1–5.2; login/account mínimos |
 | 6. Auth UI + RLS verificado (A≠B) | OK | `/register` `/alerts`; `verify:rls` Alice≠Bob |
 | 7. Matching batch → `notification_queue` | OK | Minipasos 7.1–7.2; tests sin red |
-| 8. Resend + digest diario (idempotente) | Pendiente | Secretos fuera de Git; `instant` N/A o diferido |
+| 8. Resend + digest diario (idempotente) | OK | `alerts/digest.py` + `email.py`; tests FakeSender; secretos solo env |
 | 9. CLI + workflow alertas | Pendiente | Dry-run default; cron off |
 | 10. Recorrido E2E local (buscar → alerta → email) | Pendiente | |
 | 11. Cierre (CHANGELOG / tipos / ADR) | Pendiente | ADR N/A salvo decisión estructural |
@@ -49,7 +49,7 @@ El estado se marca **aquí**, no con “— OK” en el plan.
 | Sin motor de búsqueda externo | Pendiente | Solo PostgreSQL FTS/GIN/trgm |
 | `service_role` fuera del frontend | OK | Solo publishable en web |
 | Alertas batch-first (no email por INSERT bruto) | OK | Match → cola; email = Paso 8 |
-| Reejecutar batch no reenvía notificaciones `sent` | Pendiente | |
+| Reejecutar batch no reenvía notificaciones `sent` | OK | Digest drain + idempotency; `test_alert_digest` |
 | RLS owner-only verificado (usuario A ≠ B) | OK | `apps/web/scripts/verify-rls-alerts.mjs` |
 | Tests relevantes en verde (queries / matching / RLS) | Pendiente | |
 | ADRs estructurales (solo si hubo decisión nueva) | Pendiente | Default esperado: N/A |
@@ -63,6 +63,6 @@ El estado se marca **aquí**, no con “— OK” en el plan.
 | Errata razonable cubierta por `pg_trgm` | Pendiente | |
 | Un usuario no accede a datos privados de otro | OK | `verify:rls` Alice crea alerta; Bob no la ve |
 | Crear alerta → ejecutar batch → recibir email | Pendiente | |
-| Reejecutar el batch no reenvía notificaciones ya enviadas | Pendiente | |
+| Reejecutar el batch no reenvía notificaciones ya enviadas | OK | `test_drain_twice_does_not_resend` |
 
 **Semana 5 en curso.** No mergear a `main` hasta OK explícito.

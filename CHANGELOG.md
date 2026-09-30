@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Semana 5 Paso 8: digest diario de alertas (`drain_daily_digests`) + `ResendEmailSender` / `FakeEmailSender`; secretos `RESEND_API_KEY` / `ALERT_FROM_EMAIL` solo en entorno; sin reenvío de `sent`.
 - Semana 5 Paso 7: motor batch de alertas en Python (`match` → `notification_queue` in-memory) con tests de matching e idempotencia; sin envío email (Paso 8).
 - Semana 5 Paso 6: registro + UI `/alerts` (CRUD mínimo alertas/búsquedas) + script RLS Alice≠Bob (`verify:rls`); fondo web blanco fijo (brand en Semana 6).
 - Semana 5 Paso 5: Auth SSR (`@supabase/ssr`, middleware), sync `auth.users` → `public.users` (trigger), login/account mínimos; seed perfiles Alice/Bob.

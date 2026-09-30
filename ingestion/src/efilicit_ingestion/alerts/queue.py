@@ -1,4 +1,4 @@
-"""Cola de notificaciones e idempotencia (Paso 7.2)."""
+"""Cola de notificaciones e idempotencia (Paso 7.2 / 8)."""
 
 from __future__ import annotations
 
@@ -66,6 +66,21 @@ class NotificationQueue(Protocol):
         """
         ...
 
+    def pending_items(self) -> list[NotificationItem]:
+        ...
+
+    def mark_sent(
+        self,
+        idempotency_key: str,
+        *,
+        provider_id: str | None = None,
+        sent_at: datetime | None = None,
+    ) -> None:
+        ...
+
+    def mark_failed(self, idempotency_key: str, *, error: str) -> None:
+        ...
+
 
 class InMemoryNotificationQueue:
     """Cola en memoria para tests sin red / dry-run."""
@@ -93,10 +108,28 @@ class InMemoryNotificationQueue:
         self._by_key[item.idempotency_key] = stored
         return stored, True
 
-    def mark_sent(self, idempotency_key: str) -> None:
+    def pending_items(self) -> list[NotificationItem]:
+        return [i for i in self._by_key.values() if i.status == "pending"]
+
+    def mark_sent(
+        self,
+        idempotency_key: str,
+        *,
+        provider_id: str | None = None,
+        sent_at: datetime | None = None,
+    ) -> None:
         item = self._by_key[idempotency_key]
         item.status = "sent"
-        item.sent_at = datetime.now(timezone.utc)
+        item.sent_at = sent_at or datetime.now(timezone.utc)
+        item.last_error = None
+        if provider_id:
+            item.payload = {**item.payload, "provider_id": provider_id}
+
+    def mark_failed(self, idempotency_key: str, *, error: str) -> None:
+        item = self._by_key[idempotency_key]
+        item.status = "failed"
+        item.attempts += 1
+        item.last_error = error
 
     def get(self, idempotency_key: str) -> NotificationItem | None:
         return self._by_key.get(idempotency_key)
