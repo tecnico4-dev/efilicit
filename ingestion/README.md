@@ -31,6 +31,23 @@ Euskadi KontratazioA: `run-euskadi` (Semana 3 Paso 9).
 uv run pytest tests/test_alert_match.py tests/test_alert_batch.py tests/test_alert_digest.py -q
 ```
 
+### Smoke Resend real (opcional)
+
+Necesitas cuenta en [resend.com](https://resend.com/), API key y un `from` válido.
+Con el dominio de prueba de Resend (`onboarding@resend.dev`) solo puedes enviarte
+email a la dirección de tu cuenta Resend.
+
+```powershell
+cd ingestion
+$env:RESEND_API_KEY="re_..."
+$env:ALERT_FROM_EMAIL="EfiLicit <onboarding@resend.dev>"
+$env:ALERT_TO_EMAIL="tu-email-de-la-cuenta-resend@..."
+uv run python -m efilicit_ingestion.alerts.smoke_resend
+```
+
+Esperado: `Resend OK — provider_id=...` y el correo en tu bandeja.
+Sin esas variables el script **no** finge éxito (exit 2).
+
 ## Corrida E2E local
 
 ### Dry-run perfiles (sin escribir DB)
