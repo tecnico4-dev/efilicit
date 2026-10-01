@@ -28,7 +28,7 @@ pnpm --filter @efilicit/web dev
 ```
 
 1. Abre http://localhost:3000/login → Alice (`alice@example.com` / `password123`).
-2. `/search`: busca `software` (y opcionalmente una errata tipo `softwar`). Debe haber resultados.
+2. `/search`: busca `software` y una errata corta tipo `softwar` (debe haber resultados; badge “errata”).
 3. `/alerts`: crea (o confirma) una alerta con keywords `software` y CPV `72000000` (valores por defecto del formulario).
 4. Comprueba que la alerta aparece en la lista (solo las tuyas).
 
@@ -73,13 +73,12 @@ uv run python -m efilicit_ingestion.cli run-alerts --write --send --since-days 3
 | Criterio | Cómo se ve OK |
 |---|---|
 | Búsqueda términos normales | `/search` con `software` muestra filas |
-| Errata razonable (`pg_trgm`) | p. ej. `mntenimiento` (nota: `softwar` solo no basta con umbral 0.3 actual) |
+| Errata razonable (`pg_trgm`) | p. ej. `mntenimiento` y `softwar` (word_similarity) |
 | Alerta propia | `/alerts` crea y lista la alerta |
 | Batch → digest | `--write` → cola `sent` + Fake |
 | Sin reenvío | 2ª pasada no marca nuevos `sent` del mismo digest |
-| Email real | Diferido hasta Resend (no bloquea Paso 10) |
+| Email real | Resend con `onboarding@resend.dev`; dominio `@eficen.com` vía IT |
 
 ## Pendiente post-Paso 10
 
-- Mejorar erratas cortas en búsqueda (`word_similarity` / `<%` en lugar de solo `similarity` del título completo).
-- Smoke Resend real cuando haya cuenta + secretos.
+- Verificar dominio `eficen.com` en Resend (DNS) para remitente corporativo y mejor entrega a Outlook.

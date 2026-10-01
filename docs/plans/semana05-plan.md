@@ -226,14 +226,15 @@ Registro de lo acordado al cerrar (o antes de) cada paso:
 | Paso 1 | Organismo: `tax_ids` primario; `name_contains` débil | Alineado con identidad canónica (NIF/CIF) |
 | Paso 2 | `search_vector` generated stored (spanish A/B) + GIN + `title` trgm | Sin trigger manual; B-tree filtros Semana 1 reutilizados; geo vía join |
 | Paso 2 | Extensión `pg_trgm` en schema `extensions` | Convención Supabase (`extra_search_path`) |
-| Paso 3 | RPC `search_tenders` (SECURITY INVOKER) + `lib/queries` | FTS + trgm + filtros Criteria v1; ranking `greatest(ts_rank, similarity)`; no motor externo |
+| Paso 3 | RPC `search_tenders` (SECURITY INVOKER) + `lib/queries` | FTS + trgm + filtros Criteria v1; ranking `greatest(ts_rank, similarity, word_similarity)`; no motor externo |
 | Paso 4 | UI mínima `/search` (form GET + `searchTenders`) | Texto + CPV + importe; badge FTS/errata/filtro; sin ficha/dashboard |
 | Paso 5 | `@supabase/ssr` + middleware + trigger `handle_new_user` | Login/account mínimos; seed Alice/Bob → `public.users`; sin service_role |
 | Paso 6 | `/register` + `/alerts` CRUD mínimo + script RLS | `pnpm --filter @efilicit/web verify:rls` → Alice≠Bob OK; fondo blanco fijo hasta Semana 6 |
 | Paso 7 | Motor batch Python `alerts/` (match → cola) | Tests sin red; `idempotency_key` por alerta+tender+digest; sin email aún |
 | Paso 8 | Digest diario + Resend (`FakeEmailSender` / `ResendEmailSender`) | Drain por usuario+día; marca `sent`/`failed`; Edge Function N/A (envío desde job Python); `instant` diferido |
 | Paso 9 | CLI `run-alerts` + workflow `alerts-digest.yml` | Dry-run default (fixtures+Fake); `--write` / `--send`; cron off |
-| Paso 10 | E2E local buscar → alerta → batch → digest Fake | Guía `semana05-e2e-local.md`; Resend diferido; mejora errata corta (`word_similarity`) pendiente |
+| Paso 10 | E2E local buscar → alerta → batch → digest | Guía `semana05-e2e-local.md`; Resend OK (personal); dominio eficen → IT |
+| Post-Paso 10 | Erratas cortas `word_similarity` / `<%` en `search_tenders` | `softwar` ya rankea; se mantiene `similarity` / `%` |
 
 ---
 
