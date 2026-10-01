@@ -9,7 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Cierre Semana 5: checklist Fase 5 completo; búsqueda FTS/`pg_trgm` + Auth/RLS + alertas batch/digest Resend + CLI/workflow (cron off); ADR N/A (arquitectura fija). Pendiente externo: dominio `eficen.com` en Resend. Siguiente: Semana 6 (UX/producto).
+- Cierre Semana 5: checklist Fase 5 completo; búsqueda FTS/`pg_trgm` + Auth/RLS + alertas batch/digest Resend + CLI/workflow (cron off); ADR N/A (arquitectura fija). Fusionada en `main`. Pendiente externo: dominio `eficen.com` en Resend. Siguiente: Semana 6 (web integrada + brand corporativo).
+- Plan y checklist Semana 6 (`semana06-plan`, `fase6-checklist`): web integrada + cierre MVP; Paso 0 = kit visual corporativo; rama `tecnico4/semana-06`.
 - Semana 5: badge de búsqueda — `match_kind=fts` solo si el texto escrito aparece como palabra en el título; si FTS encaja solo por stemming (p. ej. `fotocopiaas`) → `trgm` / errata.
 - Semana 5: erratas de búsqueda con `strict_word_similarity` / `<<%` (menos ruido que `word_similarity`; p. ej. `foas` ya no liga a fotocopiadoras); se mantiene `similarity` / `%`.
 - Semana 5: búsqueda de erratas cortas con `word_similarity` / `<%` en `search_tenders` (p. ej. `softwar` → títulos con “software”); se mantiene `similarity` / `%` para consultas más largas.
