@@ -65,4 +65,4 @@ El estado se marca **aquí**, no con “— OK” en el plan.
 | Crear alerta → ejecutar batch → recibir email | OK | UI + `--write` Fake + Resend real (personal); Outlook @eficen.com pendiente dominio |
 | Reejecutar el batch no reenvía notificaciones ya enviadas | OK | 2ª `--write` mismo digest: `enqueued_new=0`, drain `sent=0` |
 
-**Semana 5 cerrada.** No mergear a `main` hasta OK explícito. Siguiente: Semana 6 (UX/producto sobre búsqueda/Auth/alertas ya cableados).
+**Semana 5 cerrada** (fusionada en `main`). Siguiente: Semana 6 — [semana06-plan.md](semana06-plan.md).

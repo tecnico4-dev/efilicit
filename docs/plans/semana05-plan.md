@@ -1,10 +1,10 @@
 # Semana 5 — Plan: búsqueda + autenticación + alertas
 
-> **Estado:** **cerrada** (Paso 11 OK). Merge a `main` solo con OK explícito.  
+> **Estado:** **cerrada** y fusionada en `main` (`4f53ba3`).  
 > **Checklist:** [fase5-checklist.md](fase5-checklist.md)  
 > **Precondición:** Semana 4 cerrada ([fase4-checklist.md](fase4-checklist.md)).  
 > **Norma:** `docs/00`–`04` y `.cursor/rules/`. Consumir el **modelo canónico** ya poblado; no inventar motor de búsqueda externo ni colas fuera de PostgreSQL. ADR solo si hace falta cambiar arquitectura de verdad.  
-> **Rama de trabajo:** `tecnico4/semana-05` (no mergear a `main` hasta OK explícito).  
+> **Rama de trabajo:** `tecnico4/semana-05` (cerrada).  
 > **Referencia de criterios:** `docs/04-roadmap-mvp.md` § Semana 5.
 
 ---
