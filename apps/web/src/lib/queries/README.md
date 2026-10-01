@@ -6,9 +6,9 @@ Centralizar aquí el acceso a datos de Supabase (no en componentes React).
 
 - `searchTenders(client, { query, criteria, limit, offset })` → RPC `public.search_tenders`
 - FTS (`search_vector`, config `spanish`) + fallback `pg_trgm` en `title`
-  (`similarity` / `%` y `word_similarity` / `<%` para erratas cortas)
+  (`similarity` / `%` y `strict_word_similarity` / `<<%` para erratas por palabra)
 - Filtros alineados con Criteria v1 (`@efilicit/types`)
-- Ranking: `greatest(ts_rank, similarity, word_similarity)` + fecha de publicación
+- Ranking: `greatest(ts_rank, similarity, strict_word_similarity)` + fecha de publicación
 
 Ejemplo (Node / consola con env de la web):
 

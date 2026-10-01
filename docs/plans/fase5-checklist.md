@@ -60,7 +60,7 @@ El estado se marca **aquí**, no con “— OK” en el plan.
 | Criterio | Estado | Evidencia |
 |---|---|---|
 | Búsqueda de términos normales → resultados relevantes | OK | `/search` `software` → resultados locales |
-| Errata razonable cubierta por `pg_trgm` | OK | `mntenimiento` y `softwar` vía `word_similarity` / `<%` (migración `20261001120000`) |
+| Errata razonable cubierta por `pg_trgm` | OK | `softwar` / `mntenimiento` vía `strict_word_similarity` / `<<%`; `foas` no debe matchear |
 | Un usuario no accede a datos privados de otro | OK | `verify:rls` Alice crea alerta; Bob no la ve |
 | Crear alerta → ejecutar batch → recibir email | OK | Alerta UI + `--write` Fake → cola `sent`; Resend real diferido |
 | Reejecutar el batch no reenvía notificaciones ya enviadas | OK | 2ª `--write` mismo digest: `enqueued_new=0`, drain `sent=0` |

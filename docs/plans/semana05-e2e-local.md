@@ -73,7 +73,7 @@ uv run python -m efilicit_ingestion.cli run-alerts --write --send --since-days 3
 | Criterio | Cómo se ve OK |
 |---|---|
 | Búsqueda términos normales | `/search` con `software` muestra filas |
-| Errata razonable (`pg_trgm`) | p. ej. `mntenimiento` y `softwar` (word_similarity) |
+| Errata razonable (`pg_trgm`) | p. ej. `mntenimiento` y `softwar` (`strict_word_similarity`); `foas` no |
 | Alerta propia | `/alerts` crea y lista la alerta |
 | Batch → digest | `--write` → cola `sent` + Fake |
 | Sin reenvío | 2ª pasada no marca nuevos `sent` del mismo digest |

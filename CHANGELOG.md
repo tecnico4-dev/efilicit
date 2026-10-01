@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Semana 5: erratas de búsqueda con `strict_word_similarity` / `<<%` (menos ruido que `word_similarity`; p. ej. `foas` ya no liga a fotocopiadoras); se mantiene `similarity` / `%`.
 - Semana 5: búsqueda de erratas cortas con `word_similarity` / `<%` en `search_tenders` (p. ej. `softwar` → títulos con “software”); se mantiene `similarity` / `%` para consultas más largas.
 - Semana 5 Paso 10: recorrido E2E local (login → `/search` → `/alerts` → `run-alerts --write` Fake → cola `sent` + idempotencia); guía `docs/plans/semana05-e2e-local.md`; Resend real diferido.
 - Semana 5 Paso 9: CLI `run-alerts` (dry-run por defecto) + `PostgresNotificationQueue` + workflow `alerts-digest.yml` (`workflow_dispatch`, cron off).
