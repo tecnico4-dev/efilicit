@@ -9,10 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Cierre Semana 5: checklist Fase 5 completo; búsqueda FTS/`pg_trgm` + Auth/RLS + alertas batch/digest Resend + CLI/workflow (cron off); ADR N/A (arquitectura fija). Pendiente externo: dominio `eficen.com` en Resend. Siguiente: Semana 6 (UX/producto).
 - Semana 5: badge de búsqueda — `match_kind=fts` solo si el texto escrito aparece como palabra en el título; si FTS encaja solo por stemming (p. ej. `fotocopiaas`) → `trgm` / errata.
 - Semana 5: erratas de búsqueda con `strict_word_similarity` / `<<%` (menos ruido que `word_similarity`; p. ej. `foas` ya no liga a fotocopiadoras); se mantiene `similarity` / `%`.
 - Semana 5: búsqueda de erratas cortas con `word_similarity` / `<%` en `search_tenders` (p. ej. `softwar` → títulos con “software”); se mantiene `similarity` / `%` para consultas más largas.
-- Semana 5 Paso 10: recorrido E2E local (login → `/search` → `/alerts` → `run-alerts --write` Fake → cola `sent` + idempotencia); guía `docs/plans/semana05-e2e-local.md`; Resend real diferido.
+- Semana 5 Paso 10: recorrido E2E local (login → `/search` → `/alerts` → `run-alerts --write` Fake → cola `sent` + idempotencia); guía `docs/plans/semana05-e2e-local.md`; Resend verificado con correo personal.
 - Semana 5 Paso 9: CLI `run-alerts` (dry-run por defecto) + `PostgresNotificationQueue` + workflow `alerts-digest.yml` (`workflow_dispatch`, cron off).
 - Semana 5 Paso 8: digest diario de alertas (`drain_daily_digests`) + `ResendEmailSender` / `FakeEmailSender`; secretos `RESEND_API_KEY` / `ALERT_FROM_EMAIL` solo en entorno; sin reenvío de `sent`.
 - Semana 5 Paso 7: motor batch de alertas en Python (`match` → `notification_queue` in-memory) con tests de matching e idempotencia; sin envío email (Paso 8).

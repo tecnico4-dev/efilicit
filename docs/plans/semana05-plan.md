@@ -1,6 +1,6 @@
 # Semana 5 — Plan: búsqueda + autenticación + alertas
 
-> **Estado:** en curso (Paso 10 cerrado; siguiente = Paso 11 cierre).  
+> **Estado:** **cerrada** (Paso 11 OK). Merge a `main` solo con OK explícito.  
 > **Checklist:** [fase5-checklist.md](fase5-checklist.md)  
 > **Precondición:** Semana 4 cerrada ([fase4-checklist.md](fase4-checklist.md)).  
 > **Norma:** `docs/00`–`04` y `.cursor/rules/`. Consumir el **modelo canónico** ya poblado; no inventar motor de búsqueda externo ni colas fuera de PostgreSQL. ADR solo si hace falta cambiar arquitectura de verdad.  
@@ -234,7 +234,8 @@ Registro de lo acordado al cerrar (o antes de) cada paso:
 | Paso 8 | Digest diario + Resend (`FakeEmailSender` / `ResendEmailSender`) | Drain por usuario+día; marca `sent`/`failed`; Edge Function N/A (envío desde job Python); `instant` diferido |
 | Paso 9 | CLI `run-alerts` + workflow `alerts-digest.yml` | Dry-run default (fixtures+Fake); `--write` / `--send`; cron off |
 | Paso 10 | E2E local buscar → alerta → batch → digest | Guía `semana05-e2e-local.md`; Resend OK (personal); dominio eficen → IT |
-| Post-Paso 10 | Erratas `strict_word_similarity` / `<<%` en `search_tenders` | Endurecido tras ruido `foas`; se mantiene `similarity` / `%` |
+| Post-Paso 10 | Erratas `strict_word_similarity` / `<<%` + badge literal | `foas` fuera; stemming-only → badge errata; `similarity` / `%` se mantiene |
+| Paso 11 | Cierre | CHANGELOG; ADR N/A; tipos N/A (firma RPC intacta); checklist cerrado; cron alertas sigue off |
 
 ---
 

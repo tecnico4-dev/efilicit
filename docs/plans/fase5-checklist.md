@@ -18,8 +18,8 @@ El estado se marca **aquí**, no con “— OK” en el plan.
 | 7. Matching batch → `notification_queue` | OK | Minipasos 7.1–7.2; tests sin red |
 | 8. Resend + digest diario (idempotente) | OK | `alerts/digest.py` + `email.py`; tests FakeSender; secretos solo env |
 | 9. CLI + workflow alertas | OK | `run-alerts` dry-run default; `alerts-digest.yml` cron off |
-| 10. Recorrido E2E local (buscar → alerta → email) | OK | Guía `semana05-e2e-local.md`; Fake + Resend personal; dominio eficen pendiente IT |
-| 11. Cierre (CHANGELOG / tipos / ADR) | Pendiente | ADR N/A salvo decisión estructural |
+| 10. Recorrido E2E local (buscar → alerta → email) | OK | Guía `semana05-e2e-local.md`; Fake + Resend (correo personal); dominio eficen → IT |
+| 11. Cierre (CHANGELOG / tipos / ADR) | OK | CHANGELOG alineado; tipos N/A (RPC sin cambio de firma); ADR N/A |
 
 ## Paso 2 — minipasos (búsqueda DB)
 
@@ -52,8 +52,8 @@ El estado se marca **aquí**, no con “— OK” en el plan.
 | Reejecutar batch no reenvía notificaciones `sent` | OK | Digest drain + idempotency; `test_alert_digest` |
 | RLS owner-only verificado (usuario A ≠ B) | OK | `apps/web/scripts/verify-rls-alerts.mjs` |
 | Tests relevantes en verde (queries / matching / RLS) | OK | alert match/batch/digest + run-alerts CLI; verify:rls |
-| ADRs estructurales (solo si hubo decisión nueva) | Pendiente | Default esperado: N/A (Paso 11) |
-| CHANGELOG actualizado | Pendiente | Paso 11 cierre |
+| ADRs estructurales (solo si hubo decisión nueva) | OK | N/A — sin Redis/cola externa/motor de búsqueda nuevo; se implementó arquitectura fija |
+| CHANGELOG actualizado | OK | Unreleased con entradas Semana 5 + cierre Paso 11 |
 
 ## Criterios de salida `docs/04` § Semana 5
 
@@ -62,7 +62,7 @@ El estado se marca **aquí**, no con “— OK” en el plan.
 | Búsqueda de términos normales → resultados relevantes | OK | `/search` `software` → resultados locales |
 | Errata razonable cubierta por `pg_trgm` | OK | `softwar` / `mntenimiento` vía `strict_word_similarity` / `<<%`; `foas` no debe matchear |
 | Un usuario no accede a datos privados de otro | OK | `verify:rls` Alice crea alerta; Bob no la ve |
-| Crear alerta → ejecutar batch → recibir email | OK | Alerta UI + `--write` Fake → cola `sent`; Resend real diferido |
+| Crear alerta → ejecutar batch → recibir email | OK | UI + `--write` Fake + Resend real (personal); Outlook @eficen.com pendiente dominio |
 | Reejecutar el batch no reenvía notificaciones ya enviadas | OK | 2ª `--write` mismo digest: `enqueued_new=0`, drain `sent=0` |
 
-**Semana 5 en curso.** No mergear a `main` hasta OK explícito.
+**Semana 5 cerrada.** No mergear a `main` hasta OK explícito. Siguiente: Semana 6 (UX/producto sobre búsqueda/Auth/alertas ya cableados).
