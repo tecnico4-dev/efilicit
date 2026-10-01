@@ -9,6 +9,8 @@ Centralizar aquí el acceso a datos de Supabase (no en componentes React).
   (`similarity` / `%` y `strict_word_similarity` / `<<%` para erratas por palabra)
 - Filtros alineados con Criteria v1 (`@efilicit/types`)
 - Ranking: `greatest(ts_rank, similarity, strict_word_similarity)` + fecha de publicación
+- Badge: `fts` solo si los tokens de la consulta aparecen **literalmente** en el título;
+  si el hit es solo por stemming español → `trgm` (UI “errata”)
 
 Ejemplo (Node / consola con env de la web):
 
