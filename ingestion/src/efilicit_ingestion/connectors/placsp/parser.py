@@ -1,7 +1,8 @@
-"""PLACSP Atom/CODICE parser (Semana 2 Paso 5).
+"""Parser Atom/CODICE de PLACSP (Semana 2 Paso 5).
 
-Produces SourceRecord payloads with neutral field names for later normalize/upsert.
-Does not write to the canonical DB.
+Produce ``SourceRecord`` con nombres de campo neutros para normalize/upsert.
+No escribe en la DB canónica. La identidad estable está documentada en
+``docs/sources/placsp.md`` (``tax_id|platform_id:ContractFolderID``).
 """
 
 from __future__ import annotations
@@ -32,14 +33,14 @@ NS = {
 
 
 class PlacspParseError(Exception):
-    """Unrecoverable parse failure for a PLACSP artifact."""
+    """Fallo de parseo irrecuperable de un artefacto PLACSP."""
 
 
 def parse_placsp_artifact(
     raw: bytes,
     artifact: RemoteArtifact,
 ) -> Iterable[SourceRecord]:
-    """Parse ZIP (preferred) or bare ``.atom`` bytes into source records."""
+    """Parsea ZIP (preferido) o bytes ``.atom`` sueltos en registros de fuente."""
     if not raw:
         raise PlacspParseError(f"empty payload for {artifact.artifact_key}")
 
@@ -89,7 +90,7 @@ def _parse_atom_document(
             f"invalid Atom XML in {member_name} ({artifact.artifact_key})"
         ) from exc
 
-    # Accept feed root or a lone entry document.
+    # Aceptar raíz feed o un documento con una sola entry.
     tag = etree.QName(root).localname
     if tag == "entry":
         entries = [root]
@@ -123,7 +124,7 @@ def _entry_to_source_record(
         atom_id=atom_id,
     )
     if source_record_id is None:
-        # Unexpected entry shape: skip rather than invent an identity.
+        # Forma inesperada: omitir la entry en lugar de inventar identidad.
         return None
 
     payload: dict[str, Any] = {
@@ -164,11 +165,11 @@ def _stable_source_record_id(
     authority: dict[str, Any],
     atom_id: str | None,
 ) -> str | None:
-    """Stable id for upsert: prefer party scope + ContractFolderID.
+    """Id estable para upsert: preferir alcance de organismo + ContractFolderID.
 
-    Documented in docs/sources/placsp.md:
-    ``{tax_id|platform_id}:{ContractFolderID}`` when possible, else folder id,
-    else atom:id as last resort.
+    Documentado en docs/sources/placsp.md:
+    ``{tax_id|platform_id}:{ContractFolderID}`` si se puede; si no, folder id;
+    si no, atom:id como último recurso.
     """
     if folder_id:
         party = authority.get("tax_id") or authority.get("platform_id")

@@ -1,4 +1,4 @@
-"""HTTP download for PLACSP artifacts: timeout, retry, size limit, checksum."""
+"""Descarga HTTP de artefactos PLACSP: timeout, reintento, tamaño, checksum."""
 
 from __future__ import annotations
 
@@ -20,17 +20,17 @@ from efilicit_ingestion.connectors.placsp.errors import (
     PlacspHttpError,
 )
 
-# Default budget for one monthly ZIP (configurable per connector).
+# Presupuesto por defecto de un ZIP mensual (configurable por conector).
 DEFAULT_MAX_BYTES = 256 * 1024 * 1024
 DEFAULT_TIMEOUT_SECONDS = 60.0
 DEFAULT_RETRY_ATTEMPTS = 3
 
-# Injected getter for unit tests: (url) -> (status_code, headers, body).
+# Getter inyectable en tests unitarios: (url) -> (status_code, headers, body).
 FetchTransport = Callable[[str], tuple[int, dict[str, str], bytes]]
 
 
 def sha256_hex(payload: bytes) -> str:
-    """Deterministic checksum of a fetched payload (SHA-256 hex)."""
+    """Checksum determinista del payload descargado (SHA-256 en hex)."""
     return hashlib.sha256(payload).hexdigest()
 
 
@@ -48,10 +48,10 @@ def download_bytes(
     transport: FetchTransport | None = None,
     http_client: httpx.Client | None = None,
 ) -> bytes:
-    """Download URL bytes with timeout, retries, and size control.
+    """Descarga bytes de una URL con timeout, reintentos y control de tamaño.
 
-    Prefer ``transport`` in unit tests (no network). Otherwise uses ``http_client``
-    or a short-lived ``httpx.Client``.
+    Preferir ``transport`` en tests unitarios (sin red). Si no, usa ``http_client``
+    o un ``httpx.Client`` de vida corta.
     """
     cfg = settings or FetchSettings()
     if cfg.max_bytes <= 0:

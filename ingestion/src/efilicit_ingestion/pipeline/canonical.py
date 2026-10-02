@@ -1,4 +1,8 @@
-"""Normalize SourceRecord payloads toward the canonical tender shape (Semana 2)."""
+"""Normaliza payloads de SourceRecord hacia la forma canónica (Semana 2).
+
+Escribe ``payload['canonical']`` con campos tipados del MVP (fechas, importes,
+CPV, organismo). No toca la DB: eso es el upsert en ``canonical_repo``.
+"""
 
 from __future__ import annotations
 
@@ -10,7 +14,7 @@ from typing import Any
 
 from efilicit_ingestion.models import SourceRecord
 
-# PLACSP / CODICE syndication codes → stable labels for the MVP canonical model.
+# Códigos de sindicación PLACSP/CODICE → etiquetas estables del modelo MVP.
 _STATUS_MAP = {
     "PUB": "published",
     "PRE": "prepared",
@@ -43,7 +47,7 @@ def normalize_records(records: list[SourceRecord]) -> list[SourceRecord]:
 
 
 def normalize_record(record: SourceRecord) -> SourceRecord:
-    """Attach ``payload['canonical']`` with typed/normalized MVP fields."""
+    """Adjunta ``payload['canonical']`` con campos tipados/normalizados del MVP."""
     raw = record.payload
     title = (raw.get("title") or raw.get("project_name") or "").strip()
     if not title:
@@ -75,7 +79,7 @@ def normalize_record(record: SourceRecord) -> SourceRecord:
             "name": authority_name,
             "name_normalized": normalize_name(authority_name),
             "platform_id": authority_raw.get("platform_id"),
-            # Filled by resolve_identity.
+            # Lo rellena resolve_identity.
             "identity_confidence": "UNRESOLVED",
         },
     }
@@ -90,7 +94,7 @@ def resolve_identity_records(records: list[SourceRecord]) -> list[SourceRecord]:
 
 
 def resolve_identity_record(record: SourceRecord) -> SourceRecord:
-    """Set authority ``identity_confidence`` using fiscal id as primary signal."""
+    """Fija ``identity_confidence`` del organismo (NIF/CIF como señal primaria)."""
     payload = dict(record.payload)
     canonical = dict(payload.get("canonical") or {})
     authority = dict(canonical.get("authority") or {})
@@ -115,12 +119,11 @@ def resolve_identity_record(record: SourceRecord) -> SourceRecord:
 
 
 def normalize_name(value: str) -> str:
-    """Lowercase, strip accents, collapse whitespace — not used as unique identity."""
+    """Minúsculas, sin acentos, espacios colapsados — nunca identidad única."""
     decomposed = unicodedata.normalize("NFKD", value)
     without_marks = "".join(ch for ch in decomposed if not unicodedata.combining(ch))
     collapsed = re.sub(r"\s+", " ", without_marks).strip().lower()
     return collapsed
-
 
 def _map_code(value: Any, mapping: dict[str, str]) -> str | None:
     if value is None:
@@ -177,7 +180,7 @@ def _parse_datetime(value: Any) -> datetime | None:
     try:
         return datetime.fromisoformat(text)
     except ValueError:
-        # Date-only
+        # Solo fecha (sin hora)
         try:
             return datetime.fromisoformat(f"{text}T00:00:00")
         except ValueError:

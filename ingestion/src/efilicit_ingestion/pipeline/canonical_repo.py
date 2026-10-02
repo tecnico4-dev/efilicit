@@ -1,4 +1,8 @@
-"""Upsert canonical tenders / authorities / events / documents (Semana 2 Paso 7)."""
+"""Upsert canónico: tenders / organisms / events / documents (Semana 2 Paso 7).
+
+Idempotencia por ``(source_code, source_tender_id)``. Semana 4 amplía el matching
+multi-fuente; este módulo sigue siendo el único punto de escritura canónica.
+"""
 
 from __future__ import annotations
 

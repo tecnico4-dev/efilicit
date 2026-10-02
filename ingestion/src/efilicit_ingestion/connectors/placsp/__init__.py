@@ -1,4 +1,4 @@
-"""PLACSP connector (Atom/CODICE syndications)."""
+"""Conector PLACSP (sindicaciones Atom/CODICE)."""
 
 from efilicit_ingestion.connectors.placsp.connector import PlacspConnector, sha256_hex
 from efilicit_ingestion.connectors.placsp.parser import PlacspParseError

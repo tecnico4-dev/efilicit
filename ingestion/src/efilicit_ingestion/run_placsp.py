@@ -1,4 +1,4 @@
-"""Run PLACSP ingestion end-to-end (Semana 2 Paso 8; Semana 3 agregadas)."""
+"""Ejecuta la ingesta PLACSP de punta a punta (Semana 2 Paso 8; Semana 3 agregadas)."""
 
 from __future__ import annotations
 
@@ -29,7 +29,7 @@ from efilicit_ingestion.pipeline.types import PipelineResult
 
 @dataclass(frozen=True)
 class PlacspRunConfig:
-    """Options for a local / documented PLACSP pipeline run."""
+    """Opciones de una corrida local / documentada del pipeline PLACSP."""
 
     fixture_path: Path | None = None
     from_year_month: str | None = None
@@ -46,7 +46,7 @@ def load_fixture_bytes(
     *,
     syndication: PlacspSyndication = PLACSP,
 ) -> bytes:
-    """Load a ``.atom`` or ``.zip`` fixture; wrap bare Atom into a ZIP package."""
+    """Carga fixture ``.atom`` o ``.zip``; si es Atom suelto, lo envuelve en ZIP."""
     raw = path.read_bytes()
     if path.suffix.lower() == ".zip" or raw.startswith(b"PK"):
         return raw
@@ -60,13 +60,12 @@ def load_fixture_bytes(
 
 
 def run_placsp(config: PlacspRunConfig) -> PipelineResult:
-    """Execute discover→…→upsert for a PLACSP syndication.
+    """Ejecuta discover→…→upsert para una sindicación PLACSP.
 
-    - ``fixture_path``: offline E2E (no live PLACSP network).
-    - without fixture: live discover/fetch for the configured month window.
-    - ``dry_run``: in-memory sync/canonical/storage (no Postgres/Storage writes).
-    - ``syndication``: default ``PLACSP`` (perfiles); also ``PLACSP_AGREGADAS``,
-      ``PLACSP_MENORES``.
+    - ``fixture_path``: E2E offline (sin red a PLACSP).
+    - sin fixture: discover/fetch live de la ventana de meses.
+    - ``dry_run``: sync/canónico/storage en memoria (sin writes a Postgres/Storage).
+    - ``syndication``: por defecto ``PLACSP`` (perfiles); también agregadas/menores.
     """
     as_of = config.as_of or date.today()
     feed = config.syndication
@@ -80,7 +79,7 @@ def run_placsp(config: PlacspRunConfig) -> PipelineResult:
             {"content-type": "application/zip", "content-length": str(len(data))},
             data,
         )
-        # Force a single known month window for fixture runs.
+        # Forzar una ventana de mes conocida en corridas con fixture.
         from_ym = config.from_year_month or f"{as_of.year:04d}-{as_of.month:02d}"
         to_ym = config.to_year_month or from_ym
     else:

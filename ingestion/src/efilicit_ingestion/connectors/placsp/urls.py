@@ -1,7 +1,7 @@
-"""Official PLACSP syndication URI helpers (docs/sources/placsp*.md).
+"""Helpers de URI oficiales de sindicación PLACSP (docs/sources/placsp*.md).
 
-No HTML scraping: packages live at well-known paths.
-Supports multiple Atom/CODICE syndications (perfiles vs agregadas, etc.).
+Sin scraping HTML: los paquetes viven en rutas conocidas.
+Soporta varias sindicaciones Atom/CODICE (perfiles, agregadas, menores…).
 """
 
 from __future__ import annotations
@@ -26,7 +26,7 @@ __all__ = [
 
 @dataclass(frozen=True, slots=True)
 class PlacspSyndication:
-    """One official PLACSP Open Data syndication dataset."""
+    """Un dataset oficial de Open Data PLACSP (una sindicación)."""
 
     source_code: str
     sindicacion: str
@@ -61,7 +61,7 @@ PLACSP_MENORES = PlacspSyndication(
     feed_base_name="contratosMenoresPerfilesContratantes",
 )
 
-# Backward-compatible aliases for the default (perfiles) syndication.
+# Alias compatibles con el código Semana 2 (sindicación por defecto = perfiles).
 PLACSP_SINDICACION_BASE = PLACSP.base_url
 FEED_BASE_NAME = PLACSP.feed_base_name
 
@@ -71,7 +71,7 @@ def monthly_package_filename(
     month: int,
     syndication: PlacspSyndication = PLACSP,
 ) -> str:
-    """Stable artifact_key for a monthly ZIP package."""
+    """``artifact_key`` estable del ZIP mensual."""
     if month < 1 or month > 12:
         raise ValueError(f"month out of range: {month}")
     return f"{syndication.feed_base_name}_{year:04d}{month:02d}.zip"
@@ -92,7 +92,7 @@ def yearly_package_filename(
     year: int,
     syndication: PlacspSyndication = PLACSP,
 ) -> str:
-    """Stable artifact_key for a closed-year ZIP package."""
+    """``artifact_key`` estable del ZIP de año cerrado."""
     return f"{syndication.feed_base_name}_{year:04d}.zip"
 
 
@@ -107,7 +107,7 @@ def yearly_package_url(
 
 
 def parse_year_month(value: str) -> tuple[int, int]:
-    """Parse 'YYYY-MM' or 'YYYYMM' into (year, month)."""
+    """Parsea ``YYYY-MM`` o ``YYYYMM`` a ``(year, month)``."""
     raw = value.strip()
     if len(raw) == 7 and raw[4] == "-":
         year_s, month_s = raw.split("-", 1)
@@ -121,7 +121,7 @@ def iter_year_months(
     start: tuple[int, int],
     end: tuple[int, int],
 ) -> list[tuple[int, int]]:
-    """Inclusive month range from start to end."""
+    """Rango de meses inclusivo de start a end."""
     sy, sm = start
     ey, em = end
     if (sy, sm) > (ey, em):

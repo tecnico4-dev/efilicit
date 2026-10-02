@@ -1,4 +1,4 @@
-"""PLACSP SourceConnector — discover + fetch + parse (Atom/CODICE syndications)."""
+"""SourceConnector PLACSP — discover + fetch + parse (sindicaciones Atom/CODICE)."""
 
 from __future__ import annotations
 
@@ -27,7 +27,7 @@ from efilicit_ingestion.connectors.placsp.urls import (
 )
 from efilicit_ingestion.models import RemoteArtifact, SourceRecord, SyncContext
 
-# Optional probe: return True if the remote package appears available.
+# Sonda opcional: True si el paquete remoto parece disponible (p. ej. HEAD).
 UrlExists = Callable[[str], bool]
 
 __all__ = [
@@ -38,13 +38,13 @@ __all__ = [
 
 
 class PlacspConnector:
-    """PLACSP Open Data connector for Atom/CODICE ZIP syndications.
+    """Conector Open Data PLACSP para sindicaciones Atom/CODICE en ZIP.
 
-    Default syndication is perfiles alojados (``placsp`` / ``sindicacion_643``).
-    Pass ``syndication=PLACSP_AGREGADAS`` / ``PLACSP_MENORES`` (or another config)
-    for additional Atom/CODICE syndications.
-    Discovery uses well-known URI patterns from ``docs/sources/placsp*.md``.
-    Fetch downloads with timeout, retries, and a size budget.
+    Por defecto: perfiles alojados (``placsp`` / ``sindicacion_643``).
+    Pasar ``syndication=PLACSP_AGREGADAS`` / ``PLACSP_MENORES`` (u otra config)
+    para otras sindicaciones Atom/CODICE.
+    El discover usa patrones de URI documentados en ``docs/sources/placsp*.md``.
+    El fetch descarga con timeout, reintentos y presupuesto de tamaño.
     """
 
     def __init__(
@@ -61,11 +61,11 @@ class PlacspConnector:
         max_bytes: int = DEFAULT_MAX_BYTES,
         retry_attempts: int = DEFAULT_RETRY_ATTEMPTS,
     ) -> None:
-        """Configure syndication, discovery window, and fetch policy.
+        """Configura sindicación, ventana de discover y política de fetch.
 
-        - If neither from/to is set: discover the single month of ``as_of`` (or today).
-        - ``url_exists``: optional probe (e.g. HEAD) to skip missing packages.
-        - ``fetch_transport``: injectable downloader for tests (no live network).
+        - Si no hay from/to: descubre solo el mes de ``as_of`` (o hoy).
+        - ``url_exists``: sonda opcional (p. ej. HEAD) para saltar paquetes ausentes.
+        - ``fetch_transport``: downloader inyectable para tests (sin red real).
         """
         self.syndication = syndication
         self.source_code = syndication.source_code
@@ -152,10 +152,10 @@ class PlacspConnector:
 
     @staticmethod
     def _is_after_cursor(artifact_key: str, cursor: str | None) -> bool:
-        """Skip packages already covered by the sync cursor.
+        """Omite paquetes ya cubiertos por el cursor de sync.
 
-        Cursor is expected to be a previous ``artifact_key``. Lexicographic order
-        works for monthly filenames (..._YYYYMM.zip).
+        El cursor suele ser un ``artifact_key`` anterior. El orden lexicográfico
+        vale para nombres mensuales (..._YYYYMM.zip).
         """
         if cursor is None:
             return True

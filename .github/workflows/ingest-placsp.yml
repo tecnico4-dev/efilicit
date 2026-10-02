@@ -1,6 +1,7 @@
-# Semana 2 / Paso 9 + Semana 3 / Paso 5 + Semana 4 / Paso 2.4 — ingesta PLACSP.
+# Semana 2 / Paso 9 (+ ampliaciones Semana 3/4) — ingesta PLACSP.
 # Por defecto: dry-run con fixture (sin secretos, sin writes).
 # Escritura a DB/Storage o descarga live: solo workflow_dispatch explícito + secrets.
+# Cron comentado a propósito hasta acordar entorno + secrets (no quemar prod/red).
 # syndication: placsp | placsp_agregadas | placsp_menores.
 name: Ingest PLACSP
 
