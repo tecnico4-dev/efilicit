@@ -1,8 +1,16 @@
 import Link from "next/link";
 import { createSupabaseClient } from "@/lib/supabase/client";
 
+// Evita cachear la home: el health-check debe hablar siempre con Supabase “ahora”.
 export const dynamic = "force-dynamic";
 
+/**
+ * Comprueba que la API de Supabase local responde.
+ *
+ * Usa `setup_rls_smoke` (tabla de prueba Fase 0) con la clave anon/publishable.
+ * - Sin filas visibles o error de permiso/RLS ⇒ OK (anon no debe leer datos ajenos).
+ * - Error de red / URL mal configurada ⇒ KO.
+ */
 async function checkLocalSupabase(): Promise<{
   ok: boolean;
   detail: string;
@@ -15,6 +23,7 @@ async function checkLocalSupabase(): Promise<{
       .limit(1);
 
     if (error) {
+      // PostgREST / Postgres suelen devolver estos códigos/mensajes cuando RLS corta.
       if (
         error.code === "PGRST301" ||
         error.message.toLowerCase().includes("permission") ||

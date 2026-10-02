@@ -40,7 +40,7 @@ Comprobar: Actions → **Ingest Catalunya** → rama `tecnico4/semana-03` → mo
 
 ## Protección de `main` — decisión del proyecto
 
-**No se aplica** branch protection / ruleset sobre `main`, **al menos por ahora**.
+**No se aplica** branch protection / ruleset sobre `main`, **al menos por ahora**. Decisión formal: [ADR 001](../docs/adr/001-proteccion-main-aplazada.md).
 
 ### Motivo
 
