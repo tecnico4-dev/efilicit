@@ -17,7 +17,7 @@ Plan: [semana02-plan.md](semana02-plan.md). Criterios: `docs/04-roadmap-mvp.md` 
 | `source_sync` refleja la ejecución | OK | status/contadores en corrida fixture local |
 | Workflow `ingest-placsp.yml` | OK | Manual `workflow_dispatch`; default `dry-run`; cron comentado; secrets fuera del código |
 | Tests parser / normalización / persistencia en verde | OK | Regresión Paso 10: `40 passed, 6 skipped` (integración local skip sin Docker) |
-| ADRs estructurales (solo si hubo decisión nueva) | N/A | Sin cambio de arquitectura; se implementó lo fijado en `docs/01`–`04` |
+| ADRs estructurales (solo si hubo decisión nueva) | OK | [ADR 005](../adr/005-ingesta-actions-manual-first-cron-off.md) (cron off / manual-first); [ADR 006](../adr/006-raw-storage-httpx-sin-supabase-py.md) (Storage vía httpx) |
 | CHANGELOG actualizado | OK | Unreleased con entradas Semana 2 |
 
 Cuando esté en OK → Semana 3 (escalado estatal + primeras CCAA).

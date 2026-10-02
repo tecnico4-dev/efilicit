@@ -17,3 +17,5 @@ No uses un ADR para el estado de una fuente o un parser: eso va en `docs/sources
 | [002](002-bootstrap-supabase-remoto-greenfield.md) | Bootstrap Supabase remoto greenfield (`db push`, no `db pull`) | Aceptado |
 | [003](003-acceso-canonico-publico-etl-privado.md) | Acceso Semana 1: canónico público, ETL privado (`errors` reservada) | Aceptado |
 | [004](004-ci-ingestion-sin-postgres.md) | CI de ingestion sin Postgres (tests de DB en skip) | Aceptado |
+| [005](005-ingesta-actions-manual-first-cron-off.md) | Ingesta en Actions: manual-first (cron desactivado) | Aceptado |
+| [006](006-raw-storage-httpx-sin-supabase-py.md) | RAW Storage vía `httpx` + `service_role` (sin `supabase-py`) | Aceptado |

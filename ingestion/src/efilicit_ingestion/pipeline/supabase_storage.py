@@ -2,7 +2,7 @@
 
 Semana 2 Paso 4: usa la API HTTP de Storage con ``httpx`` + ``service_role``
 (proceso confiable). No se añade el SDK ``supabase-py``: ``httpx`` ya está
-en el stack fijo del proyecto.
+en el stack fijo del proyecto (ADR 006).
 """
 
 from __future__ import annotations

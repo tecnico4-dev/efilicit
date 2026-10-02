@@ -15,10 +15,11 @@ Comprobar runs: https://github.com/tecnico4-dev/efilicit/actions
 
 Workflow: [`.github/workflows/ingest-placsp.yml`](workflows/ingest-placsp.yml)
 
-- Disparo **manual** (`workflow_dispatch`). Cron **comentado** a propósito (activar solo cuando haya entorno + secrets acordados).
+- Disparo **manual** (`workflow_dispatch`). Cron **comentado** a propósito — [ADR 005](../docs/adr/005-ingesta-actions-manual-first-cron-off.md).
 - Input **`syndication`**: `placsp` (perfiles, default) o `placsp_agregadas` (estatal Semana 3).
 - Modo por defecto: **`dry-run`** (fixture in-memory; no necesita secretos).
 - Modos con escritura: `fixture-db` / `live` — exigen secrets y fallan si faltan.
+- RAW a Storage (si `upload_storage=true`): API HTTP + `service_role` — [ADR 006](../docs/adr/006-raw-storage-httpx-sin-supabase-py.md).
 
 | Secret | Uso |
 |---|---|

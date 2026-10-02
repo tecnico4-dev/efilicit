@@ -47,9 +47,9 @@ on:
         description: "Subir RAW a Storage (requiere SUPABASE_SERVICE_ROLE_KEY + SUPABASE_URL)"
         type: boolean
         default: false
-  # Cron desactivado a propósito: no quemar prod/red PLACSP hasta acordar entorno + secrets.
-  # schedule:
-  #   - cron: "0 5 * * 1"
+# Cron comentado a propósito hasta acordar entorno + secrets (ADR 005).
+# schedule:
+#   - cron: "0 5 * * 1"
 
 concurrency:
   group: ingest-placsp-${{ inputs.syndication }}-${{ inputs.mode }}
