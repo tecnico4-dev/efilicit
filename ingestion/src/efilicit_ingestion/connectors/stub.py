@@ -1,4 +1,4 @@
-"""In-memory stub connector for contract tests (no network)."""
+"""Conector stub en memoria para tests de contrato (sin red)."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ from efilicit_ingestion.models import RemoteArtifact, SourceRecord, SyncContext
 
 
 class StubSourceConnector:
-    """Fake source used to prove the SourceConnector contract in Semana 1."""
+    """Fuente falsa para demostrar el contrato SourceConnector en Semana 1."""
 
     source_code: str = "stub"
 

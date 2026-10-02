@@ -1,4 +1,4 @@
-"""Orchestrates connector + common pipeline stages for one sync run."""
+"""Orquesta conector + etapas comunes del pipeline para una sync."""
 
 from __future__ import annotations
 
@@ -18,7 +18,11 @@ def run_pipeline(
     sync_repo: SyncRepository,
     canonical_repo: CanonicalRepository | None = None,
 ) -> PipelineResult:
-    """discover → fetch → validate → store_raw → parse → normalize → upsert → checkpoint."""
+    """discover → fetch → validate → store_raw → parse → … → upsert → checkpoint.
+
+    Ante excepción: cierra el run como failed en source_sync (error_message) y
+    relanza. No escribe en public.errors (ADR 003).
+    """
     run = sync_repo.start_run(
         source_code=connector.source_code,
         run_id=context.run_id,
@@ -67,7 +71,7 @@ def run_pipeline(
             run.cursor = stages.checkpoint(run.cursor, stored.artifact_key)
 
         sync_repo.finish_run(run, status="success")
-    except Exception as exc:  # noqa: BLE001 — classify richer in later weeks
+    except Exception as exc:  # noqa: BLE001 — clasificación más rica en semanas posteriores
         run.records_failed += 1
         sync_repo.finish_run(run, status="failed", error_message=str(exc))
         raise

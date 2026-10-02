@@ -1,6 +1,7 @@
 # CI mínimo del monorepo (Fase 0+).
 # Sin secretos: no despliega ni escribe en remoto.
 # Node 24 / pnpm 10.33.0 fijados en package.json del repo.
+# Ingestion: pytest siempre; tests de Postgres en skip si no hay DB (ADR 004).
 name: CI
 
 on:

@@ -1,4 +1,8 @@
-"""Common pipeline stages (docs/01 §5). Semana 1: real validate/store_raw; others pass-through."""
+"""Etapas comunes del pipeline (docs/01 §5).
+
+Semana 1: validate/store_raw reales; el resto se rellena al integrar cada fuente
+(normalize, identidad, matching, upsert canónico).
+"""
 
 from __future__ import annotations
 
@@ -8,7 +12,7 @@ from efilicit_ingestion.pipeline.types import StoredArtifact
 
 
 def validate_artifact(raw: bytes, artifact: RemoteArtifact) -> bytes:
-    """Reject empty / clearly invalid payloads before RAW storage / parse."""
+    """Rechaza payloads vacíos / claramente inválidos antes de RAW / parse."""
     if not raw:
         raise ValueError(f"empty artifact payload: {artifact.artifact_key}")
 
@@ -30,24 +34,24 @@ def store_raw(
     raw: bytes,
     store: ArtifactStore,
 ) -> StoredArtifact:
-    """Store RAW and return checksum + storage_path metadata."""
+    """Guarda el RAW y devuelve checksum + ruta lógica."""
     return store.store(source_code=source_code, artifact=artifact, raw=raw)
 
 
 def normalize(records: list[SourceRecord]) -> list[SourceRecord]:
-    """Map source payloads to canonical MVP fields (dates, amounts, codes, authority)."""
+    """Mapea payloads de fuente a campos canónicos MVP (fechas, importes, CPV, organismo)."""
     from efilicit_ingestion.pipeline.canonical import normalize_records
 
     return normalize_records(records)
 
 
 def enrich(records: list[SourceRecord]) -> list[SourceRecord]:
-    """Placeholder: enrichment later."""
+    """Reservado: enriquecimientos posteriores."""
     return records
 
 
 def resolve_identity(records: list[SourceRecord]) -> list[SourceRecord]:
-    """Resolve contracting-authority identity confidence (NIF/CIF primary)."""
+    """Resuelve confianza de identidad del organismo (NIF/CIF como señal primaria)."""
     from efilicit_ingestion.pipeline.canonical import resolve_identity_records
 
     return resolve_identity_records(records)
@@ -59,10 +63,10 @@ def deduplicate(
     source_code: str | None = None,
     canonical_repo: object | None = None,
 ) -> list[SourceRecord]:
-    """Cross-source matching: annotate ``payload['match']`` (Semana 4 Paso 5).
+    """Matching multi-fuente: anota ``payload['match']`` (Semana 4 Paso 5).
 
-    Without a lookup repo, marks every record as ``unmatched``.
-    Does not merge tenders yet — that is Paso 6 (upsert).
+    Sin repo de lookup, marca todo como ``unmatched``.
+    No fusiona tenders aquí: eso es el upsert (Paso 6).
     """
     from efilicit_ingestion.pipeline.matching import MatchLookup, match_records
 
@@ -80,7 +84,7 @@ def deduplicate(
 
 
 def quality_checks(records: list[SourceRecord]) -> list[SourceRecord]:
-    """Placeholder: quality rules later."""
+    """Reservado: reglas de calidad posteriores."""
     return records
 
 
@@ -91,9 +95,9 @@ def upsert(
     canonical_repo: object | None = None,
     artifact_id: str | None = None,
 ) -> tuple[int, int, int]:
-    """Upsert canonical rows. Returns (seen, new, updated).
+    """Upsert canónico. Devuelve (vistos, nuevos, actualizados).
 
-    Without a ``canonical_repo``, keeps Semana 1 counter wiring (all seen as new).
+    Sin ``canonical_repo``, mantiene el cableado Semana 1 (todo visto cuenta como nuevo).
     """
     if canonical_repo is None:
         seen = len(records)
@@ -111,10 +115,10 @@ def upsert(
 
 
 def emit_events(records: list[SourceRecord]) -> None:
-    """Events are written inside the canonical upsert (Paso 7)."""
+    """Los eventos se escriben dentro del upsert canónico."""
     _ = records
 
 
 def checkpoint(cursor: str | None, last_artifact_key: str | None) -> str | None:
-    """Placeholder checkpoint: advance cursor to last artifact key when present."""
+    """Checkpoint mínimo: avanza el cursor a la última artifact_key si existe."""
     return last_artifact_key if last_artifact_key is not None else cursor

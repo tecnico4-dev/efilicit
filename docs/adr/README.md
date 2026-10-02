@@ -15,3 +15,5 @@ No uses un ADR para el estado de una fuente o un parser: eso va en `docs/sources
 |---|---|---|
 | [001](001-proteccion-main-aplazada.md) | Protección de `main` aplazada (GitHub Free / repo privado) | Aceptado |
 | [002](002-bootstrap-supabase-remoto-greenfield.md) | Bootstrap Supabase remoto greenfield (`db push`, no `db pull`) | Aceptado |
+| [003](003-acceso-canonico-publico-etl-privado.md) | Acceso Semana 1: canónico público, ETL privado (`errors` reservada) | Aceptado |
+| [004](004-ci-ingestion-sin-postgres.md) | CI de ingestion sin Postgres (tests de DB en skip) | Aceptado |

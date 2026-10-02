@@ -1,4 +1,8 @@
-"""Postgres persistence for source_sync / source_artifacts (Semana 1 Paso 7)."""
+"""Persistencia Postgres de source_sync / source_artifacts (Semana 1 Paso 7).
+
+No escribe en public.errors: un fallo de corrida cierra el run en source_sync
+(status/error_message). Ver ADR 003.
+"""
 
 from __future__ import annotations
 
@@ -8,9 +12,9 @@ from efilicit_ingestion.pipeline.types import StoredArtifact, SyncRun, utc_now
 
 
 class PostgresSyncRepository:
-    """Writes sync runs and artifact metadata to local/remote Postgres.
+    """Escribe runs y metadatos de artefactos en Postgres local/remoto.
 
-    Uses a direct DB connection (service / postgres role), not the browser anon key.
+    Usa conexión directa (rol postgres / service), no la clave anon del navegador.
     """
 
     def __init__(self, conn: psycopg.Connection) -> None:
@@ -128,7 +132,7 @@ class PostgresSyncRepository:
 
 
 def default_database_url() -> str:
-    """Local Supabase DB URL (override with EFILICIT_DATABASE_URL)."""
+    """URL de Postgres local de Supabase (sobreescribible con EFILICIT_DATABASE_URL)."""
     import os
 
     return os.environ.get(

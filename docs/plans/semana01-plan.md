@@ -92,17 +92,18 @@ Registro de lo acordado al cerrar (o antes de) cada paso:
 |---|---|---|
 | Inicio Semana 1 | Ejecutar **paso a paso** con revisión | Igual que Semana 0 |
 | Plan | Sin ADRs previos; ADR solo si hay cambio estructural | Respetar arquitectura ya fijada |
-| Paso 1 | Tres tablas operativas en migración propia; RLS sin grants a anon/authenticated | Bitácora ETL antes del modelo canónico; solo service_role escribe |
+| Paso 1 | Tres tablas operativas en migración propia; RLS sin grants a anon/authenticated | Bitácora ETL antes del modelo canónico; solo service_role escribe; [ADR 003](../adr/003-acceso-canonico-publico-etl-privado.md) |
 | Paso 1 | Unique `(source_code, run_id)` y `(source_code, artifact_key)` / checksum | Base de idempotencia y trazabilidad |
-| Paso 2 | DDL canónico mínimo + SELECT público (anon/authenticated); escritura solo service_role | Datos de contratación son públicos; ETL no usa el frontend |
+| Paso 1 | Tabla `errors` en el esquema; sin escritura desde el pipeline aún | Prevista en docs 00/01; fallos de corrida → `source_sync`; cablear `errors` solo con necesidad real ([ADR 003](../adr/003-acceso-canonico-publico-etl-privado.md)) |
+| Paso 2 | DDL canónico mínimo + SELECT público (anon/authenticated); escritura solo service_role | Datos de contratación son públicos; [ADR 003](../adr/003-acceso-canonico-publico-etl-privado.md) |
 | Paso 2 | Unique parcial `(tax_id_country, tax_id)` en organismos/suppliers | Identidad fiscal cuando existe; sin forzar si falta |
 | Paso 3 | Esqueleto users/alertas/cola con RLS owner-only | Reserva sitio para Semana 5 sin lógica de producto aún |
 | Paso 4 | Regenerar `database.types.ts` desde esquema local | Frontend tipado alineado con migraciones Semana 1 |
 | Paso 5 | `SourceConnector` + stub + tests de contrato | Contrato de `docs/01` bajado a código; sin red |
 | Paso 6 | Pipeline común + runner in-memory | Etapas del roadmap; store_raw con checksum; DB real en Paso 7 |
 | Paso 7 | `PostgresSyncRepository` + tests contra DB local | `source_sync` / `source_artifacts` funcionando; dep. `psycopg` |
-| Paso 8 | CI ejecuta `pytest` en ingestion (`--extra dev`) | Tests Postgres se saltan en Actions (sin Supabase local) |
-| Paso 9 | Cierre Semana 1; ADR = N/A | Criterios de salida del roadmap cumplidos sin ADR nuevo |
+| Paso 8 | CI ejecuta `pytest` en ingestion (`--extra dev`) | Tests Postgres en skip si no hay DB; [ADR 004](../adr/004-ci-ingestion-sin-postgres.md) |
+| Paso 9 | Cierre Semana 1 | Criterios de salida cumplidos; ADR 003 (acceso) + ADR 004 (CI) |
 
 ---
 

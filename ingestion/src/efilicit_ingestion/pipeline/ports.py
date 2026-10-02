@@ -1,4 +1,4 @@
-"""Persistence ports used by the pipeline (Semana 1: in-memory; Semana 1 Paso 7: Postgres)."""
+"""Puertos de persistencia del pipeline (Semana 1: memoria; Paso 7: Postgres)."""
 
 from __future__ import annotations
 
@@ -10,8 +10,9 @@ from efilicit_ingestion.pipeline.paths import build_raw_storage_path
 from efilicit_ingestion.pipeline.types import StoredArtifact, SyncRun, utc_now
 
 
-# Protocolo para guardar el RAW
 class ArtifactStore(Protocol):
+    """Dónde se guarda el RAW (Storage real o almacén en memoria para tests)."""
+
     def store(
         self,
         *,
@@ -19,17 +20,18 @@ class ArtifactStore(Protocol):
         artifact: RemoteArtifact,
         raw: bytes,
     ) -> StoredArtifact:
-        """Persist RAW bytes (or record metadata) and return path + checksum."""
+        """Persiste bytes RAW (o solo metadatos) y devuelve ruta + checksum."""
         ...
 
 
-# Protocolo para "apuntar a la ejecución" de la sincronización (cuándo empezó/acabó, qué artefactos...).
 class SyncRepository(Protocol):
+    """Bitácora de ejecución: apertura/cierre de run y registro de artefactos."""
+
     def start_run(self, *, source_code: str, run_id: str, cursor: str | None) -> SyncRun:
         ...
 
     def register_artifact(self, run: SyncRun, stored: StoredArtifact) -> str | None:
-        """Persist artifact metadata; return DB artifact id when available."""
+        """Guarda metadatos del artefacto; devuelve id en DB si existe."""
         ...
 
     def finish_run(
@@ -43,7 +45,7 @@ class SyncRepository(Protocol):
 
 
 class InMemoryArtifactStore:
-    """Stores RAW in memory and builds the Storage path convention."""
+    """RAW en memoria + misma convención de ruta que Storage (tests / dry-run)."""
 
     def __init__(self) -> None:
         self.objects: dict[str, bytes] = {}
@@ -72,7 +74,7 @@ class InMemoryArtifactStore:
 
 
 class InMemorySyncRepository:
-    """Tracks sync runs and artifacts in memory (no Postgres yet)."""
+    """Runs y artefactos solo en memoria (sin Postgres)."""
 
     def __init__(self) -> None:
         self.runs: dict[tuple[str, str], SyncRun] = {}

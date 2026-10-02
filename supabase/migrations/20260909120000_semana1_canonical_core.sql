@@ -1,6 +1,9 @@
 -- Semana 1 / Paso 2: núcleo canónico mínimo.
--- La web consumirá estas tablas; las fuentes no crean modelos propios.
--- Columnas ampliable en Semana 2+ vía migraciones cuando PLACSP lo exija.
+-- La web consume estas tablas; las fuentes no crean modelos propios.
+-- Columnas ampliables en Semana 2+ vía migraciones cuando PLACSP lo exija.
+--
+-- Lectura: SELECT público (anon + authenticated). Escritura: solo ETL / service_role.
+-- Ver ADR 003.
 
 -- ---------------------------------------------------------------------------
 -- contracting_authorities — quién compra (organismos)

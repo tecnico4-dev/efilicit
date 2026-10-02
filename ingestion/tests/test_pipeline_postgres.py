@@ -1,4 +1,7 @@
-"""Integration: pipeline stub persists source_sync / source_artifacts in local Postgres."""
+"""Integración: el stub del pipeline persiste source_sync / source_artifacts en Postgres local.
+
+En CI sin Supabase estos tests se saltan (ADR 004).
+"""
 
 from __future__ import annotations
 
@@ -30,7 +33,7 @@ def _db_available() -> bool:
 
 pytestmark = pytest.mark.skipif(
     not _db_available(),
-    reason="Local Supabase Postgres not reachable (start with supabase start)",
+    reason="Postgres local de Supabase no alcanzable (arrancar con supabase start)",
 )
 
 

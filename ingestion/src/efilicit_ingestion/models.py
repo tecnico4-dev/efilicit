@@ -1,4 +1,4 @@
-"""Pydantic models at the connector boundary (Semana 1)."""
+"""Modelos Pydantic en el límite del conector (Semana 1)."""
 
 from __future__ import annotations
 
@@ -13,7 +13,7 @@ def _utc_now() -> datetime:
 
 
 class SyncContext(BaseModel):
-    """Context for one synchronization run of a source."""
+    """Contexto de una ejecución de sincronización de una fuente."""
 
     source_code: str
     run_id: str
@@ -22,7 +22,7 @@ class SyncContext(BaseModel):
 
 
 class RemoteArtifact(BaseModel):
-    """A remote file/resource discovered by a connector (not yet stored as RAW)."""
+    """Recurso/fichero remoto descubierto por el conector (aún no guardado como RAW)."""
 
     artifact_key: str
     source_url: str | None = None
@@ -31,10 +31,10 @@ class RemoteArtifact(BaseModel):
 
 
 class SourceRecord(BaseModel):
-    """One parsed record from a source, before canonical normalize/upsert.
+    """Un registro parseado de la fuente, antes de normalizar/upsert canónico.
 
-    Must not leak source-specific field names into the canonical DB model;
-    the pipeline maps this payload later.
+    No debe colar en el modelo canónico nombres de campos propios de la fuente;
+    el pipeline mapea este payload después.
     """
 
     source_record_id: str

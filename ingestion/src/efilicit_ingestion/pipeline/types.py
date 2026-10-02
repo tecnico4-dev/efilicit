@@ -1,4 +1,4 @@
-"""Shared types for the common ingestion pipeline."""
+"""Tipos compartidos del pipeline común de ingesta."""
 
 from __future__ import annotations
 
@@ -12,7 +12,7 @@ def utc_now() -> datetime:
 
 @dataclass(frozen=True)
 class StoredArtifact:
-    """Result of store_raw: path + checksum (RAW evidence metadata)."""
+    """Resultado de store_raw: ruta + checksum (metadatos de evidencia RAW)."""
 
     artifact_key: str
     checksum: str
@@ -24,7 +24,7 @@ class StoredArtifact:
 
 @dataclass
 class SyncRun:
-    """In-memory / DB-agnostic view of a source_sync row."""
+    """Vista en memoria / agnóstica de DB de una fila source_sync."""
 
     source_code: str
     run_id: str
@@ -45,7 +45,7 @@ class SyncRun:
 
 @dataclass
 class PipelineResult:
-    """Outcome of one pipeline run for tests and callers."""
+    """Resultado de una ejecución del pipeline (tests y callers)."""
 
     sync: SyncRun
     records_processed: int

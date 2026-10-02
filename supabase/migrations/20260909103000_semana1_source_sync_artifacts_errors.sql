@@ -1,7 +1,12 @@
--- Semana 1 / Paso 1: operational ingestion tables (not the canonical tenders model yet).
--- source_sync = bitácora de cada ejecución de una fuente.
+-- Semana 1 / Paso 1 — tablas operativas de ingesta (aún no el modelo canónico).
+--
+-- source_sync      = bitácora de cada ejecución de una fuente (contadores + estado).
 -- source_artifacts = registro de cada fichero/artefacto (checksum + ruta RAW).
--- errors = errores operativos clasificables vinculados a sync/artifact cuando aplique.
+-- errors           = reserva del modelo fijado en docs/00–01 para fallos clasificados.
+--                    Hoy el pipeline NO escribe aquí: un fallo de corrida se refleja
+--                    en source_sync (status/error_message). Ver ADR 003.
+--
+-- Acceso: sin grants a anon/authenticated; solo procesos confiables (ADR 003).
 
 -- ---------------------------------------------------------------------------
 -- source_sync
@@ -78,7 +83,7 @@ create table public.errors (
 );
 
 comment on table public.errors is
-  'Errores operativos de ingesta (clasificados); enlazables a sync y/o artifact.';
+  'Reserva de esquema (docs 00/01): errores operativos clasificables. Sin escritura desde el pipeline aún; fallos de corrida → source_sync. Ver ADR 003.';
 
 create index errors_source_code_created_at_idx
   on public.errors (source_code, created_at desc);
@@ -90,8 +95,9 @@ create index errors_error_class_idx
   on public.errors (error_class);
 
 -- ---------------------------------------------------------------------------
--- RLS: tablas operativas de ETL — sin acceso para anon/authenticated.
--- La ingesta confiable usa service_role (bypassa RLS).
+-- RLS: tablas ETL opacas al cliente (anon/authenticated sin acceso).
+-- La ingesta confiable usa service_role / conexión directa (salta RLS).
+-- Ver ADR 003.
 -- ---------------------------------------------------------------------------
 alter table public.source_sync enable row level security;
 alter table public.source_artifacts enable row level security;
