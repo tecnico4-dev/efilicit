@@ -62,7 +62,7 @@ La deduplicación entre fuente propia y canales PLACSP es trabajo de Semana 4 (P
 | Agregación (`placsp_agregadas`) | Andalucía, Galicia, Madrid, Navarra, La Rioja | 0 |
 | Perfiles alojados (`placsp`) | Aragón, Asturias, Illes Balears, Canarias, Cantabria, Castilla-La Mancha, Castilla y León, Comunitat Valenciana, Extremadura, Región de Murcia | 0 |
 
-**Decisión Semana 4:** 0 conectores CCAA nuevos. Orden de ataque: `placsp_menores` → deduplicación. El único hueco CCAA post-MVP relevante es menores de plataformas agregadas (véase §5).
+**Decisión Semana 4:** 0 conectores CCAA nuevos ([ADR 009](../adr/009-ccaa-propia-extra-na-semana4.md)). Orden de ataque: `placsp_menores` → deduplicación. El único hueco CCAA post-MVP relevante es menores de plataformas agregadas (véase §5).
 
 ### 2.3 Limitaciones por canal
 

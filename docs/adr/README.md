@@ -21,3 +21,5 @@ No uses un ADR para el estado de una fuente o un parser: eso va en `docs/sources
 | [006](006-raw-storage-httpx-sin-supabase-py.md) | RAW Storage vía `httpx` + `service_role` (sin `supabase-py`) | Aceptado |
 | [007](007-adaptador-csv-familia-na-semana3.md) | Adaptador CSV de familia: N/A en Semana 3 | Aceptado |
 | [008](008-placsp-menores-aplazado-semana4.md) | `placsp_menores` aplazado a Semana 4+ | Aceptado |
+| [009](009-ccaa-propia-extra-na-semana4.md) | CCAA propia extra: N/A en Semana 4 | Aceptado |
+| [010](010-match-candidate-tender-id-en-tender-sources.md) | Candidato best de matching en `tender_sources` | Aceptado |

@@ -191,7 +191,7 @@ Registro de lo acordado al cerrar (o antes de) cada paso:
 | Plan | Documentación de fuentes/cobertura solo en `docs/sources/` | El plan no acumula fichas ni matrices largas |
 | Paso 1 | `placsp_menores` = `sindicacion_1143` / `contratosMenoresPerfilesContratantes` | Confirmado en ficha Hacienda; conector en Paso 2 |
 | Paso 1 | 2 propias (Cat, Euskadi) + 5 agregación + 10 perfiles alojados `placsp` | Cumple “ruta identificada” sin 17 conectores; ver [cobertura-ccaa.md](../sources/cobertura-ccaa.md) |
-| Paso 1 | CCAA propia extra Semana 4 = **0 (N/A)** | Priorizar menores + dedup; Open Data / menores de agregadas = backlog |
+| Paso 1 | CCAA propia extra Semana 4 = **0 (N/A)** | Priorizar menores + dedup; Open Data / menores de agregadas = backlog ([ADR 009](../adr/009-ccaa-propia-extra-na-semana4.md)) |
 | Paso 1 | Fichas en `cobertura-ccaa.md` + `placsp_menores.md` | Detalle en catálogo de fuentes, no en el plan |
 | Paso 2.2 | `PLACSP_MENORES` en `PlacspSyndication` | Reuso discover/fetch; keys `contratosMenoresPerfilesContratantes_YYYYMM.zip` |
 | Paso 2.3 | RAW/parse/normalize/upsert reutilizan pipeline PLACSP | Prefijo `raw/placsp_menores/`; unique `(placsp_menores, source_tender_id)` |
@@ -200,8 +200,8 @@ Registro de lo acordado al cerrar (o antes de) cada paso:
 | Paso 5 | `stages.deduplicate` + `MatchLookup` en repo canónico | Anota `payload['match']`; título solo → `pending`; fusión = Paso 6 |
 | Paso 6 | Upsert respeta `payload['match']` | `auto` reusa `tenders.id`; `pending`/`unmatched` crean fila; idempotente |
 | Paso 7 | Fixtures solape PLACSP↔Euskadi + regresión | Auto-merge / no-merge; Catalunya sin NIF no auto; suite ingestion verde |
-| Paso 8 | Catálogo + cierre | ADR N/A; checklist cerrado; handoff Semana 5 |
-| Pruebas live (post Paso 6–7) | Columna `match_candidate_tender_id` en `tender_sources` (candidato **best** en `pending`) | Sin ella no se ve en Studio a qué tender se parece un `pending`; no cambia `auto`/`unmatched`. Evolución prevista cuando exista UI de revisión humana: tabla `match_suggestions` (varios candidatos por fila pending, no solo el best) |
+| Paso 8 | Catálogo + cierre | Checklist cerrado; handoff Semana 5; ADRs 009–010 |
+| Pruebas live (post Paso 6–7) | Columna `match_candidate_tender_id` en `tender_sources` (candidato **best** en `pending`) | Sin ella no se ve en Studio a qué tender se parece un `pending`; no cambia `auto`/`unmatched`. Evolución prevista cuando exista UI de revisión humana: tabla `match_suggestions` (varios candidatos por fila pending, no solo el best). [ADR 010](../adr/010-match-candidate-tender-id-en-tender-sources.md) |
 
 ---
 

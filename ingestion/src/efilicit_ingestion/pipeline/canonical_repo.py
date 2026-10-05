@@ -35,14 +35,14 @@ class UpsertStats:
 
 @dataclass(frozen=True, slots=True)
 class _MatchLink:
-    """How upsert should link this source row to a canonical tender (Paso 6)."""
+    """Cómo el upsert enlaza esta fila de fuente al tender canónico (Paso 6)."""
 
     review_status: str
     match_method: str | None
     match_score: float | None
     reuse_tender_id: str | None
     matched_at: datetime | None
-    # Best cross-source candidate when pending (not merged). Null for auto/unmatched.
+    # Candidato best multi-fuente en pending (no fusionado). Null en auto/unmatched (ADR 010).
     match_candidate_tender_id: str | None = None
 
 
@@ -54,7 +54,7 @@ class CanonicalRepository(Protocol):
         records: list[SourceRecord],
         artifact_id: str | None = None,
     ) -> UpsertStats:
-        """Persist canonical rows. Idempotent on (source_code, source_tender_id)."""
+        """Persiste filas canónicas. Idempotente en ``(source_code, source_tender_id)``."""
         ...
 
     def find_match_candidates(
@@ -66,12 +66,12 @@ class CanonicalRepository(Protocol):
         cpv_code: str | None = None,
         limit: int = 50,
     ) -> list[MatchCandidate]:
-        """Candidates from other sources for cross-source matching (Semana 4)."""
+        """Candidatos de otras fuentes para matching multi-fuente (Semana 4)."""
         ...
 
 
 class InMemoryCanonicalRepository:
-    """In-memory canonical store for unit tests (no Postgres)."""
+    """Almacén canónico en memoria para tests (sin Postgres)."""
 
     def __init__(self) -> None:
         self.authorities: dict[str, dict[str, Any]] = {}
@@ -233,7 +233,7 @@ class InMemoryCanonicalRepository:
 
 
 class PostgresCanonicalRepository:
-    """Writes canonical MVP tables using a trusted DB connection."""
+    """Escribe tablas canónicas MVP con una conexión de DB confiable."""
 
     def __init__(self, conn: psycopg.Connection) -> None:
         self._conn = conn
@@ -562,7 +562,7 @@ class PostgresCanonicalRepository:
             payload,
             tender_exists=self._tender_exists,
         )
-        # Refresh match metadata while still pending (or clear candidate if unmatched).
+        # Refrescar metadatos de match en pending (o limpiar candidato si unmatched).
         if link.review_status == REVIEW_PENDING:
             self._conn.execute(
                 """
@@ -691,7 +691,7 @@ def _match_link_from_payload(
     *,
     tender_exists: Callable[[str], bool],
 ) -> _MatchLink:
-    """Map ``payload['match']`` to upsert link behaviour (Semana 4 Paso 6)."""
+    """Traduce ``payload['match']`` al enlace de upsert (Semana 4 Paso 6)."""
     match = (payload or {}).get("match") or {}
     status = match.get("review_status") or REVIEW_UNMATCHED
     method = match.get("match_method")
@@ -711,7 +711,7 @@ def _match_link_from_payload(
             match_candidate_tender_id=None,
         )
     if status == REVIEW_AUTO:
-        # Stale / missing target → do not invent a merge.
+        # Destino obsoleto / ausente → no inventar fusión.
         return _MatchLink(
             review_status=REVIEW_UNMATCHED,
             match_method=None,
@@ -744,7 +744,7 @@ def _apply_match_refresh_in_memory(
     payload: dict[str, Any] | None,
     tenders: dict[str, dict[str, Any]],
 ) -> None:
-    """Refresh pending candidate on re-ingest (in-memory repo)."""
+    """Refresca el candidato pending en re-ingesta (repo en memoria)."""
     link = _match_link_from_payload(
         payload,
         tender_exists=lambda tid: tid in tenders,

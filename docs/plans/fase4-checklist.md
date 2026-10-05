@@ -9,10 +9,10 @@ El estado se marca **aquí**, no con “— OK” en el plan.
 
 | Ítem | Estado | Notas |
 |---|---|---|
-| 1. Inventario cobertura 17 CCAA + leftover `placsp_menores` | OK | Docs en `docs/sources/`; 0 CCAA extra |
+| 1. Inventario cobertura 17 CCAA + leftover `placsp_menores` | OK | Docs en `docs/sources/`; 0 CCAA extra ([ADR 009](../adr/009-ccaa-propia-extra-na-semana4.md)) |
 | 2. `placsp_menores` (reuso PLACSP) | OK | Minipasos 2.1–2.4 |
-| 3. Matriz 17 CCAA + CCAA propia extra (o N/A) | OK | [cobertura-ccaa.md](../sources/cobertura-ccaa.md); 3.2 N/A |
-| 4. Esquema matching (`tender_sources` / migración) | OK | `match_*` / `review_status` + `match_candidate_tender_id` (best en `pending`) |
+| 3. Matriz 17 CCAA + CCAA propia extra (o N/A) | OK | [cobertura-ccaa.md](../sources/cobertura-ccaa.md); 3.2 N/A ([ADR 009](../adr/009-ccaa-propia-extra-na-semana4.md)) |
+| 4. Esquema matching (`tender_sources` / migración) | OK | `match_*` / `review_status` + `match_candidate_tender_id` (best en `pending`; [ADR 010](../adr/010-match-candidate-tender-id-en-tender-sources.md)) |
 | 5. Matching en pipeline común | OK | `matching.py` + lookup repo; tests auto/unmatched/pending |
 | 6. Upsert respeta matching (auto / pending / unmatched) | OK | Reusa `tenders.id` en auto; no fusiona pending; persiste candidato best; idempotente |
 | 7. Fixtures de solape + regresión | OK | `fixtures/overlap/` + `test_overlap_dedup`; suite ingestion verde |
@@ -32,7 +32,7 @@ El estado se marca **aquí**, no con “— OK” en el plan.
 | Minipaso | Estado | Notas |
 |---|---|---|
 | 3.1 Matriz 17 CCAA en catálogo | OK | [cobertura-ccaa.md](../sources/cobertura-ccaa.md) |
-| 3.2 CCAA propia extra (ficha + conector E2E) | N/A | 0 conectores; cobertura vía `placsp` + `placsp_agregadas` |
+| 3.2 CCAA propia extra (ficha + conector E2E) | N/A | 0 conectores; cobertura vía `placsp` + `placsp_agregadas`; [ADR 009](../adr/009-ccaa-propia-extra-na-semana4.md) |
 
 ## Criterios transversales (cierre Semana 4)
 
@@ -42,8 +42,8 @@ El estado se marca **aquí**, no con “— OK” en el plan.
 | `source_sync` por cada fuente añadida | OK | `placsp_menores` vía pipeline/tests (`test_placsp_menores_upsert`); A–D live previo |
 | Tests en verde (parser / matching / persistencia) | OK | Suite ingestion completa en verde (Paso 7 + cierre) |
 | No fusionar ambigüedades a ciegas | OK | `pending` → nueva fila `tenders` + `review_status` |
-| Candidato best en `pending` (`match_candidate_tender_id`) | OK | Migración + upsert; tests; evolución `match_suggestions` anotada |
-| ADRs estructurales (solo si hubo decisión nueva) | N/A | Sin cambio de arquitectura; se implementó lo fijado en `docs/01`–`04` |
+| Candidato best en `pending` (`match_candidate_tender_id`) | OK | Migración + upsert; tests; [ADR 010](../adr/010-match-candidate-tender-id-en-tender-sources.md); evolución `match_suggestions` anotada |
+| ADRs estructurales (solo si hubo decisión nueva) | OK | [ADR 009](../adr/009-ccaa-propia-extra-na-semana4.md) (CCAA extra N/A); [ADR 010](../adr/010-match-candidate-tender-id-en-tender-sources.md) (candidato best) |
 | CHANGELOG actualizado | OK | Unreleased con entradas Semana 4 + cierre |
 
 ## Criterios de salida `docs/04` § Semana 4

@@ -1,7 +1,9 @@
-"""Cross-source tender matching (Semana 4 Paso 5).
+"""Matching multi-fuente de licitaciones (Semana 4 Paso 5).
 
-Annotates each ``SourceRecord`` with ``payload['match']``; does not merge rows yet
-(that is Paso 6 / upsert). Lookup uses the canonical repository of *other* sources.
+Anota cada ``SourceRecord`` con ``payload['match']``; aún no fusiona filas
+(eso es Paso 6 / upsert). El lookup consulta el canónico ya persistido de
+*otras* fuentes. En ``pending``, el candidato best llega a
+``tender_sources.match_candidate_tender_id`` (ADR 010).
 """
 
 from __future__ import annotations
@@ -26,7 +28,7 @@ METHOD_TITLE_SIMILARITY = "title_similarity"
 
 @dataclass(frozen=True, slots=True)
 class MatchCandidate:
-    """A tender already persisted under a *different* source_code."""
+    """Licitación ya persistida bajo un ``source_code`` distinto."""
 
     tender_id: str
     source_code: str
@@ -40,7 +42,7 @@ class MatchCandidate:
 
 
 class MatchLookup(Protocol):
-    """Minimal read API for cross-source matching."""
+    """API mínima de lectura para matching multi-fuente."""
 
     def find_match_candidates(
         self,
@@ -51,7 +53,7 @@ class MatchLookup(Protocol):
         cpv_code: str | None = None,
         limit: int = 50,
     ) -> list[MatchCandidate]:
-        """Return candidate tenders from sources other than ``exclude_source_code``."""
+        """Candidatos de fuentes distintas a ``exclude_source_code``."""
         ...
 
 
@@ -64,7 +66,7 @@ class _ScoredMatch:
 
 
 def extract_expediente(record: SourceRecord) -> str | None:
-    """Expediente from payload / canonical / ``tax:EXP`` style source ids."""
+    """Expediente desde payload / canónico / ids estilo ``tax:EXP``."""
     raw = record.payload or {}
     for key in ("contract_folder_id", "codi_expedient", "expediente"):
         value = raw.get(key)
@@ -84,7 +86,7 @@ def extract_expediente(record: SourceRecord) -> str | None:
 
 
 def expediente_from_source_tender_id(source_tender_id: str) -> str | None:
-    """PLACSP-style ``{tax|platform}:{ContractFolderID}`` → folder id."""
+    """Estilo PLACSP ``{tax|platform}:{ContractFolderID}`` → id de expediente."""
     text = source_tender_id.strip()
     if ":" not in text:
         return None
@@ -94,6 +96,7 @@ def expediente_from_source_tender_id(source_tender_id: str) -> str | None:
 
 
 def title_similarity(a: str | None, b: str | None) -> float:
+    """Similitud de título (SequenceMatcher); 0 si falta alguno."""
     if not a or not b:
         return 0.0
     left = " ".join(a.casefold().split())
@@ -109,7 +112,7 @@ def match_records(
     source_code: str,
     lookup: MatchLookup | None = None,
 ) -> list[SourceRecord]:
-    """Attach ``payload['match']`` using cross-source lookup when available."""
+    """Adjunta ``payload['match']`` con lookup multi-fuente si hay repo."""
     if lookup is None:
         return [_annotate(record, _unmatched()) for record in records]
     return [
@@ -164,6 +167,7 @@ def _decide(
     if len(autos) == 1:
         return _from_scored(autos[0])
     if len(autos) > 1:
+        # Varios auto empatados → no fusionar; dejar pending sin target único.
         best = max(autos, key=lambda s: s.match_score)
         return {
             "review_status": REVIEW_PENDING,
@@ -175,6 +179,7 @@ def _decide(
 
     pendings = [s for s in scored if s.review_status == REVIEW_PENDING]
     if pendings:
+        # Candidato best informativo (ADR 010); upsert no fusiona.
         best = max(pendings, key=lambda s: s.match_score)
         return {
             "review_status": REVIEW_PENDING,
@@ -210,7 +215,7 @@ def _score_against(
     )
     signal_hits = sum((cpv_match, amount_match, date_match, sim >= 0.85))
 
-    # Level 2 — expediente + organismo fiscal (never name alone).
+    # Nivel 2 — expediente + NIF/CIF del organismo (nunca solo el nombre).
     if tax_match and exp_match:
         return _ScoredMatch(
             candidate=candidate,
@@ -219,7 +224,7 @@ def _score_against(
             match_score=1.0,
         )
 
-    # Level 3 — tax_id + reinforcing signals (still not name-as-identity).
+    # Nivel 3 — NIF/CIF + señales de refuerzo (sigue sin usar el nombre como id).
     if tax_match and signal_hits >= 2:
         return _ScoredMatch(
             candidate=candidate,
@@ -228,7 +233,7 @@ def _score_against(
             match_score=min(0.95, 0.75 + 0.05 * signal_hits + 0.1 * sim),
         )
 
-    # Ambiguous / low confidence → pending (do not auto-merge).
+    # Baja confianza / ambiguo → pending (no auto-fusionar).
     if exp_match and not tax_match:
         return _ScoredMatch(
             candidate=candidate,
@@ -254,6 +259,7 @@ def _score_against(
 
 
 def _amounts_close(a: Decimal | None, b: Decimal | None) -> bool:
+    """Importes cercanos (tolerancia relativa 1 %)."""
     if a is None or b is None:
         return False
     try:
