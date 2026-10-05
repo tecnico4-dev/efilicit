@@ -23,3 +23,5 @@ No uses un ADR para el estado de una fuente o un parser: eso va en `docs/sources
 | [008](008-placsp-menores-aplazado-semana4.md) | `placsp_menores` aplazado a Semana 4+ | Aceptado |
 | [009](009-ccaa-propia-extra-na-semana4.md) | CCAA propia extra: N/A en Semana 4 | Aceptado |
 | [010](010-match-candidate-tender-id-en-tender-sources.md) | Candidato best de matching en `tender_sources` | Aceptado |
+| [011](011-digest-email-job-python-sin-edge-function.md) | Digest de alertas: envío desde job Python (Edge Function N/A) | Aceptado |
+| [012](012-alert-frequencies-daily-weekly-instant-diferido.md) | Frecuencias MVP `daily`\|`weekly`; `instant` diferido | Aceptado |
