@@ -1,8 +1,8 @@
-"""Etapas comunes del pipeline (docs/01 §5).
+"""Etapas comunes del pipeline (docs/01 §5) — nacidas en Semana 1.
 
-Orden fijo: validate → store_raw → parse (en el runner) → normalize →
-identidad → matching → upsert. Semana 2 cableó RAW + canónico PLACSP;
-Semana 4 sustituyó el pass-through de dedup por matching multi-fuente.
+Semana 1 fijó el esqueleto (validate / store_raw / stubs de etapas + upsert
+sin canónico). Semana 2 rellenó normalize / identidad / upsert real; Semana 4
+el matching. El runner llama siempre el mismo orden.
 """
 
 from __future__ import annotations
@@ -93,7 +93,7 @@ def deduplicate(
 
 
 def quality_checks(records: list[SourceRecord]) -> list[SourceRecord]:
-    """Reservado: reglas de calidad posteriores."""
+    """Reservado: reglas de calidad posteriores (Semana 1 dejó el gancho)."""
     return records
 
 
@@ -104,9 +104,11 @@ def upsert(
     canonical_repo: object | None = None,
     artifact_id: str | None = None,
 ) -> tuple[int, int, int]:
-    """Upsert canónico. Devuelve (vistos, nuevos, actualizados).
+    """Upsert canónico. Devuelve ``(vistos, nuevos, actualizados)``.
 
-    Sin ``canonical_repo``, mantiene el cableado Semana 1 (todo visto cuenta como nuevo).
+    Sin ``canonical_repo`` (cableado Semana 1 / stub): todo lo visto cuenta
+    como ``new`` — sirve para ejercitar bitácora sin tablas canónicas llenas.
+    Con repo (Semana 2+): idempotencia real por ``(source_code, source_tender_id)``.
     """
     if canonical_repo is None:
         seen = len(records)
@@ -124,10 +126,10 @@ def upsert(
 
 
 def emit_events(records: list[SourceRecord]) -> None:
-    """Los eventos se escriben dentro del upsert canónico."""
+    """Hook Semana 1: los eventos se escriben dentro del upsert canónico (S2)."""
     _ = records
 
 
 def checkpoint(cursor: str | None, last_artifact_key: str | None) -> str | None:
-    """Checkpoint mínimo: avanza el cursor a la última artifact_key si existe."""
+    """Avanza el cursor al último ``artifact_key`` procesado (incremental)."""
     return last_artifact_key if last_artifact_key is not None else cursor

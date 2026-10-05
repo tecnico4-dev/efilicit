@@ -1,4 +1,8 @@
-"""Common ingestion pipeline (connector-agnostic)."""
+"""Pipeline común de ingesta (agnóstico del conector; Semana 1+).
+
+Punto de import público: runner, puertos, tipos y repos. Las fuentes viven
+en ``connectors.*``; este paquete no conoce PLACSP/Socrata/Euskadi.
+"""
 
 from efilicit_ingestion.pipeline.canonical_repo import (
     CanonicalRepository,

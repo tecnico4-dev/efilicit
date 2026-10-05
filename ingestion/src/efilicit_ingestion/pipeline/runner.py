@@ -1,9 +1,11 @@
-"""Orquesta conector + etapas comunes del pipeline para una sync (Semana 2+).
+"""Orquesta conector + etapas comunes del pipeline (desde Semana 1).
 
-El runner es agnóstico de la fuente: solo conoce ``SourceConnector`` y las
-etapas. Orden: discover → fetch → validate → store_raw → parse → normalize →
-identidad → matching → upsert → checkpoint. Así el RAW queda aunque falle el
-parse posterior.
+Nació con el stub + bitácora Postgres; Semana 2+ cableó fuentes reales sin
+cambiar este orquestador. Solo conoce ``SourceConnector`` y las etapas.
+
+Orden: discover → fetch → validate → store_raw → parse → normalize →
+identidad → matching → upsert → checkpoint. El RAW se guarda **antes** del
+parse para no perder evidencia si el parser falla.
 """
 
 from __future__ import annotations
@@ -24,10 +26,12 @@ def run_pipeline(
     sync_repo: SyncRepository,
     canonical_repo: CanonicalRepository | None = None,
 ) -> PipelineResult:
-    """Una sync completa por artefacto descubierto.
+    """Una sync completa por cada artefacto descubierto.
 
     Ante excepción: cierra el run como ``failed`` en ``source_sync``
     (``error_message``) y relanza. No escribe en ``public.errors`` (ADR 003).
+    Sin ``canonical_repo``, el upsert Semana 1 solo cuenta registros como
+    ``new`` (útil para stub / tests de bitácora).
     """
     run = sync_repo.start_run(
         source_code=connector.source_code,

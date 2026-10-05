@@ -1,6 +1,8 @@
-"""Integración: el stub del pipeline persiste source_sync / source_artifacts en Postgres local.
+"""Integración Semana 1: stub del pipeline → ``source_sync`` / ``source_artifacts`` en Postgres.
 
-En CI sin Supabase estos tests se saltan (ADR 004).
+Comprueba que la bitácora ETL se escribe de verdad contra Supabase local.
+En CI sin Postgres estos tests se **saltan** (ADR 004): el job de ingestion
+sigue verde; la integración DB se valida en laptop / entorno con DB.
 """
 
 from __future__ import annotations

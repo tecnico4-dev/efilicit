@@ -1,7 +1,10 @@
-"""Persistencia Postgres de source_sync / source_artifacts (Semana 1 Paso 7).
+"""Persistencia Postgres de ``source_sync`` / ``source_artifacts`` (Semana 1 Paso 7).
 
-No escribe en public.errors: un fallo de corrida cierra el run en source_sync
-(status/error_message). Ver ADR 003.
+Bitácora ETL, no el canónico de licitaciones. Conexión directa con rol
+confiable (postgres / service), nunca la clave ``anon`` del navegador.
+
+No escribe en ``public.errors``: un fallo de corrida cierra el run en
+``source_sync`` (``status`` / ``error_message``). Ver ADR 003.
 """
 
 from __future__ import annotations
@@ -12,15 +15,13 @@ from efilicit_ingestion.pipeline.types import StoredArtifact, SyncRun, utc_now
 
 
 class PostgresSyncRepository:
-    """Escribe runs y metadatos de artefactos en Postgres local/remoto.
-
-    Usa conexión directa (rol postgres / service), no la clave anon del navegador.
-    """
+    """Implementación real de ``SyncRepository`` contra Postgres local/remoto."""
 
     def __init__(self, conn: psycopg.Connection) -> None:
         self._conn = conn
 
     def start_run(self, *, source_code: str, run_id: str, cursor: str | None) -> SyncRun:
+        """Inserta fila ``running``; el unique ``(source_code, run_id)`` evita choques."""
         row = self._conn.execute(
             """
             insert into public.source_sync (source_code, run_id, status, cursor)
@@ -40,6 +41,11 @@ class PostgresSyncRepository:
         )
 
     def register_artifact(self, run: SyncRun, stored: StoredArtifact) -> str | None:
+        """Upsert de metadatos por ``(source_code, artifact_key)``.
+
+        Reejecutar el mismo artefacto actualiza checksum/ruta y el ``sync_id``
+        de la corrida actual (evidencia ligada al último run que lo bajó).
+        """
         if run.id is None:
             raise ValueError("sync run is missing database id")
 
@@ -91,6 +97,7 @@ class PostgresSyncRepository:
         status: str,
         error_message: str | None = None,
     ) -> SyncRun:
+        """Persiste estado final + contadores; ``error_message`` solo si falló."""
         if run.id is None:
             raise ValueError("sync run is missing database id")
 
@@ -132,7 +139,7 @@ class PostgresSyncRepository:
 
 
 def default_database_url() -> str:
-    """URL de Postgres local de Supabase (sobreescribible con EFILICIT_DATABASE_URL)."""
+    """URL de Postgres local de Supabase (override: ``EFILICIT_DATABASE_URL``)."""
     import os
 
     return os.environ.get(
@@ -142,4 +149,5 @@ def default_database_url() -> str:
 
 
 def connect(database_url: str | None = None) -> psycopg.Connection:
+    """Abre conexión psycopg (caller hace commit/rollback)."""
     return psycopg.connect(database_url or default_database_url())

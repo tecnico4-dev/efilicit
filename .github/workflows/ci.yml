@@ -1,7 +1,8 @@
-# CI mínimo del monorepo (Fase 0+).
+# CI mínimo del monorepo (Fase 0+ / Semana 1).
 # Sin secretos: no despliega ni escribe en remoto.
 # Node 24 / pnpm 10.33.0 fijados en package.json del repo.
-# Ingestion: pytest siempre; tests de Postgres en skip si no hay DB (ADR 004).
+# Ingestion: pytest siempre en verde; tests que necesitan Postgres local
+# se saltan si no hay DB (ADR 004) — no montamos Supabase en Actions aún.
 name: CI
 
 on:

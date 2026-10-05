@@ -1,4 +1,12 @@
-"""Puertos de persistencia del pipeline (Semana 1: memoria; Paso 7: Postgres)."""
+"""Puertos de persistencia del pipeline (Semana 1).
+
+El runner depende de protocolos, no de Postgres ni de Supabase Storage.
+Así los tests usan implementaciones en memoria y la prod cablea Postgres /
+Storage sin cambiar el orquestador.
+
+- ``ArtifactStore``: evidencia RAW (bytes + checksum + ruta).
+- ``SyncRepository``: bitácora ``source_sync`` / ``source_artifacts``.
+"""
 
 from __future__ import annotations
 
@@ -25,9 +33,14 @@ class ArtifactStore(Protocol):
 
 
 class SyncRepository(Protocol):
-    """Bitácora de ejecución: apertura/cierre de run y registro de artefactos."""
+    """Bitácora de ejecución: apertura/cierre de run y registro de artefactos.
+
+    No es el modelo canónico de licitaciones: solo operativa ETL (ADR 003:
+    tablas privadas; fallos → ``finish_run(..., failed)``, no ``public.errors``).
+    """
 
     def start_run(self, *, source_code: str, run_id: str, cursor: str | None) -> SyncRun:
+        """Abre un run ``running`` (unique ``source_code`` + ``run_id``)."""
         ...
 
     def register_artifact(self, run: SyncRun, stored: StoredArtifact) -> str | None:
@@ -41,11 +54,15 @@ class SyncRepository(Protocol):
         status: str,
         error_message: str | None = None,
     ) -> SyncRun:
+        """Cierra el run (``success`` / ``failed`` / …) con contadores actuales."""
         ...
 
 
 class InMemoryArtifactStore:
-    """RAW en memoria + misma convención de ruta que Storage (tests / dry-run)."""
+    """RAW en memoria + misma convención de ruta que Storage (tests / dry-run).
+
+    No sube a Supabase; sí genera ``storage_path`` coherente para asserts.
+    """
 
     def __init__(self) -> None:
         self.objects: dict[str, bytes] = {}
@@ -74,7 +91,10 @@ class InMemoryArtifactStore:
 
 
 class InMemorySyncRepository:
-    """Runs y artefactos solo en memoria (sin Postgres)."""
+    """Runs y artefactos solo en memoria (sin Postgres).
+
+    Útil en dry-run / unit tests del runner sin arrancar Supabase.
+    """
 
     def __init__(self) -> None:
         self.runs: dict[tuple[str, str], SyncRun] = {}

@@ -1,4 +1,9 @@
-"""Modelos Pydantic en el límite del conector (Semana 1)."""
+"""Modelos Pydantic en el límite del conector (Semana 1).
+
+Separan lo que el conector conoce (artefacto / registro de fuente) de lo que
+el modelo canónico en Postgres guarda después. Así la app no depende de
+campos CODICE, SoQL, etc.
+"""
 
 from __future__ import annotations
 
@@ -13,7 +18,12 @@ def _utc_now() -> datetime:
 
 
 class SyncContext(BaseModel):
-    """Contexto de una ejecución de sincronización de una fuente."""
+    """Contexto de una ejecución de sincronización de una fuente.
+
+    ``cursor``: último ``artifact_key`` (u otro token) ya procesado; el
+    discover lo usa para ser incremental. ``run_id`` identifica la fila en
+    ``source_sync``.
+    """
 
     source_code: str
     run_id: str
@@ -22,7 +32,11 @@ class SyncContext(BaseModel):
 
 
 class RemoteArtifact(BaseModel):
-    """Recurso/fichero remoto descubierto por el conector (aún no guardado como RAW)."""
+    """Recurso remoto descubierto (aún no guardado como RAW).
+
+    ``artifact_key`` debe ser estable entre corridas (unique con ``source_code``
+    en ``source_artifacts``). Ej.: nombre del ZIP mensual o key de página SODA.
+    """
 
     artifact_key: str
     source_url: str | None = None
@@ -31,10 +45,11 @@ class RemoteArtifact(BaseModel):
 
 
 class SourceRecord(BaseModel):
-    """Un registro parseado de la fuente, antes de normalizar/upsert canónico.
+    """Registro parseado de la fuente, antes de normalizar / upsert canónico.
 
-    No debe colar en el modelo canónico nombres de campos propios de la fuente;
-    el pipeline mapea este payload después.
+    ``source_record_id`` alimenta el unique ``(source_code, source_tender_id)``.
+    El ``payload`` puede ser fiel a la fuente; no colar esos nombres en las
+    tablas canónicas — eso lo hace ``normalize`` → ``payload['canonical']``.
     """
 
     source_record_id: str

@@ -1,4 +1,8 @@
-"""Conector stub en memoria para tests de contrato (sin red)."""
+"""Conector stub en memoria para tests de contrato (Semana 1; sin red).
+
+Demuestra que el runner funciona con *cualquier* implementación de
+``SourceConnector`` antes de existir PLACSP. No es una fuente de producto.
+"""
 
 from __future__ import annotations
 
@@ -9,7 +13,10 @@ from efilicit_ingestion.models import RemoteArtifact, SourceRecord, SyncContext
 
 
 class StubSourceConnector:
-    """Fuente falsa para demostrar el contrato SourceConnector en Semana 1."""
+    """Fuente falsa: un artefacto JSON fijo para CI / tests de pipeline.
+
+    ``source_code = "stub"`` — no mezclar con fuentes reales en prod.
+    """
 
     source_code: str = "stub"
 
@@ -25,6 +32,7 @@ class StubSourceConnector:
         ]
 
     def fetch(self, artifact: RemoteArtifact) -> bytes:
+        """Devuelve JSON sintético (no hay descarga real)."""
         body = {
             "id": artifact.artifact_key,
             "title": "Stub tender for contract tests",
@@ -36,6 +44,7 @@ class StubSourceConnector:
         raw: bytes,
         artifact: RemoteArtifact,
     ) -> Iterable[SourceRecord]:
+        """Un ``SourceRecord`` por artefacto; id = campo ``id`` o el artifact_key."""
         data = json.loads(raw.decode("utf-8"))
         yield SourceRecord(
             source_record_id=str(data.get("id", artifact.artifact_key)),
