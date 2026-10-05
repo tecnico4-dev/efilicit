@@ -1,4 +1,9 @@
-"""Descarga HTTP de artefactos PLACSP: timeout, reintento, tamaño, checksum."""
+"""Descarga HTTP de ZIPs PLACSP: timeout, reintento, tamaño, checksum.
+
+Los paquetes mensuales pueden ser muy grandes → presupuesto por defecto
+256 MiB y descarga en stream (corta si el body crece de más). Solo reintenta
+fallos de transporte/timeout; un HTTP 4xx/5xx tipado no se reintenta a ciegas.
+"""
 
 from __future__ import annotations
 
@@ -25,12 +30,12 @@ DEFAULT_MAX_BYTES = 256 * 1024 * 1024
 DEFAULT_TIMEOUT_SECONDS = 60.0
 DEFAULT_RETRY_ATTEMPTS = 3
 
-# Getter inyectable en tests unitarios: (url) -> (status_code, headers, body).
+# Getter inyectable en tests: (url) -> (status_code, headers, body). Sin red real.
 FetchTransport = Callable[[str], tuple[int, dict[str, str], bytes]]
 
 
 def sha256_hex(payload: bytes) -> str:
-    """Checksum determinista del payload descargado (SHA-256 en hex)."""
+    """Checksum del ZIP (SHA-256 hex) para trazabilidad RAW / idempotencia."""
     return hashlib.sha256(payload).hexdigest()
 
 
@@ -48,10 +53,11 @@ def download_bytes(
     transport: FetchTransport | None = None,
     http_client: httpx.Client | None = None,
 ) -> bytes:
-    """Descarga bytes de una URL con timeout, reintentos y control de tamaño.
+    """Descarga bytes con timeout, reintentos y tope de tamaño.
 
-    Preferir ``transport`` en tests unitarios (sin red). Si no, usa ``http_client``
-    o un ``httpx.Client`` de vida corta.
+    Preferir ``transport`` en tests/fixtures. Si no, ``http_client`` reutilizable
+    o un ``httpx.Client`` de vida corta. Content-Length declarado > max → fallo
+    temprano sin bajar el cuerpo entero.
     """
     cfg = settings or FetchSettings()
     if cfg.max_bytes <= 0:
@@ -125,6 +131,7 @@ def _enforce_limits(
     body: bytes,
     max_bytes: int,
 ) -> bytes:
+    """Misma política HTTP/tamaño cuando el body ya viene del transport de tests."""
     if status >= 400:
         raise PlacspHttpError(status, url)
 

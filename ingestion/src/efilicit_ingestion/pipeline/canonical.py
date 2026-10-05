@@ -2,6 +2,9 @@
 
 Escribe ``payload['canonical']`` con campos tipados del MVP (fechas, importes,
 CPV, organismo). No toca la DB: eso es el upsert en ``canonical_repo``.
+
+``resolve_identity`` anota confianza del organismo: NIF/CIF = HIGH; id de
+plataforma = MEDIUM; solo nombre = LOW (el nombre **nunca** es identidad única).
 """
 
 from __future__ import annotations
@@ -14,7 +17,7 @@ from typing import Any
 
 from efilicit_ingestion.models import SourceRecord
 
-# Códigos de sindicación PLACSP/CODICE → etiquetas estables del modelo MVP.
+# Códigos CODICE / sindicación → etiquetas estables del modelo MVP.
 _STATUS_MAP = {
     "PUB": "published",
     "PRE": "prepared",
@@ -47,7 +50,10 @@ def normalize_records(records: list[SourceRecord]) -> list[SourceRecord]:
 
 
 def normalize_record(record: SourceRecord) -> SourceRecord:
-    """Adjunta ``payload['canonical']`` con campos tipados/normalizados del MVP."""
+    """Adjunta ``payload['canonical']`` tipado; deja el payload de fuente intacto al lado.
+
+    Así el upsert solo lee ``canonical`` y el parser puede seguir siendo fiel al RAW.
+    """
     raw = record.payload
     title = (raw.get("title") or raw.get("project_name") or "").strip()
     if not title:
@@ -79,7 +85,7 @@ def normalize_record(record: SourceRecord) -> SourceRecord:
             "name": authority_name,
             "name_normalized": normalize_name(authority_name),
             "platform_id": authority_raw.get("platform_id"),
-            # Lo rellena resolve_identity.
+            # Lo rellena resolve_identity (etapa siguiente del pipeline).
             "identity_confidence": "UNRESOLVED",
         },
     }
@@ -94,7 +100,10 @@ def resolve_identity_records(records: list[SourceRecord]) -> list[SourceRecord]:
 
 
 def resolve_identity_record(record: SourceRecord) -> SourceRecord:
-    """Fija ``identity_confidence`` del organismo (NIF/CIF como señal primaria)."""
+    """Fija ``identity_confidence`` del organismo (NIF/CIF como señal primaria).
+
+    No fusiona organismos aquí: solo anota confianza para el upsert / matching.
+    """
     payload = dict(record.payload)
     canonical = dict(payload.get("canonical") or {})
     authority = dict(canonical.get("authority") or {})
@@ -119,11 +128,12 @@ def resolve_identity_record(record: SourceRecord) -> SourceRecord:
 
 
 def normalize_name(value: str) -> str:
-    """Minúsculas, sin acentos, espacios colapsados — nunca identidad única."""
+    """Minúsculas, sin acentos, espacios colapsados — comparación débil, no identidad."""
     decomposed = unicodedata.normalize("NFKD", value)
     without_marks = "".join(ch for ch in decomposed if not unicodedata.combining(ch))
     collapsed = re.sub(r"\s+", " ", without_marks).strip().lower()
     return collapsed
+
 
 def _map_code(value: Any, mapping: dict[str, str]) -> str | None:
     if value is None:
@@ -131,6 +141,7 @@ def _map_code(value: Any, mapping: dict[str, str]) -> str | None:
     code = str(value).strip()
     if not code:
         return None
+    # Código desconocido: conservar el literal (mejor que perder la señal).
     return mapping.get(code, code)
 
 
@@ -144,6 +155,7 @@ def _parse_amount(value: Any) -> Decimal | None:
 
 
 def _primary_code(values: Any) -> str | None:
+    """MVP: un CPV/NUTS principal (el primero); listas completas quedan en el payload crudo."""
     if not isinstance(values, list) or not values:
         return None
     first = values[0]

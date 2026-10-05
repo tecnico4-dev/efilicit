@@ -1,4 +1,8 @@
-"""Helper fetch → validate → store_raw (Semana 2 Paso 4)."""
+"""Helper fetch → validate → store_raw (Semana 2 Paso 4).
+
+Atajo para tests/docs del vertical slice: evidencia RAW **antes** de parsear.
+El runner de pipeline hace el mismo orden; este helper aísla solo esa terna.
+"""
 
 from __future__ import annotations
 
@@ -17,7 +21,8 @@ def fetch_validate_and_store_raw(
 ) -> StoredArtifact:
     """Descarga un artefacto, lo valida y persiste la evidencia RAW.
 
-    No parsea ni hace upsert canónico (pasos posteriores de Semana 2).
+    No parsea ni hace upsert canónico (pasos posteriores). Así el RAW queda
+    aunque falle el parser después.
     """
     raw = connector.fetch(artifact)
     raw = stages.validate_artifact(raw, artifact)

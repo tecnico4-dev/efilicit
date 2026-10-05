@@ -1,7 +1,8 @@
 """Etapas comunes del pipeline (docs/01 §5).
 
-Semana 1: validate/store_raw reales; el resto se rellena al integrar cada fuente
-(normalize, identidad, matching, upsert canónico).
+Orden fijo: validate → store_raw → parse (en el runner) → normalize →
+identidad → matching → upsert. Semana 2 cableó RAW + canónico PLACSP;
+Semana 4 sustituyó el pass-through de dedup por matching multi-fuente.
 """
 
 from __future__ import annotations
@@ -12,7 +13,11 @@ from efilicit_ingestion.pipeline.types import StoredArtifact
 
 
 def validate_artifact(raw: bytes, artifact: RemoteArtifact) -> bytes:
-    """Rechaza payloads vacíos / claramente inválidos antes de RAW / parse."""
+    """Rechaza payloads vacíos / claramente inválidos antes de RAW / parse.
+
+    Para ZIPs PLACSP comprueba cabecera ``PK`` (evita guardar HTML de error
+    como si fuera el paquete mensual).
+    """
     if not raw:
         raise ValueError(f"empty artifact payload: {artifact.artifact_key}")
 
@@ -34,24 +39,24 @@ def store_raw(
     raw: bytes,
     store: ArtifactStore,
 ) -> StoredArtifact:
-    """Guarda el RAW y devuelve checksum + ruta lógica."""
+    """Persiste evidencia RAW (Storage o memoria) y devuelve checksum + ruta."""
     return store.store(source_code=source_code, artifact=artifact, raw=raw)
 
 
 def normalize(records: list[SourceRecord]) -> list[SourceRecord]:
-    """Mapea payloads de fuente a campos canónicos MVP (fechas, importes, CPV, organismo)."""
+    """Mapea payloads de fuente a ``payload['canonical']`` tipado (Semana 2)."""
     from efilicit_ingestion.pipeline.canonical import normalize_records
 
     return normalize_records(records)
 
 
 def enrich(records: list[SourceRecord]) -> list[SourceRecord]:
-    """Reservado: enriquecimientos posteriores."""
+    """Reservado: enriquecimientos posteriores (no usado en el MVP actual)."""
     return records
 
 
 def resolve_identity(records: list[SourceRecord]) -> list[SourceRecord]:
-    """Resuelve confianza de identidad del organismo (NIF/CIF como señal primaria)."""
+    """Confianza del organismo: NIF/CIF HIGH; nunca el nombre solo como id."""
     from efilicit_ingestion.pipeline.canonical import resolve_identity_records
 
     return resolve_identity_records(records)

@@ -1,4 +1,12 @@
-"""Ejecuta la ingesta PLACSP de punta a punta (Semana 2 Paso 8; Semana 3 agregadas)."""
+"""Ejecuta la ingesta PLACSP de punta a punta (Semana 2 Paso 8).
+
+Monta ``PlacspConnector`` + pipeline común. Misma entrada para perfiles,
+agregadas y menores (``syndication``). CLI ``run-placsp`` y Actions delegan aquí.
+
+- Fixture: sin red a Hacienda (ZIP o Atom envuelto en ZIP).
+- Dry-run: todo en memoria.
+- Live: Postgres + Storage con secrets (ZIPs grandes → acotar from/to).
+"""
 
 from __future__ import annotations
 
@@ -29,7 +37,11 @@ from efilicit_ingestion.pipeline.types import PipelineResult
 
 @dataclass(frozen=True)
 class PlacspRunConfig:
-    """Opciones de una corrida local / documentada del pipeline PLACSP."""
+    """Opciones de una corrida local / documentada del pipeline PLACSP.
+
+    ``syndication`` elige dataset (643 / 1044 / 1143). Sin from/to live, el
+    conector usa solo el mes de ``as_of`` (slice acotado a propósito).
+    """
 
     fixture_path: Path | None = None
     from_year_month: str | None = None
@@ -46,7 +58,11 @@ def load_fixture_bytes(
     *,
     syndication: PlacspSyndication = PLACSP,
 ) -> bytes:
-    """Carga fixture ``.atom`` o ``.zip``; si es Atom suelto, lo envuelve en ZIP."""
+    """Carga fixture ``.atom`` o ``.zip``; Atom suelto se envuelve en ZIP.
+
+    El parser de prod espera ZIP (o detecta ``PK``). Envolver Atom mantiene
+    el mismo camino de código que Hacienda.
+    """
     raw = path.read_bytes()
     if path.suffix.lower() == ".zip" or raw.startswith(b"PK"):
         return raw
@@ -62,10 +78,9 @@ def load_fixture_bytes(
 def run_placsp(config: PlacspRunConfig) -> PipelineResult:
     """Ejecuta discover→…→upsert para una sindicación PLACSP.
 
-    - ``fixture_path``: E2E offline (sin red a PLACSP).
+    - ``fixture_path``: transport fijo con ese ZIP (E2E offline).
     - sin fixture: discover/fetch live de la ventana de meses.
-    - ``dry_run``: sync/canónico/storage en memoria (sin writes a Postgres/Storage).
-    - ``syndication``: por defecto ``PLACSP`` (perfiles); también agregadas/menores.
+    - ``dry_run``: sync/canónico/storage en memoria (sin writes).
     """
     as_of = config.as_of or date.today()
     feed = config.syndication
@@ -79,7 +94,7 @@ def run_placsp(config: PlacspRunConfig) -> PipelineResult:
             {"content-type": "application/zip", "content-length": str(len(data))},
             data,
         )
-        # Forzar una ventana de mes conocida en corridas con fixture.
+        # Fixture: forzar un mes conocido para que discover genere un solo artefacto.
         from_ym = config.from_year_month or f"{as_of.year:04d}-{as_of.month:02d}"
         to_ym = config.to_year_month or from_ym
     else:
@@ -138,6 +153,7 @@ def run_placsp(config: PlacspRunConfig) -> PipelineResult:
 
 
 def format_result(result: PipelineResult) -> str:
+    """Resumen corto para CLI / logs de Actions (sin volcar payloads)."""
     sync = result.sync
     lines = [
         f"status={sync.status}",

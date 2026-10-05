@@ -1,7 +1,8 @@
 """Helpers de URI oficiales de sindicación PLACSP (docs/sources/placsp*.md).
 
-Sin scraping HTML: los paquetes viven en rutas conocidas.
-Soporta varias sindicaciones Atom/CODICE (perfiles, agregadas, menores…).
+Sin scraping HTML: Hacienda publica ZIPs en rutas conocidas
+(``…/sindicacion_{id}/{feed}_{YYYYMM}.zip``). Varias sindicaciones comparten
+el mismo patrón Atom/CODICE; solo cambian id de sindicación y nombre de feed.
 """
 
 from __future__ import annotations
@@ -26,7 +27,11 @@ __all__ = [
 
 @dataclass(frozen=True, slots=True)
 class PlacspSyndication:
-    """Un dataset oficial de Open Data PLACSP (una sindicación)."""
+    """Un dataset oficial Open Data PLACSP (una sindicación = un ``source_code``).
+
+    ``sindicacion`` es el número de carpeta Hacienda; ``feed_base_name`` el
+    prefijo del ZIP. Juntos fijan URL y ``artifact_key`` estables.
+    """
 
     source_code: str
     sindicacion: str
@@ -40,7 +45,8 @@ class PlacspSyndication:
         )
 
 
-# Semana 2 — perfiles alojados, sin menores (docs/sources/placsp.md).
+# Semana 2 — perfiles alojados en PLACSP, sin menores (docs/sources/placsp.md).
+# Vertical slice inicial: discover mensual → ZIP → Atom/CODICE → canónico.
 PLACSP = PlacspSyndication(
     source_code="placsp",
     sindicacion="643",
@@ -75,7 +81,7 @@ def monthly_package_filename(
     month: int,
     syndication: PlacspSyndication = PLACSP,
 ) -> str:
-    """``artifact_key`` estable del ZIP mensual."""
+    """``artifact_key`` estable del ZIP mensual (también sirve de cursor de sync)."""
     if month < 1 or month > 12:
         raise ValueError(f"month out of range: {month}")
     return f"{syndication.feed_base_name}_{year:04d}{month:02d}.zip"
@@ -86,6 +92,7 @@ def monthly_package_url(
     month: int,
     syndication: PlacspSyndication = PLACSP,
 ) -> str:
+    """URL oficial del paquete mensual (discover no inventa rutas)."""
     return (
         f"{syndication.base_url}/"
         f"{monthly_package_filename(year, month, syndication)}"
@@ -96,7 +103,7 @@ def yearly_package_filename(
     year: int,
     syndication: PlacspSyndication = PLACSP,
 ) -> str:
-    """``artifact_key`` estable del ZIP de año cerrado."""
+    """``artifact_key`` del ZIP de año cerrado (por si se usa fuera del slice mensual)."""
     return f"{syndication.feed_base_name}_{year:04d}.zip"
 
 
@@ -111,7 +118,7 @@ def yearly_package_url(
 
 
 def parse_year_month(value: str) -> tuple[int, int]:
-    """Parsea ``YYYY-MM`` o ``YYYYMM`` a ``(year, month)``."""
+    """Parsea ``YYYY-MM`` o ``YYYYMM`` a ``(year, month)`` para la ventana de discover."""
     raw = value.strip()
     if len(raw) == 7 and raw[4] == "-":
         year_s, month_s = raw.split("-", 1)
@@ -125,7 +132,7 @@ def iter_year_months(
     start: tuple[int, int],
     end: tuple[int, int],
 ) -> list[tuple[int, int]]:
-    """Rango de meses inclusivo de start a end."""
+    """Rango de meses inclusivo: un artefacto por mes en el discover."""
     sy, sm = start
     ey, em = end
     if (sy, sm) > (ey, em):
