@@ -229,7 +229,7 @@ Registro de lo acordado al cerrar (o antes de) cada paso:
 | Paso 1 | Organismo: `tax_ids` primario; `name_contains` débil | Alineado con identidad canónica (NIF/CIF) |
 | Paso 2 | `search_vector` generated stored (spanish A/B) + GIN + `title` trgm | Sin trigger manual; B-tree filtros Semana 1 reutilizados; geo vía join |
 | Paso 2 | Extensión `pg_trgm` en schema `extensions` | Convención Supabase (`extra_search_path`) |
-| Paso 3 | RPC `search_tenders` (SECURITY INVOKER) + `lib/queries` | FTS + trgm + filtros Criteria v1; ranking `greatest(ts_rank, similarity, strict_word_similarity)`; no motor externo |
+| Paso 3 | RPC `search_tenders` (SECURITY INVOKER) + `lib/queries` | FTS + trgm + filtros Criteria v1; ranking `greatest(ts_rank, similarity, strict_word_similarity)`; no motor externo ([ADR 013](../adr/013-busqueda-via-rpc-search-tenders.md)) |
 | Paso 4 | UI mínima `/search` (form GET + `searchTenders`) | Texto + CPV + importe; badge FTS/errata/filtro; sin ficha/dashboard |
 | Paso 5 | `@supabase/ssr` + middleware + trigger `handle_new_user` | Login/account mínimos; seed Alice/Bob → `public.users`; sin service_role |
 | Paso 6 | `/register` + `/alerts` CRUD mínimo + script RLS | `pnpm --filter @efilicit/web verify:rls` → Alice≠Bob OK; fondo blanco fijo hasta Semana 6 |
@@ -238,7 +238,7 @@ Registro de lo acordado al cerrar (o antes de) cada paso:
 | Paso 9 | CLI `run-alerts` + workflow `alerts-digest.yml` | Dry-run default (fixtures+Fake); `--write` / `--send`; cron off |
 | Paso 10 | E2E local buscar → alerta → batch → digest | Guía `semana05-e2e-local.md`; Resend OK (personal); dominio eficen → IT |
 | Post-Paso 10 | Erratas `strict_word_similarity` / `<<%` + badge literal | `foas` fuera; stemming-only → badge errata; `similarity` / `%` se mantiene |
-| Paso 11 | Cierre | CHANGELOG; ADRs 011–012; tipos N/A (firma RPC intacta); checklist cerrado; cron alertas sigue off |
+| Paso 11 | Cierre | CHANGELOG; ADRs 011–013; tipos N/A (firma RPC intacta); checklist cerrado; cron alertas sigue off |
 
 ---
 

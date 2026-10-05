@@ -25,3 +25,4 @@ No uses un ADR para el estado de una fuente o un parser: eso va en `docs/sources
 | [010](010-match-candidate-tender-id-en-tender-sources.md) | Candidato best de matching en `tender_sources` | Aceptado |
 | [011](011-digest-email-job-python-sin-edge-function.md) | Digest de alertas: envío desde job Python (Edge Function N/A) | Aceptado |
 | [012](012-alert-frequencies-daily-weekly-instant-diferido.md) | Frecuencias MVP `daily`\|`weekly`; `instant` diferido | Aceptado |
+| [013](013-busqueda-via-rpc-search-tenders.md) | Búsqueda canónica vía RPC `search_tenders` (SECURITY INVOKER) | Aceptado |
