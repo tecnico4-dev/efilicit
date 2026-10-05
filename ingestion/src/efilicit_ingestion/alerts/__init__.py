@@ -2,7 +2,7 @@
 
 Batch-first: no se manda un correo por cada INSERT de ingesta. El job
 ``run-alerts`` evalúa reglas, encola con idempotencia y drena digests
-(daily/weekly; ADR 012). Envío Resend desde Python, no Edge Function (ADR 011).
+(daily/weekly; ADR 013). Envío Resend desde Python, no Edge Function (ADR 012).
 """
 
 from efilicit_ingestion.alerts.batch import run_alert_batch

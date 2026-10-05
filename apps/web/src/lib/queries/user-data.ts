@@ -4,7 +4,7 @@
  * Alertas, búsquedas guardadas y perfil (`public.users`) con el cliente
  * autenticado (anon/publishable + sesión). Nunca service_role.
  *
- * `digest_frequency` es preferencia de cuenta (ADR 012): al cambiarla se
+ * `digest_frequency` es preferencia de cuenta (ADR 013): al cambiarla se
  * sincroniza `alerts.frequency` para no dejar reglas con cadencia obsoleta.
  */
 import type { Database, SearchCriteria } from "@efilicit/types";

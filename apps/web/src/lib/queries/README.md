@@ -3,7 +3,7 @@
 Centralizar aquí el acceso a Supabase (no en componentes React).
 Los Server Components / Actions importan helpers tipados; la UI no arma SQL.
 
-## Búsqueda (Semana 5 / Paso 3 / ADR 013)
+## Búsqueda (Semana 5 / Paso 3 / ADR 011)
 
 - `searchTenders(client, { query, criteria, limit, offset })` → RPC `public.search_tenders`
 - FTS (`search_vector`, config `spanish`) + fallback `pg_trgm` en `title`
@@ -33,6 +33,6 @@ Comprobación SQL directa: ver plan Semana 5 / checklist Paso 3.
 ## Alertas / búsquedas / perfil (Semana 5 / Paso 6)
 
 - `createOwnAlert` / `listOwnAlerts` / `createOwnSavedSearch` / `listOwnSavedSearches`
-- `getOwnProfile` / `updateOwnDigestFrequency` (daily|weekly; ADR 012)
+- `getOwnProfile` / `updateOwnDigestFrequency` (daily|weekly; ADR 013)
 - UI: `/alerts`, `/account` (requieren login; middleware redirige)
 - Prueba RLS Alice≠Bob: `pnpm --filter @efilicit/web verify:rls`

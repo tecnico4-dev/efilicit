@@ -1,9 +1,9 @@
 """Digest diario/semanal: agrupa pending y envía un email por usuario/periodo (Paso 8).
 
-Batch-first (ADR 011): un correo por (usuario, periodo), no por cada INSERT
+Batch-first (ADR 012): un correo por (usuario, periodo), no por cada INSERT
 de ingesta. El envío lo hace el job Python vía Resend; no hay Edge Function.
 
-Frecuencias (ADR 012):
+Frecuencias (ADR 013):
 
 - daily: drena siempre que haya pending.
 - weekly: solo lunes UTC; el resto deja pending.

@@ -1,4 +1,4 @@
-# 011 - Envío de digest de alertas desde el job Python (Edge Function N/A)
+# 012 - Envío de digest de alertas desde el job Python (Edge Function N/A)
 
 **Fecha:** 30-09-2026
 

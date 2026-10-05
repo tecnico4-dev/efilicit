@@ -1,4 +1,4 @@
-"""Tests for Semana 2 Paso 7: canonical upsert + idempotency."""
+"""Tests Semana 2 Paso 7: upsert canónico + idempotencia."""
 
 from __future__ import annotations
 

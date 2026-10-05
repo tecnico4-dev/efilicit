@@ -6,7 +6,7 @@ Entrada CLI / GitHub Actions (``alerts-digest.yml``). Modos:
 - write: Postgres real + Fake (o Resend si ``send=True``).
 
 Cron desactivado a propósito (ADR 005): solo ``workflow_dispatch`` hasta
-OK explícito + secrets. Envío desde Python, no Edge Function (ADR 011).
+OK explícito + secrets. Envío desde Python, no Edge Function (ADR 012).
 """
 
 from __future__ import annotations

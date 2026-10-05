@@ -5,8 +5,8 @@
 # Escritura a Postgres o envío Resend: solo workflow_dispatch explícito + secrets.
 #
 # Cron desactivado a propósito (ADR 005): no envío diario hasta OK + secrets.
-# Envío desde el job Python, no Edge Function (ADR 011).
-# Frecuencias daily|weekly; instant fuera del MVP (ADR 012).
+# Envío desde el job Python, no Edge Function (ADR 012).
+# Frecuencias daily|weekly; instant fuera del MVP (ADR 013).
 name: Alerts digest
 
 on:

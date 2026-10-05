@@ -170,7 +170,7 @@ def test_weekly_tuesday_enqueues_without_sending() -> None:
 def test_weekly_monday_drains_pending() -> None:
     queue = InMemoryNotificationQueue()
     freqs = {"user-1": "weekly"}
-    # Matches mid-week stay pending until Monday.
+    # Coincidencias a mitad de semana quedan pending hasta el lunes.
     _enqueue_software_match(queue, job_date=TUESDAY, frequencies=freqs)
     sender = FakeEmailSender()
     directory = UserEmailDirectory(emails={"user-1": "alice@example.com"})

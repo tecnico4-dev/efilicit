@@ -10,6 +10,9 @@ Plataforma de vigilancia de contratación pública: ingiere licitaciones de fuen
 4. [docs/03-reglas-cursor.md](docs/03-reglas-cursor.md) — reglas para el asistente  
 5. [docs/04-roadmap-mvp.md](docs/04-roadmap-mvp.md) — plan fase a fase  
 
+Planes y checklists por semana: [docs/plans/](docs/plans/).  
+Decisiones de arquitectura (ADR): [docs/adr/](docs/adr/README.md).
+
 ## Estructura del monorepo
 
 ```text
@@ -49,9 +52,9 @@ supabase --version
 
 ## Estado actual
 
-Semana 1 cerrada (modelo canónico + infraestructura de ingesta). Siguiente: Semana 2 del roadmap (PLACSP vertical slice).
+Semana 5 cerrada (búsqueda + Auth + alertas). Siguiente: Semana 6 del roadmap (web integrada / UX).
 
-Planes y checklists de ejecución por semana: [docs/plans/](docs/plans/).
+Workflows de GitHub: [`.github/README.md`](.github/README.md).
 
 ## Contribuir
 

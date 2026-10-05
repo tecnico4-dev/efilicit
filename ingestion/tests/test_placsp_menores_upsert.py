@@ -96,7 +96,7 @@ def test_menores_inmemory_upsert_is_idempotent_and_links_artifact() -> None:
 
 
 def test_menores_source_code_does_not_collide_with_placsp() -> None:
-    """Same source_tender_id under distinct source_codes → two tender_sources."""
+    """Mismo source_tender_id bajo source_codes distintos → dos tender_sources."""
     repo = InMemoryCanonicalRepository()
     records = _normalized_menores_records()
 

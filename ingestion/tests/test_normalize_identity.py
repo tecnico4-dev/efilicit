@@ -1,4 +1,4 @@
-"""Tests for Semana 2 Paso 6: normalize + authority identity."""
+"""Tests Semana 2 Paso 6: normalize + identidad de organismo."""
 
 from __future__ import annotations
 

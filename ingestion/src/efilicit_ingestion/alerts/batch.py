@@ -3,7 +3,7 @@
 No envía email (eso es Paso 8 / ``drain_daily_digests``). Solo evalúa y encola
 con ``idempotency_key`` estable por alerta+licitación+periodo de digest.
 
-El periodo depende de ``users.digest_frequency`` (ADR 012):
+El periodo depende de ``users.digest_frequency`` (ADR 013):
 
 - ``daily`` → YYYY-MM-DD
 - ``weekly`` → semana ISO ``YYYY-Www``

@@ -1,4 +1,4 @@
-"""EfiLicit ingestion CLI."""
+"""CLI de ingestion EfiLicit (PLACSP, Catalunya, Euskadi, alertas)."""
 
 from __future__ import annotations
 
@@ -29,7 +29,7 @@ _SYNDICATIONS: dict[str, PlacspSyndication] = {
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="efilicit-ingestion",
-        description="EfiLicit ingestion CLI (PLACSP + Catalunya + Euskadi + alerts).",
+        description="CLI de ingestion EfiLicit (PLACSP + Catalunya + Euskadi + alertas).",
     )
     parser.add_argument(
         "--version",
@@ -41,127 +41,127 @@ def build_parser() -> argparse.ArgumentParser:
 
     placsp = sub.add_parser(
         "run-placsp",
-        help="Run PLACSP pipeline end-to-end (fixture and/or local Supabase).",
+        help="Pipeline PLACSP E2E (fixture y/o Supabase local).",
     )
     placsp.add_argument(
         "--syndication",
         choices=sorted(_SYNDICATIONS),
         default=PLACSP.source_code,
         help=(
-            "PLACSP dataset: placsp (perfiles), placsp_agregadas, "
+            "Dataset PLACSP: placsp (perfiles), placsp_agregadas, "
             "placsp_menores (Semana 4)."
         ),
     )
     placsp.add_argument(
         "--fixture",
         type=Path,
-        help="Local .atom/.zip fixture (no live PLACSP network).",
+        help="Fixture local .atom/.zip (sin red PLACSP).",
     )
     placsp.add_argument(
         "--from-month",
         dest="from_year_month",
-        help="Inclusive start YYYY-MM (live or fixture window).",
+        help="Inicio inclusivo YYYY-MM (ventana live o fixture).",
     )
     placsp.add_argument(
         "--to-month",
         dest="to_year_month",
-        help="Inclusive end YYYY-MM.",
+        help="Fin inclusivo YYYY-MM.",
     )
     placsp.add_argument(
         "--as-of",
-        help="Pivot date YYYY-MM-DD (default: today).",
+        help="Fecha pivote YYYY-MM-DD (default: hoy).",
     )
     placsp.add_argument(
         "--dry-run",
         action="store_true",
-        help="In-memory only (no Postgres / Storage writes).",
+        help="Solo memoria (sin writes a Postgres / Storage).",
     )
     placsp.add_argument(
         "--no-storage",
         action="store_true",
-        help="Skip Supabase Storage; keep RAW metadata path in-memory only.",
+        help="Omitir Supabase Storage; metadatos RAW solo en memoria.",
     )
     placsp.add_argument(
         "--run-id",
-        help="Optional stable run_id (default: generated UUID).",
+        help="run_id estable opcional (default: UUID generado).",
     )
 
     catalunya = sub.add_parser(
         "run-catalunya",
-        help="Run Catalunya Socrata pipeline end-to-end (fixture and/or local Supabase).",
+        help="Pipeline Catalunya Socrata E2E (fixture y/o Supabase local).",
     )
     catalunya.add_argument(
         "--fixture",
         type=Path,
-        help="Local .json SODA page fixture (no live network).",
+        help="Fixture local .json de página SODA (sin red).",
     )
     catalunya.add_argument(
         "--page-size",
         type=int,
         default=1000,
-        help="SODA $limit per page (default: 1000).",
+        help="SODA $limit por página (default: 1000).",
     )
     catalunya.add_argument(
         "--max-pages",
         type=int,
         default=1,
-        help="Number of pages to discover (default: 1).",
+        help="Número de páginas a descubrir (default: 1).",
     )
     catalunya.add_argument(
         "--start-offset",
         type=int,
         default=0,
-        help="SODA $offset for the first page (default: 0).",
+        help="SODA $offset de la primera página (default: 0).",
     )
     catalunya.add_argument(
         "--dry-run",
         action="store_true",
-        help="In-memory only (no Postgres / Storage writes).",
+        help="Solo memoria (sin writes a Postgres / Storage).",
     )
     catalunya.add_argument(
         "--no-storage",
         action="store_true",
-        help="Skip Supabase Storage; keep RAW metadata path in-memory only.",
+        help="Omitir Supabase Storage; metadatos RAW solo en memoria.",
     )
     catalunya.add_argument(
         "--run-id",
-        help="Optional stable run_id (default: generated UUID).",
+        help="run_id estable opcional (default: UUID generado).",
     )
 
     euskadi = sub.add_parser(
         "run-euskadi",
-        help="Run Euskadi KontratazioA pipeline end-to-end (fixture and/or local Supabase).",
+        help="Pipeline Euskadi KontratazioA E2E (fixture y/o Supabase local).",
     )
     euskadi.add_argument(
         "--fixture",
         type=Path,
-        help="Local .json contracting-notices page fixture (no live network).",
+        help="Fixture local .json de página contracting-notices (sin red).",
     )
     euskadi.add_argument(
         "--max-pages",
         type=int,
         default=1,
-        help="Number of API pages to discover (default: 1; API page size is 10).",
+        help="Número de páginas API a descubrir (default: 1; tamaño de página = 10).",
     )
     euskadi.add_argument(
         "--start-page",
         type=int,
         default=1,
-        help="First currentPage (1-based, default: 1).",
+        help="Primera currentPage (base 1, default: 1).",
     )
     euskadi.add_argument(
         "--dry-run",
         action="store_true",
-        help="In-memory only (no Postgres / Storage writes).",
+        help="Solo memoria (sin writes a Postgres / Storage).",
     )
     euskadi.add_argument(
         "--no-storage",
         action="store_true",
-        help="Skip Supabase Storage; keep RAW metadata path in-memory only.",
+        help="Omitir Supabase Storage; metadatos RAW solo en memoria.",
     )
     euskadi.add_argument(
         "--run-id",
-        help="Optional stable run_id (default: generated UUID).",
+        help="run_id estable opcional (default: UUID generado).",
     )
 
     alerts = sub.add_parser(
@@ -254,7 +254,7 @@ def _cmd_run_placsp(args: argparse.Namespace) -> int:
 
     try:
         result = run_placsp(config)
-    except Exception as exc:  # noqa: BLE001 — surface to CLI
+    except Exception as exc:  # noqa: BLE001 — superficie al CLI
         print(f"error: {exc}", file=sys.stderr)
         return 1
 
@@ -288,7 +288,7 @@ def _cmd_run_catalunya(args: argparse.Namespace) -> int:
 
     try:
         result = run_catalunya(config)
-    except Exception as exc:  # noqa: BLE001 — surface to CLI
+    except Exception as exc:  # noqa: BLE001 — superficie al CLI
         print(f"error: {exc}", file=sys.stderr)
         return 1
 
@@ -321,7 +321,7 @@ def _cmd_run_euskadi(args: argparse.Namespace) -> int:
 
     try:
         result = run_euskadi(config)
-    except Exception as exc:  # noqa: BLE001 — surface to CLI
+    except Exception as exc:  # noqa: BLE001 — superficie al CLI
         print(f"error: {exc}", file=sys.stderr)
         return 1
 
@@ -358,7 +358,7 @@ def _cmd_run_alerts(args: argparse.Namespace) -> int:
 
     try:
         result = run_alerts(config)
-    except Exception as exc:  # noqa: BLE001 — surface to CLI
+    except Exception as exc:  # noqa: BLE001 — superficie al CLI
         print(f"error: {exc}", file=sys.stderr)
         return 1
 
@@ -369,4 +369,4 @@ def _cmd_run_alerts(args: argparse.Namespace) -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    raise SystemExit(main())

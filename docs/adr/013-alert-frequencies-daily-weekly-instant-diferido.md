@@ -1,4 +1,4 @@
-# 012 - Frecuencia de alertas MVP: `daily` | `weekly`; `instant` diferido
+# 013 - Frecuencia de alertas MVP: `daily` | `weekly`; `instant` diferido
 
 **Fecha:** 05-10-2026
 
@@ -87,4 +87,4 @@ El CHECK histórico de `alerts.frequency` que menciona `instant` no implica sopo
 - `docs/01-arquitectura-fija.md` (alertas batch-first)
 - `docs/plans/semana05-plan.md` · `docs/plans/fase5-checklist.md`
 - `docs/plans/BACKLOG.md`
-- [ADR 011](011-digest-email-job-python-sin-edge-function.md) (envío desde job Python)
+- [ADR 012](012-digest-email-job-python-sin-edge-function.md) (envío desde job Python)

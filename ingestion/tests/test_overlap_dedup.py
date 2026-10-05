@@ -54,7 +54,7 @@ def _catalunya_records():
 
 
 def test_overlap_fixtures_auto_merge_placsp_and_euskadi() -> None:
-    """Same expediente + NIF across CODICE Atom and Euskadi JSON → one tender."""
+    """Mismo expediente + NIF en Atom CODICE y JSON Euskadi → un tender."""
     repo = InMemoryCanonicalRepository()
     placsp = _placsp_records("same_tender_placsp.atom")
     assert len(placsp) == 1

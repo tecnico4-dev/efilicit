@@ -1,4 +1,4 @@
-# 013 - Búsqueda canónica vía RPC `search_tenders` (SECURITY INVOKER)
+# 011 - Búsqueda canónica vía RPC `search_tenders` (SECURITY INVOKER)
 
 **Fecha:** 29-09-2026
 

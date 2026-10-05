@@ -162,7 +162,7 @@ def load_user_digest_frequencies(
     conn: psycopg.Connection,
     user_ids: list[str] | None = None,
 ) -> dict[str, str]:
-    """``public.users.id`` → ``digest_frequency`` (daily|weekly; ADR 012)."""
+    """``public.users.id`` → ``digest_frequency`` (daily|weekly; ADR 013)."""
     with conn.cursor(row_factory=dict_row) as cur:
         if user_ids:
             ids = [UUID(u) for u in user_ids]

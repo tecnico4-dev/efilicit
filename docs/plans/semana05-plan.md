@@ -201,7 +201,7 @@ En la web autenticada: crear/activar una alerta con criteria del Paso 1; dispara
 
 Actualizar CHANGELOG, regenerar tipos si faltó, marcar [fase5-checklist.md](fase5-checklist.md). ADR `N/A` o ADR nuevo solo si hubo decisión estructural (p. ej. cola externa — **no** previsto).
 
-**Hecho:** CHANGELOG alineado; tipos N/A (firma RPC intacta); [ADR 011](../adr/011-digest-email-job-python-sin-edge-function.md) + [ADR 012](../adr/012-alert-frequencies-daily-weekly-instant-diferido.md) + [ADR 013](../adr/013-busqueda-via-rpc-search-tenders.md); checklist cerrado; cron alertas off.
+**Hecho:** CHANGELOG alineado; tipos N/A (firma RPC intacta); [ADR 011](../adr/011-busqueda-via-rpc-search-tenders.md) + [ADR 012](../adr/012-digest-email-job-python-sin-edge-function.md) + [ADR 013](../adr/013-alert-frequencies-daily-weekly-instant-diferido.md); checklist cerrado; cron alertas off.
 
 **Listo cuando:** criterios de salida de `docs/04` § Semana 5 cumplidos → **cumplidos** (ver tabla en checklist).
 
@@ -221,8 +221,8 @@ Registro de lo acordado al cerrar (o antes de) cada paso:
 | Plan | Búsqueda = FTS + GIN + `pg_trgm` en PostgreSQL | Fijo en `docs/01` / `docs/04`; sin motor externo |
 | Plan | Reutilizar esqueleto Semana 1 (`users`/`alerts`/`notification_queue`) | Ampliar con migraciones solo si hace falta |
 | Plan | UI mínima verificable; acabado en Semana 6 | Criterios de salida S5 ≠ web completa |
-| Plan | Digest diario **o** semanal a nivel de cuenta = MVP; `instant` diferido | Un correo por usuario/periodo; weekly = lunes UTC; [ADR 012](../adr/012-alert-frequencies-daily-weekly-instant-diferido.md) |
-| Plan | Matching batch en Python (job GH Actions); envío Resend con secretos fuera del frontend | Batch-first; Edge Function u job drain — concretar en Paso 8 |
+| Plan | Digest diario **o** semanal a nivel de cuenta = MVP; `instant` diferido | Un correo por usuario/periodo; weekly = lunes UTC; [ADR 013](../adr/013-alert-frequencies-daily-weekly-instant-diferido.md) |
+| Plan | Matching batch en Python (job GH Actions); envío Resend con secretos fuera del frontend | Batch-first; envío desde el job Python ([ADR 012](../adr/012-digest-email-job-python-sin-edge-function.md)); Edge Function N/A |
 | Plan | Criteria de alerta/búsqueda en `jsonb` con shape acordado (Paso 1) | Esqueleto ya usa `criteria jsonb`; evitar DDL prematuro |
 | Plan | Geografía en búsqueda vía join a organismo / campo justificado | `tenders` hoy sin columna geo; no inventar catálogo NUTS |
 | Plan | Favoritos / dashboard / ficha completa → Semana 6 | Fuera del corte S5 del roadmap |
@@ -231,12 +231,12 @@ Registro de lo acordado al cerrar (o antes de) cada paso:
 | Paso 1 | Organismo: `tax_ids` primario; `name_contains` débil | Alineado con identidad canónica (NIF/CIF) |
 | Paso 2 | `search_vector` generated stored (spanish A/B) + GIN + `title` trgm | Sin trigger manual; B-tree filtros Semana 1 reutilizados; geo vía join |
 | Paso 2 | Extensión `pg_trgm` en schema `extensions` | Convención Supabase (`extra_search_path`) |
-| Paso 3 | RPC `search_tenders` (SECURITY INVOKER) + `lib/queries` | FTS + trgm + filtros Criteria v1; ranking `greatest(ts_rank, similarity, strict_word_similarity)`; no motor externo ([ADR 013](../adr/013-busqueda-via-rpc-search-tenders.md)) |
+| Paso 3 | RPC `search_tenders` (SECURITY INVOKER) + `lib/queries` | FTS + trgm + filtros Criteria v1; ranking `greatest(ts_rank, similarity, strict_word_similarity)`; no motor externo ([ADR 011](../adr/011-busqueda-via-rpc-search-tenders.md)) |
 | Paso 4 | UI mínima `/search` (form GET + `searchTenders`) | Texto + CPV + importe; badge FTS/errata/filtro; sin ficha/dashboard |
 | Paso 5 | `@supabase/ssr` + middleware + trigger `handle_new_user` | Login/account mínimos; seed Alice/Bob → `public.users`; sin service_role |
 | Paso 6 | `/register` + `/alerts` CRUD mínimo + script RLS | `pnpm --filter @efilicit/web verify:rls` → Alice≠Bob OK; fondo blanco fijo hasta Semana 6 |
 | Paso 7 | Motor batch Python `alerts/` (match → cola) | Tests sin red; `idempotency_key` por alerta+tender+digest; sin email aún |
-| Paso 8 | Digest diario/semanal + Resend (`FakeEmailSender` / `ResendEmailSender`) | Preferencia `users.digest_frequency`; drain por usuario+periodo; weekly solo lunes UTC; Edge Function N/A ([ADR 011](../adr/011-digest-email-job-python-sin-edge-function.md)); `instant` diferido ([ADR 012](../adr/012-alert-frequencies-daily-weekly-instant-diferido.md)) |
+| Paso 8 | Digest diario/semanal + Resend (`FakeEmailSender` / `ResendEmailSender`) | Preferencia `users.digest_frequency`; drain por usuario+periodo; weekly solo lunes UTC; Edge Function N/A ([ADR 012](../adr/012-digest-email-job-python-sin-edge-function.md)); `instant` diferido ([ADR 013](../adr/013-alert-frequencies-daily-weekly-instant-diferido.md)) |
 | Paso 9 | CLI `run-alerts` + workflow `alerts-digest.yml` | Dry-run default (fixtures+Fake); `--write` / `--send`; cron off |
 | Paso 10 | E2E local buscar → alerta → batch → digest | Guía `semana05-e2e-local.md`; Resend OK (personal); dominio eficen → IT |
 | Post-Paso 10 | Erratas `strict_word_similarity` / `<<%` + badge literal | `foas` fuera; stemming-only → badge errata; `similarity` / `%` se mantiene |

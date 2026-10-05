@@ -14,10 +14,10 @@ No son bugs olvidados ni el trabajo de la siguiente semana del roadmap. Son huec
 
 ## 1. Alertas / notificaciones
 
-- **Otras frecuencias de digest / `instant`.** MVP = `daily` \| `weekly` a nivel de cuenta (`users.digest_frequency`). `instant` (email al detectar coincidencia) y otras cadencias quedan fuera: más emails, otra latencia y otro diseño de drenado ([ADR 012](../adr/012-alert-frequencies-daily-weekly-instant-diferido.md)). Preferencia de cuenta (un correo con todas las alertas), no por alerta.
+- **Otras frecuencias de digest / `instant`.** MVP = `daily` \| `weekly` a nivel de cuenta (`users.digest_frequency`). `instant` (email al detectar coincidencia) y otras cadencias quedan fuera: más emails, otra latencia y otro diseño de drenado ([ADR 013](../adr/013-alert-frequencies-daily-weekly-instant-diferido.md)). Preferencia de cuenta (un correo con todas las alertas), no por alerta.
 - **Limpiar CHECK de `alerts.frequency`.** El esqueleto Semana 1 aún admite `instant` en `alerts`; el producto usa `users.digest_frequency`. Alinear esquema / sync cuando se toque migraciones de alertas.
-- **Separar match/encolado y envío en dos jobs.** Hoy `run-alerts` hace ambos en un solo proceso; suficiente mientras solo haya daily/weekly ([ADR 011](../adr/011-digest-email-job-python-sin-edge-function.md)).
-- **Edge Function de email (N/A intencional).** El digest se envía desde el job Python + Actions, no desde `supabase/functions/` ([ADR 011](../adr/011-digest-email-job-python-sin-edge-function.md)). Replantear solo si hace falta otro canal (p. ej. reenvío desde la web).
+- **Separar match/encolado y envío en dos jobs.** Hoy `run-alerts` hace ambos en un solo proceso; suficiente mientras solo haya daily/weekly ([ADR 012](../adr/012-digest-email-job-python-sin-edge-function.md)).
+- **Edge Function de email (N/A intencional).** El digest se envía desde el job Python + Actions, no desde `supabase/functions/` ([ADR 012](../adr/012-digest-email-job-python-sin-edge-function.md)). Replantear solo si hace falta otro canal (p. ej. reenvío desde la web).
 
 ---
 
@@ -80,8 +80,8 @@ Detalle por CCAA: [cobertura-ccaa.md](../sources/cobertura-ccaa.md).
 | 008 | `placsp_menores` S3→S4 | Histórico (ya hecho S4) |
 | 009 | CCAA propia extra S4 | N/A → solo con hueco |
 | 010 | `match_candidate_tender_id` | MVP; `match_suggestions` después |
-| 011 | Email job Python (sin Edge Function) | N/A Edge Function |
-| 012 | `daily`\|`weekly`; `instant` diferido | `instant` / otras cadencias |
+| 012 | Email job Python (sin Edge Function) | N/A Edge Function |
+| 013 | `daily`\|`weekly`; `instant` diferido | `instant` / otras cadencias |
 
 ---
 

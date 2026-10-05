@@ -11,15 +11,15 @@ El estado se marca **aquí**, no con “— OK” en el plan.
 |---|---|---|
 | 1. Contrato de criterios (`alerts` / `saved_searches`) | OK | v1 en `packages/types/src/criteria.ts` + `efilicit_ingestion.alerts.criteria`; comments SQL |
 | 2. Esquema FTS + `pg_trgm` (migración) | OK | Minipasos 2.1–2.2; tipos TS regenerados |
-| 3. Capa `apps/web/src/lib/queries` | OK | `searchTenders` → RPC `search_tenders` ([ADR 013](../adr/013-busqueda-via-rpc-search-tenders.md)); FTS + trgm + filtros |
+| 3. Capa `apps/web/src/lib/queries` | OK | `searchTenders` → RPC `search_tenders` ([ADR 011](../adr/011-busqueda-via-rpc-search-tenders.md)); FTS + trgm + filtros |
 | 4. UI mínima de búsqueda | OK | `/search`: texto + CPV + importe; usa `searchTenders` |
 | 5. Auth — sesión + perfil `public.users` | OK | Minipasos 5.1–5.2; login/account mínimos |
 | 6. Auth UI + RLS verificado (A≠B) | OK | `/register` `/alerts`; `verify:rls` Alice≠Bob |
 | 7. Matching batch → `notification_queue` | OK | Minipasos 7.1–7.2; tests sin red |
-| 8. Resend + digest diario/semanal (idempotente) | OK | `users.digest_frequency`; Edge Function N/A ([ADR 011](../adr/011-digest-email-job-python-sin-edge-function.md)); `instant` diferido ([ADR 012](../adr/012-alert-frequencies-daily-weekly-instant-diferido.md)); weekly = lunes UTC; tests FakeSender |
+| 8. Resend + digest diario/semanal (idempotente) | OK | `users.digest_frequency`; Edge Function N/A ([ADR 012](../adr/012-digest-email-job-python-sin-edge-function.md)); `instant` diferido ([ADR 013](../adr/013-alert-frequencies-daily-weekly-instant-diferido.md)); weekly = lunes UTC; tests FakeSender |
 | 9. CLI + workflow alertas | OK | `run-alerts` dry-run default; `alerts-digest.yml` cron off |
 | 10. Recorrido E2E local (buscar → alerta → email) | OK | Guía `semana05-e2e-local.md`; Fake + Resend (correo personal); dominio eficen → IT |
-| 11. Cierre (CHANGELOG / tipos / ADR) | OK | CHANGELOG alineado; tipos N/A (RPC sin cambio de firma); ADRs 011–013 |
+| 11. Cierre (CHANGELOG / tipos / ADR) | OK | CHANGELOG alineado; tipos N/A (RPC sin cambio de firma); ADRs 011–013 (RPC, digest Python, frecuencias) |
 
 ## Paso 2 — minipasos (búsqueda DB)
 
@@ -52,7 +52,7 @@ El estado se marca **aquí**, no con “— OK” en el plan.
 | Reejecutar batch no reenvía notificaciones `sent` | OK | Digest drain + idempotencia por periodo (día / semana ISO); `test_alert_digest` |
 | RLS owner-only verificado (usuario A ≠ B) | OK | `apps/web/scripts/verify-rls-alerts.mjs` |
 | Tests relevantes en verde (queries / matching / RLS) | OK | alert match/batch/digest + run-alerts CLI; verify:rls |
-| ADRs estructurales (solo si hubo decisión nueva) | OK | [ADR 011](../adr/011-digest-email-job-python-sin-edge-function.md); [ADR 012](../adr/012-alert-frequencies-daily-weekly-instant-diferido.md); [ADR 013](../adr/013-busqueda-via-rpc-search-tenders.md) (RPC búsqueda) |
+| ADRs estructurales (solo si hubo decisión nueva) | OK | [ADR 011](../adr/011-busqueda-via-rpc-search-tenders.md) (RPC búsqueda); [ADR 012](../adr/012-digest-email-job-python-sin-edge-function.md); [ADR 013](../adr/013-alert-frequencies-daily-weekly-instant-diferido.md) |
 | CHANGELOG actualizado | OK | Unreleased con entradas Semana 5 + cierre Paso 11 |
 
 ## Criterios de salida `docs/04` § Semana 5

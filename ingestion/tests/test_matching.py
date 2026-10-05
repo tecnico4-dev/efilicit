@@ -135,7 +135,7 @@ def test_match_pending_when_two_auto_candidates() -> None:
 
 
 def test_match_title_similarity_alone_is_pending_not_auto() -> None:
-    """Same CPV brings the candidate into the lookup pool; title alone never auto-merges."""
+    """El mismo CPV mete al candidato en el pool; el título solo nunca hace auto-merge."""
     repo = InMemoryCanonicalRepository()
     repo.upsert_records(
         source_code="placsp",

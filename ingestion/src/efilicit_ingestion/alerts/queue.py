@@ -4,7 +4,7 @@ Contrato compartido por la cola en memoria (tests) y Postgres
 (``PostgresNotificationQueue``). La clave evita reenviar el mismo
 match alerta×licitación en el mismo periodo de digest.
 
-Frecuencias de cuenta (ADR 012): ``daily`` | ``weekly``.
+Frecuencias de cuenta (ADR 013): ``daily`` | ``weekly``.
 ``instant`` queda fuera del MVP (BACKLOG).
 """
 

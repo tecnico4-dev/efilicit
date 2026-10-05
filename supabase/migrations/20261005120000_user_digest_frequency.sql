@@ -1,4 +1,4 @@
--- Preferencia de digest a nivel de cuenta (Semana 5 / ADR 012).
+-- Preferencia de digest a nivel de cuenta (Semana 5 / ADR 013).
 -- daily | weekly; un correo por periodo (no por alerta).
 -- instant queda fuera del MVP (BACKLOG); no ampliar el CHECK sin ADR.
 

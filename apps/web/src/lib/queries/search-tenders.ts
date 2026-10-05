@@ -1,5 +1,5 @@
 /**
- * Cliente de búsqueda canónica (Semana 5 / ADR 013).
+ * Cliente de búsqueda canónica (Semana 5 / ADR 011).
  *
  * La web no arma SQL ni habla con motores externos: llama a la RPC
  * `public.search_tenders` (SECURITY INVOKER → aplica RLS) con Criteria v1

@@ -32,7 +32,7 @@ export async function createSupabaseServerClient() {
             cookieStore.set(name, value, options);
           }
         } catch {
-          // Server Component sin cookies mutables — el middleware refresca la sesión.
+          // Componente de servidor sin cookies mutables — el middleware refresca la sesión.
         }
       },
     },
