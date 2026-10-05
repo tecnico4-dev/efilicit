@@ -201,7 +201,9 @@ En la web autenticada: crear/activar una alerta con criteria del Paso 1; dispara
 
 Actualizar CHANGELOG, regenerar tipos si faltó, marcar [fase5-checklist.md](fase5-checklist.md). ADR `N/A` o ADR nuevo solo si hubo decisión estructural (p. ej. cola externa — **no** previsto).
 
-**Listo cuando:** criterios de salida de `docs/04` § Semana 5 cumplidos.
+**Hecho:** CHANGELOG alineado; tipos N/A (firma RPC intacta); [ADR 011](../adr/011-digest-email-job-python-sin-edge-function.md) + [ADR 012](../adr/012-alert-frequencies-daily-weekly-instant-diferido.md) + [ADR 013](../adr/013-busqueda-via-rpc-search-tenders.md); checklist cerrado; cron alertas off.
+
+**Listo cuando:** criterios de salida de `docs/04` § Semana 5 cumplidos → **cumplidos** (ver tabla en checklist).
 
 **Fuera de alcance (→ Semana 6+):** ficha de licitación completa, favoritos/seguimiento, dashboard, responsive/polish, healthchecks por fuente, runbooks, cron de producción de ingestas/alertas, revisión humana de `match_suggestions`, TED, subvenciones, infra nueva sin ADR.
 

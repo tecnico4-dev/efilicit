@@ -216,7 +216,7 @@ Mismo patrón A/B que PLACSP/Catalunya, adaptado a páginas KontratazioA (10 ít
 
 Actualizar `docs/sources/README.md`. Batería de tests (todas las fuentes nuevas). Marcar [fase3-checklist.md](fase3-checklist.md). CHANGELOG. ADR `N/A` o nuevo ADR si hubo decisión estructural.
 
-**Hecho:** catálogo homogéneo; regresión `112 passed`; checklist completo; ADR N/A; CHANGELOG con cierre Semana 3.
+**Hecho:** catálogo homogéneo; regresión `112 passed`; checklist completo; [ADR 007](../adr/007-adaptador-csv-familia-na-semana3.md) (CSV N/A) + [ADR 008](../adr/008-placsp-menores-aplazado-semana4.md) (menores → S4); CHANGELOG con cierre Semana 3.
 
 **Listo cuando:** criterios de salida de `docs/04` § Semana 3 cumplidos → **cumplidos** (ver tabla en checklist).
 

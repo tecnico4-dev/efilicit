@@ -80,6 +80,8 @@ Abrir/cerrar run, registrar artifact + checksum, contadores; reejecutar el stub 
 
 Marcar [fase1-checklist.md](fase1-checklist.md). ADR solo si en los pasos anteriores hubo decisión estructural nueva.
 
+**Hecho:** checklist completo; [ADR 003](../adr/003-acceso-canonico-publico-etl-privado.md) (acceso canónico / ETL) + [ADR 004](../adr/004-ci-ingestion-sin-postgres.md) (CI sin Postgres); criterios de salida Semana 1 cumplidos.
+
 **Fuera de alcance:** PLACSP real, workflows `ingest-*.yml`, dedup, FTS, Auth UI, Resend.
 
 ---

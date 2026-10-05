@@ -92,7 +92,9 @@ Job de GitHub Actions (manual y/o cron según lo razonable al empezar) que lance
 
 Batería de tests (parser, normalización, persistencia, idempotencia). Marcar [fase2-checklist.md](fase2-checklist.md).
 
-**Listo cuando:** criterios de salida de `docs/04` § Semana 2 cumplidos; CHANGELOG al día; ADR `N/A` si no hubo decisión estructural.
+**Hecho:** regresión `40 passed, 6 skipped`; checklist completo; [ADR 005](../adr/005-ingesta-actions-manual-first-cron-off.md) (cron off) + [ADR 006](../adr/006-raw-storage-httpx-sin-supabase-py.md) (Storage httpx); CHANGELOG con cierre Semana 2.
+
+**Listo cuando:** criterios de salida de `docs/04` § Semana 2 cumplidos → **cumplidos** (ver tabla en checklist).
 
 **Fuera de alcance:** otras CCAA, TED, dedup multi-fuente avanzada (Semana 4), FTS/Auth/alertas UI, subvenciones.
 

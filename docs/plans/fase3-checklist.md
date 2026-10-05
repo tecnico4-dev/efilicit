@@ -17,7 +17,7 @@ Los pasos globales (1–10) se mantienen. Los Pasos **3**, **4** y **8** se desg
 | 7. Adaptador REST/Socrata (o N/A) | OK | `SocrataConnector` + preset `CATALUNYA` (`ybgg-dgi6`); ficha + tests sin red |
 | 8. CCAA propia #1 | OK | `catalunya` 8.1–8.6; live SODA + idempotencia en [docs/pruebas.md](../pruebas.md) |
 | 9. CCAA propia #2 (+) | OK | `euskadi` 9.1–9.5; live API + idempotencia en [docs/pruebas.md](../pruebas.md) Parte D |
-| 10. Catálogo + regresión + cierre | OK | Catálogo homogéneo; `112 passed`; CHANGELOG; ADR N/A |
+| 10. Catálogo + regresión + cierre | OK | Catálogo homogéneo; `112 passed`; CHANGELOG; [ADR 007](../adr/007-adaptador-csv-familia-na-semana3.md) + [ADR 008](../adr/008-placsp-menores-aplazado-semana4.md) |
 
 ## Paso 3 — minipasos (conector estatal)
 

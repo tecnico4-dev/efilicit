@@ -16,7 +16,7 @@ El estado se marca **aquí**, no con “— OK” en el plan.
 | 5. Matching en pipeline común | OK | `matching.py` + lookup repo; tests auto/unmatched/pending |
 | 6. Upsert respeta matching (auto / pending / unmatched) | OK | Reusa `tenders.id` en auto; no fusiona pending; persiste candidato best; idempotente |
 | 7. Fixtures de solape + regresión | OK | `fixtures/overlap/` + `test_overlap_dedup`; suite ingestion verde |
-| 8. Catálogo + cierre | OK | Catálogo; CHANGELOG; ADR N/A; handoff Semana 5 |
+| 8. Catálogo + cierre | OK | Catálogo; CHANGELOG; [ADR 009](../adr/009-ccaa-propia-extra-na-semana4.md) + [ADR 010](../adr/010-match-candidate-tender-id-en-tender-sources.md); handoff Semana 5 |
 
 ## Paso 2 — minipasos (`placsp_menores`)
 
