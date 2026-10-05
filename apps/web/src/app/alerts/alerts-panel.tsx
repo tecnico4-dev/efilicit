@@ -6,10 +6,17 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import {
   createOwnAlert,
   createOwnSavedSearch,
+  type DigestFrequency,
 } from "@/lib/queries";
 import type { SearchCriteria } from "@efilicit/types";
 
-export function AlertsPanel({ userId }: { userId: string }) {
+export function AlertsPanel({
+  userId,
+  digestFrequency,
+}: {
+  userId: string;
+  digestFrequency: DigestFrequency;
+}) {
   const router = useRouter();
   const [name, setName] = useState("Alerta software");
   const [keywords, setKeywords] = useState("software,mantenimiento");
@@ -37,7 +44,7 @@ export function AlertsPanel({ userId }: { userId: string }) {
       userId,
       name: name.trim() || "Alerta",
       criteria: buildCriteria(),
-      frequency: "daily",
+      frequency: digestFrequency,
     });
     setPending(false);
     if (createError) {
@@ -67,6 +74,14 @@ export function AlertsPanel({ userId }: { userId: string }) {
   return (
     <form className="mt-6 space-y-4 rounded-md border border-zinc-200 bg-white p-4">
       <h2 className="text-base font-medium text-zinc-900">Crear (propio)</h2>
+      <p className="text-sm text-zinc-600">
+        El email de coincidencias usa la frecuencia de tu cuenta (
+        {digestFrequency === "weekly" ? "semanal" : "diaria"}). Cámbiala en{" "}
+        <a href="/account" className="underline">
+          Cuenta
+        </a>
+        .
+      </p>
       <div>
         <label htmlFor="item_name" className="block text-sm font-medium text-zinc-800">
           Nombre

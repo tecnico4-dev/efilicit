@@ -7,13 +7,44 @@ from typing import Protocol
 
 from efilicit_ingestion.alerts.models import AlertMatch, NotificationItem, TenderCandidate
 
+DigestFrequency = str  # "daily" | "weekly"
+
+
+def _as_date(value: date | datetime | None = None) -> date:
+    if value is None:
+        return datetime.now(timezone.utc).date()
+    if isinstance(value, datetime):
+        return value.astimezone(timezone.utc).date() if value.tzinfo else value.date()
+    return value
+
 
 def digest_day(value: date | datetime | None = None) -> str:
-    if value is None:
-        return datetime.now(timezone.utc).date().isoformat()
-    if isinstance(value, datetime):
-        return value.date().isoformat()
-    return value.isoformat()
+    return _as_date(value).isoformat()
+
+
+def digest_period(
+    frequency: DigestFrequency,
+    value: date | datetime | None = None,
+) -> str:
+    """Periodo de idempotencia: día (daily) o semana ISO (weekly)."""
+    d = _as_date(value)
+    freq = (frequency or "daily").strip().lower()
+    if freq == "weekly":
+        iso = d.isocalendar()
+        return f"{iso.year}-W{iso.week:02d}"
+    return d.isoformat()
+
+
+def should_send_digest(
+    frequency: DigestFrequency,
+    value: date | datetime | None = None,
+) -> bool:
+    """daily siempre; weekly solo lunes UTC."""
+    d = _as_date(value)
+    freq = (frequency or "daily").strip().lower()
+    if freq == "weekly":
+        return d.weekday() == 0
+    return True
 
 
 def make_idempotency_key(
@@ -22,7 +53,7 @@ def make_idempotency_key(
     tender_id: str,
     digest: str,
 ) -> str:
-    """Clave estable por alerta+licitación+día de digest (no reenvía al reejecutar)."""
+    """Clave estable por alerta+licitación+periodo de digest (no reenvía al reejecutar)."""
     return f"alert:{alert_id}:tender:{tender_id}:digest:{digest}"
 
 
@@ -31,6 +62,7 @@ def match_to_notification(
     tender: TenderCandidate,
     *,
     digest: str,
+    frequency: DigestFrequency = "daily",
 ) -> NotificationItem:
     key = make_idempotency_key(
         alert_id=match.alert_id,
@@ -49,6 +81,7 @@ def match_to_notification(
             "priority": match.priority,
             "reasons": list(match.reasons),
             "digest": digest,
+            "frequency": (frequency or "daily").strip().lower(),
             "channel": "email",
             "kind": "alert_match",
         },

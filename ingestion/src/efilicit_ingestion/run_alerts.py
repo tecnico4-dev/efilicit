@@ -18,6 +18,7 @@ from efilicit_ingestion.alerts.postgres import (
     PostgresNotificationQueue,
     load_active_alerts,
     load_tender_candidates,
+    load_user_digest_frequencies,
     load_user_emails,
 )
 from efilicit_ingestion.alerts.queue import InMemoryNotificationQueue, digest_day
@@ -91,27 +92,40 @@ def _fixture_directory() -> UserEmailDirectory:
     )
 
 
+def _job_date(cfg: AlertsRunConfig) -> date:
+    return cfg.digest or datetime.now(timezone.utc).date()
+
+
 def run_alerts(config: AlertsRunConfig | None = None) -> AlertsRunResult:
     cfg = config or AlertsRunConfig()
-    digest_key = digest_day(cfg.digest)
+    job_date = _job_date(cfg)
+    digest_key = digest_day(job_date)
 
     if cfg.dry_run:
-        return _run_dry(digest_key=digest_key)
+        return _run_dry(job_date=job_date, digest_key=digest_key)
 
-    return _run_write(cfg=cfg, digest_key=digest_key)
+    return _run_write(cfg=cfg, job_date=job_date, digest_key=digest_key)
 
 
-def _run_dry(*, digest_key: str) -> AlertsRunResult:
+def _run_dry(*, job_date: date, digest_key: str) -> AlertsRunResult:
     queue = InMemoryNotificationQueue()
     sender = FakeEmailSender()
     directory = _fixture_directory()
+    frequencies = {"00000000-0000-4000-8000-0000000000u1": "daily"}
     batch = run_alert_batch(
         alerts=_fixture_alerts(),
         tenders=_fixture_tenders(),
         queue=queue,
-        digest=digest_key,
+        digest=job_date,
+        frequencies=frequencies,
     )
-    drain = drain_daily_digests(queue=queue, sender=sender, directory=directory)
+    drain = drain_daily_digests(
+        queue=queue,
+        sender=sender,
+        directory=directory,
+        frequencies=frequencies,
+        job_date=job_date,
+    )
     return AlertsRunResult(
         dry_run=True,
         send=False,
@@ -122,12 +136,14 @@ def _run_dry(*, digest_key: str) -> AlertsRunResult:
     )
 
 
-def _run_write(*, cfg: AlertsRunConfig, digest_key: str) -> AlertsRunResult:
+def _run_write(*, cfg: AlertsRunConfig, job_date: date, digest_key: str) -> AlertsRunResult:
     since = datetime.now(timezone.utc) - timedelta(days=max(cfg.since_days, 0))
     sender = ResendEmailSender() if cfg.send else FakeEmailSender()
 
     with connect() as conn:
         alerts = load_active_alerts(conn)
+        alert_user_ids = sorted({a.user_id for a in alerts})
+        frequencies = load_user_digest_frequencies(conn, alert_user_ids)
         tenders = load_tender_candidates(
             conn,
             since=since,
@@ -138,12 +154,25 @@ def _run_write(*, cfg: AlertsRunConfig, digest_key: str) -> AlertsRunResult:
             alerts=alerts,
             tenders=tenders,
             queue=queue,
-            digest=digest_key,
+            digest=job_date,
+            frequencies=frequencies,
         )
 
         user_ids = sorted({item.user_id for item in queue.pending_items()})
+        # Incluir frecuencias de usuarios con pending aunque no estén en el batch actual.
+        if user_ids:
+            frequencies = {
+                **frequencies,
+                **load_user_digest_frequencies(conn, user_ids),
+            }
         directory = UserEmailDirectory(emails=load_user_emails(conn, user_ids))
-        drain = drain_daily_digests(queue=queue, sender=sender, directory=directory)
+        drain = drain_daily_digests(
+            queue=queue,
+            sender=sender,
+            directory=directory,
+            frequencies=frequencies,
+            job_date=job_date,
+        )
         conn.commit()
 
     emails_captured = len(sender.sent) if isinstance(sender, FakeEmailSender) else drain.digests_sent
@@ -169,6 +198,7 @@ def format_result(result: AlertsRunResult) -> str:
         f"skipped_inactive={b.skipped_inactive} "
         f"skipped_empty_criteria={b.skipped_empty_criteria}\n"
         f"  drain attempted={d.digests_attempted} sent={d.digests_sent} "
-        f"failed={d.digests_failed} items_sent={d.items_marked_sent} "
+        f"failed={d.digests_failed} skipped_not_due={d.digests_skipped_not_due} "
+        f"items_sent={d.items_marked_sent} "
         f"items_failed={d.items_marked_failed} emails_captured={result.emails_captured}"
     )

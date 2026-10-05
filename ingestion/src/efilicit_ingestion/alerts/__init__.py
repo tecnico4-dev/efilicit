@@ -17,7 +17,9 @@ from efilicit_ingestion.alerts.models import AlertMatch, AlertRule, TenderCandid
 from efilicit_ingestion.alerts.postgres import PostgresNotificationQueue
 from efilicit_ingestion.alerts.queue import (
     InMemoryNotificationQueue,
+    digest_period,
     make_idempotency_key,
+    should_send_digest,
 )
 
 __all__ = [
@@ -32,10 +34,12 @@ __all__ = [
     "SearchCriteria",
     "TenderCandidate",
     "UserEmailDirectory",
+    "digest_period",
     "drain_daily_digests",
     "evaluate_tender",
     "make_idempotency_key",
     "match_alert_to_tenders",
     "parse_criteria",
     "run_alert_batch",
+    "should_send_digest",
 ]

@@ -1,9 +1,15 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import type { DigestFrequency } from "@/lib/queries";
 import { LogoutButton } from "./logout-button";
+import { DigestFrequencyForm } from "./digest-frequency-form";
 
 export const dynamic = "force-dynamic";
+
+function asDigestFrequency(value: string | null | undefined): DigestFrequency {
+  return value === "weekly" ? "weekly" : "daily";
+}
 
 export default async function AccountPage() {
   const supabase = await createSupabaseServerClient();
@@ -17,7 +23,7 @@ export default async function AccountPage() {
 
   const { data: profile, error } = await supabase
     .from("users")
-    .select("id, auth_user_id, display_name, created_at")
+    .select("id, auth_user_id, display_name, digest_frequency, created_at")
     .eq("auth_user_id", user.id)
     .maybeSingle();
 
@@ -72,6 +78,13 @@ export default async function AccountPage() {
           </p>
         )}
       </dl>
+
+      {profile ? (
+        <DigestFrequencyForm
+          userId={profile.id}
+          initialFrequency={asDigestFrequency(profile.digest_frequency)}
+        />
+      ) : null}
 
       <p className="mt-8 text-sm">
         <Link href="/search" className="text-zinc-900 underline">

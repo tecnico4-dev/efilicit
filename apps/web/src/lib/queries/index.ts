@@ -9,4 +9,6 @@ export {
   getOwnProfile,
   listOwnAlerts,
   listOwnSavedSearches,
+  updateOwnDigestFrequency,
+  type DigestFrequency,
 } from "./user-data";

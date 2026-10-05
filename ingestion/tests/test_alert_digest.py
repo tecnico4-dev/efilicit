@@ -1,4 +1,4 @@
-"""Semana 5 Paso 8: digest diario + Resend (FakeEmailSender sin red)."""
+"""Semana 5 Paso 8: digest diario/semanal + Resend (FakeEmailSender sin red)."""
 
 from __future__ import annotations
 
@@ -13,7 +13,16 @@ from efilicit_ingestion.alerts.digest import (
 )
 from efilicit_ingestion.alerts.email import FakeEmailSender
 from efilicit_ingestion.alerts.models import AlertRule, TenderCandidate
-from efilicit_ingestion.alerts.queue import InMemoryNotificationQueue, make_idempotency_key
+from efilicit_ingestion.alerts.queue import (
+    InMemoryNotificationQueue,
+    digest_period,
+    make_idempotency_key,
+    should_send_digest,
+)
+
+# 2026-09-28 = lunes UTC; 2026-09-29 = martes UTC (misma semana ISO).
+MONDAY = date(2026, 9, 28)
+TUESDAY = date(2026, 9, 29)
 
 
 def _tender(tid: str, title: str) -> TenderCandidate:
@@ -31,7 +40,13 @@ def _tender(tid: str, title: str) -> TenderCandidate:
     )
 
 
-def _enqueue_software_match(queue: InMemoryNotificationQueue) -> None:
+def _enqueue_software_match(
+    queue: InMemoryNotificationQueue,
+    *,
+    digest: str = "2026-09-30",
+    frequencies: dict[str, str] | None = None,
+    job_date: date | None = None,
+) -> None:
     alert = AlertRule(
         id="alert-1",
         user_id="user-1",
@@ -45,8 +60,18 @@ def _enqueue_software_match(queue: InMemoryNotificationQueue) -> None:
             _tender("t-soft-2", "Software de gestión"),
         ],
         queue=queue,
-        digest="2026-09-30",
+        digest=job_date or digest,
+        frequencies=frequencies,
     )
+
+
+def test_digest_period_daily_and_weekly_iso() -> None:
+    assert digest_period("daily", TUESDAY) == "2026-09-29"
+    assert digest_period("weekly", MONDAY) == digest_period("weekly", TUESDAY)
+    assert digest_period("weekly", TUESDAY).startswith("2026-W")
+    assert should_send_digest("daily", TUESDAY) is True
+    assert should_send_digest("weekly", TUESDAY) is False
+    assert should_send_digest("weekly", MONDAY) is True
 
 
 def test_build_digest_message_groups_titles() -> None:
@@ -60,6 +85,7 @@ def test_build_digest_message_groups_titles() -> None:
     )
     assert "alice@example.com" == msg.to
     assert "2 nueva" in msg.subject
+    assert "diario" in msg.subject
     assert "Mantenimiento de software" in msg.text
     assert "Software de gestión" in msg.text
 
@@ -115,3 +141,91 @@ def test_drain_marks_failed_without_resend_on_success_path() -> None:
     assert failed.items_marked_failed == 2
     assert len(sender.sent) == 0
     assert all(i.status == "failed" for i in queue.all_items())
+
+
+def test_weekly_tuesday_enqueues_without_sending() -> None:
+    queue = InMemoryNotificationQueue()
+    freqs = {"user-1": "weekly"}
+    _enqueue_software_match(queue, job_date=TUESDAY, frequencies=freqs)
+    week = digest_period("weekly", TUESDAY)
+    key = make_idempotency_key(alert_id="alert-1", tender_id="t-soft", digest=week)
+    assert queue.get(key) is not None
+    assert queue.get(key).status == "pending"  # type: ignore[union-attr]
+
+    sender = FakeEmailSender()
+    directory = UserEmailDirectory(emails={"user-1": "alice@example.com"})
+    result = drain_daily_digests(
+        queue=queue,
+        sender=sender,
+        directory=directory,
+        frequencies=freqs,
+        job_date=TUESDAY,
+    )
+    assert result.digests_skipped_not_due == 1
+    assert result.digests_sent == 0
+    assert len(sender.sent) == 0
+    assert all(i.status == "pending" for i in queue.all_items())
+
+
+def test_weekly_monday_drains_pending() -> None:
+    queue = InMemoryNotificationQueue()
+    freqs = {"user-1": "weekly"}
+    # Matches mid-week stay pending until Monday.
+    _enqueue_software_match(queue, job_date=TUESDAY, frequencies=freqs)
+    sender = FakeEmailSender()
+    directory = UserEmailDirectory(emails={"user-1": "alice@example.com"})
+
+    mid = drain_daily_digests(
+        queue=queue,
+        sender=sender,
+        directory=directory,
+        frequencies=freqs,
+        job_date=TUESDAY,
+    )
+    assert mid.digests_sent == 0
+
+    monday = drain_daily_digests(
+        queue=queue,
+        sender=sender,
+        directory=directory,
+        frequencies=freqs,
+        job_date=MONDAY,
+    )
+    assert monday.digests_sent == 1
+    assert monday.items_marked_sent == 2
+    assert "semanal" in sender.sent[0].subject
+    assert all(i.status == "sent" for i in queue.all_items())
+
+
+def test_weekly_same_tender_same_week_is_idempotent() -> None:
+    queue = InMemoryNotificationQueue()
+    freqs = {"user-1": "weekly"}
+    alert = AlertRule(
+        id="alert-1",
+        user_id="user-1",
+        name="Software",
+        criteria={"version": 1, "keywords": ["software"]},
+    )
+    tenders = [_tender("t-soft", "Mantenimiento de software")]
+
+    first = run_alert_batch(
+        alerts=[alert],
+        tenders=tenders,
+        queue=queue,
+        digest=MONDAY,
+        frequencies=freqs,
+    )
+    second = run_alert_batch(
+        alerts=[alert],
+        tenders=tenders,
+        queue=queue,
+        digest=TUESDAY,
+        frequencies=freqs,
+    )
+    assert first.enqueued_new == 1
+    assert second.enqueued_new == 0
+    assert second.enqueued_existing == 1
+    assert len(queue.all_items()) == 1
+    week = digest_period("weekly", MONDAY)
+    key = make_idempotency_key(alert_id="alert-1", tender_id="t-soft", digest=week)
+    assert queue.get(key) is not None

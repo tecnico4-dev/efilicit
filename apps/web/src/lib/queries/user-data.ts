@@ -6,6 +6,8 @@ type SavedSearchRow = Database["public"]["Tables"]["saved_searches"]["Row"];
 type ProfileRow = Database["public"]["Tables"]["users"]["Row"];
 type Json = Database["public"]["Tables"]["alerts"]["Insert"]["criteria"];
 
+export type DigestFrequency = "daily" | "weekly";
+
 function asJson(criteria: SearchCriteria): Json {
   return criteria as unknown as Json;
 }
@@ -31,6 +33,34 @@ export async function getOwnProfile(
   return { data, error: null };
 }
 
+export async function updateOwnDigestFrequency(
+  client: SupabaseClient<Database>,
+  input: {
+    userId: string;
+    digestFrequency: DigestFrequency;
+  },
+): Promise<{ data: ProfileRow | null; error: Error | null }> {
+  const frequency = input.digestFrequency;
+
+  const { data, error } = await client
+    .from("users")
+    .update({ digest_frequency: frequency, updated_at: new Date().toISOString() })
+    .eq("id", input.userId)
+    .select("*")
+    .single();
+
+  if (error) return { data: null, error: new Error(error.message) };
+
+  // Mantener alerts.frequency alineada con la preferencia de cuenta.
+  const { error: syncError } = await client
+    .from("alerts")
+    .update({ frequency, updated_at: new Date().toISOString() })
+    .eq("user_id", input.userId);
+
+  if (syncError) return { data: null, error: new Error(syncError.message) };
+  return { data, error: null };
+}
+
 export async function listOwnAlerts(
   client: SupabaseClient<Database>,
 ): Promise<{ data: AlertRow[]; error: Error | null }> {
@@ -49,7 +79,7 @@ export async function createOwnAlert(
     userId: string;
     name: string;
     criteria: SearchCriteria;
-    frequency?: "daily" | "weekly" | "instant";
+    frequency?: DigestFrequency;
   },
 ): Promise<{ data: AlertRow | null; error: Error | null }> {
   const { data, error } = await client

@@ -143,6 +143,36 @@ def load_user_emails(
     return {row["user_id"]: row["email"] for row in rows}
 
 
+def load_user_digest_frequencies(
+    conn: psycopg.Connection,
+    user_ids: list[str] | None = None,
+) -> dict[str, str]:
+    """public.users.id → digest_frequency (daily|weekly)."""
+    with conn.cursor(row_factory=dict_row) as cur:
+        if user_ids:
+            ids = [UUID(u) for u in user_ids]
+            cur.execute(
+                """
+                select id::text as user_id, digest_frequency
+                from public.users
+                where id = any(%s)
+                """,
+                (ids,),
+            )
+        else:
+            cur.execute(
+                """
+                select id::text as user_id, digest_frequency
+                from public.users
+                """
+            )
+        rows = cur.fetchall()
+    return {
+        row["user_id"]: (row["digest_frequency"] or "daily").strip().lower()
+        for row in rows
+    }
+
+
 def _row_to_item(row: dict[str, Any]) -> NotificationItem:
     return NotificationItem(
         id=str(row["id"]),

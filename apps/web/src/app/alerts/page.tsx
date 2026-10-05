@@ -31,6 +31,10 @@ export default async function AlertsPage() {
     );
   }
 
+  const digestFrequency =
+    profileResult.data.digest_frequency === "weekly" ? "weekly" : "daily";
+  const digestLabel = digestFrequency === "weekly" ? "semanal" : "diario";
+
   const [alertsResult, searchesResult] = await Promise.all([
     listOwnAlerts(supabase),
     listOwnSavedSearches(supabase),
@@ -52,8 +56,15 @@ export default async function AlertsPage() {
         Solo ves y creas las tuyas (RLS). Usuario:{" "}
         <span className="font-mono">{user.email}</span>
       </p>
+      <p className="mt-1 text-sm text-zinc-600">
+        Digest de email: <strong>{digestLabel}</strong> (preferencia de{" "}
+        <Link href="/account" className="underline">
+          cuenta
+        </Link>
+        ).
+      </p>
 
-      <AlertsPanel userId={profileResult.data.id} />
+      <AlertsPanel userId={profileResult.data.id} digestFrequency={digestFrequency} />
 
       <section className="mt-10">
         <h2 className="text-base font-medium text-zinc-900">Mis alertas</h2>
@@ -68,7 +79,7 @@ export default async function AlertsPage() {
                 <p className="font-medium text-zinc-900">{a.name}</p>
                 <p className="font-mono text-xs text-zinc-500">{a.id}</p>
                 <p className="text-zinc-600">
-                  {a.frequency} · {a.is_active ? "activa" : "inactiva"}
+                  {a.is_active ? "activa" : "inactiva"} · digest cuenta: {digestLabel}
                 </p>
               </li>
             ))}
