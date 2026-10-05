@@ -63,10 +63,14 @@ def deduplicate(
     source_code: str | None = None,
     canonical_repo: object | None = None,
 ) -> list[SourceRecord]:
-    """Matching multi-fuente: anota ``payload['match']`` (Semana 4 Paso 5).
+    """Etapa de pipeline: matching multi-fuente (Semana 4 Paso 5).
 
-    Sin repo de lookup, marca todo como ``unmatched``.
-    No fusiona tenders aquí: eso es el upsert (Paso 6).
+    Antes era un pass-through. Ahora delega en ``matching.match_records`` para
+    anotar ``payload['match']``. Sigue **sin** escribir en DB ni fusionar:
+    el upsert (Paso 6) interpreta ``auto`` / ``pending`` / ``unmatched``.
+
+    Si el repo no expone ``find_match_candidates``, todo queda ``unmatched``
+    (p. ej. dry-run mínimo o repo antiguo).
     """
     from efilicit_ingestion.pipeline.matching import MatchLookup, match_records
 

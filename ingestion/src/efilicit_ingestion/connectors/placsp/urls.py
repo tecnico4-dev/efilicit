@@ -55,6 +55,8 @@ PLACSP_AGREGADAS = PlacspSyndication(
 )
 
 # Semana 4 — contratos menores de perfiles alojados (docs/sources/placsp_menores.md).
+# Misma tubería Atom/CODICE que perfiles/agregadas; otra sindicación Hacienda (1143).
+# No cubre menores de plataformas *agregadas* (eso queda en backlog / ADR 009).
 PLACSP_MENORES = PlacspSyndication(
     source_code="placsp_menores",
     sindicacion="1143",

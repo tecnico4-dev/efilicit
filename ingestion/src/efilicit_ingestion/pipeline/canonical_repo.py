@@ -1,7 +1,13 @@
 """Upsert canónico: tenders / organisms / events / documents (Semana 2 Paso 7).
 
-Idempotencia por ``(source_code, source_tender_id)``. Semana 4 amplía el matching
-multi-fuente; este módulo sigue siendo el único punto de escritura canónica.
+Idempotencia por ``(source_code, source_tender_id)`` dentro de una fuente.
+Semana 4: además respeta ``payload['match']`` del Paso 5 —
+
+- ``auto`` → reutiliza ``tenders.id`` y enlaza la nueva fuente;
+- ``pending`` / ``unmatched`` → crea tender propio (no fusiona);
+- en ``pending``, guarda el candidato best en ``match_candidate_tender_id`` (ADR 010).
+
+Sigue siendo el único punto de escritura canónica del ETL.
 """
 
 from __future__ import annotations
@@ -35,14 +41,17 @@ class UpsertStats:
 
 @dataclass(frozen=True, slots=True)
 class _MatchLink:
-    """Cómo el upsert enlaza esta fila de fuente al tender canónico (Paso 6)."""
+    """Decisión de enlace que aplica el upsert (Paso 6), ya resuelta desde el payload.
+
+    - ``reuse_tender_id``: solo en ``auto`` (fusionar contra ese tender).
+    - ``match_candidate_tender_id``: solo en ``pending`` (pista, no fusión; ADR 010).
+    """
 
     review_status: str
     match_method: str | None
     match_score: float | None
     reuse_tender_id: str | None
     matched_at: datetime | None
-    # Candidato best multi-fuente en pending (no fusionado). Null en auto/unmatched (ADR 010).
     match_candidate_tender_id: str | None = None
 
 
@@ -66,12 +75,16 @@ class CanonicalRepository(Protocol):
         cpv_code: str | None = None,
         limit: int = 50,
     ) -> list[MatchCandidate]:
-        """Candidatos de otras fuentes para matching multi-fuente (Semana 4)."""
+        """Prefiltro de candidatos de otras fuentes (entrada del scorer Semana 4)."""
         ...
 
 
 class InMemoryCanonicalRepository:
-    """Almacén canónico en memoria para tests (sin Postgres)."""
+    """Almacén canónico en memoria para tests (sin Postgres).
+
+    Implementa el mismo contrato de matching/upsert que Postgres para poder
+    probar auto-merge, pending y candidato best sin red ni DB.
+    """
 
     def __init__(self) -> None:
         self.authorities: dict[str, dict[str, Any]] = {}
@@ -97,6 +110,7 @@ class InMemoryCanonicalRepository:
 
             existing = self.tender_sources.get(key)
             if existing is None:
+                # Primera vista de esta fuente: aplicar auto/pending/unmatched.
                 link = _match_link_from_payload(
                     record.payload,
                     tender_exists=lambda tid: tid in self.tenders,
@@ -165,6 +179,12 @@ class InMemoryCanonicalRepository:
         cpv_code: str | None = None,
         limit: int = 50,
     ) -> list[MatchCandidate]:
+        """Misma semántica que Postgres: prefiltro por NIF / expediente / CPV.
+
+        Sin ningún filtro no devolvemos el catálogo completo (evitar O(n) ciego
+        en tests grandes). Deduplica por ``tender_id`` por si una licitación
+        ya tiene varios ``tender_sources``.
+        """
         out: list[MatchCandidate] = []
         seen_tenders: set[str] = set()
         for (src, source_tender_id), link in self.tender_sources.items():
@@ -186,8 +206,7 @@ class InMemoryCanonicalRepository:
             elif cpv_code and cand_cpv == cpv_code:
                 pass
             else:
-                # Still include when no filters (broad scan) — but we always pass
-                # at least one filter from match_records. Skip if none match.
+                # Con filtros activos y sin coincidencia → fuera del prefiltro.
                 if tax_id or expediente or cpv_code:
                     continue
 
@@ -233,7 +252,11 @@ class InMemoryCanonicalRepository:
 
 
 class PostgresCanonicalRepository:
-    """Escribe tablas canónicas MVP con una conexión de DB confiable."""
+    """Escribe tablas canónicas MVP con una conexión confiable (p. ej. service_role).
+
+    Incluye ``find_match_candidates`` para que el pipeline pueda deduplicar
+    contra datos ya persistidos de otras fuentes antes del upsert.
+    """
 
     def __init__(self, conn: psycopg.Connection) -> None:
         self._conn = conn
@@ -247,6 +270,11 @@ class PostgresCanonicalRepository:
         cpv_code: str | None = None,
         limit: int = 50,
     ) -> list[MatchCandidate]:
+        """Prefiltro SQL: otras fuentes con mismo NIF, expediente o CPV.
+
+        Sin filtros → lista vacía (no escanear toda ``tender_sources``).
+        ``distinct on (t.id)`` evita duplicar el mismo tender canónico.
+        """
         clauses = ["ts.source_code <> %s"]
         params: list[Any] = [exclude_source_code]
         filters: list[str] = []
@@ -254,7 +282,7 @@ class PostgresCanonicalRepository:
             filters.append("a.tax_id = %s")
             params.append(tax_id)
         if expediente:
-            # source_tender_id may be ``tax:EXP`` or a bare expediente.
+            # PLACSP suele guardar ``tax:EXP``; otras fuentes pueden traer el EXP suelto.
             filters.append(
                 "(ts.source_tender_id = %s OR ts.source_tender_id LIKE %s)"
             )
@@ -335,14 +363,17 @@ class PostgresCanonicalRepository:
             ).fetchone()
 
             if existing is None:
+                # Primera vez que vemos (source_code, source_tender_id): aplicar match.
                 link = _match_link_from_payload(
                     record.payload,
                     tender_exists=self._tender_exists,
                 )
                 if link.reuse_tender_id is not None:
+                    # auto: reutilizar tender canónico de otra fuente.
                     tender_id = link.reuse_tender_id
                     self._update_tender(tender_id, canonical, authority_id)
                 else:
+                    # pending / unmatched (o auto sin destino): tender nuevo.
                     tender_id = self._insert_tender(canonical, authority_id)
                 self._insert_tender_source(
                     tender_id=tender_id,
@@ -562,7 +593,8 @@ class PostgresCanonicalRepository:
             payload,
             tender_exists=self._tender_exists,
         )
-        # Refrescar metadatos de match en pending (o limpiar candidato si unmatched).
+        # Re-ingesta: actualizar pista pending / limpiar si ya no hay candidato.
+        # No tocamos review_status=auto ya fusionado (solo last_seen abajo).
         if link.review_status == REVIEW_PENDING:
             self._conn.execute(
                 """
@@ -592,6 +624,8 @@ class PostgresCanonicalRepository:
             return
 
         if link.review_status == REVIEW_UNMATCHED:
+            # Si antes estaba pending y ahora no hay match, limpiar metadatos
+            # (incluido match_candidate_tender_id) sin borrar el enlace de fuente.
             self._conn.execute(
                 """
                 update public.tender_sources set
@@ -691,7 +725,16 @@ def _match_link_from_payload(
     *,
     tender_exists: Callable[[str], bool],
 ) -> _MatchLink:
-    """Traduce ``payload['match']`` al enlace de upsert (Semana 4 Paso 6)."""
+    """Traduce ``payload['match']`` a comportamiento de upsert (Paso 6).
+
+    Aquí se separan los dos usos de ``matched_tender_id`` del matching:
+
+    - ``auto`` → ``reuse_tender_id`` (fusionar);
+    - ``pending`` → ``match_candidate_tender_id`` (solo pista; ADR 010).
+
+    Si el auto apunta a un tender que ya no existe, degradamos a ``unmatched``
+    en lugar de inventar una fusión.
+    """
     match = (payload or {}).get("match") or {}
     status = match.get("review_status") or REVIEW_UNMATCHED
     method = match.get("match_method")
@@ -744,7 +787,10 @@ def _apply_match_refresh_in_memory(
     payload: dict[str, Any] | None,
     tenders: dict[str, dict[str, Any]],
 ) -> None:
-    """Refresca el candidato pending en re-ingesta (repo en memoria)."""
+    """Espejo en memoria de ``_touch_tender_source`` para tests de re-ingesta.
+
+    Actualiza o limpia el candidato pending; no deshace un ``auto`` ya fusionado.
+    """
     link = _match_link_from_payload(
         payload,
         tender_exists=lambda tid: tid in tenders,
@@ -764,7 +810,6 @@ def _apply_match_refresh_in_memory(
         existing["match_score"] = None
         existing["matched_at"] = None
         existing["match_candidate_tender_id"] = None
-
 
 def _tender_row(canonical: dict[str, Any], authority_id: str) -> dict[str, Any]:
     return {
