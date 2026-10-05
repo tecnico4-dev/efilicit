@@ -1,4 +1,9 @@
-"""SourceConnector Euskadi — discover páginas + fetch + parse (KontratazioA REST)."""
+"""SourceConnector Euskadi — discover páginas + fetch + parse (KontratazioA REST).
+
+Igual que Socrata a nivel de contrato: el pipeline ve artefactos y registros.
+La diferencia es la paginación (``currentPage``, 10 ítems/página) y el shape
+JSON (``{items:[...]}`` en el parser, no un array raíz).
+"""
 
 from __future__ import annotations
 
@@ -34,7 +39,9 @@ __all__ = [
 class EuskadiConnector:
     """Conector REST KontratazioA / Open Data Euskadi (``contracting-notices``).
 
-    Discover lista páginas vía ``currentPage`` (tamaño de página fijo = 10).
+    Discover lista páginas 1-based; fetch baja el JSON; parse mapea ``items[]``.
+    Suele traer NIF del organismo → mejor señal para matching multi-fuente que
+    Catalunya SODA (que a menudo no lo trae).
     """
 
     def __init__(
@@ -49,6 +56,7 @@ class EuskadiConnector:
         max_bytes: int = DEFAULT_MAX_BYTES,
         retry_attempts: int = DEFAULT_RETRY_ATTEMPTS,
     ) -> None:
+        """Ventana de discover: ``start_page`` + ``max_pages`` (live: mantener bajo)."""
         if max_pages < 1:
             raise ValueError("max_pages must be >= 1")
         if start_page < 1:
@@ -67,6 +75,7 @@ class EuskadiConnector:
         )
 
     def discover(self, context: SyncContext) -> list[RemoteArtifact]:
+        """Lista páginas; omite las ya cubiertas por el cursor de sync."""
         artifacts: list[RemoteArtifact] = []
         for page in range(self._start_page, self._start_page + self._max_pages):
             artifact_key = page_artifact_key(self.dataset, page=page)
@@ -107,7 +116,7 @@ class EuskadiConnector:
 
     @staticmethod
     def _is_after_cursor(artifact_key: str, cursor: str | None) -> bool:
-        """Omite páginas ya cubiertas por el cursor."""
+        """Orden lexicográfico del key (page zero-padded) = orden de páginas."""
         if cursor is None:
             return True
         return artifact_key > cursor

@@ -48,6 +48,8 @@ PLACSP = PlacspSyndication(
 )
 
 # Semana 3 — agregación CCAA/entes, sin menores (docs/sources/placsp_agregadas.md).
+# Reuso del mismo Atom/CODICE que perfiles; otra sindicación (1044). Amplía cobertura
+# territorial sin conector nuevo por CCAA (ver ADR 007 / matriz Semana 4).
 PLACSP_AGREGADAS = PlacspSyndication(
     source_code="placsp_agregadas",
     sindicacion="1044",

@@ -1,4 +1,9 @@
-"""Descarga HTTP de artefactos Socrata: timeout, reintento, tamaño, checksum."""
+"""Descarga HTTP de páginas Socrata (artefacto = JSON de una página SODA).
+
+Misma idea que el fetch PLACSP (timeout, reintento, presupuesto de tamaño,
+checksum en el pipeline), pero con ``max_bytes`` menor: una página JSON no es
+un ZIP mensual. Streaming + corte si el body crece de más evita OOM / abusos.
+"""
 
 from __future__ import annotations
 
@@ -20,17 +25,17 @@ from efilicit_ingestion.connectors.socrata.errors import (
     SocrataHttpError,
 )
 
-# Las páginas JSON son mucho más pequeñas que los ZIP mensuales de PLACSP.
+# Páginas JSON ≪ ZIP PLACSP; 32 MiB deja margen sin igualar el presupuesto ZIP.
 DEFAULT_MAX_BYTES = 32 * 1024 * 1024
 DEFAULT_TIMEOUT_SECONDS = 60.0
 DEFAULT_RETRY_ATTEMPTS = 3
 
-# Getter inyectable en tests: (url) -> (status_code, headers, body).
+# Getter inyectable en tests: (url) -> (status_code, headers, body). Sin red real.
 FetchTransport = Callable[[str], tuple[int, dict[str, str], bytes]]
 
 
 def sha256_hex(payload: bytes) -> str:
-    """Checksum determinista del payload (SHA-256 hex)."""
+    """Checksum del payload (SHA-256 hex) para trazabilidad RAW / idempotencia."""
     return hashlib.sha256(payload).hexdigest()
 
 
@@ -48,9 +53,11 @@ def download_bytes(
     transport: FetchTransport | None = None,
     http_client: httpx.Client | None = None,
 ) -> bytes:
-    """Descarga bytes con timeout, reintentos y control de tamaño.
+    """Descarga bytes con timeout, reintentos y tope de tamaño.
 
-    Preferir ``transport`` en tests unitarios (sin red).
+    Preferir ``transport`` en tests (fixture). Si no, ``http_client`` reutilizable
+    o un ``httpx.Client`` de vida corta. Solo reintenta errores de transporte/
+    timeout; un 4xx/5xx tipado no se reintenta a ciegas.
     """
     cfg = settings or FetchSettings()
     if cfg.max_bytes <= 0:
@@ -83,6 +90,7 @@ def download_bytes(
                         raise SocrataFetchError(
                             f"invalid Content-Length for {url}: {content_length!r}"
                         ) from exc
+                    # Fallo temprano si el servidor ya declara un cuerpo enorme.
                     if declared > cfg.max_bytes:
                         raise ArtifactTooLargeError(
                             f"Content-Length {declared} exceeds max_bytes "
@@ -124,6 +132,7 @@ def _enforce_limits(
     body: bytes,
     max_bytes: int,
 ) -> bytes:
+    """Misma política de tamaño/HTTP para el transport de tests (body ya en memoria)."""
     if status >= 400:
         raise SocrataHttpError(status, url)
 

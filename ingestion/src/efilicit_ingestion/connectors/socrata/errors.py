@@ -1,18 +1,19 @@
 """Errores del adaptador HTTP Socrata / SODA.
 
-Los mensajes de excepción permanecen en inglés; estas clases tipan el fallo
-para tests y logs. No se escriben en ``public.errors`` (ADR 003).
+Clases tipadas para tests y logs. Los **mensajes** de excepción siguen en
+inglés (criterio del repo). No se escriben en ``public.errors`` (ADR 003):
+los fallos de corrida viven en ``source_sync`` / logs del job.
 """
 
 from __future__ import annotations
 
 
 class SocrataFetchError(Exception):
-    """Error base al descargar un recurso Socrata."""
+    """Error base al descargar un recurso Socrata (red, tamaño, timeout…)."""
 
 
 class SocrataHttpError(SocrataFetchError):
-    """Respuesta HTTP no exitosa del dominio SODA."""
+    """Respuesta HTTP ≥400 del dominio SODA (no se reintenta como transporte)."""
 
     def __init__(self, status_code: int, url: str) -> None:
         self.status_code = status_code
@@ -21,8 +22,8 @@ class SocrataHttpError(SocrataFetchError):
 
 
 class ArtifactTooLargeError(SocrataFetchError):
-    """El cuerpo descargado supera el presupuesto de tamaño."""
+    """Cuerpo (o Content-Length) por encima del presupuesto configurado."""
 
 
 class SocrataParseError(ValueError):
-    """Payload JSON inválido para un artefacto Socrata."""
+    """JSON inválido o forma inesperada (p. ej. no es un array de filas)."""

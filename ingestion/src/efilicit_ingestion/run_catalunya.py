@@ -1,4 +1,12 @@
-"""Ejecuta la ingesta Catalunya (Socrata) de punta a punta (Semana 3 Paso 8.4)."""
+"""Ejecuta la ingesta Catalunya (Socrata) de punta a punta (Semana 3 Paso 8.4).
+
+Monta el ``SocrataConnector`` + pipeline común (RAW → canónico). Sirve para:
+
+- dry-run / fixture local (sin red SODA ni writes);
+- corrida real contra Postgres + Storage (secrets).
+
+El CLI ``run-catalunya`` y el workflow Actions delegan aquí.
+"""
 
 from __future__ import annotations
 
@@ -33,7 +41,11 @@ __all__ = [
 
 @dataclass(frozen=True)
 class CatalunyaRunConfig:
-    """Opciones de una corrida local / documentada del pipeline Catalunya."""
+    """Opciones de una corrida local / documentada del pipeline Catalunya.
+
+    ``page_size`` / ``max_pages`` / ``start_offset`` acotan el discover SODA
+    (en live empezar con 1 página). ``dry_run`` evita Postgres y Storage.
+    """
 
     fixture_path: Path | None = None
     page_size: int = 1000
@@ -46,7 +58,7 @@ class CatalunyaRunConfig:
 
 
 def load_fixture_bytes(path: Path) -> bytes:
-    """Carga una página fixture JSON (array SODA)."""
+    """Carga una página fixture JSON (array SODA, como la API real)."""
     raw = path.read_bytes()
     if path.suffix.lower() != ".json":
         raise ValueError(f"unsupported fixture type (expected .json): {path}")
@@ -58,7 +70,8 @@ def load_fixture_bytes(path: Path) -> bytes:
 def run_catalunya(config: CatalunyaRunConfig) -> PipelineResult:
     """Ejecuta discover→…→upsert para páginas SODA de Catalunya.
 
-    - ``fixture_path``: E2E offline (sin red SODA).
+    - ``fixture_path``: inventa un ``fetch_transport`` que siempre devuelve
+      ese JSON (E2E offline; el discover sigue generando keys/URLs).
     - sin fixture: discover/fetch live de ``max_pages`` desde ``start_offset``.
     - ``dry_run``: sync/canónico/storage en memoria (sin writes).
     """
@@ -68,6 +81,7 @@ def run_catalunya(config: CatalunyaRunConfig) -> PipelineResult:
     fetch_transport = None
     if config.fixture_path is not None:
         fixture_bytes = load_fixture_bytes(config.fixture_path)
+        # Misma firma que FetchTransport: ignore URL, devuelve la página fixture.
         fetch_transport = lambda url, data=fixture_bytes: (
             200,
             {"content-type": "application/json", "content-length": str(len(data))},

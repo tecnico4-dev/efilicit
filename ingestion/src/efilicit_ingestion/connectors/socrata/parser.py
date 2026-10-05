@@ -1,4 +1,13 @@
-"""Parsea páginas JSON Socrata a SourceRecord (mapeo de campos Catalunya)."""
+"""Parsea páginas JSON Socrata → ``SourceRecord`` (mapeo Catalunya).
+
+La API SODA devuelve un **array** de filas. Aquí no se escribe en DB: solo se
+traducen campos catalanes a un payload neutro que ``normalize`` / upsert
+entienden (mismo contrato que PLACSP/Euskadi).
+
+Importante para matching posterior (Semana 4): este dataset **no trae NIF/CIF**
+en la fila típica (``tax_id`` queda ``None``); la identidad de organismo usa
+``codi_dir3`` / ``codi_organ``. Sin NIF, el auto-merge multi-fuente es más débil.
+"""
 
 from __future__ import annotations
 
@@ -10,7 +19,7 @@ from typing import Any
 from efilicit_ingestion.connectors.socrata.errors import SocrataParseError
 from efilicit_ingestion.models import RemoteArtifact, SourceRecord
 
-# fase_publicacio (catalán, normalizado) → códigos tipo CODICE para normalize.
+# fase_publicacio (catalán, plegado) → códigos tipo CODICE para normalize.
 _PHASE_STATUS = {
     "anunci de licitacio": "PUB",
     "licitacio": "PUB",
@@ -21,6 +30,7 @@ _PHASE_STATUS = {
     "anulacio": "ANU",
 }
 
+# Etiquetas de tipus_contracte → códigos numéricos alineados con CODICE.
 _CONTRACT_TYPE = {
     "obres": "3",
     "obras": "3",
@@ -36,7 +46,8 @@ _CONTRACT_TYPE = {
 def parse_socrata_artifact(raw: bytes, artifact: RemoteArtifact) -> Iterable[SourceRecord]:
     """Parsea una página SODA (array JSON) en registros de fuente.
 
-    Las filas sin ``id_intern`` estable se omiten.
+    Filas sin ``id_intern`` estable se **omiten**: sin id no hay upsert
+    idempotente por ``(catalunya, source_tender_id)``.
     """
     try:
         text = raw.decode("utf-8")
@@ -63,6 +74,7 @@ def _map_catalunya_row(
     row: dict[str, Any],
     artifact: RemoteArtifact,
 ) -> SourceRecord | None:
+    """Mapea una fila del dataset ``ybgg-dgi6`` al payload neutro del pipeline."""
     record_id = _text(row.get("id_intern"))
     if not record_id:
         return None
@@ -72,6 +84,7 @@ def _map_catalunya_row(
     phase = _text(row.get("fase_publicacio"))
     status = _PHASE_STATUS.get(_fold(phase or ""), None)
 
+    # Varias columnas de importe según fase; tomamos la primera no vacía.
     estimated = (
         _text(row.get("valor_estimat_contracte"))
         or _text(row.get("pressupost_licitacio_sense"))
@@ -90,6 +103,7 @@ def _map_catalunya_row(
     deadline = _text(row.get("termini_presentacio_ofertes"))
 
     authority_name = _text(row.get("nom_organ")) or "Unknown authority"
+    # Sin NIF en SODA: platform_id (DIR3 / organ) para identidad “débil”.
     platform_id = _text(row.get("codi_dir3")) or _text(row.get("codi_organ"))
 
     payload: dict[str, Any] = {
@@ -115,6 +129,7 @@ def _map_catalunya_row(
             "platform_id": platform_id,
         },
         "artifact_key": artifact.artifact_key,
+        # Trozo mínimo del raw para depurar sin guardar la fila entera otra vez.
         "raw_row": {
             "id_intern": record_id,
             "codi_expedient": _text(row.get("codi_expedient")),
@@ -140,12 +155,14 @@ def _text(value: Any) -> str | None:
 
 
 def _link_url(value: Any) -> str | None:
+    """SODA a veces anida el enlace como ``{url: ...}``."""
     if isinstance(value, dict):
         return _text(value.get("url"))
     return _text(value)
 
 
 def _fold(value: str) -> str:
+    """Normaliza etiquetas catalanas (acentos / interpunts) para lookup de mapas."""
     lowered = value.lower().replace("·", "").replace("'", "")
     replacements = str.maketrans(
         {
