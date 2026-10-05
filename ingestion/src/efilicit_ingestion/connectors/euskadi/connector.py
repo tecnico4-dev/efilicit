@@ -1,4 +1,4 @@
-"""Euskadi SourceConnector — discover pages + fetch + parse (KontratazioA REST)."""
+"""SourceConnector Euskadi — discover páginas + fetch + parse (KontratazioA REST)."""
 
 from __future__ import annotations
 
@@ -32,9 +32,9 @@ __all__ = [
 
 
 class EuskadiConnector:
-    """KontratazioA / Open Data Euskadi REST connector (contracting-notices).
+    """Conector REST KontratazioA / Open Data Euskadi (``contracting-notices``).
 
-    Discovery lists page artifacts via ``currentPage`` (API page size is fixed at 10).
+    Discover lista páginas vía ``currentPage`` (tamaño de página fijo = 10).
     """
 
     def __init__(
@@ -107,6 +107,7 @@ class EuskadiConnector:
 
     @staticmethod
     def _is_after_cursor(artifact_key: str, cursor: str | None) -> bool:
+        """Omite páginas ya cubiertas por el cursor."""
         if cursor is None:
             return True
         return artifact_key > cursor

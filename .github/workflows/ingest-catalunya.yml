@@ -1,6 +1,7 @@
 # Semana 3 / Paso 8.5 — ingesta Catalunya (Socrata) vía GitHub Actions.
 # Por defecto: dry-run con fixture JSON (sin secretos, sin writes).
 # Escritura a DB/Storage o SODA live: solo workflow_dispatch explícito + secrets.
+# Cron off a propósito (ADR 005).
 name: Ingest Catalunya
 
 on:
@@ -38,6 +39,7 @@ on:
         type: boolean
         default: false
   # Cron desactivado a propósito: no quemar SODA/prod hasta acordar entorno + secrets.
+  # Cron off (ADR 005).
   # schedule:
   #   - cron: "0 6 * * 1"
 

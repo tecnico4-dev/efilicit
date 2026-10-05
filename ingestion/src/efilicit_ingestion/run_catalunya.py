@@ -1,4 +1,4 @@
-"""Run Catalunya (Socrata) ingestion end-to-end (Semana 3 Paso 8.4)."""
+"""Ejecuta la ingesta Catalunya (Socrata) de punta a punta (Semana 3 Paso 8.4)."""
 
 from __future__ import annotations
 
@@ -33,7 +33,7 @@ __all__ = [
 
 @dataclass(frozen=True)
 class CatalunyaRunConfig:
-    """Options for a local / documented Catalunya pipeline run."""
+    """Opciones de una corrida local / documentada del pipeline Catalunya."""
 
     fixture_path: Path | None = None
     page_size: int = 1000
@@ -46,7 +46,7 @@ class CatalunyaRunConfig:
 
 
 def load_fixture_bytes(path: Path) -> bytes:
-    """Load a JSON fixture page (SODA array)."""
+    """Carga una página fixture JSON (array SODA)."""
     raw = path.read_bytes()
     if path.suffix.lower() != ".json":
         raise ValueError(f"unsupported fixture type (expected .json): {path}")
@@ -56,11 +56,11 @@ def load_fixture_bytes(path: Path) -> bytes:
 
 
 def run_catalunya(config: CatalunyaRunConfig) -> PipelineResult:
-    """Execute discover→…→upsert for Catalunya SODA pages.
+    """Ejecuta discover→…→upsert para páginas SODA de Catalunya.
 
-    - ``fixture_path``: offline E2E (no live SODA network).
-    - without fixture: live discover/fetch for ``max_pages`` from ``start_offset``.
-    - ``dry_run``: in-memory sync/canonical/storage (no Postgres/Storage writes).
+    - ``fixture_path``: E2E offline (sin red SODA).
+    - sin fixture: discover/fetch live de ``max_pages`` desde ``start_offset``.
+    - ``dry_run``: sync/canónico/storage en memoria (sin writes).
     """
     dataset = config.dataset
     run_id = config.run_id or f"{dataset.source_code}-{uuid.uuid4()}"

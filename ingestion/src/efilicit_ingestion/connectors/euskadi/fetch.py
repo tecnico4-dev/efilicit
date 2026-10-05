@@ -1,4 +1,4 @@
-"""HTTP download for Euskadi artifacts: timeout, retry, size limit, checksum."""
+"""Descarga HTTP de artefactos Euskadi: timeout, reintento, tamaño, checksum."""
 
 from __future__ import annotations
 
@@ -24,10 +24,12 @@ DEFAULT_MAX_BYTES = 32 * 1024 * 1024
 DEFAULT_TIMEOUT_SECONDS = 60.0
 DEFAULT_RETRY_ATTEMPTS = 3
 
+# Getter inyectable en tests: (url) -> (status_code, headers, body).
 FetchTransport = Callable[[str], tuple[int, dict[str, str], bytes]]
 
 
 def sha256_hex(payload: bytes) -> str:
+    """Checksum determinista del payload (SHA-256 hex)."""
     return hashlib.sha256(payload).hexdigest()
 
 
@@ -45,7 +47,7 @@ def download_bytes(
     transport: FetchTransport | None = None,
     http_client: httpx.Client | None = None,
 ) -> bytes:
-    """Download URL bytes with timeout, retries, and size control."""
+    """Descarga bytes con timeout, reintentos y control de tamaño."""
     cfg = settings or FetchSettings()
     if cfg.max_bytes <= 0:
         raise ValueError("max_bytes must be positive")

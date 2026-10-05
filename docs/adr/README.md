@@ -19,3 +19,5 @@ No uses un ADR para el estado de una fuente o un parser: eso va en `docs/sources
 | [004](004-ci-ingestion-sin-postgres.md) | CI de ingestion sin Postgres (tests de DB en skip) | Aceptado |
 | [005](005-ingesta-actions-manual-first-cron-off.md) | Ingesta en Actions: manual-first (cron desactivado) | Aceptado |
 | [006](006-raw-storage-httpx-sin-supabase-py.md) | RAW Storage vía `httpx` + `service_role` (sin `supabase-py`) | Aceptado |
+| [007](007-adaptador-csv-familia-na-semana3.md) | Adaptador CSV de familia: N/A en Semana 3 | Aceptado |
+| [008](008-placsp-menores-aplazado-semana4.md) | `placsp_menores` aplazado a Semana 4+ | Aceptado |

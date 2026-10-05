@@ -1,4 +1,4 @@
-"""Socrata SourceConnector — discover pages + fetch + parse (SODA JSON)."""
+"""SourceConnector Socrata — discover páginas + fetch + parse (SODA JSON)."""
 
 from __future__ import annotations
 
@@ -32,11 +32,11 @@ __all__ = [
 
 
 class SocrataConnector:
-    """Generic SODA / Socrata Open Data connector.
+    """Conector genérico SODA / Socrata Open Data.
 
-    Default dataset is Catalunya PSCP publications (``CATALUNYA`` / ``ybgg-dgi6``).
-    Discovery lists page artifacts via ``$limit`` / ``$offset``; fetch downloads JSON;
-    parse maps rows to ``SourceRecord`` (Catalunya field mapping for this dataset).
+    Por defecto: publicaciones PSCP de Catalunya (``CATALUNYA`` / ``ybgg-dgi6``).
+    Discover lista páginas vía ``$limit`` / ``$offset``; fetch baja el JSON;
+    parse mapea filas a ``SourceRecord`` (mapeo Catalunya para este dataset).
     """
 
     def __init__(
@@ -123,6 +123,7 @@ class SocrataConnector:
 
     @staticmethod
     def _is_after_cursor(artifact_key: str, cursor: str | None) -> bool:
+        """Omite páginas ya cubiertas por el cursor (orden lexicográfico del key)."""
         if cursor is None:
             return True
         return artifact_key > cursor

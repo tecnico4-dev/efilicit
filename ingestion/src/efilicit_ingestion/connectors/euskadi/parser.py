@@ -1,4 +1,4 @@
-"""Parse Euskadi contracting-notices JSON pages into SourceRecord."""
+"""Parsea páginas JSON de contracting-notices Euskadi a SourceRecord."""
 
 from __future__ import annotations
 
@@ -9,6 +9,7 @@ from typing import Any
 from efilicit_ingestion.connectors.euskadi.errors import EuskadiParseError
 from efilicit_ingestion.models import RemoteArtifact, SourceRecord
 
+# Estados / tipos de la API → códigos tipo CODICE para normalize del pipeline.
 _STATUS = {
     "publicacion": "PUB",
     "publicación": "PUB",
@@ -37,7 +38,7 @@ _CONTRACT_TYPE = {
 
 
 def parse_euskadi_artifact(raw: bytes, artifact: RemoteArtifact) -> Iterable[SourceRecord]:
-    """Parse a KontratazioA page (``{items:[...]}``) into source records."""
+    """Parsea una página KontratazioA (``{items:[...]}``) en registros de fuente."""
     try:
         data = json.loads(raw.decode("utf-8"))
     except (UnicodeDecodeError, json.JSONDecodeError) as exc:

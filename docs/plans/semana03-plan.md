@@ -235,7 +235,7 @@ Registro de lo acordado al cerrar (o antes de) cada paso:
 | Plan | No fijar aún CCAA/`source_code` concretos en el plan | Se eligen en Paso 1 con evidencia oficial + cobertura/esfuerzo |
 | Paso 1 | Estatal: `placsp_agregadas` → `placsp_menores` | Reuso Atom/CODICE; agregadas primero por cobertura; menores por MVP |
 | Paso 1 | CCAA: cola `catalunya` → `euskadi` → reservas CSV (`valencia`, `jcyl`, `canarias`, `asturias`, …) | Objetivo ≥2 implementadas; reservas para sustituir si hay bloqueo |
-| Paso 1 | Adaptador CSV de familia = **N/A** salvo caída a reserva CSV | No forzar familia vacía; conector puntual si la cola lo exige |
+| Paso 1 | Adaptador CSV de familia = **N/A** salvo caída a reserva CSV | No forzar familia vacía; [ADR 007](../adr/007-adaptador-csv-familia-na-semana3.md) |
 | Paso 1 | Rama de trabajo = `tecnico4/semana-03` | No mergear a `main` hasta OK explícito |
 | Paso 2 | Primera ficha estatal = `placsp_agregadas` (`sindicacion_1044`) | Open Data oficial Atom/CODICE; mismo patrón ZIP mensuales que `placsp`; sin scraping |
 | Paso 2 | Identidad de expediente alineada con `placsp` | Reuso del parser; clave `(placsp_agregadas, source_tender_id)` |
@@ -258,7 +258,7 @@ Registro de lo acordado al cerrar (o antes de) cada paso:
 | Paso 8.6 | Verificación live SODA `catalunya` (1 página + idempotencia) | Mismo patrón A/B que PLACSP; documentado en [docs/pruebas.md](../pruebas.md) Parte C |
 | Paso 9 | CCAA #2 `euskadi` (KontratazioA REST) | Conector propio; página fija 10; CLI + workflow |
 | Paso 9.5 | Verificación live API `euskadi` (1 página + idempotencia) | Documentado en [docs/pruebas.md](../pruebas.md) Parte D |
-| Paso 10 | Catálogo + regresión `112 passed` + cierre | ADR N/A; `placsp_menores` diferido a Semana 4+; Semana 3 cerrada |
+| Paso 10 | Catálogo + regresión `112 passed` + cierre | ADR 007 (CSV N/A) + ADR 008 (menores → S4); Semana 3 cerrada |
 
 ---
 

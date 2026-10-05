@@ -187,7 +187,7 @@ Registro de lo acordado al cerrar (o antes de) cada paso:
 | Plan | Dedup en pipeline común + lookup al canónico persistido | El pass-through actual no ve otras fuentes |
 | Plan | Matching persistido en `tender_sources` (columnas) por defecto | Encaja el contrato ya existente; migración Semana 4 |
 | Plan | No adelantar `pg_trgm`/FTS | Eso es Semana 5; similitud de título en el ETL |
-| Plan | `placsp_menores` antes de CCAA extra | Reuso máximo; leftover explícito de Semana 3 |
+| Plan | `placsp_menores` antes de CCAA extra | Reuso máximo; leftover Semana 3 ([ADR 008](../adr/008-placsp-menores-aplazado-semana4.md)) |
 | Plan | Documentación de fuentes/cobertura solo en `docs/sources/` | El plan no acumula fichas ni matrices largas |
 | Paso 1 | `placsp_menores` = `sindicacion_1143` / `contratosMenoresPerfilesContratantes` | Confirmado en ficha Hacienda; conector en Paso 2 |
 | Paso 1 | 2 propias (Cat, Euskadi) + 5 agregación + 10 perfiles alojados `placsp` | Cumple “ruta identificada” sin 17 conectores; ver [cobertura-ccaa.md](../sources/cobertura-ccaa.md) |

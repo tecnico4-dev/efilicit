@@ -1,4 +1,4 @@
-"""Run Euskadi (KontratazioA) ingestion end-to-end (Semana 3 Paso 9)."""
+"""Ejecuta la ingesta Euskadi (KontratazioA) de punta a punta (Semana 3 Paso 9)."""
 
 from __future__ import annotations
 
@@ -33,6 +33,8 @@ __all__ = [
 
 @dataclass(frozen=True)
 class EuskadiRunConfig:
+    """Opciones de una corrida local / documentada del pipeline Euskadi."""
+
     fixture_path: Path | None = None
     max_pages: int = 1
     start_page: int = 1
@@ -43,6 +45,7 @@ class EuskadiRunConfig:
 
 
 def load_fixture_bytes(path: Path) -> bytes:
+    """Carga una página fixture JSON (objeto con ``items[]``)."""
     raw = path.read_bytes()
     if path.suffix.lower() != ".json":
         raise ValueError(f"unsupported fixture type (expected .json): {path}")
@@ -52,7 +55,7 @@ def load_fixture_bytes(path: Path) -> bytes:
 
 
 def run_euskadi(config: EuskadiRunConfig) -> PipelineResult:
-    """Execute discover→…→upsert for Euskadi contracting-notices pages."""
+    """Ejecuta discover→…→upsert para páginas contracting-notices de Euskadi."""
     dataset = config.dataset
     run_id = config.run_id or f"{dataset.source_code}-{uuid.uuid4()}"
 

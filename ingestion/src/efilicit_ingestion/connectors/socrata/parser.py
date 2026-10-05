@@ -1,4 +1,4 @@
-"""Parse Socrata JSON pages into SourceRecord (Catalunya field mapping)."""
+"""Parsea páginas JSON Socrata a SourceRecord (mapeo de campos Catalunya)."""
 
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ from typing import Any
 from efilicit_ingestion.connectors.socrata.errors import SocrataParseError
 from efilicit_ingestion.models import RemoteArtifact, SourceRecord
 
-# fase_publicacio (Catalan, folded) → CODICE-like codes for pipeline normalize.
+# fase_publicacio (catalán, normalizado) → códigos tipo CODICE para normalize.
 _PHASE_STATUS = {
     "anunci de licitacio": "PUB",
     "licitacio": "PUB",
@@ -34,9 +34,9 @@ _CONTRACT_TYPE = {
 
 
 def parse_socrata_artifact(raw: bytes, artifact: RemoteArtifact) -> Iterable[SourceRecord]:
-    """Parse a SODA JSON array page into source records.
+    """Parsea una página SODA (array JSON) en registros de fuente.
 
-    Rows without a stable ``id_intern`` are skipped.
+    Las filas sin ``id_intern`` estable se omiten.
     """
     try:
         text = raw.decode("utf-8")

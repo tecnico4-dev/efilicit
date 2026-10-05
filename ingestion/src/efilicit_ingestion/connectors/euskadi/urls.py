@@ -1,4 +1,4 @@
-"""Euskadi KontratazioA procurements URL helpers."""
+"""Helpers de URL de KontratazioA / Open Data Euskadi."""
 
 from __future__ import annotations
 
@@ -11,13 +11,13 @@ __all__ = [
     "page_resource_url",
 ]
 
-# API documents a fixed page size of 10 for list endpoints.
+# La API documenta tamaño de página fijo = 10 en listados.
 ITEMS_PER_PAGE = 10
 
 
 @dataclass(frozen=True, slots=True)
 class EuskadiDataset:
-    """One KontratazioA / Open Data Euskadi REST collection."""
+    """Una colección REST de KontratazioA / Open Data Euskadi."""
 
     source_code: str
     base_url: str
@@ -36,7 +36,7 @@ EUSKADI = EuskadiDataset(
 
 
 def page_artifact_key(dataset: EuskadiDataset, *, page: int) -> str:
-    """Stable artifact_key for one API page (1-based ``currentPage``)."""
+    """``artifact_key`` estable de una página API (``currentPage`` 1-based)."""
     if page < 1:
         raise ValueError(f"page must be >= 1, got {page}")
     return f"{dataset.collection}_page_{page:06d}.json"

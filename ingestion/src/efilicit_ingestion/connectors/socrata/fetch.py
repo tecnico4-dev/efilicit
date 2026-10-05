@@ -1,4 +1,4 @@
-"""HTTP download for Socrata artifacts: timeout, retry, size limit, checksum."""
+"""Descarga HTTP de artefactos Socrata: timeout, reintento, tamaño, checksum."""
 
 from __future__ import annotations
 
@@ -20,15 +20,17 @@ from efilicit_ingestion.connectors.socrata.errors import (
     SocrataHttpError,
 )
 
-# JSON pages are far smaller than PLACSP monthly ZIPs.
+# Las páginas JSON son mucho más pequeñas que los ZIP mensuales de PLACSP.
 DEFAULT_MAX_BYTES = 32 * 1024 * 1024
 DEFAULT_TIMEOUT_SECONDS = 60.0
 DEFAULT_RETRY_ATTEMPTS = 3
 
+# Getter inyectable en tests: (url) -> (status_code, headers, body).
 FetchTransport = Callable[[str], tuple[int, dict[str, str], bytes]]
 
 
 def sha256_hex(payload: bytes) -> str:
+    """Checksum determinista del payload (SHA-256 hex)."""
     return hashlib.sha256(payload).hexdigest()
 
 
@@ -46,9 +48,9 @@ def download_bytes(
     transport: FetchTransport | None = None,
     http_client: httpx.Client | None = None,
 ) -> bytes:
-    """Download URL bytes with timeout, retries, and size control.
+    """Descarga bytes con timeout, reintentos y control de tamaño.
 
-    Prefer ``transport`` in unit tests (no network).
+    Preferir ``transport`` en tests unitarios (sin red).
     """
     cfg = settings or FetchSettings()
     if cfg.max_bytes <= 0:

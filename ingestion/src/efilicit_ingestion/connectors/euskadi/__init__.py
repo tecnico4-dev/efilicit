@@ -1,4 +1,4 @@
-"""Euskadi / KontratazioA REST connector (Semana 3 Paso 9)."""
+"""Conector Euskadi / KontratazioA REST (Semana 3 Paso 9)."""
 
 from efilicit_ingestion.connectors.euskadi.connector import EuskadiConnector, sha256_hex
 from efilicit_ingestion.connectors.euskadi.errors import (
