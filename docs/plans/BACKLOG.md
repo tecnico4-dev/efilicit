@@ -1,14 +1,14 @@
 # Backlog
 
-Catálogo **total** de trabajo consciente fuera del corte actual (aplazados, N/A intencionales, mejoras futuras y ops pendiente).
+Catálogo de trabajo **consciente fuera del plan** (aplazados, N/A intencionales y mejoras posibles “por si al acabar hace falta”).
 
-No son bugs olvidados: son decisiones o huecos documentados en planes, ADRs, `cobertura-ccaa` y roadmap. Este archivo es la **vista unificada**; el detalle vive en las referencias.
+No son bugs olvidados ni el trabajo de la siguiente semana del roadmap. Son huecos o mejoras que se sacaron del corte actual a propósito. El detalle vive en ADRs, planes y `cobertura-ccaa`; este archivo es la **vista unificada**.
 
 **Cómo usarlo**
 
 - Priorizar aquí; al cerrar un ítem, quitarlo o moverlo a “Hecho / histórico”.
-- Semana 6 del roadmap absorbe varios ítems de producto web; no duplicar el plan, solo apuntarlos.
 - `N/A intencional` = no falta implementar “lo olvidado”; fue decisión explícita.
+- El plan de la semana en curso (p. ej. Semana 6) **no** se lista aquí: eso va en su `semanaXX-plan` / checklist.
 
 ---
 
@@ -62,36 +62,13 @@ Detalle por CCAA: [cobertura-ccaa.md](../sources/cobertura-ccaa.md).
 
 ## 5. Matching / deduplicación multi-fuente
 
-- **UI de revisión humana de matches `pending`.** El motor deja `review_status=pending` + candidato; no hay pantalla de revisión (Semana 6+).
+- **UI de revisión humana de matches `pending`.** El motor deja `review_status=pending` + candidato; la revisión humana se sacó del corte de matching MVP.
 - **Tabla `match_suggestions` (N candidatos).** Evolución frente a solo `match_candidate_tender_id` ([ADR 010](../adr/010-match-candidate-tender-id-en-tender-sources.md)).
 - **Duplicados canónicos mientras haya `pending`.** Comportamiento MVP esperado hasta UI/revisión; no tratarlo como bug sin criterio de producto.
 
 ---
 
-## 6. Producto web (Semana 6+ / roadmap §10)
-
-Alcance detallado en plan Semana 6 (rama `tecnico4/semana-06` o merge posterior) y [docs/04-roadmap-mvp.md](../04-roadmap-mvp.md) § Semana 6.
-
-- **Ficha de licitación completa** (vista multi-fuente, documentos, eventos).
-- **Favoritos / seguimiento.** Mencionado en arquitectura/onboarding; **aún sin tabla** en migraciones.
-- **Dashboard básico** (resumen usuario / actividad).
-- **UI de búsquedas guardadas.** Esquema + queries existen; falta experiencia de producto usable (más allá del CRUD mínimo Semana 5).
-- **Polish UX.** Responsive, estados vacío/error, brand (Semana 5 = UI mínima verificable; fondo blanco fijo).
-- **Healthchecks por fuente.** Más allá de `source_sync` manual.
-- **Runbooks operativos.** Carpeta `docs/runbooks/` casi vacía: p. ej. `source-down`, `reprocess-source-date`, `replay-artifact`.
-- **Observabilidad / hardening amplio.** Logs, alertas ops, runbooks — post cierre UX mínima.
-
----
-
-## 7. Higiene documental / repo
-
-- **Índice `docs/plans/README.md`.** Puede desalinearse del estado real de checklists (p. ej. Semana 5 cerrada vs “en curso”).
-- **`.github/README.md`.** Mantener al día workflows (menores, Euskadi, alertas, Resend, crons).
-- **Plan Semana 6 en `main`.** Vive en `tecnico4/semana-06` hasta merge; tras mergear docs/ADRs a `main`, actualizar esa rama (o recrear) para coherencia.
-
----
-
-## 8. Referencia rápida ADRs (aplazados / N/A)
+## 6. Referencia rápida ADRs (aplazados / N/A)
 
 | ADR | Tema | Lectura en backlog |
 |-----|------|--------------------|

@@ -24,7 +24,7 @@ Aquí se documenta **cómo se ha decidido ejecutar** cada semana del roadmap (or
 | Semana 4 / Fase 4 (cobertura territorial + deduplicación) | [semana04-plan.md](semana04-plan.md) | [fase4-checklist.md](fase4-checklist.md) | Cerrada |
 | Semana 5 / Fase 5 (búsqueda + Auth + alertas) | [semana05-plan.md](semana05-plan.md) | [fase5-checklist.md](fase5-checklist.md) | Cerrada |
 
-**Backlog unificado:** [BACKLOG.md](BACKLOG.md) — catálogo de aplazados, N/A intencionales, ops pendiente y mejoras futuras (vista única; el detalle sigue en ADRs/planes).
+**Backlog unificado:** [BACKLOG.md](BACKLOG.md) — aplazados / N/A / mejoras posibles sacadas del plan (no el trabajo de la semana siguiente).
 
 ## Relación con el roadmap
 
