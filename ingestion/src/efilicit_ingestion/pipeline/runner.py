@@ -1,4 +1,10 @@
-"""Orquesta conector + etapas comunes del pipeline para una sync."""
+"""Orquesta conector + etapas comunes del pipeline para una sync (Semana 2+).
+
+El runner es agnóstico de la fuente: solo conoce ``SourceConnector`` y las
+etapas. Orden: discover → fetch → validate → store_raw → parse → normalize →
+identidad → matching → upsert → checkpoint. Así el RAW queda aunque falle el
+parse posterior.
+"""
 
 from __future__ import annotations
 
@@ -18,10 +24,10 @@ def run_pipeline(
     sync_repo: SyncRepository,
     canonical_repo: CanonicalRepository | None = None,
 ) -> PipelineResult:
-    """discover → fetch → validate → store_raw → parse → … → upsert → checkpoint.
+    """Una sync completa por artefacto descubierto.
 
-    Ante excepción: cierra el run como failed en source_sync (error_message) y
-    relanza. No escribe en public.errors (ADR 003).
+    Ante excepción: cierra el run como ``failed`` en ``source_sync``
+    (``error_message``) y relanza. No escribe en ``public.errors`` (ADR 003).
     """
     run = sync_repo.start_run(
         source_code=connector.source_code,
