@@ -3,7 +3,11 @@ import { NextResponse, type NextRequest } from "next/server";
 import type { Database } from "@efilicit/types";
 
 /**
- * Refreshes the Auth session cookies on each matched request.
+ * Refresca cookies de sesión Auth en cada request emparejado por el middleware.
+ *
+ * También protege `/account` y `/alerts` (redirect a `/login` sin sesión)
+ * y evita que un usuario ya autenticado vea `/login` o `/register`.
+ * Solo publishable/anon — nunca service_role.
  */
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });

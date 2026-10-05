@@ -1,3 +1,12 @@
+/**
+ * Acceso a datos de usuario bajo RLS (Semana 5 / Paso 6).
+ *
+ * Alertas, búsquedas guardadas y perfil (`public.users`) con el cliente
+ * autenticado (anon/publishable + sesión). Nunca service_role.
+ *
+ * `digest_frequency` es preferencia de cuenta (ADR 012): al cambiarla se
+ * sincroniza `alerts.frequency` para no dejar reglas con cadencia obsoleta.
+ */
 import type { Database, SearchCriteria } from "@efilicit/types";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
@@ -12,6 +21,7 @@ function asJson(criteria: SearchCriteria): Json {
   return criteria as unknown as Json;
 }
 
+/** Perfil de aplicación ligado al `auth.users` de la sesión actual. */
 export async function getOwnProfile(
   client: SupabaseClient<Database>,
 ): Promise<{ data: ProfileRow | null; error: Error | null }> {
@@ -33,6 +43,10 @@ export async function getOwnProfile(
   return { data, error: null };
 }
 
+/**
+ * Actualiza la frecuencia de digest de la cuenta y alinea `alerts.frequency`.
+ * Valores: daily | weekly (`instant` fuera del MVP).
+ */
 export async function updateOwnDigestFrequency(
   client: SupabaseClient<Database>,
   input: {
@@ -61,6 +75,7 @@ export async function updateOwnDigestFrequency(
   return { data, error: null };
 }
 
+/** Lista alertas del usuario (RLS filtra por owner). */
 export async function listOwnAlerts(
   client: SupabaseClient<Database>,
 ): Promise<{ data: AlertRow[]; error: Error | null }> {
@@ -73,6 +88,7 @@ export async function listOwnAlerts(
   return { data: data ?? [], error: null };
 }
 
+/** Crea una alerta propia con Criteria v1 (criteria vacío no generará matches). */
 export async function createOwnAlert(
   client: SupabaseClient<Database>,
   input: {

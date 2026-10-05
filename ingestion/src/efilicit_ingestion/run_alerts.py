@@ -1,4 +1,13 @@
-"""Orquestación del job de alertas: match → cola → digest (Semana 5 Paso 9)."""
+"""Orquestación del job de alertas: match → cola → digest (Semana 5 Paso 9).
+
+Entrada CLI / GitHub Actions (``alerts-digest.yml``). Modos:
+
+- dry-run (default): fixtures en memoria + FakeEmailSender — sin DB ni Resend.
+- write: Postgres real + Fake (o Resend si ``send=True``).
+
+Cron desactivado a propósito (ADR 005): solo ``workflow_dispatch`` hasta
+OK explícito + secrets. Envío desde Python, no Edge Function (ADR 011).
+"""
 
 from __future__ import annotations
 
@@ -47,6 +56,7 @@ class AlertsRunResult:
 
 
 def _fixture_alerts() -> list[AlertRule]:
+    """Alerta mínima con keyword para el dry-run de CI."""
     return [
         AlertRule(
             id="00000000-0000-4000-8000-0000000000a1",
@@ -58,6 +68,7 @@ def _fixture_alerts() -> list[AlertRule]:
 
 
 def _fixture_tenders() -> list[TenderCandidate]:
+    """Una licitación que hace match y otra que no (smoke del matcher)."""
     return [
         TenderCandidate(
             id="00000000-0000-4000-8000-0000000000t1",
@@ -97,6 +108,7 @@ def _job_date(cfg: AlertsRunConfig) -> date:
 
 
 def run_alerts(config: AlertsRunConfig | None = None) -> AlertsRunResult:
+    """Ejecuta batch + drain según el modo configurado."""
     cfg = config or AlertsRunConfig()
     job_date = _job_date(cfg)
     digest_key = digest_day(job_date)
@@ -108,6 +120,7 @@ def run_alerts(config: AlertsRunConfig | None = None) -> AlertsRunResult:
 
 
 def _run_dry(*, job_date: date, digest_key: str) -> AlertsRunResult:
+    """Camino seguro por defecto: sin secretos, sin writes."""
     queue = InMemoryNotificationQueue()
     sender = FakeEmailSender()
     directory = _fixture_directory()
@@ -137,6 +150,7 @@ def _run_dry(*, job_date: date, digest_key: str) -> AlertsRunResult:
 
 
 def _run_write(*, cfg: AlertsRunConfig, job_date: date, digest_key: str) -> AlertsRunResult:
+    """Camino real: lee canónico, encola, drena; Resend solo si ``send``."""
     since = datetime.now(timezone.utc) - timedelta(days=max(cfg.since_days, 0))
     sender = ResendEmailSender() if cfg.send else FakeEmailSender()
 
@@ -187,6 +201,7 @@ def _run_write(*, cfg: AlertsRunConfig, job_date: date, digest_key: str) -> Aler
 
 
 def format_result(result: AlertsRunResult) -> str:
+    """Línea de resumen estable para logs de CI (parseable a ojo)."""
     b = result.batch
     d = result.drain
     mode = "dry-run" if result.dry_run else ("write+resend" if result.send else "write+fake")

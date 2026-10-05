@@ -1,5 +1,6 @@
--- Preferencia de digest a nivel de cuenta (Semana 5).
--- daily | weekly; instant queda fuera del MVP (BACKLOG).
+-- Preferencia de digest a nivel de cuenta (Semana 5 / ADR 012).
+-- daily | weekly; un correo por periodo (no por alerta).
+-- instant queda fuera del MVP (BACKLOG); no ampliar el CHECK sin ADR.
 
 alter table public.users
   add column if not exists digest_frequency text not null default 'daily'

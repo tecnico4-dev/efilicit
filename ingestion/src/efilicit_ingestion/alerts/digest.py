@@ -1,4 +1,14 @@
-"""Digest diario/semanal: agrupa pending y envía un email por usuario/periodo (Paso 8)."""
+"""Digest diario/semanal: agrupa pending y envía un email por usuario/periodo (Paso 8).
+
+Batch-first (ADR 011): un correo por (usuario, periodo), no por cada INSERT
+de ingesta. El envío lo hace el job Python vía Resend; no hay Edge Function.
+
+Frecuencias (ADR 012):
+
+- daily: drena siempre que haya pending.
+- weekly: solo lunes UTC; el resto deja pending.
+- instant: fuera del MVP.
+"""
 
 from __future__ import annotations
 
@@ -19,6 +29,8 @@ from efilicit_ingestion.alerts.queue import (
 
 @dataclass
 class DigestDrainResult:
+    """Contadores del drenado (logs del job / CI)."""
+
     digests_attempted: int = 0
     digests_sent: int = 0
     digests_failed: int = 0
@@ -30,7 +42,7 @@ class DigestDrainResult:
 
 @dataclass
 class UserEmailDirectory:
-    """Resuelve user_id (public.users.id) → email de notificación."""
+    """Resuelve ``public.users.id`` → email de Auth (solo procesos trusted)."""
 
     emails: dict[str, str] = field(default_factory=dict)
 
@@ -45,6 +57,7 @@ def build_digest_message(
     items: list[NotificationItem],
     frequency: str = "daily",
 ) -> EmailMessage:
+    """Plantilla mínima texto/HTML del resumen (MVP; sin deep-links aún)."""
     titles = []
     for item in items:
         title = str(item.payload.get("title") or item.payload.get("tender_id") or "licitación")
@@ -90,6 +103,7 @@ def _escape(value: str) -> str:
 def group_pending_by_user_digest(
     items: list[NotificationItem],
 ) -> dict[tuple[str, str], list[NotificationItem]]:
+    """Agrupa pending por (user_id, periodo) para un solo email por grupo."""
     groups: dict[tuple[str, str], list[NotificationItem]] = defaultdict(list)
     for item in items:
         if item.status != "pending":
@@ -108,7 +122,7 @@ def drain_daily_digests(
     frequencies: Mapping[str, str] | None = None,
     job_date: date | datetime | None = None,
 ) -> DigestDrainResult:
-    """Envía un digest por (usuario, periodo) cuando toca según la frecuencia de cuenta.
+    """Envía un digest por (usuario, periodo) cuando toca según la frecuencia.
 
     - daily: siempre que haya pending.
     - weekly: solo lunes UTC; el resto de días deja pending.

@@ -1,4 +1,11 @@
-"""Envío de email para digests (Paso 8). API key solo en backend/env — nunca en frontend."""
+"""Envío de email para digests (Paso 8).
+
+API key solo en backend/env del job — nunca en frontend ni en Edge Function
+(ADR 011: Resend desde Python en GitHub Actions).
+
+``FakeEmailSender`` captura en memoria (tests / dry-run / write-fake).
+``ResendEmailSender`` llama a la API HTTP con secretos de entorno.
+"""
 
 from __future__ import annotations
 

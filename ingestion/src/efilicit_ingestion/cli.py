@@ -167,8 +167,8 @@ def build_parser() -> argparse.ArgumentParser:
     alerts = sub.add_parser(
         "run-alerts",
         help=(
-            "Alert batch + daily digest (Semana 5). "
-            "Default: dry-run in-memory with FakeEmailSender (no DB / no Resend)."
+            "Batch de alertas + digest email (Semana 5). "
+            "Por defecto: dry-run en memoria con FakeEmailSender (sin DB / sin Resend)."
         ),
     )
     alerts.set_defaults(dry_run=True)
@@ -176,28 +176,28 @@ def build_parser() -> argparse.ArgumentParser:
         "--dry-run",
         action="store_true",
         dest="dry_run",
-        help="In-memory fixtures + FakeEmailSender (default).",
+        help="Fixtures en memoria + FakeEmailSender (default seguro).",
     )
     alerts.add_argument(
         "--write",
         action="store_false",
         dest="dry_run",
-        help="Load alerts/tenders from Postgres, enqueue, drain (needs EFILICIT_DATABASE_URL).",
+        help="Lee alertas/tenders de Postgres, encola y drena (necesita EFILICIT_DATABASE_URL).",
     )
     alerts.add_argument(
         "--send",
         action="store_true",
-        help="With --write: send via Resend (RESEND_API_KEY + ALERT_FROM_EMAIL). Else Fake.",
+        help="Con --write: envía vía Resend (RESEND_API_KEY + ALERT_FROM_EMAIL). Si no, Fake.",
     )
     alerts.add_argument(
         "--digest",
-        help="Digest day YYYY-MM-DD (default: today UTC).",
+        help="Día de digest YYYY-MM-DD (default: hoy UTC).",
     )
     alerts.add_argument(
         "--since-days",
         type=int,
         default=1,
-        help="With --write: tender window in days (default: 1).",
+        help="Con --write: ventana de tenders en días (default: 1).",
     )
     return parser
 

@@ -1,4 +1,9 @@
-"""Alertas de usuario (Semana 5). Contrato + batch + digest email."""
+"""Alertas de usuario (Semana 5): criteria → batch → cola → digest email.
+
+Batch-first: no se manda un correo por cada INSERT de ingesta. El job
+``run-alerts`` evalúa reglas, encola con idempotencia y drena digests
+(daily/weekly; ADR 012). Envío Resend desde Python, no Edge Function (ADR 011).
+"""
 
 from efilicit_ingestion.alerts.batch import run_alert_batch
 from efilicit_ingestion.alerts.criteria import (

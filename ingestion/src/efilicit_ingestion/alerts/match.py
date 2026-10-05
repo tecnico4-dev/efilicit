@@ -1,4 +1,16 @@
-"""Evaluador de alertas: Criteria v1 → match / score / priority (Paso 7.1)."""
+"""Evaluador de alertas: Criteria v1 → match / score / priority (Paso 7.1).
+
+No consulta la base de datos: opera sobre ``TenderCandidate`` ya proyectados.
+La semántica de producto debe alinearse con la RPC ``search_tenders`` (filtros)
+aunque el ranking de búsqueda (FTS/trgm) no se reutiliza aquí.
+
+Reglas:
+
+- Dimensiones omitidas = no entran en el AND.
+- Dentro de una dimensión lista (keywords, CPV, …): OR.
+- Criteria vacío (solo ``version``) → sin match (anti-spam).
+- Score = dimensiones que pasan / dimensiones activas; prioridad por umbrales.
+"""
 
 from __future__ import annotations
 
@@ -14,6 +26,7 @@ PRIORITY_LOW = "low"
 
 
 def _norm(text: str | None) -> str:
+    """Normaliza texto para comparaciones case-insensitive (keywords / nombre)."""
     return (text or "").casefold().strip()
 
 
@@ -24,15 +37,16 @@ def _parse_date(value: str | None) -> date | None:
 
 
 def _parse_dt(value: str | None) -> datetime | None:
+    """ISO datetime; si solo hay fecha, ancla a 00:00 UTC."""
     if not value:
         return None
-    # Accept date-only as start/end of day boundaries via fromisoformat on date.
     if len(value) == 10:
         return datetime.fromisoformat(f"{value}T00:00:00+00:00")
     return datetime.fromisoformat(value.replace("Z", "+00:00"))
 
 
 def _text_blob(tender: TenderCandidate) -> str:
+    """Título + descripción: corpus para keywords (substring, no FTS)."""
     return f"{tender.title}\n{tender.description or ''}"
 
 
@@ -42,6 +56,7 @@ def _keyword_hit(tender: TenderCandidate, keywords: list[str]) -> bool:
 
 
 def _cpv_hit(tender: TenderCandidate, codes: list[str]) -> bool:
+    """Prefijo CPV: ``72000000`` casa ``72000000-1`` y códigos hijos."""
     cpv = (tender.cpv_code or "").strip()
     if not cpv:
         return False
@@ -49,6 +64,7 @@ def _cpv_hit(tender: TenderCandidate, codes: list[str]) -> bool:
 
 
 def _authority_hit(tender: TenderCandidate, criteria: SearchCriteria) -> bool | None:
+    """None = dimensión no pedida; bool = OR entre señales configuradas."""
     auth = criteria.authority
     if auth is None:
         return None
@@ -65,11 +81,12 @@ def _authority_hit(tender: TenderCandidate, criteria: SearchCriteria) -> bool | 
         checks.append(bool(needle) and needle in hay)
     if not checks:
         return None
-    # Within authority object: any configured signal may match (OR).
+    # Dentro de authority: basta una señal (OR); NIF/CIF es la más fiable.
     return any(checks)
 
 
 def _geography_hit(tender: TenderCandidate, criteria: SearchCriteria) -> bool | None:
+    """Geo del organismo canónico (municipio/país), no de la licitación."""
     geo = criteria.geography
     if geo is None:
         return None
@@ -131,7 +148,6 @@ def _deadline_hit(tender: TenderCandidate, criteria: SearchCriteria) -> bool | N
         return False
     lo = _parse_dt(criteria.deadline_from)
     hi = _parse_dt(criteria.deadline_to)
-    # Compare as aware/naive carefully: normalize to ISO strings if mixed.
     t = tender.deadline_at
     if lo is not None and t < lo:
         return False
@@ -141,6 +157,7 @@ def _deadline_hit(tender: TenderCandidate, criteria: SearchCriteria) -> bool | N
 
 
 def score_to_priority(score: float) -> str:
+    """Umbrales fijos del MVP (no configurables por usuario)."""
     if score >= 0.75:
         return PRIORITY_HIGH
     if score >= 0.45:
@@ -155,6 +172,7 @@ def evaluate_tender(
     """Devuelve match si todas las dimensiones presentes pasan (AND); None si no.
 
     Arrays dentro de una dimensión: OR. Criteria vacío → no match (anti-spam).
+    ``alert_id`` / ``user_id`` los rellena el caller (aquí van vacíos).
     """
     if not criteria.has_filters():
         return None
@@ -192,7 +210,6 @@ def evaluate_tender(
 
     reasons = tuple(name for name, ok in active if ok)
     score = len(reasons) / len(active)
-    # Placeholder alert/user filled by caller.
     return AlertMatch(
         alert_id="",
         user_id="",
@@ -207,6 +224,7 @@ def match_alert_to_tenders(
     alert: AlertRule,
     tenders: list[TenderCandidate],
 ) -> list[AlertMatch]:
+    """Evalúa una regla contra una lista de candidatos; respeta ``is_active``."""
     if not alert.is_active:
         return []
     criteria = parse_criteria(alert.criteria)

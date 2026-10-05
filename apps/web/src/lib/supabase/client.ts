@@ -11,7 +11,7 @@ function requirePublicEnv() {
 
   if (!url || !key) {
     throw new Error(
-      "Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY (copy apps/web/.env.example → .env.local)",
+      "Faltan NEXT_PUBLIC_SUPABASE_URL o NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY (copia apps/web/.env.example → .env.local)",
     );
   }
 

@@ -1,3 +1,10 @@
+/**
+ * Cliente de búsqueda canónica (Semana 5 / ADR 013).
+ *
+ * La web no arma SQL ni habla con motores externos: llama a la RPC
+ * `public.search_tenders` (SECURITY INVOKER → aplica RLS) con Criteria v1
+ * aplanado a parámetros `p_*`. FTS + pg_trgm viven en Postgres.
+ */
 import type { Database, SearchCriteria } from "@efilicit/types";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
@@ -17,6 +24,7 @@ export type SearchTenderRow = {
   created_at: string;
   updated_at: string;
   rank: number;
+  /** Origen del hit: fts | trgm | filter (badge UI). */
   match_kind: "fts" | "trgm" | "filter" | string;
 };
 
@@ -36,6 +44,7 @@ function emptyToUndef<T>(value: T[] | null | undefined): T[] | undefined {
   return value;
 }
 
+/** Aplana SearchCriteria + query a args tipados de la RPC. */
 function buildRpcArgs(input: SearchTendersInput): SearchTendersArgs {
   const c = input.criteria ?? {};
   const name = c.authority?.name_contains?.trim();

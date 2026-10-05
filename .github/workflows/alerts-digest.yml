@@ -1,6 +1,12 @@
-# Semana 5 / Paso 9 — alertas batch + digest diario vía GitHub Actions.
+# Semana 5 / Paso 9 — alertas batch + digest vía GitHub Actions.
+#
+# Flujo: match → notification_queue → un email por usuario/periodo (Resend).
 # Por defecto: dry-run in-memory (FakeEmailSender, sin secretos, sin writes).
 # Escritura a Postgres o envío Resend: solo workflow_dispatch explícito + secrets.
+#
+# Cron desactivado a propósito (ADR 005): no envío diario hasta OK + secrets.
+# Envío desde el job Python, no Edge Function (ADR 011).
+# Frecuencias daily|weekly; instant fuera del MVP (ADR 012).
 name: Alerts digest
 
 on:
@@ -8,9 +14,9 @@ on:
     inputs:
       mode:
         description: >
-          dry-run = fixtures in-memory + Fake (safe).
-          write-fake = Postgres match→cola→digest con FakeEmailSender (needs EFILICIT_DATABASE_URL).
-          write-resend = igual + Resend real (needs DB + RESEND_API_KEY + ALERT_FROM_EMAIL).
+          dry-run = fixtures en memoria + Fake (seguro).
+          write-fake = Postgres match→cola→digest con FakeEmailSender (necesita EFILICIT_DATABASE_URL).
+          write-resend = igual + Resend real (necesita DB + RESEND_API_KEY + ALERT_FROM_EMAIL).
         type: choice
         options:
           - dry-run

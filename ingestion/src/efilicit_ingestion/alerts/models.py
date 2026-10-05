@@ -1,4 +1,9 @@
-"""Modelos del motor de alertas batch (Semana 5 Paso 7)."""
+"""Modelos del motor de alertas batch (Semana 5 Paso 7).
+
+Vistas mínimas en memoria: el batch no arrastra filas canónicas completas.
+``AlertMatch`` alimenta la cola; ``NotificationItem`` / ``BatchResult`` son
+el estado de encolado e idempotencia (unique en ``idempotency_key``).
+"""
 
 from __future__ import annotations
 
@@ -11,7 +16,11 @@ from uuid import UUID
 
 @dataclass(frozen=True, slots=True)
 class TenderCandidate:
-    """Vista mínima de una licitación canónica para matching de alertas."""
+    """Proyección mínima de licitación + organismo para matching de alertas.
+
+    Incluye tax_id/nombre/geo del organismo porque criteria.authority y
+    geography no viven en ``tenders`` sino en el join con authorities.
+    """
 
     id: str
     title: str
@@ -34,6 +43,8 @@ class TenderCandidate:
 
 @dataclass(frozen=True, slots=True)
 class AlertRule:
+    """Fila ``alerts`` activa (o candidata) con criteria jsonb ya cargado."""
+
     id: str
     user_id: str
     name: str
@@ -44,6 +55,8 @@ class AlertRule:
 
 @dataclass(frozen=True, slots=True)
 class AlertMatch:
+    """Match alert×tender listo para encolar (score/prioridad/razones)."""
+
     alert_id: str
     user_id: str
     tender_id: str
@@ -54,6 +67,8 @@ class AlertMatch:
 
 @dataclass
 class NotificationItem:
+    """Fila lógica de ``notification_queue`` (pending → sent / failed)."""
+
     user_id: str
     alert_id: str | None
     idempotency_key: str
@@ -68,6 +83,8 @@ class NotificationItem:
 
 @dataclass
 class BatchResult:
+    """Contadores del pase batch (observabilidad / logs del job)."""
+
     alerts_seen: int = 0
     tenders_seen: int = 0
     matches: int = 0
@@ -79,4 +96,5 @@ class BatchResult:
 
 
 def as_uuid_str(value: UUID | str) -> str:
+    """Normaliza UUID a str (claves de cola / logs)."""
     return str(value)

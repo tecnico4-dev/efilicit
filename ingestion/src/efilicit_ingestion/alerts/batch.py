@@ -1,4 +1,15 @@
-"""Batch de alertas: ventana de tenders → match → notification_queue (Paso 7)."""
+"""Batch de alertas: ventana de tenders → match → notification_queue (Paso 7).
+
+No envía email (eso es Paso 8 / ``drain_daily_digests``). Solo evalúa y encola
+con ``idempotency_key`` estable por alerta+licitación+periodo de digest.
+
+El periodo depende de ``users.digest_frequency`` (ADR 012):
+
+- ``daily`` → YYYY-MM-DD
+- ``weekly`` → semana ISO ``YYYY-Www``
+
+Así un re-run del job no duplica filas ni reabre ítems ya ``sent``.
+"""
 
 from __future__ import annotations
 
@@ -21,13 +32,14 @@ from efilicit_ingestion.alerts.queue import (
 
 
 def _job_date(digest: date | datetime | str | None) -> date | None:
+    """Normaliza el ancla del job; strings ISO-semana no son fechas parseables aquí."""
     if digest is None:
         return None
     if isinstance(digest, datetime):
         return digest.date()
     if isinstance(digest, date):
         return digest
-    # Explicit period string for tests (YYYY-MM-DD); weekly ISO keys are not dates.
+    # Periodo explícito de tests (YYYY-MM-DD); claves weekly ISO no son fechas.
     if len(digest) == 10 and digest[4] == "-" and digest[7] == "-":
         return date.fromisoformat(digest)
     return None
@@ -43,7 +55,7 @@ def run_alert_batch(
 ) -> BatchResult:
     """Evalúa alertas activas contra licitaciones de la ventana y encola matches.
 
-    No envía email (Paso 8). Idempotente vía ``idempotency_key``.
+    No envía email. Idempotente vía ``idempotency_key``.
     El periodo de digest es por cuenta: daily → día; weekly → semana ISO.
     """
     freqs = {k: (v or "daily").strip().lower() for k, v in (frequencies or {}).items()}

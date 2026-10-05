@@ -1,5 +1,7 @@
 -- Semana 5 / Paso 5: sync auth.users → public.users (perfil de aplicación).
--- SECURITY DEFINER: el trigger escribe el perfil aunque el signup aún no tenga grants amplios.
+-- Al registrarse, el trigger crea la fila de perfil (display_name desde metadata o email).
+-- SECURITY DEFINER: escribe el perfil aunque el signup aún no tenga grants amplios.
+-- Idempotente: ON CONFLICT (auth_user_id) DO NOTHING.
 
 create or replace function public.handle_new_user()
 returns trigger

@@ -1,6 +1,7 @@
--- Semana 5 / Paso 3: RPC de búsqueda canónica (FTS + pg_trgm + filtros).
+-- Semana 5 / Paso 3: RPC de búsqueda canónica (FTS + pg_trgm + filtros) — ADR 013.
 -- La web llama a esta función vía apps/web/src/lib/queries (sin motor externo).
 -- SECURITY INVOKER: aplica RLS de tenders / contracting_authorities.
+-- Criteria v1 aplanado a parámetros p_*; rank + match_kind para la UI.
 
 create or replace function public.search_tenders(
   p_query text default null,

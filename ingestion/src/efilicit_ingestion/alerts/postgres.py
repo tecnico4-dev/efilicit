@@ -1,4 +1,15 @@
-"""Persistencia Postgres del motor de alertas (cola + lecturas canónicas)."""
+"""Persistencia Postgres del motor de alertas (cola + lecturas canónicas).
+
+Solo procesos confiables (job con ``EFILICIT_DATABASE_URL`` / service).
+La web nunca escribe en ``notification_queue`` ni lee emails de Auth.
+
+Lecturas:
+
+- alertas activas + ventana de tenders (join organismo para criteria).
+- emails y ``digest_frequency`` de cuenta para el drenado.
+
+Escrituras: upsert idempotente en ``notification_queue`` (ON CONFLICT DO NOTHING).
+"""
 
 from __future__ import annotations
 
@@ -21,6 +32,7 @@ def _as_str(value: UUID | str | None) -> str | None:
 
 
 def load_active_alerts(conn: psycopg.Connection) -> list[AlertRule]:
+    """Carga reglas ``is_active`` ordenadas (estable para logs/repro)."""
     with conn.cursor(row_factory=dict_row) as cur:
         cur.execute(
             """
@@ -50,7 +62,10 @@ def load_tender_candidates(
     since: date | datetime | None = None,
     limit: int = 5000,
 ) -> list[TenderCandidate]:
-    """Ventana de licitaciones para matching (por updated_at / publication_date)."""
+    """Ventana de licitaciones para matching (por updated_at / publication_date).
+
+    Incluye campos del organismo: criteria.authority / geography viven ahí.
+    """
     if since is None:
         since = datetime.now(timezone.utc) - timedelta(days=1)
     if isinstance(since, date) and not isinstance(since, datetime):
@@ -123,7 +138,7 @@ def load_user_emails(
     conn: psycopg.Connection,
     user_ids: list[str],
 ) -> dict[str, str]:
-    """public.users.id → auth.users.email (conexión trusted / service)."""
+    """``public.users.id`` → ``auth.users.email`` (conexión trusted / service)."""
     if not user_ids:
         return {}
     ids = [UUID(u) for u in user_ids]
@@ -147,7 +162,7 @@ def load_user_digest_frequencies(
     conn: psycopg.Connection,
     user_ids: list[str] | None = None,
 ) -> dict[str, str]:
-    """public.users.id → digest_frequency (daily|weekly)."""
+    """``public.users.id`` → ``digest_frequency`` (daily|weekly; ADR 012)."""
     with conn.cursor(row_factory=dict_row) as cur:
         if user_ids:
             ids = [UUID(u) for u in user_ids]
@@ -189,7 +204,11 @@ def _row_to_item(row: dict[str, Any]) -> NotificationItem:
 
 
 class PostgresNotificationQueue:
-    """Cola ``notification_queue`` con upsert por ``idempotency_key``."""
+    """Cola ``notification_queue`` con upsert por ``idempotency_key``.
+
+    ON CONFLICT DO NOTHING: si la clave ya existe (pending o sent), se reutiliza
+    la fila y no se reabre un envío previo.
+    """
 
     def __init__(self, conn: psycopg.Connection) -> None:
         self._conn = conn

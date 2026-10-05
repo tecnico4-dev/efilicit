@@ -1,4 +1,12 @@
-"""Cola de notificaciones e idempotencia (Paso 7.2 / 8)."""
+"""Cola de notificaciones e idempotencia (Paso 7.2 / 8).
+
+Contrato compartido por la cola en memoria (tests) y Postgres
+(``PostgresNotificationQueue``). La clave evita reenviar el mismo
+match alerta×licitación en el mismo periodo de digest.
+
+Frecuencias de cuenta (ADR 012): ``daily`` | ``weekly``.
+``instant`` queda fuera del MVP (BACKLOG).
+"""
 
 from __future__ import annotations
 
@@ -19,6 +27,7 @@ def _as_date(value: date | datetime | None = None) -> date:
 
 
 def digest_day(value: date | datetime | None = None) -> str:
+    """Periodo daily: YYYY-MM-DD en UTC."""
     return _as_date(value).isoformat()
 
 
@@ -39,7 +48,11 @@ def should_send_digest(
     frequency: DigestFrequency,
     value: date | datetime | None = None,
 ) -> bool:
-    """daily siempre; weekly solo lunes UTC."""
+    """¿Toca drenar el digest hoy?
+
+    - daily: siempre (si hay pending).
+    - weekly: solo lunes UTC — el resto de días deja pending en cola.
+    """
     d = _as_date(value)
     freq = (frequency or "daily").strip().lower()
     if freq == "weekly":
@@ -53,7 +66,7 @@ def make_idempotency_key(
     tender_id: str,
     digest: str,
 ) -> str:
-    """Clave estable por alerta+licitación+periodo de digest (no reenvía al reejecutar)."""
+    """Clave estable por alerta+licitación+periodo (re-run del job no reenvía)."""
     return f"alert:{alert_id}:tender:{tender_id}:digest:{digest}"
 
 
@@ -64,6 +77,7 @@ def match_to_notification(
     digest: str,
     frequency: DigestFrequency = "daily",
 ) -> NotificationItem:
+    """Construye el ítem de cola con payload mínimo para el email de digest."""
     key = make_idempotency_key(
         alert_id=match.alert_id,
         tender_id=match.tender_id,
@@ -91,6 +105,8 @@ def match_to_notification(
 
 
 class NotificationQueue(Protocol):
+    """Puerto de cola: insert idempotente + marcar sent/failed."""
+
     def enqueue(self, item: NotificationItem) -> tuple[NotificationItem, bool]:
         """Inserta o reutiliza por idempotency_key.
 
@@ -116,7 +132,7 @@ class NotificationQueue(Protocol):
 
 
 class InMemoryNotificationQueue:
-    """Cola en memoria para tests sin red / dry-run."""
+    """Cola en memoria para tests / dry-run (sin red ni Postgres)."""
 
     def __init__(self) -> None:
         self._by_key: dict[str, NotificationItem] = {}
