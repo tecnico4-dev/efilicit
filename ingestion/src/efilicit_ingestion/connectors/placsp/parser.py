@@ -8,12 +8,15 @@ Identidad estable (docs/sources/placsp.md):
 ``{tax_id|platform_id}:{ContractFolderID}`` cuando hay organismo + carpeta;
 si no, folder id; último recurso ``atom:id``. Sin id usable → se omite la entry
 (mejor perder una fila que inventar claves que rompan el unique).
+
+Si el mismo expediente aparece varias veces en el ZIP/Atom (versiones),
+se conserva solo la entry con ``atom:updated`` más reciente.
 """
 
 from __future__ import annotations
 
 import zipfile
-from datetime import datetime
+from datetime import datetime, timezone
 from io import BytesIO
 from typing import Any, Iterable
 from xml.etree.ElementTree import ParseError as XmlParseError
@@ -48,15 +51,60 @@ def parse_placsp_artifact(
     """Parsea ZIP (preferido en prod) o bytes ``.atom`` sueltos (fixtures).
 
     Firma ``PK`` → ZIP; si no, se trata como un documento Atom único.
+    Varias entries con el mismo ``source_record_id`` → gana ``atom:updated``
+    más reciente (no el orden del ZIP/XML).
     """
     if not raw:
         raise PlacspParseError(f"empty payload for {artifact.artifact_key}")
 
     if raw.startswith(b"PK"):
-        yield from _parse_zip(raw, artifact)
-        return
+        records = list(_parse_zip(raw, artifact))
+    else:
+        records = list(
+            _parse_atom_document(raw, artifact, member_name=artifact.artifact_key)
+        )
+    yield from _keep_newest_by_source_record_id(records)
 
-    yield from _parse_atom_document(raw, artifact, member_name=artifact.artifact_key)
+
+def _keep_newest_by_source_record_id(
+    records: list[SourceRecord],
+) -> list[SourceRecord]:
+    """Una fila por identidad: la de ``recorded_at`` (atom:updated) más nueva."""
+    best: dict[str, tuple[SourceRecord, int]] = {}
+    for index, record in enumerate(records):
+        prev = best.get(record.source_record_id)
+        if prev is None or _is_newer_version(record, index, prev[0], prev[1]):
+            best[record.source_record_id] = (record, index)
+    # Orden estable: primera aparición de cada identidad en el artefacto.
+    ordered = sorted(best.values(), key=lambda item: item[1])
+    return [record for record, _index in ordered]
+
+
+def _is_newer_version(
+    candidate: SourceRecord,
+    candidate_index: int,
+    incumbent: SourceRecord,
+    incumbent_index: int,
+) -> bool:
+    cand_ts = _as_utc_naive(candidate.recorded_at)
+    inc_ts = _as_utc_naive(incumbent.recorded_at)
+    if cand_ts is not None and inc_ts is not None:
+        if cand_ts != inc_ts:
+            return cand_ts > inc_ts
+    elif cand_ts is not None:
+        return True
+    elif inc_ts is not None:
+        return False
+    # Empate / sin fecha: gana la que aparece después en el artefacto.
+    return candidate_index > incumbent_index
+
+
+def _as_utc_naive(value: datetime | None) -> datetime | None:
+    if value is None:
+        return None
+    if value.tzinfo is not None:
+        return value.astimezone(timezone.utc).replace(tzinfo=None)
+    return value
 
 
 def _parse_zip(raw: bytes, artifact: RemoteArtifact) -> Iterable[SourceRecord]:

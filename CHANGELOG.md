@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Re-ingesta canónica: `tender_events` / `tenders.updated_at` solo si cambian campos de negocio; `tender_sources.last_seen_at` sigue marcando que la fuente la ha vuelto a ver.
 - Matching multi-fuente: si ambas partes traen expediente y difiere → nunca `auto` (como mucho `pending`); evita fusionar contratos distintos del mismo NIF.
+- Parser PLACSP: si el mismo expediente aparece varias veces en un ZIP/Atom, gana la entry con `atom:updated` más reciente (no el orden del fichero/XML).
 - Semana 5: preferencia de digest de alertas a nivel de cuenta (`users.digest_frequency`: `daily` | `weekly`); un email por usuario/periodo; weekly envía solo lunes UTC; UI en `/account`; `instant` diferido (BACKLOG).
 - Cierre Semana 5: checklist Fase 5 completo; búsqueda FTS/`pg_trgm` + Auth/RLS + alertas batch/digest Resend + CLI/workflow (cron off); [ADR 011](docs/adr/011-busqueda-via-rpc-search-tenders.md) (RPC `search_tenders`), [ADR 012](docs/adr/012-digest-email-job-python-sin-edge-function.md) (digest desde job Python), [ADR 013](docs/adr/013-alert-frequencies-daily-weekly-instant-diferido.md) (`daily`|`weekly`; `instant` diferido). Pendiente externo: dominio `eficen.com` en Resend. Siguiente: Semana 6 (UX/producto).
 - Semana 5: badge de búsqueda — `match_kind=fts` solo si el texto escrito aparece como palabra en el título; si FTS encaja solo por stemming (p. ej. `fotocopiaas`) → `trgm` / errata.
