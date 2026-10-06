@@ -238,8 +238,17 @@ class InMemoryCanonicalRepository:
 
     def _upsert_authority(self, authority: dict[str, Any]) -> str:
         tax_id = authority.get("tax_id")
+        platform_id = authority.get("platform_id")
         if tax_id:
-            key = f"ES:{tax_id}"
+            key = f"ES:tax:{tax_id}"
+            if key in self.authorities:
+                self.authorities[key].update(authority)
+                return self.authorities[key]["id"]
+            auth_id = str(uuid4())
+            self.authorities[key] = {"id": auth_id, **authority}
+            return auth_id
+        if platform_id:
+            key = f"ES:plat:{platform_id}"
             if key in self.authorities:
                 self.authorities[key].update(authority)
                 return self.authorities[key]["id"]
@@ -440,6 +449,7 @@ class PostgresCanonicalRepository:
         name = (authority.get("name") or "Unknown authority").strip()
         tax_id = authority.get("tax_id")
         tax_id_country = authority.get("tax_id_country") or "ES"
+        platform_id = authority.get("platform_id")
         name_normalized = authority.get("name_normalized")
         confidence = authority.get("identity_confidence") or "UNRESOLVED"
 
@@ -447,10 +457,43 @@ class PostgresCanonicalRepository:
             row = self._conn.execute(
                 """
                 insert into public.contracting_authorities (
-                  tax_id, tax_id_country, name, name_normalized, identity_confidence
+                  tax_id, tax_id_country, platform_id, name, name_normalized,
+                  identity_confidence
                 )
-                values (%s, %s, %s, %s, %s)
+                values (%s, %s, %s, %s, %s, %s)
                 on conflict (tax_id_country, tax_id) where (tax_id is not null)
+                do update set
+                  name = excluded.name,
+                  name_normalized = excluded.name_normalized,
+                  identity_confidence = excluded.identity_confidence,
+                  platform_id = coalesce(
+                    excluded.platform_id, public.contracting_authorities.platform_id
+                  ),
+                  updated_at = now()
+                returning id
+                """,
+                (
+                    tax_id,
+                    tax_id_country,
+                    platform_id,
+                    name,
+                    name_normalized,
+                    confidence,
+                ),
+            ).fetchone()
+            assert row is not None
+            return str(row[0])
+
+        if platform_id:
+            row = self._conn.execute(
+                """
+                insert into public.contracting_authorities (
+                  tax_id, tax_id_country, platform_id, name, name_normalized,
+                  identity_confidence
+                )
+                values (null, %s, %s, %s, %s, %s)
+                on conflict (tax_id_country, platform_id)
+                  where (platform_id is not null and tax_id is null)
                 do update set
                   name = excluded.name,
                   name_normalized = excluded.name_normalized,
@@ -458,7 +501,13 @@ class PostgresCanonicalRepository:
                   updated_at = now()
                 returning id
                 """,
-                (tax_id, tax_id_country, name, name_normalized, confidence),
+                (
+                    tax_id_country,
+                    platform_id,
+                    name,
+                    name_normalized,
+                    confidence,
+                ),
             ).fetchone()
             assert row is not None
             return str(row[0])
@@ -466,9 +515,10 @@ class PostgresCanonicalRepository:
         row = self._conn.execute(
             """
             insert into public.contracting_authorities (
-              tax_id, tax_id_country, name, name_normalized, identity_confidence
+              tax_id, tax_id_country, platform_id, name, name_normalized,
+              identity_confidence
             )
-            values (null, %s, %s, %s, %s)
+            values (null, %s, null, %s, %s, %s)
             returning id
             """,
             (tax_id_country, name, name_normalized, confidence),

@@ -68,6 +68,8 @@ def test_catalunya_inmemory_upsert_is_idempotent_and_links_artifact() -> None:
     assert second.seen == 2 and second.new == 0 and second.updated == 2
     assert len(repo.tenders) == 2
     assert len(repo.tender_sources) == 2
+    # Dos DIR3 distintos en la fixture → dos organismos; re-ingesta no crea más.
+    assert len(repo.authorities) == 2
 
     key = (SOURCE_CODE, ID_1)
     assert key in repo.tender_sources

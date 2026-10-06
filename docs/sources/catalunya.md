@@ -77,7 +77,7 @@ Cada fila = una **publicación** (fase) en la plataforma, no necesariamente un e
 | Clave de artefacto | `{dataset_id}_offset_{offset:07d}_limit_{limit:04d}.json` |
 | Clave de registro | `id_intern` |
 | Upsert canónico | Unique `(catalunya, source_tender_id)` con `source_tender_id = id_intern` |
-| Organismo | `nom_organ`; `codi_dir3` / `codi_organ` como `platform_id` (NIF/CIF suele ausente → confidence MEDIUM/LOW) |
+| Organismo | `nom_organ`; `codi_dir3` / `codi_organ` como `platform_id` (NIF/CIF suele ausente → confidence MEDIUM/LOW). Upsert canónico por `platform_id` cuando no hay `tax_id` ([ADR 014](../adr/014-upsert-organismos-por-platform-id.md)) |
 
 ---
 

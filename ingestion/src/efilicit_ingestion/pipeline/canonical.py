@@ -84,7 +84,7 @@ def normalize_record(record: SourceRecord) -> SourceRecord:
             "tax_id_country": "ES",
             "name": authority_name,
             "name_normalized": normalize_name(authority_name),
-            "platform_id": authority_raw.get("platform_id"),
+            "platform_id": _normalize_platform_id(authority_raw.get("platform_id")),
             # Lo rellena resolve_identity (etapa siguiente del pipeline).
             "identity_confidence": "UNRESOLVED",
         },
@@ -169,6 +169,14 @@ def _normalize_tax_id(value: Any) -> str | None:
     if value is None:
         return None
     cleaned = re.sub(r"[\s.-]", "", str(value)).upper()
+    return cleaned or None
+
+
+def _normalize_platform_id(value: Any) -> str | None:
+    """Id de plataforma/DIR3: trim; sin inventar valor si viene vacío."""
+    if value is None:
+        return None
+    cleaned = str(value).strip()
     return cleaned or None
 
 

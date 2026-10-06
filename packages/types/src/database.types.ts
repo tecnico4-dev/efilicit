@@ -84,6 +84,7 @@ export type Database = {
           municipality: string | null
           name: string
           name_normalized: string | null
+          platform_id: string | null
           tax_id: string | null
           tax_id_country: string
           updated_at: string
@@ -96,6 +97,7 @@ export type Database = {
           municipality?: string | null
           name: string
           name_normalized?: string | null
+          platform_id?: string | null
           tax_id?: string | null
           tax_id_country?: string
           updated_at?: string
@@ -108,6 +110,7 @@ export type Database = {
           municipality?: string | null
           name?: string
           name_normalized?: string | null
+          platform_id?: string | null
           tax_id?: string | null
           tax_id_country?: string
           updated_at?: string
