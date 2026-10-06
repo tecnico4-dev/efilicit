@@ -42,6 +42,7 @@ No son bugs olvidados ni el trabajo de la siguiente semana del roadmap. Son huec
 - **Catálogo NUTS / geo de búsqueda completa.** Semana 5: geo vía join a organismo; sin catálogo NUTS inventado. Ampliar si el producto lo exige.
 - **Adaptador CSV “de familia”.** N/A en Semana 3 salvo bloqueo medible ([ADR 007](../adr/007-adaptador-csv-familia-na-semana3.md)); backlog puntual por CCAA si hace falta.
 - **Stub conector (N/A producto).** Solo tests/contrato Semana 1; no es deuda de producto.
+- **Tabla `setup_rls_smoke` (andamiaje Fase 0).** No es dominio de licitaciones: se creó en Fase 0 para comprobar Auth + RLS owner-only (cada usuario solo ve lo suyo) y se mantuvo junto al canónico. **Hoy sigue usándose** como health-check en la home de `apps/web` (consulta con clave `anon`/`publishable`: API responde y anon no ve filas ajenas = OK) y el seed mete filas Alice/Bob para jugar en Studio/local. La RLS de producto real está en `users` / `alerts` / etc. **A la larga se puede quitar** (migración + apuntar el health-check a otra tabla o RPC); no urge mientras no estorbe.
 
 ---
 

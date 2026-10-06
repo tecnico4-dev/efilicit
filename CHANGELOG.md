@@ -25,7 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Semana 5 Paso 2: FTS en `tenders` (`search_vector` generated spanish A/B, GIN) + `pg_trgm` en `title`; tipos TS regenerados.
 - Semana 5 Paso 1: contrato `criteria` v1 compartido para `alerts` / `saved_searches` (`packages/types/src/criteria.ts`, `efilicit_ingestion.alerts.criteria`) + comments SQL; sin DDL de columnas nuevas.
 - Plan y checklist Semana 5 (`semana05-plan`, `fase5-checklist`): búsqueda + Auth + alertas; rama `tecnico4/semana-05`.
-- Backlog general (`docs/plans/BACKLOG.md`): catálogo de aplazados / N/A / mejoras posibles sacadas del plan (sin el alcance de la semana siguiente).
+- Backlog general (`docs/plans/BACKLOG.md`): catálogo de aplazados / N/A / mejoras posibles sacadas del plan (sin el alcance de la semana siguiente); incluye `setup_rls_smoke` como andamiaje Fase 0 aún usado en health-check.
 - Plan y checklist Semana 4 (`semana04-plan`, `fase4-checklist`): cobertura territorial 17 CCAA + deduplicación; leftover `placsp_menores`; rama `tecnico4/semana-04`.
 - Semana 4 Paso 1: cobertura 17 CCAA en `docs/sources/cobertura-ccaa.md` (2 propias + 5 agregación + 10 perfiles alojados `placsp`); ficha `placsp_menores.md`; 0 CCAA propias extra. Plan sin duplicar fichas (solo decisiones breves).
 - Semana 4 Paso 2.2: `PLACSP_MENORES` (`sindicacion_1143`) en discover/fetch con tests sin red.
