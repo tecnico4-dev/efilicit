@@ -65,6 +65,7 @@ Detalle por CCAA: [cobertura-ccaa.md](../sources/cobertura-ccaa.md).
 - **UI de revisión humana de matches `pending`.** El motor deja `review_status=pending` + candidato; la revisión humana se sacó del corte de matching MVP.
 - **Tabla `match_suggestions` (N candidatos).** Evolución frente a solo `match_candidate_tender_id` ([ADR 010](../adr/010-match-candidate-tender-id-en-tender-sources.md)).
 - **Duplicados canónicos mientras haya `pending`.** Comportamiento MVP esperado hasta UI/revisión; no tratarlo como bug sin criterio de producto.
+- **Fusión cross-fuente cuando una vía trae NIF y otra no (p. ej. PLACSP ↔ Catalunya).** El auto-merge de licitaciones exige NIF compartido (u otras señales fuertes); Catalunya SODA suele no traer `tax_id` y solo `platform_id` (DIR3). Misma oportunidad en portal autonómico y estatal → a menudo **2 filas en `tenders`** (`pending` / `unmatched`, no `auto`). El organismo también puede quedar **duplicado en `contracting_authorities`**: una fila por NIF y otra por DIR3. Evolución futura: enlazar/fusionar organismo DIR3↔NIF y/o subir confianza del match de licitaciones sin inventar identidad por nombre; probablemente con revisión humana (`pending`) y ADR.
 
 ---
 
