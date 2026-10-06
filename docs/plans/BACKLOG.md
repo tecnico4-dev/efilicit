@@ -37,6 +37,7 @@ No son bugs olvidados ni el trabajo de la siguiente semana del roadmap. Son huec
 ## 3. Ingesta / pipeline / datos canónicos
 
 - **Tabla `public.errors`.** Existe en esquema; el pipeline no escribe ahí de forma sistemática (fallos → `source_sync` + mensaje). Cablear o documentar deprecación.
+- **Timeline de versiones dentro del mismo ZIP/Atom PLACSP.** Hoy, si un expediente aparece varias veces, el parse se queda con el `atom:updated` más reciente (estado canónico correcto). Las versiones intermedias no generan `tender_events`. Mejora futura: ordenar por fecha y emitir eventos de transición (p. ej. publicada → plazo ampliado → adjudicada) para la ficha/historial, sin pisar la regla de “estado actual = versión más nueva”. El RAW del ZIP ya conserva la evidencia. Priorizar cuando exista UI de historial.
 - **Replay de artefacto en pipeline.** Runbook futuro cuando el pipeline soporte reprocess/replay (`docs/runbooks/`).
 - **Catálogo NUTS / geo de búsqueda completa.** Semana 5: geo vía join a organismo; sin catálogo NUTS inventado. Ampliar si el producto lo exige.
 - **Adaptador CSV “de familia”.** N/A en Semana 3 salvo bloqueo medible ([ADR 007](../adr/007-adaptador-csv-familia-na-semana3.md)); backlog puntual por CCAA si hace falta.
