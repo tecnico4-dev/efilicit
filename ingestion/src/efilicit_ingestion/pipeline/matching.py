@@ -19,6 +19,10 @@ Estados:
 
 Regla de producto: el **nombre del organismo nunca** es identidad única;
 la señal primaria es NIF/CIF (``tax_id``) + expediente cuando exista.
+
+Si **ambas** partes traen expediente y no coinciden → nunca ``auto``
+(como mucho ``pending`` si hay otras señales; evita fusionar contratos
+distintos del mismo organismo, p. ej. anualidades distintas).
 """
 
 from __future__ import annotations
@@ -253,13 +257,20 @@ def _score_against(
 ) -> _ScoredMatch | None:
     """Puntúa un candidato. ``None`` = descartar (no aporta ni pending).
 
-    Niveles alineados al roadmap: (2) expediente+NIF, (3) NIF+señales,
-    (4) similitud/título solo como pending. El nivel 1 (id intra-fuente) lo
-    cubre el unique ``(source_code, source_tender_id)`` del upsert, no este scorer.
+    Niveles alineados al roadmap: (2) expediente+NIF, (3) NIF+señales
+    (solo si no hay conflicto de expediente), (4) similitud/título solo como
+    pending. El nivel 1 (id intra-fuente) lo cubre el unique
+    ``(source_code, source_tender_id)`` del upsert, no este scorer.
     """
     tax_match = bool(tax_id and candidate.tax_id and tax_id == candidate.tax_id)
     exp_match = bool(
         expediente and candidate.expediente and expediente == candidate.expediente
+    )
+    # Ambas traen carpeta y difiere → veto a auto (contratos distintos del mismo NIF).
+    exp_conflict = bool(
+        expediente
+        and candidate.expediente
+        and expediente != candidate.expediente
     )
     sim = title_similarity(title, candidate.title)
     cpv_match = bool(cpv_code and candidate.cpv_code and cpv_code == candidate.cpv_code)
@@ -281,14 +292,24 @@ def _score_against(
             match_score=1.0,
         )
 
-    # Nivel 3 — mismo NIF + ≥2 señales blandas: suficiente para auto sin expediente.
+    # Nivel 3 — mismo NIF + ≥2 señales blandas, y sin conflicto de expediente.
+    # Si falta expediente en un lado, sigue pudiendo auto-fusionar.
     # El nombre del organismo no entra: dos ayuntamientos pueden llamarse igual.
-    if tax_match and signal_hits >= 2:
+    if tax_match and signal_hits >= 2 and not exp_conflict:
         return _ScoredMatch(
             candidate=candidate,
             review_status=REVIEW_AUTO,
             match_method=METHOD_TAX_ID_SIGNALS,
             match_score=min(0.95, 0.75 + 0.05 * signal_hits + 0.1 * sim),
+        )
+
+    # Expedientes presentes y distintos: nunca auto; pending solo con indicios.
+    if tax_match and exp_conflict and signal_hits >= 1:
+        return _ScoredMatch(
+            candidate=candidate,
+            review_status=REVIEW_PENDING,
+            match_method=METHOD_TAX_ID_SIGNALS,
+            match_score=0.55 + 0.05 * signal_hits,
         )
 
     # A partir de aquí: indicios útiles pero no fiables → pending (revisión humana).
@@ -300,7 +321,7 @@ def _score_against(
             match_method=METHOD_SIGNAL_BUNDLE,
             match_score=0.55,
         )
-    if tax_match and signal_hits >= 1:
+    if tax_match and signal_hits >= 1 and not exp_conflict:
         # NIF coincide pero solo una señal blanda: no auto-fusionar.
         return _ScoredMatch(
             candidate=candidate,

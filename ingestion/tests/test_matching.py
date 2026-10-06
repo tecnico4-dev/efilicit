@@ -9,6 +9,7 @@ from efilicit_ingestion.pipeline import stages
 from efilicit_ingestion.pipeline.canonical_repo import InMemoryCanonicalRepository
 from efilicit_ingestion.pipeline.matching import (
     METHOD_EXPEDIENTE_TAX_ID,
+    METHOD_TAX_ID_SIGNALS,
     METHOD_TITLE_SIMILARITY,
     REVIEW_AUTO,
     REVIEW_PENDING,
@@ -76,6 +77,72 @@ def test_match_auto_on_expediente_and_tax_id() -> None:
     assert decision["match_method"] == METHOD_EXPEDIENTE_TAX_ID
     assert decision["matched_tender_id"] == tender_id
     assert decision["match_score"] == 1.0
+
+
+def test_match_pending_when_same_nif_but_conflicting_expediente() -> None:
+    """NIF + señales blandas no hacen auto si ambas carpetas existen y difieren."""
+    repo = InMemoryCanonicalRepository()
+    repo.upsert_records(
+        source_code="placsp",
+        records=[
+            _record(
+                source_record_id="p1",
+                title="Suministro de material de oficina 2025",
+                tax_id="P2800000A",
+                expediente="EXP-2025-10",
+                cpv_code="30192700",
+                estimated_value="1000.00",
+                publication_date="2025-03-01",
+            )
+        ],
+    )
+    prior_id = next(iter(repo.tenders))
+
+    incoming = _record(
+        source_record_id="c1",
+        title="Suministro de material de oficina 2026",
+        tax_id="P2800000A",
+        expediente="EXP-2026-03",
+        cpv_code="30192700",
+        estimated_value="1000.00",
+        publication_date="2026-03-01",
+    )
+    matched = match_records([incoming], source_code="catalunya", lookup=repo)
+    decision = matched[0].payload["match"]
+    assert decision["review_status"] == REVIEW_PENDING
+    assert decision["review_status"] != REVIEW_AUTO
+    assert decision["matched_tender_id"] == prior_id
+
+
+def test_match_auto_on_tax_id_signals_when_one_side_lacks_expediente() -> None:
+    """Sin expediente en un lado, NIF + ≥2 señales blandas sigue siendo auto."""
+    repo = InMemoryCanonicalRepository()
+    existing = _record(
+        source_record_id="p1",
+        title="Suministro de material de oficina",
+        tax_id="P2800000A",
+        expediente="EXP-2024-100",
+        cpv_code="30192700",
+        estimated_value="1000.00",
+        publication_date="2024-06-01",
+    )
+    repo.upsert_records(source_code="placsp", records=[existing])
+    tender_id = next(iter(repo.tenders))
+
+    incoming = _record(
+        source_record_id="c1",
+        title="Suministro de material de oficina",
+        tax_id="P2800000A",
+        expediente=None,
+        cpv_code="30192700",
+        estimated_value="1000.00",
+        publication_date="2024-06-01",
+    )
+    matched = match_records([incoming], source_code="catalunya", lookup=repo)
+    decision = matched[0].payload["match"]
+    assert decision["review_status"] == REVIEW_AUTO
+    assert decision["match_method"] == METHOD_TAX_ID_SIGNALS
+    assert decision["matched_tender_id"] == tender_id
 
 
 def test_match_unmatched_when_no_overlap() -> None:
