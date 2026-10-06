@@ -16,13 +16,13 @@ Decisiones de arquitectura (ADR): [docs/adr/](docs/adr/README.md).
 ## Estructura del monorepo
 
 ```text
-apps/web/          # Frontend Next.js (próximo paso de scaffold)
-packages/          # Paquetes compartidos (p. ej. tipos generados)
-ingestion/         # Motor ETL en Python 3.12 + uv
-supabase/          # Config, migraciones y seed (aún no inicializado)
-docs/              # Documentación, ADR, fuentes, runbooks
-.github/           # Workflows CI/CD (próximos pasos)
-.cursor/rules/     # Reglas del asistente (próximo paso)
+apps/web/          # Frontend Next.js (búsqueda, Auth, alertas)
+packages/          # Paquetes compartidos (tipos TS generados, etc.)
+ingestion/         # Motor ETL Python 3.12 + uv (conectores + alertas batch)
+supabase/          # Config, migraciones y seed
+docs/              # Norma (00–04), planes, ADR, fuentes, pruebas
+.github/           # CI + workflows de ingesta y digest de alertas
+.cursor/rules/     # Reglas del asistente
 ```
 
 ## Requisitos de herramientas (Fase 0)
