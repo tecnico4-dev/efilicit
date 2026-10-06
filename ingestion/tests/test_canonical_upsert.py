@@ -40,12 +40,11 @@ def test_inmemory_upsert_is_idempotent_on_source_tender_id() -> None:
     second = repo.upsert_records(source_code=SOURCE_CODE, records=records)
 
     assert first.seen == 1 and first.new == 1 and first.updated == 0
-    assert second.seen == 1 and second.new == 0 and second.updated == 1
+    assert second.seen == 1 and second.new == 0 and second.updated == 0
     assert len(repo.tenders) == 1
     assert len(repo.tender_sources) == 1
-    assert len(repo.events) == 2
+    assert len(repo.events) == 1
     assert repo.events[0]["event_type"] == "published"
-    assert repo.events[1]["event_type"] == "updated"
 
     tender = next(iter(repo.tenders.values()))
     assert tender["title"].startswith("Suministro")
@@ -97,7 +96,7 @@ def test_postgres_upsert_populates_canonical_and_does_not_duplicate() -> None:
         conn.commit()
 
         assert first.new == 1 and first.updated == 0
-        assert second.new == 0 and second.updated == 1
+        assert second.new == 0 and second.updated == 0
 
         tender_count = conn.execute(
             """
@@ -137,7 +136,7 @@ def test_postgres_upsert_populates_canonical_and_does_not_duplicate() -> None:
             """,
             (SOURCE_CODE, source_tender_id),
         ).fetchall()
-        assert [e[0] for e in events] == ["published", "updated"]
+        assert [e[0] for e in events] == ["published"]
 
         docs = conn.execute(
             """

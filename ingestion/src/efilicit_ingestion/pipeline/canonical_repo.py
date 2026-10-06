@@ -7,13 +7,17 @@ Semana 4: además respeta ``payload['match']`` del Paso 5 —
 - ``pending`` / ``unmatched`` → crea tender propio (no fusiona);
 - en ``pending``, guarda el candidato best en ``match_candidate_tender_id`` (ADR 010).
 
+Re-ingesta sin cambios de contenido: actualiza ``tender_sources.last_seen_at``
+(señal operativa “sigue viva”) pero **no** escribe ``tender_events`` ni mueve
+``tenders.updated_at``. ``stats.updated`` cuenta solo cambios reales.
+
 Sigue siendo el único punto de escritura canónica del ETL.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from decimal import Decimal
 from typing import Any, Callable, Protocol
 from uuid import uuid4
@@ -117,7 +121,10 @@ class InMemoryCanonicalRepository:
                 )
                 if link.reuse_tender_id is not None:
                     tender_id = link.reuse_tender_id
-                    self.tenders[tender_id] = _tender_row(canonical, authority_id)
+                    if _tender_content_differs(
+                        self.tenders[tender_id], canonical, authority_id
+                    ):
+                        self.tenders[tender_id] = _tender_row(canonical, authority_id)
                 else:
                     tender_id = str(uuid4())
                     self.tenders[tender_id] = _tender_row(canonical, authority_id)
@@ -155,18 +162,22 @@ class InMemoryCanonicalRepository:
                 stats.tender_ids.append(tender_id)
             else:
                 tender_id = existing["tender_id"]
-                self.tenders[tender_id] = _tender_row(canonical, authority_id)
                 existing["source_url"] = canonical.get("source_url")
                 existing["artifact_id"] = artifact_id
+                existing["last_seen_at"] = datetime.now().astimezone()
                 _apply_match_refresh_in_memory(existing, record.payload, self.tenders)
-                self.events.append(
-                    {
-                        "tender_id": tender_id,
-                        "event_type": "updated",
-                        "source_code": source_code,
-                    }
-                )
-                stats.updated += 1
+                if _tender_content_differs(
+                    self.tenders[tender_id], canonical, authority_id
+                ):
+                    self.tenders[tender_id] = _tender_row(canonical, authority_id)
+                    self.events.append(
+                        {
+                            "tender_id": tender_id,
+                            "event_type": "updated",
+                            "source_code": source_code,
+                        }
+                    )
+                    stats.updated += 1
                 stats.tender_ids.append(tender_id)
         return stats
 
@@ -380,7 +391,8 @@ class PostgresCanonicalRepository:
                 if link.reuse_tender_id is not None:
                     # auto: reutilizar tender canónico de otra fuente.
                     tender_id = link.reuse_tender_id
-                    self._update_tender(tender_id, canonical, authority_id)
+                    if self._tender_row_differs(tender_id, canonical, authority_id):
+                        self._update_tender(tender_id, canonical, authority_id)
                 else:
                     # pending / unmatched (o auto sin destino): tender nuevo.
                     tender_id = self._insert_tender(canonical, authority_id)
@@ -413,7 +425,7 @@ class PostgresCanonicalRepository:
                 stats.tender_ids.append(tender_id)
             else:
                 tender_id = str(existing[0])
-                self._update_tender(tender_id, canonical, authority_id)
+                # Siempre: last_seen_at (y metadata de fuente). Negocio solo si cambia.
                 self._touch_tender_source(
                     source_code=source_code,
                     source_tender_id=source_tender_id,
@@ -421,22 +433,57 @@ class PostgresCanonicalRepository:
                     artifact_id=artifact_id,
                     payload=record.payload,
                 )
-                self._insert_event(
-                    tender_id=tender_id,
-                    event_type="updated",
-                    source_code=source_code,
-                    payload={"source_tender_id": source_tender_id},
-                    occurred_at=record.recorded_at,
-                )
-                self._maybe_insert_document(
-                    tender_id=tender_id,
-                    canonical=canonical,
-                    source_code=source_code,
-                    artifact_id=artifact_id,
-                )
-                stats.updated += 1
+                if self._tender_row_differs(tender_id, canonical, authority_id):
+                    self._update_tender(tender_id, canonical, authority_id)
+                    self._insert_event(
+                        tender_id=tender_id,
+                        event_type="updated",
+                        source_code=source_code,
+                        payload={"source_tender_id": source_tender_id},
+                        occurred_at=record.recorded_at,
+                    )
+                    self._maybe_insert_document(
+                        tender_id=tender_id,
+                        canonical=canonical,
+                        source_code=source_code,
+                        artifact_id=artifact_id,
+                    )
+                    stats.updated += 1
                 stats.tender_ids.append(tender_id)
         return stats
+
+    def _tender_row_differs(
+        self,
+        tender_id: str,
+        canonical: dict[str, Any],
+        authority_id: str | None,
+    ) -> bool:
+        row = self._conn.execute(
+            """
+            select title, description, status, procedure_type, contract_type,
+                   estimated_value, currency, cpv_code, publication_date,
+                   deadline_at, contracting_authority_id
+            from public.tenders
+            where id = %s::uuid
+            """,
+            (tender_id,),
+        ).fetchone()
+        if row is None:
+            return True
+        current = {
+            "title": row[0],
+            "description": row[1],
+            "status": row[2],
+            "procedure_type": row[3],
+            "contract_type": row[4],
+            "estimated_value": row[5],
+            "currency": row[6],
+            "cpv_code": row[7],
+            "publication_date": row[8],
+            "deadline_at": row[9],
+            "contracting_authority_id": str(row[10]) if row[10] is not None else None,
+        }
+        return _tender_content_differs(current, canonical, authority_id)
 
     def _tender_exists(self, tender_id: str) -> bool:
         row = self._conn.execute(
@@ -875,6 +922,71 @@ def _tender_row(canonical: dict[str, Any], authority_id: str) -> dict[str, Any]:
         "deadline_at": canonical.get("deadline_at"),
         "contracting_authority_id": authority_id,
     }
+
+
+def _tender_content_differs(
+    current: dict[str, Any],
+    canonical: dict[str, Any],
+    authority_id: str | None,
+) -> bool:
+    """True si los campos de negocio del tender cambian respecto a ``canonical``."""
+    return _tender_compare_snapshot(current) != _tender_compare_snapshot(
+        {
+            "title": canonical.get("title") or "Untitled",
+            "description": canonical.get("description"),
+            "status": canonical.get("status"),
+            "procedure_type": canonical.get("procedure_type"),
+            "contract_type": canonical.get("contract_type"),
+            "estimated_value": canonical.get("estimated_value"),
+            "currency": canonical.get("currency") or "EUR",
+            "cpv_code": canonical.get("cpv_code"),
+            "publication_date": canonical.get("publication_date"),
+            "deadline_at": canonical.get("deadline_at"),
+            "contracting_authority_id": authority_id,
+        }
+    )
+
+
+def _tender_compare_snapshot(row: dict[str, Any]) -> tuple[Any, ...]:
+    """Normaliza campos canónicos para comparar igualdad de contenido."""
+    auth = row.get("contracting_authority_id")
+    return (
+        (row.get("title") or "Untitled"),
+        row.get("description"),
+        row.get("status"),
+        row.get("procedure_type"),
+        row.get("contract_type"),
+        _as_decimal(row.get("estimated_value")),
+        (row.get("currency") or "EUR"),
+        row.get("cpv_code"),
+        _as_date(row.get("publication_date")),
+        _as_datetime(row.get("deadline_at")),
+        str(auth) if auth is not None else None,
+    )
+
+
+def _as_datetime(value: Any) -> datetime | None:
+    """Datetime comparable (UTC naive) para no marcar cambio por solo tzinfo."""
+    if value is None or value == "":
+        return None
+    if isinstance(value, datetime):
+        parsed = value
+    elif isinstance(value, date):
+        parsed = datetime(value.year, value.month, value.day)
+    else:
+        text = str(value).strip().replace("Z", "+00:00")
+        if not text:
+            return None
+        try:
+            parsed = datetime.fromisoformat(text)
+        except ValueError:
+            try:
+                parsed = datetime.fromisoformat(f"{text[:10]}T00:00:00")
+            except ValueError:
+                return None
+    if parsed.tzinfo is not None:
+        return parsed.astimezone(timezone.utc).replace(tzinfo=None)
+    return parsed
 
 
 def _as_decimal(value: Any) -> Decimal | None:

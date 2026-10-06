@@ -65,7 +65,7 @@ def test_catalunya_inmemory_upsert_is_idempotent_and_links_artifact() -> None:
     )
 
     assert first.seen == 2 and first.new == 2 and first.updated == 0
-    assert second.seen == 2 and second.new == 0 and second.updated == 2
+    assert second.seen == 2 and second.new == 0 and second.updated == 0
     assert len(repo.tenders) == 2
     assert len(repo.tender_sources) == 2
     # Dos DIR3 distintos en la fixture → dos organismos; re-ingesta no crea más.
@@ -78,8 +78,6 @@ def test_catalunya_inmemory_upsert_is_idempotent_and_links_artifact() -> None:
     assert [e["event_type"] for e in repo.events] == [
         "published",
         "awarded",
-        "updated",
-        "updated",
     ]
     assert len(repo.documents) == 2
     assert all(d["artifact_id"] == ARTIFACT_ID for d in repo.documents)
@@ -134,7 +132,7 @@ def test_catalunya_pipeline_updates_source_sync_and_does_not_duplicate() -> None
     )
     assert second.sync.status == "success"
     assert second.sync.records_new == 0
-    assert second.sync.records_updated == 2
+    assert second.sync.records_updated == 0
     assert len(canonical.tenders) == 2
     assert len(canonical.tender_sources) == 2
 
@@ -183,7 +181,7 @@ def test_catalunya_postgres_upsert_does_not_duplicate() -> None:
         conn.commit()
 
         assert first.new == 2 and first.updated == 0
-        assert second.new == 0 and second.updated == 2
+        assert second.new == 0 and second.updated == 0
 
         count = conn.execute(
             """

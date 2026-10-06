@@ -64,7 +64,7 @@ def test_inmemory_same_platform_id_reuses_authority_across_tenders_and_reingest(
 
     ids_first = {a["id"] for a in repo.authorities.values()}
     second = repo.upsert_records(source_code="catalunya", records=[r1, r2, r3])
-    assert second.new == 0 and second.updated == 3
+    assert second.new == 0 and second.updated == 0
     assert len(repo.authorities) == 2
     assert {a["id"] for a in repo.authorities.values()} == ids_first
 
@@ -134,7 +134,7 @@ def test_postgres_platform_id_upsert_does_not_orphan_authorities() -> None:
         conn.commit()
 
         assert first.new == 2 and first.updated == 0
-        assert second.new == 0 and second.updated == 2
+        assert second.new == 0 and second.updated == 0
 
         auth_count = conn.execute(
             """
