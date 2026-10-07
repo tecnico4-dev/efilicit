@@ -579,6 +579,7 @@ export type Database = {
       }
       tenders: {
         Row: {
+          canonical_source_code: string
           contract_type: string | null
           contracting_authority_id: string | null
           cpv_code: string | null
@@ -596,6 +597,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          canonical_source_code: string
           contract_type?: string | null
           contracting_authority_id?: string | null
           cpv_code?: string | null
@@ -613,6 +615,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          canonical_source_code?: string
           contract_type?: string | null
           contracting_authority_id?: string | null
           cpv_code?: string | null

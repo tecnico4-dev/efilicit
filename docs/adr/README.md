@@ -27,3 +27,4 @@ No uses un ADR para el estado de una fuente o un parser: eso va en `docs/sources
 | [012](012-digest-email-job-python-sin-edge-function.md) | Digest de alertas: envío desde job Python (Edge Function N/A) | Aceptado |
 | [013](013-alert-frequencies-daily-weekly-instant-diferido.md) | Frecuencias MVP `daily`\|`weekly`; `instant` diferido | Aceptado |
 | [014](014-upsert-organismos-por-platform-id.md) | Upsert de organismos por `platform_id` cuando no hay NIF/CIF | Aceptado |
+| [015](015-fuente-ganadora-canonica.md) | Fuente ganadora canónica (ranking fijo, sin mezcla de campos) | Aceptado |

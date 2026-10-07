@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Fuente ganadora canónica: columna `tenders.canonical_source_code` + ranking fijo PLACSP > CCAA; secundaria solo enlaza en `tender_sources`; promoción reemplaza la fila entera ([ADR 015](docs/adr/015-fuente-ganadora-canonica.md)).
 - Upsert de `contracting_authorities` por `platform_id` (p. ej. DIR3) cuando no hay NIF/CIF: columna + índice único parcial; re-ingestas Catalunya sin organismos huérfanos ([ADR 014](docs/adr/014-upsert-organismos-por-platform-id.md)).
 
 ### Fixed

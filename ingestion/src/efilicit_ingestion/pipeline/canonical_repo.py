@@ -7,6 +7,10 @@ Semana 4: además respeta ``payload['match']`` del Paso 5 —
 - ``pending`` / ``unmatched`` → crea tender propio (no fusiona);
 - en ``pending``, guarda el candidato best en ``match_candidate_tender_id`` (ADR 010).
 
+ADR 015 — fuente ganadora: ``tenders`` es copia de una sola dueña
+(``canonical_source_code``). Ranking fijo PLACSP > CCAA; secundaria solo
+enlaza; promoción reemplaza la fila entera (sin mezcla campo a campo).
+
 Re-ingesta sin cambios de contenido: actualiza ``tender_sources.last_seen_at``
 (señal operativa “sigue viva”) pero **no** escribe ``tender_events`` ni mueve
 ``tenders.updated_at``. ``stats.updated`` cuenta solo cambios reales.
@@ -33,6 +37,33 @@ from efilicit_ingestion.pipeline.matching import (
     MatchCandidate,
     expediente_from_source_tender_id,
 )
+
+# ADR 015: menor número = mayor prioridad. Fuentes desconocidas → 1000.
+SOURCE_PRIORITY: dict[str, int] = {
+    "placsp": 10,
+    "placsp_agregadas": 20,
+    "placsp_menores": 30,
+    "catalunya": 40,
+    "euskadi": 50,
+}
+_DEFAULT_SOURCE_PRIORITY = 1000
+
+
+def source_priority(source_code: str) -> int:
+    """Prioridad numérica de ``source_code`` (menor = gana)."""
+    return SOURCE_PRIORITY.get(source_code, _DEFAULT_SOURCE_PRIORITY)
+
+
+def beats_canonical_owner(challenger: str, owner: str | None) -> bool:
+    """True si ``challenger`` debe promoverse sobre la dueña actual."""
+    if owner is None:
+        return True
+    return source_priority(challenger) < source_priority(owner)
+
+
+def may_write_canonical_tender(source_code: str, owner: str | None) -> bool:
+    """La fuente puede reescribir ``tenders`` si es dueña o la supera en ranking."""
+    return owner == source_code or beats_canonical_owner(source_code, owner)
 
 
 @dataclass
@@ -121,13 +152,22 @@ class InMemoryCanonicalRepository:
                 )
                 if link.reuse_tender_id is not None:
                     tender_id = link.reuse_tender_id
-                    if _tender_content_differs(
-                        self.tenders[tender_id], canonical, authority_id
-                    ):
-                        self.tenders[tender_id] = _tender_row(canonical, authority_id)
+                    owner = self.tenders[tender_id].get("canonical_source_code")
+                    if may_write_canonical_tender(source_code, owner):
+                        if (
+                            owner != source_code
+                            or _tender_content_differs(
+                                self.tenders[tender_id], canonical, authority_id
+                            )
+                        ):
+                            self.tenders[tender_id] = _tender_row(
+                                canonical, authority_id, source_code
+                            )
                 else:
                     tender_id = str(uuid4())
-                    self.tenders[tender_id] = _tender_row(canonical, authority_id)
+                    self.tenders[tender_id] = _tender_row(
+                        canonical, authority_id, source_code
+                    )
                 self.tender_sources[key] = {
                     "tender_id": tender_id,
                     "source_code": source_code,
@@ -166,18 +206,24 @@ class InMemoryCanonicalRepository:
                 existing["artifact_id"] = artifact_id
                 existing["last_seen_at"] = datetime.now().astimezone()
                 _apply_match_refresh_in_memory(existing, record.payload, self.tenders)
-                if _tender_content_differs(
-                    self.tenders[tender_id], canonical, authority_id
-                ):
-                    self.tenders[tender_id] = _tender_row(canonical, authority_id)
-                    self.events.append(
-                        {
-                            "tender_id": tender_id,
-                            "event_type": "updated",
-                            "source_code": source_code,
-                        }
+                owner = self.tenders[tender_id].get("canonical_source_code")
+                if may_write_canonical_tender(source_code, owner):
+                    owner_change = owner != source_code
+                    content_change = _tender_content_differs(
+                        self.tenders[tender_id], canonical, authority_id
                     )
-                    stats.updated += 1
+                    if owner_change or content_change:
+                        self.tenders[tender_id] = _tender_row(
+                            canonical, authority_id, source_code
+                        )
+                        self.events.append(
+                            {
+                                "tender_id": tender_id,
+                                "event_type": "updated",
+                                "source_code": source_code,
+                            }
+                        )
+                        stats.updated += 1
                 stats.tender_ids.append(tender_id)
         return stats
 
@@ -389,13 +435,24 @@ class PostgresCanonicalRepository:
                     tender_exists=self._tender_exists,
                 )
                 if link.reuse_tender_id is not None:
-                    # auto: reutilizar tender canónico de otra fuente.
+                    # auto: reutilizar tender; solo reescribir si promovemos / somos dueña.
                     tender_id = link.reuse_tender_id
-                    if self._tender_row_differs(tender_id, canonical, authority_id):
-                        self._update_tender(tender_id, canonical, authority_id)
+                    owner = self._canonical_owner(tender_id)
+                    if may_write_canonical_tender(source_code, owner):
+                        if owner != source_code or self._tender_row_differs(
+                            tender_id, canonical, authority_id
+                        ):
+                            self._update_tender(
+                                tender_id,
+                                canonical,
+                                authority_id,
+                                canonical_source_code=source_code,
+                            )
                 else:
                     # pending / unmatched (o auto sin destino): tender nuevo.
-                    tender_id = self._insert_tender(canonical, authority_id)
+                    tender_id = self._insert_tender(
+                        canonical, authority_id, canonical_source_code=source_code
+                    )
                 self._insert_tender_source(
                     tender_id=tender_id,
                     source_code=source_code,
@@ -425,7 +482,7 @@ class PostgresCanonicalRepository:
                 stats.tender_ids.append(tender_id)
             else:
                 tender_id = str(existing[0])
-                # Siempre: last_seen_at (y metadata de fuente). Negocio solo si cambia.
+                # Siempre: last_seen_at (y metadata de fuente). Negocio solo si dueña/promoción.
                 self._touch_tender_source(
                     source_code=source_code,
                     source_tender_id=source_tender_id,
@@ -433,22 +490,33 @@ class PostgresCanonicalRepository:
                     artifact_id=artifact_id,
                     payload=record.payload,
                 )
-                if self._tender_row_differs(tender_id, canonical, authority_id):
-                    self._update_tender(tender_id, canonical, authority_id)
-                    self._insert_event(
-                        tender_id=tender_id,
-                        event_type="updated",
-                        source_code=source_code,
-                        payload={"source_tender_id": source_tender_id},
-                        occurred_at=record.recorded_at,
+                owner = self._canonical_owner(tender_id)
+                if may_write_canonical_tender(source_code, owner):
+                    owner_change = owner != source_code
+                    content_change = self._tender_row_differs(
+                        tender_id, canonical, authority_id
                     )
-                    self._maybe_insert_document(
-                        tender_id=tender_id,
-                        canonical=canonical,
-                        source_code=source_code,
-                        artifact_id=artifact_id,
-                    )
-                    stats.updated += 1
+                    if owner_change or content_change:
+                        self._update_tender(
+                            tender_id,
+                            canonical,
+                            authority_id,
+                            canonical_source_code=source_code,
+                        )
+                        self._insert_event(
+                            tender_id=tender_id,
+                            event_type="updated",
+                            source_code=source_code,
+                            payload={"source_tender_id": source_tender_id},
+                            occurred_at=record.recorded_at,
+                        )
+                        self._maybe_insert_document(
+                            tender_id=tender_id,
+                            canonical=canonical,
+                            source_code=source_code,
+                            artifact_id=artifact_id,
+                        )
+                        stats.updated += 1
                 stats.tender_ids.append(tender_id)
         return stats
 
@@ -491,6 +559,19 @@ class PostgresCanonicalRepository:
             (tender_id,),
         ).fetchone()
         return row is not None
+
+    def _canonical_owner(self, tender_id: str) -> str | None:
+        row = self._conn.execute(
+            """
+            select canonical_source_code
+            from public.tenders
+            where id = %s::uuid
+            """,
+            (tender_id,),
+        ).fetchone()
+        if row is None or row[0] is None:
+            return None
+        return str(row[0])
 
     def _upsert_authority(self, authority: dict[str, Any]) -> str | None:
         name = (authority.get("name") or "Unknown authority").strip()
@@ -573,15 +654,21 @@ class PostgresCanonicalRepository:
         assert row is not None
         return str(row[0])
 
-    def _insert_tender(self, canonical: dict[str, Any], authority_id: str | None) -> str:
+    def _insert_tender(
+        self,
+        canonical: dict[str, Any],
+        authority_id: str | None,
+        *,
+        canonical_source_code: str,
+    ) -> str:
         row = self._conn.execute(
             """
             insert into public.tenders (
               title, description, status, procedure_type, contract_type,
               estimated_value, currency, cpv_code, publication_date, deadline_at,
-              contracting_authority_id
+              contracting_authority_id, canonical_source_code
             )
-            values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s::uuid)
+            values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s::uuid, %s)
             returning id
             """,
             (
@@ -596,6 +683,7 @@ class PostgresCanonicalRepository:
                 canonical.get("publication_date"),
                 canonical.get("deadline_at"),
                 authority_id,
+                canonical_source_code,
             ),
         ).fetchone()
         assert row is not None
@@ -606,6 +694,8 @@ class PostgresCanonicalRepository:
         tender_id: str,
         canonical: dict[str, Any],
         authority_id: str | None,
+        *,
+        canonical_source_code: str,
     ) -> None:
         self._conn.execute(
             """
@@ -621,6 +711,7 @@ class PostgresCanonicalRepository:
               publication_date = %s,
               deadline_at = %s,
               contracting_authority_id = %s::uuid,
+              canonical_source_code = %s,
               updated_at = now()
             where id = %s::uuid
             """,
@@ -636,6 +727,7 @@ class PostgresCanonicalRepository:
                 canonical.get("publication_date"),
                 canonical.get("deadline_at"),
                 authority_id,
+                canonical_source_code,
                 tender_id,
             ),
         )
@@ -908,7 +1000,11 @@ def _apply_match_refresh_in_memory(
         existing["matched_at"] = None
         existing["match_candidate_tender_id"] = None
 
-def _tender_row(canonical: dict[str, Any], authority_id: str) -> dict[str, Any]:
+def _tender_row(
+    canonical: dict[str, Any],
+    authority_id: str,
+    canonical_source_code: str,
+) -> dict[str, Any]:
     return {
         "title": canonical.get("title"),
         "description": canonical.get("description"),
@@ -921,6 +1017,7 @@ def _tender_row(canonical: dict[str, Any], authority_id: str) -> dict[str, Any]:
         "publication_date": canonical.get("publication_date"),
         "deadline_at": canonical.get("deadline_at"),
         "contracting_authority_id": authority_id,
+        "canonical_source_code": canonical_source_code,
     }
 
 
