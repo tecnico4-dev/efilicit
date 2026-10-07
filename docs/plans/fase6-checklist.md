@@ -8,7 +8,7 @@ Los pasos globales (0–11) se mantienen. El estado se marca **aquí**, no con �
 
 | Ítem | Estado | Notas |
 |---|---|---|
-| 0. Kit visual corporativo (brand) | Pendiente | Colores, tipografías, logos, layout, copy → `docs/brand/` (o acordado) |
+| 0. Kit visual corporativo (brand) | Hecho | Extraído de efilumen-web → `docs/brand/` (README, tokens.css, patterns.md); logo oficial pendiente |
 | 1. Design system base en `apps/web` | Pendiente | Tokens + shell/nav |
 | 2. Buscador — UX de producto | Pendiente | Sustituye UI mínima S5 |
 | 3. Ficha de licitación | Pendiente | |
@@ -28,7 +28,7 @@ Los pasos globales (0–11) se mantienen. El estado se marca **aquí**, no con �
 | Web consume solo modelo canónico | Pendiente | |
 | `service_role` fuera del frontend | Pendiente | |
 | RLS owner-only en datos de usuario (favoritos/alertas) | Pendiente | |
-| Brand corporativo documentado y aplicado | Pendiente | Paso 0 → 1 |
+| Brand corporativo documentado y aplicado | Parcial | Documentado Paso 0; aplicar en Paso 1 |
 | CI verde (lint / typecheck / tests / build) | Pendiente | |
 | Cron prod solo con OK explícito | Pendiente | |
 | ADRs estructurales (si hubo) | Pendiente | Default: N/A |

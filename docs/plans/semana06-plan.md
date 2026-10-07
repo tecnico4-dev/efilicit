@@ -1,6 +1,6 @@
 # Semana 6 — Plan: web integrada + cierre MVP
 
-> **Estado:** en curso (Paso 0 siguiente: kit visual corporativo).  
+> **Estado:** en curso (Paso 0 hecho; siguiente: Paso 1 design system base).  
 > **Checklist:** [fase6-checklist.md](fase6-checklist.md)  
 > **Precondición:** Semana 5 cerrada y en `main` ([fase5-checklist.md](fase5-checklist.md)).  
 > **Norma:** `docs/00`–`04` y `.cursor/rules/`. La web sigue consumiendo el **modelo canónico**; sin parsers/RAW. ADR solo ante cambio estructural.  
@@ -145,6 +145,10 @@ CHANGELOG, checklist Fase 6, ADR N/A o ADRs puntuales, handoff. Criterios de sal
 | Plan | No pulir copy UI Semana 5; se reemplaza en Pasos 1–2 | Ahorrar trabajo desechable |
 | Plan | Cron prod sigue **off** hasta Paso 10 + OK | Mismo patrón que ingestas/alertas S2–S5 |
 | Plan | Dominio Resend `@eficen.com` es vía IT, paralelo | No bloquea diseño web |
+| Paso 0 | Brand en `docs/brand/` (README + `tokens.css` + `patterns.md`) desde efilumen-web | Fuente de verdad para Paso 1; no copiar app EfiLumen |
+| Paso 0 | Tokens de referencia en `docs/brand/tokens.css`; aplicación real en `apps/web/.../globals.css` en Paso 1 | Evitar importar docs en runtime |
+| Paso 0 | Sin logo oficial en efilumen-web/public; pendiente aportar SVG/PNG | Mientras tanto: nombre producto + primary |
+| Paso 0 | MVP EfiLicit: modo claro corporativo primero; dark opcional | Dark EfiLumen es más “blue genérico” |
 
 ---
 

@@ -1,0 +1,110 @@
+/**
+ * Tokens corporativos Eficen / EfiLumen → referencia para EfiLicit.
+ * Origen: efilumen-web/src/app/globals.css (modo claro alineado a APK Color.kt).
+ *
+ * NO importar este fichero directamente en producción todavía:
+ * en Paso 1 se adaptan a apps/web/src/app/globals.css.
+ */
+
+:root {
+  /* Base */
+  --background: #f4fbfd;
+  --foreground: #212121;
+
+  /* Corporativo */
+  --primary: #52b9d8;
+  --primary-foreground: #ffffff;
+  --primary-dark: #3a9bbf;
+  --primary-light: #b3e3f0;
+
+  /* Neutros de UI */
+  --surface: #ffffff;
+  --surface-foreground: #212121;
+  --muted: #eaf6fa;
+  --muted-foreground: #757575;
+  --border: #d6eaf1;
+  --ring: #52b9d8;
+  --link: #3a9bbf;
+
+  /* Estados */
+  --destructive: #d32f2f;
+
+  /* Tipografía (valores reales los define next/font en el layout) */
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+
+  /* Semánticos tipo shadcn (útiles si se monta UI kit) */
+  --card: #ffffff;
+  --card-foreground: #212121;
+  --popover: #ffffff;
+  --popover-foreground: #212121;
+  --secondary: #eef8fc;
+  --secondary-foreground: #212121;
+  --accent: #d6f0f8;
+  --accent-foreground: #212121;
+  --input: #d6eaf1;
+  --chart-1: #52b9d8;
+  --chart-2: #757575;
+  --chart-3: #3a9bbf;
+  --chart-4: #b3e3f0;
+  --chart-5: #212121;
+
+  --radius: 0.625rem;
+
+  --sidebar: #ffffff;
+  --sidebar-foreground: #212121;
+  --sidebar-primary: #52b9d8;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #eef8fc;
+  --sidebar-accent-foreground: #212121;
+  --sidebar-border: #d6eaf1;
+  --sidebar-ring: #52b9d8;
+}
+
+/**
+ * Modo oscuro (referencia EfiLumen). Opcional en EfiLicit MVP.
+ */
+.dark {
+  --background: #0b1226;
+  --foreground: #ededed;
+  --surface: #111b33;
+  --surface-foreground: #ededed;
+
+  --primary: #3b82f6;
+  --primary-foreground: #ffffff;
+  --primary-dark: #2563eb;
+  --primary-light: #1e3157;
+
+  --card: #111827;
+  --card-foreground: #ededed;
+  --popover: #111827;
+  --popover-foreground: #ededed;
+
+  --secondary: #1b2840;
+  --secondary-foreground: #ededed;
+  --muted: #1a2742;
+  --muted-foreground: #9ca3af;
+  --accent: #1e3157;
+  --accent-foreground: #ededed;
+
+  --destructive: #ef4444;
+  --border: #374151;
+  --input: #374151;
+  --ring: #3b82f6;
+  --link: #60a5fa;
+
+  --chart-1: #3b82f6;
+  --chart-2: #9ca3af;
+  --chart-3: #2563eb;
+  --chart-4: #1e293b;
+  --chart-5: #ededed;
+
+  --sidebar: #111827;
+  --sidebar-foreground: #ededed;
+  --sidebar-primary: #3b82f6;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #1f2937;
+  --sidebar-accent-foreground: #ededed;
+  --sidebar-border: #374151;
+  --sidebar-ring: #3b82f6;
+}
