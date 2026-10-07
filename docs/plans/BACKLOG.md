@@ -18,6 +18,7 @@ No son bugs olvidados ni el trabajo de la siguiente semana del roadmap. Son huec
 - **Limpiar CHECK de `alerts.frequency`.** El esqueleto Semana 1 aún admite `instant` en `alerts`; el producto usa `users.digest_frequency`. Alinear esquema / sync cuando se toque migraciones de alertas.
 - **Separar match/encolado y envío en dos jobs.** Hoy `run-alerts` hace ambos en un solo proceso; suficiente mientras solo haya daily/weekly ([ADR 012](../adr/012-digest-email-job-python-sin-edge-function.md)).
 - **Edge Function de email (N/A intencional).** El digest se envía desde el job Python + Actions, no desde `supabase/functions/` ([ADR 012](../adr/012-digest-email-job-python-sin-edge-function.md)). Replantear solo si hace falta otro canal (p. ej. reenvío desde la web).
+- **Doble envío de digest si el job falla tras Resend (aceptado en MVP).** El drenado envía el correo y después marca `notification_queue` como `sent` + `commit`. Si el proceso cae entre ambas, los ítems siguen `pending` y una reejecución puede reenviar el mismo digest. Decisión explícita: preferir un posible duplicado frente a perder el aviso. No endurecer (idempotency key en Resend, estado intermedio, commit por digest, etc.) salvo que el duplicado se observe de forma recurrente en ops.
 
 ---
 
