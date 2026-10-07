@@ -1,4 +1,4 @@
-"""Tests for RAW validate + Supabase Storage store (placsp + agregadas + menores)."""
+"""Tests de validate RAW + store Supabase Storage (placsp + agregadas + menores)."""
 
 from __future__ import annotations
 

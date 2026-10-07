@@ -1,4 +1,11 @@
-"""Envío de email para digests (Paso 8). API key solo en backend/env — nunca en frontend."""
+"""Envío de email para digests (Paso 8).
+
+API key solo en backend/env del job — nunca en frontend ni en Edge Function
+(ADR 012: Resend desde Python en GitHub Actions).
+
+``FakeEmailSender`` captura en memoria (tests / dry-run / write-fake).
+``ResendEmailSender`` llama a la API HTTP con secretos de entorno.
+"""
 
 from __future__ import annotations
 
@@ -35,11 +42,13 @@ class FakeEmailSender:
 
     sent: list[EmailMessage] = field(default_factory=list)
     fail_next: bool = False
+    fail_always: bool = False
+    fail_error: str = "fake_sender_forced_failure"
 
     def send(self, message: EmailMessage) -> EmailSendResult:
-        if self.fail_next:
+        if self.fail_always or self.fail_next:
             self.fail_next = False
-            return EmailSendResult(ok=False, error="fake_sender_forced_failure")
+            return EmailSendResult(ok=False, error=self.fail_error)
         self.sent.append(message)
         return EmailSendResult(ok=True, provider_id=f"fake-{len(self.sent)}")
 

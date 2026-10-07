@@ -1,4 +1,13 @@
-"""Orquestación del job de alertas: match → cola → digest (Semana 5 Paso 9)."""
+"""Orquestación del job de alertas: match → cola → digest (Semana 5 Paso 9).
+
+Entrada CLI / GitHub Actions (``alerts-digest.yml``). Modos:
+
+- dry-run (default): fixtures en memoria + FakeEmailSender — sin DB ni Resend.
+- write: Postgres real + Fake (o Resend si ``send=True``).
+
+Cron desactivado a propósito (ADR 005): solo ``workflow_dispatch`` hasta
+OK explícito + secrets. Envío desde Python, no Edge Function (ADR 012).
+"""
 
 from __future__ import annotations
 
@@ -18,6 +27,7 @@ from efilicit_ingestion.alerts.postgres import (
     PostgresNotificationQueue,
     load_active_alerts,
     load_tender_candidates,
+    load_user_digest_frequencies,
     load_user_emails,
 )
 from efilicit_ingestion.alerts.queue import InMemoryNotificationQueue, digest_day
@@ -46,6 +56,7 @@ class AlertsRunResult:
 
 
 def _fixture_alerts() -> list[AlertRule]:
+    """Alerta mínima con keyword para el dry-run de CI."""
     return [
         AlertRule(
             id="00000000-0000-4000-8000-0000000000a1",
@@ -57,6 +68,7 @@ def _fixture_alerts() -> list[AlertRule]:
 
 
 def _fixture_tenders() -> list[TenderCandidate]:
+    """Una licitación que hace match y otra que no (smoke del matcher)."""
     return [
         TenderCandidate(
             id="00000000-0000-4000-8000-0000000000t1",
@@ -91,27 +103,42 @@ def _fixture_directory() -> UserEmailDirectory:
     )
 
 
+def _job_date(cfg: AlertsRunConfig) -> date:
+    return cfg.digest or datetime.now(timezone.utc).date()
+
+
 def run_alerts(config: AlertsRunConfig | None = None) -> AlertsRunResult:
+    """Ejecuta batch + drain según el modo configurado."""
     cfg = config or AlertsRunConfig()
-    digest_key = digest_day(cfg.digest)
+    job_date = _job_date(cfg)
+    digest_key = digest_day(job_date)
 
     if cfg.dry_run:
-        return _run_dry(digest_key=digest_key)
+        return _run_dry(job_date=job_date, digest_key=digest_key)
 
-    return _run_write(cfg=cfg, digest_key=digest_key)
+    return _run_write(cfg=cfg, job_date=job_date, digest_key=digest_key)
 
 
-def _run_dry(*, digest_key: str) -> AlertsRunResult:
+def _run_dry(*, job_date: date, digest_key: str) -> AlertsRunResult:
+    """Camino seguro por defecto: sin secretos, sin writes."""
     queue = InMemoryNotificationQueue()
     sender = FakeEmailSender()
     directory = _fixture_directory()
+    frequencies = {"00000000-0000-4000-8000-0000000000u1": "daily"}
     batch = run_alert_batch(
         alerts=_fixture_alerts(),
         tenders=_fixture_tenders(),
         queue=queue,
-        digest=digest_key,
+        digest=job_date,
+        frequencies=frequencies,
     )
-    drain = drain_daily_digests(queue=queue, sender=sender, directory=directory)
+    drain = drain_daily_digests(
+        queue=queue,
+        sender=sender,
+        directory=directory,
+        frequencies=frequencies,
+        job_date=job_date,
+    )
     return AlertsRunResult(
         dry_run=True,
         send=False,
@@ -122,12 +149,15 @@ def _run_dry(*, digest_key: str) -> AlertsRunResult:
     )
 
 
-def _run_write(*, cfg: AlertsRunConfig, digest_key: str) -> AlertsRunResult:
+def _run_write(*, cfg: AlertsRunConfig, job_date: date, digest_key: str) -> AlertsRunResult:
+    """Camino real: lee canónico, encola, drena; Resend solo si ``send``."""
     since = datetime.now(timezone.utc) - timedelta(days=max(cfg.since_days, 0))
     sender = ResendEmailSender() if cfg.send else FakeEmailSender()
 
     with connect() as conn:
         alerts = load_active_alerts(conn)
+        alert_user_ids = sorted({a.user_id for a in alerts})
+        frequencies = load_user_digest_frequencies(conn, alert_user_ids)
         tenders = load_tender_candidates(
             conn,
             since=since,
@@ -138,12 +168,25 @@ def _run_write(*, cfg: AlertsRunConfig, digest_key: str) -> AlertsRunResult:
             alerts=alerts,
             tenders=tenders,
             queue=queue,
-            digest=digest_key,
+            digest=job_date,
+            frequencies=frequencies,
         )
 
-        user_ids = sorted({item.user_id for item in queue.pending_items()})
+        user_ids = sorted({item.user_id for item in queue.drainable_items()})
+        # Incluir frecuencias de usuarios con cola drenable aunque no estén en el batch.
+        if user_ids:
+            frequencies = {
+                **frequencies,
+                **load_user_digest_frequencies(conn, user_ids),
+            }
         directory = UserEmailDirectory(emails=load_user_emails(conn, user_ids))
-        drain = drain_daily_digests(queue=queue, sender=sender, directory=directory)
+        drain = drain_daily_digests(
+            queue=queue,
+            sender=sender,
+            directory=directory,
+            frequencies=frequencies,
+            job_date=job_date,
+        )
         conn.commit()
 
     emails_captured = len(sender.sent) if isinstance(sender, FakeEmailSender) else drain.digests_sent
@@ -158,6 +201,7 @@ def _run_write(*, cfg: AlertsRunConfig, digest_key: str) -> AlertsRunResult:
 
 
 def format_result(result: AlertsRunResult) -> str:
+    """Línea de resumen estable para logs de CI (parseable a ojo)."""
     b = result.batch
     d = result.drain
     mode = "dry-run" if result.dry_run else ("write+resend" if result.send else "write+fake")
@@ -169,6 +213,9 @@ def format_result(result: AlertsRunResult) -> str:
         f"skipped_inactive={b.skipped_inactive} "
         f"skipped_empty_criteria={b.skipped_empty_criteria}\n"
         f"  drain attempted={d.digests_attempted} sent={d.digests_sent} "
-        f"failed={d.digests_failed} items_sent={d.items_marked_sent} "
-        f"items_failed={d.items_marked_failed} emails_captured={result.emails_captured}"
+        f"failed={d.digests_failed} skipped_not_due={d.digests_skipped_not_due} "
+        f"items_sent={d.items_marked_sent} "
+        f"items_failed={d.items_marked_failed} "
+        f"items_cancelled={d.items_marked_cancelled} "
+        f"emails_captured={result.emails_captured}"
     )

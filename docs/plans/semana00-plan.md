@@ -72,8 +72,8 @@ Registro de lo acordado **antes** de seguir (o al cerrar un paso), en orden cron
 | Paso 1 | Fijar Node **24.x** y pnpm **10.33.0** en el repo | Versiones reales de la máquina al bootstrap |
 | Paso 0 | Ubuntu WSL2 **opcional**; continuar en PowerShell | Reduce fricción pero no es requisito |
 | Paso 6 | CI mínimo en GitHub Actions | Cumplir checklist sin orquestar ETL aún |
-| Paso 6 → cierre | **No activar branch protection en `main`** | Límite de cuenta GitHub Free en repo privado; decisión consciente documentada en `.github/README.md` |
-| Paso 7 | Remoto vacío al vincular → historial alineado con migración Fase 0 vía `db push` controlado (no pull de esquema productivo ajeno) | Remoto nuevo / sin esquema previo |
+| Paso 6 → cierre | **No activar branch protection en `main`** | Límite de cuenta GitHub Free en repo privado; [ADR 001](../adr/001-proteccion-main-aplazada.md); detalle en `.github/README.md` |
+| Paso 7 | Remoto vacío al vincular → historial alineado con migración Fase 0 vía `db push` controlado (no pull de esquema productivo ajeno) | Remoto nuevo / greenfield; [ADR 002](../adr/002-bootstrap-supabase-remoto-greenfield.md) |
 | Paso 8 | Migración propia Storage `raw` + `setup_rls_smoke` (no modelo canónico) | Probar Storage/RLS sin adelantar Semana 1 |
 | Paso 9 | Checklist en `docs/fase0-checklist.md` (luego movido a `docs/plans/`) | Constancia de cierre |
 

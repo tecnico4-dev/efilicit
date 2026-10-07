@@ -4,6 +4,16 @@ Documentación por fuente oficial (PLACSP, TED, CCAA, etc.).
 
 Cada fuente debe indicar: organismo, URL, mecanismo de acceso, formato, frecuencia, identificadores, rate limits, método incremental, scraping (sí/no), cobertura y respaldo si existe.
 
+### Al añadir un `source_code` nuevo (obligatorio)
+
+No basta con ficha + conector + CLI. También hay que:
+
+1. **Incluir el `source_code` en `SOURCE_PRIORITY`** (`ingestion/.../canonical_repo.py`) con un hueco de ranking coherente (p. ej. familia PLACSP por encima de CCAA propias).
+2. **Actualizar la tabla de prioridades** en [ADR 015](../adr/015-fuente-ganadora-canonica.md) (o ADR que lo reemplace): sin eso, la fuente cae al default “desconocido” y **casi nunca gana** la copia canónica frente a las ya listadas.
+3. Ficha en este catálogo + tests/fixtures + workflow si aplica.
+
+Detalle de producto: [ADR 015 — fuente ganadora](../adr/015-fuente-ganadora-canonica.md).
+
 ## Fuentes documentadas (conectores)
 
 | source_code | Documento | Estado |

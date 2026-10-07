@@ -80,7 +80,7 @@ uv run python -m efilicit_ingestion.cli run-placsp `
 | Checksum (SHA-256) | `726e2b0d09781d0b439b6f2fcbc3a265b319dafbd72efcd3d667891fc48823a9` |
 | Path RAW | `raw/placsp/<año>/<mes>/<día>/licitacionesPerfilesContratanteCompleto3_<YYYYMM>.zip` |
 
-`records_updated` en la 1ª pasada es esperable (varias actualizaciones del mismo expediente en el feed).
+Nota: estas cifras son de una corrida live previa. Tras el colapso por `atom:updated` en el parser PLACSP, una 1ª pasada ya no debería inflar `records_updated` por varias versions del mismo expediente en el ZIP (se queda una entry por identidad).
 
 | Tabla / métrica | Cantidad |
 |---|---|

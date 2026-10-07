@@ -3,8 +3,11 @@ import { cookies } from "next/headers";
 import type { Database } from "@efilicit/types";
 
 /**
- * Server client (Server Components, Route Handlers, Server Actions).
- * Publishable/anon key + cookies de sesión. Never service_role.
+ * Cliente de servidor (Server Components, Route Handlers, Server Actions).
+ *
+ * Publishable/anon key + cookies de sesión Auth. Nunca `service_role`
+ * (solo procesos confiables / ETL). El middleware refresca la sesión cuando
+ * este cliente no puede mutar cookies desde un Server Component.
  */
 export async function createSupabaseServerClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -12,7 +15,7 @@ export async function createSupabaseServerClient() {
 
   if (!url || !key) {
     throw new Error(
-      "Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY (copy apps/web/.env.example → .env.local)",
+      "Faltan NEXT_PUBLIC_SUPABASE_URL o NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY (copia apps/web/.env.example → .env.local)",
     );
   }
 
@@ -29,7 +32,7 @@ export async function createSupabaseServerClient() {
             cookieStore.set(name, value, options);
           }
         } catch {
-          // Called from a Server Component without mutable cookies — middleware refreshes session.
+          // Componente de servidor sin cookies mutables — el middleware refresca la sesión.
         }
       },
     },

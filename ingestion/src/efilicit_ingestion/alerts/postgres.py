@@ -1,4 +1,15 @@
-"""Persistencia Postgres del motor de alertas (cola + lecturas canónicas)."""
+"""Persistencia Postgres del motor de alertas (cola + lecturas canónicas).
+
+Solo procesos confiables (job con ``EFILICIT_DATABASE_URL`` / service).
+La web nunca escribe en ``notification_queue`` ni lee emails de Auth.
+
+Lecturas:
+
+- alertas activas + ventana de tenders (join organismo para criteria).
+- emails y ``digest_frequency`` de cuenta para el drenado.
+
+Escrituras: upsert idempotente en ``notification_queue`` (ON CONFLICT DO NOTHING).
+"""
 
 from __future__ import annotations
 
@@ -12,6 +23,7 @@ from psycopg.rows import dict_row
 from psycopg.types.json import Json
 
 from efilicit_ingestion.alerts.models import AlertRule, NotificationItem, TenderCandidate
+from efilicit_ingestion.alerts.retry import status_after_failed_attempt
 
 
 def _as_str(value: UUID | str | None) -> str | None:
@@ -21,6 +33,7 @@ def _as_str(value: UUID | str | None) -> str | None:
 
 
 def load_active_alerts(conn: psycopg.Connection) -> list[AlertRule]:
+    """Carga reglas ``is_active`` ordenadas (estable para logs/repro)."""
     with conn.cursor(row_factory=dict_row) as cur:
         cur.execute(
             """
@@ -50,7 +63,10 @@ def load_tender_candidates(
     since: date | datetime | None = None,
     limit: int = 5000,
 ) -> list[TenderCandidate]:
-    """Ventana de licitaciones para matching (por updated_at / publication_date)."""
+    """Ventana de licitaciones para matching (por updated_at / publication_date).
+
+    Incluye campos del organismo: criteria.authority / geography viven ahí.
+    """
     if since is None:
         since = datetime.now(timezone.utc) - timedelta(days=1)
     if isinstance(since, date) and not isinstance(since, datetime):
@@ -123,7 +139,7 @@ def load_user_emails(
     conn: psycopg.Connection,
     user_ids: list[str],
 ) -> dict[str, str]:
-    """public.users.id → auth.users.email (conexión trusted / service)."""
+    """``public.users.id`` → ``auth.users.email`` (conexión trusted / service)."""
     if not user_ids:
         return {}
     ids = [UUID(u) for u in user_ids]
@@ -143,6 +159,36 @@ def load_user_emails(
     return {row["user_id"]: row["email"] for row in rows}
 
 
+def load_user_digest_frequencies(
+    conn: psycopg.Connection,
+    user_ids: list[str] | None = None,
+) -> dict[str, str]:
+    """``public.users.id`` → ``digest_frequency`` (daily|weekly; ADR 013)."""
+    with conn.cursor(row_factory=dict_row) as cur:
+        if user_ids:
+            ids = [UUID(u) for u in user_ids]
+            cur.execute(
+                """
+                select id::text as user_id, digest_frequency
+                from public.users
+                where id = any(%s)
+                """,
+                (ids,),
+            )
+        else:
+            cur.execute(
+                """
+                select id::text as user_id, digest_frequency
+                from public.users
+                """
+            )
+        rows = cur.fetchall()
+    return {
+        row["user_id"]: (row["digest_frequency"] or "daily").strip().lower()
+        for row in rows
+    }
+
+
 def _row_to_item(row: dict[str, Any]) -> NotificationItem:
     return NotificationItem(
         id=str(row["id"]),
@@ -159,7 +205,11 @@ def _row_to_item(row: dict[str, Any]) -> NotificationItem:
 
 
 class PostgresNotificationQueue:
-    """Cola ``notification_queue`` con upsert por ``idempotency_key``."""
+    """Cola ``notification_queue`` con upsert por ``idempotency_key``.
+
+    ON CONFLICT DO NOTHING: si la clave ya existe (pending o sent), se reutiliza
+    la fila y no se reabre un envío previo.
+    """
 
     def __init__(self, conn: psycopg.Connection) -> None:
         self._conn = conn
@@ -222,6 +272,18 @@ class PostgresNotificationQueue:
             )
             return [_row_to_item(row) for row in cur.fetchall()]
 
+    def drainable_items(self) -> list[NotificationItem]:
+        with self._conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(
+                """
+                select *
+                from public.notification_queue
+                where status in ('pending', 'failed')
+                order by scheduled_at, created_at
+                """
+            )
+            return [_row_to_item(row) for row in cur.fetchall()]
+
     def mark_sent(
         self,
         idempotency_key: str,
@@ -255,15 +317,33 @@ class PostgresNotificationQueue:
                     (when, idempotency_key),
                 )
 
-    def mark_failed(self, idempotency_key: str, *, error: str) -> None:
-        with self._conn.cursor() as cur:
+    def mark_failed(self, idempotency_key: str, *, error: str) -> str:
+        err = error[:2000]
+        with self._conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(
+                """
+                select attempts
+                from public.notification_queue
+                where idempotency_key = %s
+                for update
+                """,
+                (idempotency_key,),
+            )
+            row = cur.fetchone()
+            if row is None:
+                raise RuntimeError(
+                    f"notification_queue missing for mark_failed: {idempotency_key}"
+                )
+            attempts = int(row["attempts"] or 0) + 1
+            status = status_after_failed_attempt(attempts=attempts, error=err)
             cur.execute(
                 """
                 update public.notification_queue
-                set status = 'failed',
-                    attempts = attempts + 1,
+                set status = %s,
+                    attempts = %s,
                     last_error = %s
                 where idempotency_key = %s
                 """,
-                (error[:2000], idempotency_key),
+                (status, attempts, err, idempotency_key),
             )
+            return status

@@ -13,7 +13,7 @@ Plan: [semana01-plan.md](semana01-plan.md). Criterios: `docs/04-roadmap-mvp.md` 
 | Pipeline común + prueba mínima | OK | `run_pipeline` + test con stub (in-memory) |
 | `source_sync` / `source_artifacts` funcionando | OK | Persistencia Postgres + tests de integración locales |
 | `pytest` en CI | OK | Job ingestion: `3 passed, 3 skipped` en Actions |
-| ADRs estructurales (solo si hubo decisión nueva) | N/A | Sin cambio de arquitectura; se implementó lo fijado en `docs/01`–`04` |
+| ADRs estructurales (solo si hubo decisión nueva) | OK | [ADR 003](../adr/003-acceso-canonico-publico-etl-privado.md) (canónico público / ETL privado; `errors` reservada); [ADR 004](../adr/004-ci-ingestion-sin-postgres.md) (CI sin Postgres) |
 | CHANGELOG actualizado | OK | Unreleased con entradas Semana 1 |
 
 Cuando esté en OK → Semana 2 (PLACSP vertical slice).

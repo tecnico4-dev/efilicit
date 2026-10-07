@@ -1,4 +1,9 @@
-"""Parse Euskadi contracting-notices JSON pages into SourceRecord."""
+"""Parsea páginas JSON ``contracting-notices`` → ``SourceRecord``.
+
+Shape de la API: objeto con ``items[]`` (no array raíz como SODA). Mapeamos a
+payload neutro para normalize/upsert. Suele incluir NIF
+(``identificationNumber``) → ``authority.tax_id`` usable en matching Semana 4.
+"""
 
 from __future__ import annotations
 
@@ -9,6 +14,7 @@ from typing import Any
 from efilicit_ingestion.connectors.euskadi.errors import EuskadiParseError
 from efilicit_ingestion.models import RemoteArtifact, SourceRecord
 
+# Etiquetas de estado API → códigos tipo CODICE (normalize del pipeline).
 _STATUS = {
     "publicacion": "PUB",
     "publicación": "PUB",
@@ -37,7 +43,10 @@ _CONTRACT_TYPE = {
 
 
 def parse_euskadi_artifact(raw: bytes, artifact: RemoteArtifact) -> Iterable[SourceRecord]:
-    """Parse a KontratazioA page (``{items:[...]}``) into source records."""
+    """Parsea una página KontratazioA (``{items:[...]}``) en registros de fuente.
+
+    Ítems sin ``id`` se omiten: el unique canónico es ``(euskadi, id)``.
+    """
     try:
         data = json.loads(raw.decode("utf-8"))
     except (UnicodeDecodeError, json.JSONDecodeError) as exc:
@@ -59,6 +68,7 @@ def parse_euskadi_artifact(raw: bytes, artifact: RemoteArtifact) -> Iterable[Sou
 
 
 def _map_row(row: dict[str, Any], artifact: RemoteArtifact) -> SourceRecord | None:
+    """Mapea un aviso de ``items[]`` al payload neutro del pipeline."""
     notice_id = row.get("id")
     if notice_id is None:
         return None
@@ -72,6 +82,7 @@ def _map_row(row: dict[str, Any], artifact: RemoteArtifact) -> SourceRecord | No
     tax_id = _normalize_tax(_text(authority.get("identificationNumber")))
     nuts = _text(authority.get("codNUTS"))
 
+    # Muchos campos vienen como {id, name}; nos quedamos con el name legible.
     status_name = _nested_name(row.get("contractProcedureStatus"))
     type_name = _nested_name(row.get("contractType"))
     procedure_name = _nested_name(row.get("contractProcedureType"))
@@ -131,6 +142,7 @@ def _text(value: Any) -> str | None:
 
 
 def _fold(value: str) -> str:
+    """Quita acentos para matchear claves de mapas de estado/tipo."""
     lowered = value.lower()
     return lowered.translate(
         str.maketrans(
@@ -150,6 +162,7 @@ def _fold(value: str) -> str:
 
 
 def _normalize_tax(value: str | None) -> str | None:
+    """NIF/CIF sin espacios ni guiones, mayúsculas — comparación estable en matching."""
     if not value:
         return None
     cleaned = value.replace(" ", "").replace("-", "").upper()

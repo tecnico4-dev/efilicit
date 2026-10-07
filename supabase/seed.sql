@@ -1,17 +1,21 @@
--- Synthetic development seed (Fase 0 / Paso 8).
--- NO real users, tokens, passwords from production, or secrets.
-
--- Two local-only Auth users for RLS smoke tests.
--- Password for both (local only): "password123"
--- email_confirmed_at set so they can sign in immediately in Studio/local Auth.
+-- Seed local de desarrollo (Fase 0 / Paso 8 + extensiones posteriores).
+--
+-- Reglas:
+-- - Solo datos sintéticos. Nunca copiar usuarios, tokens o secretos de producción.
+-- - Password local de Alice/Bob: "password123" (solo Studio / Auth local).
+-- - UUIDs fijos para que tests y guías E2E puedan referirse siempre a los mismos ids.
 
 create extension if not exists "pgcrypto";
 
 do $$
 declare
+  -- Ids estables documentados en docs/pruebas y scripts verify:rls.
   user_a constant uuid := '11111111-1111-1111-1111-111111111111';
   user_b constant uuid := '22222222-2222-2222-2222-222222222222';
 begin
+  -- ---------------------------------------------------------------------------
+  -- Auth: dos usuarios confirmados para probar aislamiento RLS (Alice ≠ Bob).
+  -- ---------------------------------------------------------------------------
   insert into auth.users (
     instance_id,
     id,
@@ -66,6 +70,7 @@ begin
     )
   on conflict (id) do nothing;
 
+  -- Identities email necesarias para que Auth local acepte login con estos users.
   insert into auth.identities (
     id,
     user_id,
@@ -99,12 +104,14 @@ begin
     )
   on conflict (id) do nothing;
 
+  -- Una nota por usuario: con sesión de Alice no debe verse la de Bob (y viceversa).
   insert into public.setup_rls_smoke (owner_id, note)
   values
     (user_a, 'Nota de Alice — solo ella debe verla con RLS'),
     (user_b, 'Nota de Bob — solo él debe verla con RLS');
 
-  -- Semana 5: perfiles de aplicación (el trigger on_auth_user_created también los crea).
+  -- Perfiles de aplicación (public.users). El trigger on_auth_user_created también
+  -- los crea en registros nuevos; aquí se aseguran Alice/Bob tras db reset.
   insert into public.users (auth_user_id, display_name)
   values
     (user_a, 'Alice'),

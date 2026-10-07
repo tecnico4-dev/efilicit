@@ -1,4 +1,11 @@
-"""PLACSP SourceConnector — discover + fetch + parse (Atom/CODICE syndications)."""
+"""SourceConnector PLACSP — discover ZIPs mensuales + fetch + parse Atom/CODICE.
+
+Implementa el contrato Semana 1: el pipeline no conoce sindicaciones ni CODICE;
+solo ve ``RemoteArtifact`` (ZIP) y ``SourceRecord``.
+
+Discover construye URLs oficiales mes a mes (ventana from/to o solo ``as_of``).
+No lista un HTML de índice: las rutas están documentadas y son estables.
+"""
 
 from __future__ import annotations
 
@@ -27,7 +34,8 @@ from efilicit_ingestion.connectors.placsp.urls import (
 )
 from efilicit_ingestion.models import RemoteArtifact, SourceRecord, SyncContext
 
-# Optional probe: return True if the remote package appears available.
+# Sonda opcional: True si el paquete remoto parece disponible (p. ej. HEAD).
+# Evita encolar meses que Hacienda aún no ha publicado.
 UrlExists = Callable[[str], bool]
 
 __all__ = [
@@ -38,13 +46,13 @@ __all__ = [
 
 
 class PlacspConnector:
-    """PLACSP Open Data connector for Atom/CODICE ZIP syndications.
+    """Conector Open Data PLACSP para sindicaciones Atom/CODICE en ZIP.
 
-    Default syndication is perfiles alojados (``placsp`` / ``sindicacion_643``).
-    Pass ``syndication=PLACSP_AGREGADAS`` / ``PLACSP_MENORES`` (or another config)
-    for additional Atom/CODICE syndications.
-    Discovery uses well-known URI patterns from ``docs/sources/placsp*.md``.
-    Fetch downloads with timeout, retries, and a size budget.
+    Por defecto: perfiles alojados (``placsp`` / ``sindicacion_643``).
+    Pasar ``syndication=PLACSP_AGREGADAS`` / ``PLACSP_MENORES`` reutiliza
+    discover/fetch/parse con otra carpeta Hacienda (mismo formato).
+
+    ``fetch_transport``: fixture/E2E sin red. ``url_exists``: saltar ZIPs ausentes.
     """
 
     def __init__(
@@ -61,11 +69,10 @@ class PlacspConnector:
         max_bytes: int = DEFAULT_MAX_BYTES,
         retry_attempts: int = DEFAULT_RETRY_ATTEMPTS,
     ) -> None:
-        """Configure syndication, discovery window, and fetch policy.
+        """Configura sindicación, ventana de meses y política de descarga.
 
-        - If neither from/to is set: discover the single month of ``as_of`` (or today).
-        - ``url_exists``: optional probe (e.g. HEAD) to skip missing packages.
-        - ``fetch_transport``: injectable downloader for tests (no live network).
+        - Sin from/to: descubre solo el mes de ``as_of`` (o hoy) — slice acotado.
+        - Live: ZIPs pueden ser cientos de MiB → ``max_bytes`` alto por defecto.
         """
         self.syndication = syndication
         self.source_code = syndication.source_code
@@ -82,6 +89,7 @@ class PlacspConnector:
         )
 
     def discover(self, context: SyncContext) -> list[RemoteArtifact]:
+        """Lista ZIPs mensuales de la ventana; respeta cursor de ``source_sync``."""
         start, end = self._resolve_window()
         artifacts: list[RemoteArtifact] = []
         feed = self.syndication
@@ -113,6 +121,7 @@ class PlacspConnector:
         return artifacts
 
     def fetch(self, artifact: RemoteArtifact) -> bytes:
+        """Descarga el ZIP; el RAW aún no se parsea (evidencia inmutable primero)."""
         if not artifact.source_url:
             raise ValueError(
                 f"artifact {artifact.artifact_key!r} is missing source_url"
@@ -132,6 +141,7 @@ class PlacspConnector:
         return parse_placsp_artifact(raw, artifact)
 
     def _resolve_window(self) -> tuple[tuple[int, int], tuple[int, int]]:
+        """Ventana [start, end] inclusiva; por defecto un solo mes (pivote)."""
         pivot = self._as_of or date.today()
         pivot_ym = (pivot.year, pivot.month)
 
@@ -152,10 +162,10 @@ class PlacspConnector:
 
     @staticmethod
     def _is_after_cursor(artifact_key: str, cursor: str | None) -> bool:
-        """Skip packages already covered by the sync cursor.
+        """Omite paquetes ya cubiertos por el cursor de sync.
 
-        Cursor is expected to be a previous ``artifact_key``. Lexicographic order
-        works for monthly filenames (..._YYYYMM.zip).
+        El cursor suele ser el último ``artifact_key`` procesado. El orden
+        lexicográfico vale para nombres ``…_YYYYMM.zip`` (año/mes zero-padded).
         """
         if cursor is None:
             return True

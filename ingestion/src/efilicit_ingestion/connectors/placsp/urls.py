@@ -1,7 +1,8 @@
-"""Official PLACSP syndication URI helpers (docs/sources/placsp*.md).
+"""Helpers de URI oficiales de sindicación PLACSP (docs/sources/placsp*.md).
 
-No HTML scraping: packages live at well-known paths.
-Supports multiple Atom/CODICE syndications (perfiles vs agregadas, etc.).
+Sin scraping HTML: Hacienda publica ZIPs en rutas conocidas
+(``…/sindicacion_{id}/{feed}_{YYYYMM}.zip``). Varias sindicaciones comparten
+el mismo patrón Atom/CODICE; solo cambian id de sindicación y nombre de feed.
 """
 
 from __future__ import annotations
@@ -26,7 +27,11 @@ __all__ = [
 
 @dataclass(frozen=True, slots=True)
 class PlacspSyndication:
-    """One official PLACSP Open Data syndication dataset."""
+    """Un dataset oficial Open Data PLACSP (una sindicación = un ``source_code``).
+
+    ``sindicacion`` es el número de carpeta Hacienda; ``feed_base_name`` el
+    prefijo del ZIP. Juntos fijan URL y ``artifact_key`` estables.
+    """
 
     source_code: str
     sindicacion: str
@@ -40,7 +45,8 @@ class PlacspSyndication:
         )
 
 
-# Semana 2 — perfiles alojados, sin menores (docs/sources/placsp.md).
+# Semana 2 — perfiles alojados en PLACSP, sin menores (docs/sources/placsp.md).
+# Vertical slice inicial: discover mensual → ZIP → Atom/CODICE → canónico.
 PLACSP = PlacspSyndication(
     source_code="placsp",
     sindicacion="643",
@@ -48,6 +54,8 @@ PLACSP = PlacspSyndication(
 )
 
 # Semana 3 — agregación CCAA/entes, sin menores (docs/sources/placsp_agregadas.md).
+# Reuso del mismo Atom/CODICE que perfiles; otra sindicación (1044). Amplía cobertura
+# territorial sin conector nuevo por CCAA (ver ADR 007 / matriz Semana 4).
 PLACSP_AGREGADAS = PlacspSyndication(
     source_code="placsp_agregadas",
     sindicacion="1044",
@@ -55,13 +63,15 @@ PLACSP_AGREGADAS = PlacspSyndication(
 )
 
 # Semana 4 — contratos menores de perfiles alojados (docs/sources/placsp_menores.md).
+# Misma tubería Atom/CODICE que perfiles/agregadas; otra sindicación Hacienda (1143).
+# No cubre menores de plataformas *agregadas* (eso queda en backlog / ADR 009).
 PLACSP_MENORES = PlacspSyndication(
     source_code="placsp_menores",
     sindicacion="1143",
     feed_base_name="contratosMenoresPerfilesContratantes",
 )
 
-# Backward-compatible aliases for the default (perfiles) syndication.
+# Alias compatibles con el código Semana 2 (sindicación por defecto = perfiles).
 PLACSP_SINDICACION_BASE = PLACSP.base_url
 FEED_BASE_NAME = PLACSP.feed_base_name
 
@@ -71,7 +81,7 @@ def monthly_package_filename(
     month: int,
     syndication: PlacspSyndication = PLACSP,
 ) -> str:
-    """Stable artifact_key for a monthly ZIP package."""
+    """``artifact_key`` estable del ZIP mensual (también sirve de cursor de sync)."""
     if month < 1 or month > 12:
         raise ValueError(f"month out of range: {month}")
     return f"{syndication.feed_base_name}_{year:04d}{month:02d}.zip"
@@ -82,6 +92,7 @@ def monthly_package_url(
     month: int,
     syndication: PlacspSyndication = PLACSP,
 ) -> str:
+    """URL oficial del paquete mensual (discover no inventa rutas)."""
     return (
         f"{syndication.base_url}/"
         f"{monthly_package_filename(year, month, syndication)}"
@@ -92,7 +103,7 @@ def yearly_package_filename(
     year: int,
     syndication: PlacspSyndication = PLACSP,
 ) -> str:
-    """Stable artifact_key for a closed-year ZIP package."""
+    """``artifact_key`` del ZIP de año cerrado (por si se usa fuera del slice mensual)."""
     return f"{syndication.feed_base_name}_{year:04d}.zip"
 
 
@@ -107,7 +118,7 @@ def yearly_package_url(
 
 
 def parse_year_month(value: str) -> tuple[int, int]:
-    """Parse 'YYYY-MM' or 'YYYYMM' into (year, month)."""
+    """Parsea ``YYYY-MM`` o ``YYYYMM`` a ``(year, month)`` para la ventana de discover."""
     raw = value.strip()
     if len(raw) == 7 and raw[4] == "-":
         year_s, month_s = raw.split("-", 1)
@@ -121,7 +132,7 @@ def iter_year_months(
     start: tuple[int, int],
     end: tuple[int, int],
 ) -> list[tuple[int, int]]:
-    """Inclusive month range from start to end."""
+    """Rango de meses inclusivo: un artefacto por mes en el discover."""
     sy, sm = start
     ey, em = end
     if (sy, sm) > (ey, em):

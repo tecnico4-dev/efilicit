@@ -1,4 +1,8 @@
-"""Shared types for the common ingestion pipeline."""
+"""Tipos compartidos del pipeline común de ingesta (Semana 1+).
+
+Dataclasses agnósticas de DB: el runner y los tests hablan este idioma;
+Postgres / memoria rellenan los mismos campos.
+"""
 
 from __future__ import annotations
 
@@ -12,7 +16,11 @@ def utc_now() -> datetime:
 
 @dataclass(frozen=True)
 class StoredArtifact:
-    """Result of store_raw: path + checksum (RAW evidence metadata)."""
+    """Resultado de ``store_raw``: evidencia RAW referenciable (checksum + ruta).
+
+    ``storage_path`` es lo que suele ir a ``source_artifacts`` (p. ej.
+    ``raw/placsp/…/file.zip``), aunque el store sea solo memoria.
+    """
 
     artifact_key: str
     checksum: str
@@ -24,7 +32,10 @@ class StoredArtifact:
 
 @dataclass
 class SyncRun:
-    """In-memory / DB-agnostic view of a source_sync row."""
+    """Vista en memoria / agnóstica de DB de una fila ``source_sync``.
+
+    Contadores y cursor los actualiza el runner; ``finish_run`` los persiste.
+    """
 
     source_code: str
     run_id: str
@@ -45,7 +56,7 @@ class SyncRun:
 
 @dataclass
 class PipelineResult:
-    """Outcome of one pipeline run for tests and callers."""
+    """Resultado de una ejecución del pipeline (CLI, tests, Actions)."""
 
     sync: SyncRun
     records_processed: int

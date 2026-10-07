@@ -1,4 +1,12 @@
-"""Run Catalunya (Socrata) ingestion end-to-end (Semana 3 Paso 8.4)."""
+"""Ejecuta la ingesta Catalunya (Socrata) de punta a punta (Semana 3 Paso 8.4).
+
+Monta el ``SocrataConnector`` + pipeline común (RAW → canónico). Sirve para:
+
+- dry-run / fixture local (sin red SODA ni writes);
+- corrida real contra Postgres + Storage (secrets).
+
+El CLI ``run-catalunya`` y el workflow Actions delegan aquí.
+"""
 
 from __future__ import annotations
 
@@ -8,12 +16,9 @@ from pathlib import Path
 
 from efilicit_ingestion.connectors.socrata import CATALUNYA, SocrataConnector, SocrataDataset
 from efilicit_ingestion.models import SyncContext
-from efilicit_ingestion.pipeline.canonical_repo import (
-    InMemoryCanonicalRepository,
-    PostgresCanonicalRepository,
-)
+from efilicit_ingestion.pipeline.canonical_repo import InMemoryCanonicalRepository
+from efilicit_ingestion.pipeline.db_run import run_pipeline_postgres
 from efilicit_ingestion.pipeline.ports import InMemoryArtifactStore, InMemorySyncRepository
-from efilicit_ingestion.pipeline.postgres import PostgresSyncRepository, connect
 from efilicit_ingestion.pipeline.runner import run_pipeline
 from efilicit_ingestion.pipeline.supabase_storage import (
     SupabaseStorageArtifactStore,
@@ -33,7 +38,11 @@ __all__ = [
 
 @dataclass(frozen=True)
 class CatalunyaRunConfig:
-    """Options for a local / documented Catalunya pipeline run."""
+    """Opciones de una corrida local / documentada del pipeline Catalunya.
+
+    ``page_size`` / ``max_pages`` / ``start_offset`` acotan el discover SODA
+    (en live empezar con 1 página). ``dry_run`` evita Postgres y Storage.
+    """
 
     fixture_path: Path | None = None
     page_size: int = 1000
@@ -46,7 +55,7 @@ class CatalunyaRunConfig:
 
 
 def load_fixture_bytes(path: Path) -> bytes:
-    """Load a JSON fixture page (SODA array)."""
+    """Carga una página fixture JSON (array SODA, como la API real)."""
     raw = path.read_bytes()
     if path.suffix.lower() != ".json":
         raise ValueError(f"unsupported fixture type (expected .json): {path}")
@@ -56,11 +65,12 @@ def load_fixture_bytes(path: Path) -> bytes:
 
 
 def run_catalunya(config: CatalunyaRunConfig) -> PipelineResult:
-    """Execute discover→…→upsert for Catalunya SODA pages.
+    """Ejecuta discover→…→upsert para páginas SODA de Catalunya.
 
-    - ``fixture_path``: offline E2E (no live SODA network).
-    - without fixture: live discover/fetch for ``max_pages`` from ``start_offset``.
-    - ``dry_run``: in-memory sync/canonical/storage (no Postgres/Storage writes).
+    - ``fixture_path``: inventa un ``fetch_transport`` que siempre devuelve
+      ese JSON (E2E offline; el discover sigue generando keys/URLs).
+    - sin fixture: discover/fetch live de ``max_pages`` desde ``start_offset``.
+    - ``dry_run``: sync/canónico/storage en memoria (sin writes).
     """
     dataset = config.dataset
     run_id = config.run_id or f"{dataset.source_code}-{uuid.uuid4()}"
@@ -68,6 +78,7 @@ def run_catalunya(config: CatalunyaRunConfig) -> PipelineResult:
     fetch_transport = None
     if config.fixture_path is not None:
         fixture_bytes = load_fixture_bytes(config.fixture_path)
+        # Misma firma que FetchTransport: ignore URL, devuelve la página fixture.
         fetch_transport = lambda url, data=fixture_bytes: (
             200,
             {"content-type": "application/json", "content-length": str(len(data))},
@@ -106,13 +117,8 @@ def run_catalunya(config: CatalunyaRunConfig) -> PipelineResult:
     else:
         artifact_store = InMemoryArtifactStore()
 
-    with connect() as conn:
-        result = run_pipeline(
-            connector,
-            context,
-            artifact_store=artifact_store,  # type: ignore[arg-type]
-            sync_repo=PostgresSyncRepository(conn),
-            canonical_repo=PostgresCanonicalRepository(conn),
-        )
-        conn.commit()
-    return result
+    return run_pipeline_postgres(
+        connector,
+        context,
+        artifact_store=artifact_store,  # type: ignore[arg-type]
+    )

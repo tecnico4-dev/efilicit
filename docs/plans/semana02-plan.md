@@ -92,7 +92,9 @@ Job de GitHub Actions (manual y/o cron según lo razonable al empezar) que lance
 
 Batería de tests (parser, normalización, persistencia, idempotencia). Marcar [fase2-checklist.md](fase2-checklist.md).
 
-**Listo cuando:** criterios de salida de `docs/04` § Semana 2 cumplidos; CHANGELOG al día; ADR `N/A` si no hubo decisión estructural.
+**Hecho:** regresión `40 passed, 6 skipped`; checklist completo; [ADR 005](../adr/005-ingesta-actions-manual-first-cron-off.md) (cron off) + [ADR 006](../adr/006-raw-storage-httpx-sin-supabase-py.md) (Storage httpx); CHANGELOG con cierre Semana 2.
+
+**Listo cuando:** criterios de salida de `docs/04` § Semana 2 cumplidos → **cumplidos** (ver tabla en checklist).
 
 **Fuera de alcance:** otras CCAA, TED, dedup multi-fuente avanzada (Semana 4), FTS/Auth/alertas UI, subvenciones.
 
@@ -114,7 +116,7 @@ Registro de lo acordado al cerrar (o antes de) cada paso:
 | Paso 2 | `parse` queda `NotImplementedError` hasta Paso 5; `fetch` en Paso 3 | No adelantar parseo CODICE |
 | Paso 3 | `fetch` con `httpx` (timeout/stream), `tenacity` (reintentos), `max_bytes` y SHA-256 helper | Éxito/fallos controlados sin red vía transport inyectable |
 | Paso 3 | Errores tipados `ArtifactTooLargeError` / `PlacspHttpError` / `PlacspFetchError` | Fallos clasificables para sync/logs posteriores |
-| Paso 4 | `SupabaseStorageArtifactStore` vía Storage HTTP API (`httpx` + service_role); sin cliente `supabase-py` nuevo | Stack ya aprobado; service_role solo en proceso confiable |
+| Paso 4 | `SupabaseStorageArtifactStore` vía Storage HTTP API (`httpx` + service_role); sin cliente `supabase-py` nuevo | Stack ya aprobado; [ADR 006](../adr/006-raw-storage-httpx-sin-supabase-py.md) |
 | Paso 4 | Helper `fetch_validate_and_store_raw` (fetch→validate→store) antes del parse canónico | Cumple criterio Paso 4 sin exigir `parse` (Paso 5) |
 | Paso 4 | `validate_artifact` exige magic ZIP (`PK`) para artefactos `.zip` | Evita guardar basura como RAW PLACSP |
 | Paso 4 | Integración live se salta si no hay Docker/`SUPABASE_SERVICE_ROLE_KEY` | CI y máquinas sin stack local siguen verdes |
@@ -129,9 +131,9 @@ Registro de lo acordado al cerrar (o antes de) cada paso:
 | Paso 7 | `run_pipeline(..., canonical_repo=...)` opcional (sin repo = contadores legacy stub) | No rompe tests Semana 1 |
 | Paso 8 | CLI `run-placsp` con `--fixture` / `--dry-run` / Postgres local | E2E documentado sin depender de red PLACSP |
 | Paso 8 | Fixture `.atom` se empaqueta a ZIP en memoria para respetar el artefacto mensual | Misma forma que el paquete oficial |
-| Paso 9 | `ingest-placsp.yml` con `workflow_dispatch` (dry-run / fixture-db / live) | Controlado; cron comentado hasta acordar destino |
+| Paso 9 | `ingest-placsp.yml` con `workflow_dispatch` (dry-run / fixture-db / live) | Controlado; cron off; [ADR 005](../adr/005-ingesta-actions-manual-first-cron-off.md) |
 | Paso 9 | Secretos `EFILICIT_DATABASE_URL` (+ Storage opcional); default sin writes | No quemar prod/red a ciegas |
-| Paso 10 | Regresión completa ingestion (`pytest`); checklist + CHANGELOG; ADR N/A | Cierre Fase 2; verificación UI de Actions tras merge a `main` |
+| Paso 10 | Regresión completa ingestion (`pytest`); checklist + CHANGELOG | Cierre Fase 2; ADR 005 (cron) + ADR 006 (Storage httpx) |
 
 ---
 

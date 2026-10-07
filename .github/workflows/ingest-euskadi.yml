@@ -1,5 +1,7 @@
 # Semana 3 / Paso 9 — ingesta Euskadi (KontratazioA REST) vía GitHub Actions.
-# Por defecto: dry-run con fixture JSON (sin secretos, sin writes).
+# Default seguro: dry-run con fixture JSON (sin secretos, sin writes).
+# Live API o writes: solo dispatch explícito + secrets. Cron off (ADR 005).
+# Artefacto = página JSON (10 avisos/página fijos por la API).
 name: Ingest Euskadi
 
 on:
@@ -32,6 +34,7 @@ on:
         description: "Subir RAW a Storage (requiere SUPABASE_SERVICE_ROLE_KEY + SUPABASE_URL)"
         type: boolean
         default: false
+  # Cron off (ADR 005) hasta acordar entorno + secrets.
   # schedule:
   #   - cron: "0 7 * * 1"
 

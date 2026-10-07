@@ -1,4 +1,12 @@
-"""Run PLACSP ingestion end-to-end (Semana 2 Paso 8; Semana 3 agregadas)."""
+"""Ejecuta la ingesta PLACSP de punta a punta (Semana 2 Paso 8).
+
+Monta ``PlacspConnector`` + pipeline común. Misma entrada para perfiles,
+agregadas y menores (``syndication``). CLI ``run-placsp`` y Actions delegan aquí.
+
+- Fixture: sin red a Hacienda (ZIP o Atom envuelto en ZIP).
+- Dry-run: todo en memoria.
+- Live: Postgres + Storage con secrets (ZIPs grandes → acotar from/to).
+"""
 
 from __future__ import annotations
 
@@ -12,12 +20,9 @@ from pathlib import Path
 from efilicit_ingestion.connectors.placsp import PlacspConnector
 from efilicit_ingestion.connectors.placsp.urls import PLACSP, PlacspSyndication
 from efilicit_ingestion.models import SyncContext
-from efilicit_ingestion.pipeline.canonical_repo import (
-    InMemoryCanonicalRepository,
-    PostgresCanonicalRepository,
-)
+from efilicit_ingestion.pipeline.canonical_repo import InMemoryCanonicalRepository
+from efilicit_ingestion.pipeline.db_run import run_pipeline_postgres
 from efilicit_ingestion.pipeline.ports import InMemoryArtifactStore, InMemorySyncRepository
-from efilicit_ingestion.pipeline.postgres import PostgresSyncRepository, connect
 from efilicit_ingestion.pipeline.runner import run_pipeline
 from efilicit_ingestion.pipeline.supabase_storage import (
     SupabaseStorageArtifactStore,
@@ -29,7 +34,11 @@ from efilicit_ingestion.pipeline.types import PipelineResult
 
 @dataclass(frozen=True)
 class PlacspRunConfig:
-    """Options for a local / documented PLACSP pipeline run."""
+    """Opciones de una corrida local / documentada del pipeline PLACSP.
+
+    ``syndication`` elige dataset (643 / 1044 / 1143). Sin from/to live, el
+    conector usa solo el mes de ``as_of`` (slice acotado a propósito).
+    """
 
     fixture_path: Path | None = None
     from_year_month: str | None = None
@@ -46,7 +55,11 @@ def load_fixture_bytes(
     *,
     syndication: PlacspSyndication = PLACSP,
 ) -> bytes:
-    """Load a ``.atom`` or ``.zip`` fixture; wrap bare Atom into a ZIP package."""
+    """Carga fixture ``.atom`` o ``.zip``; Atom suelto se envuelve en ZIP.
+
+    El parser de prod espera ZIP (o detecta ``PK``). Envolver Atom mantiene
+    el mismo camino de código que Hacienda.
+    """
     raw = path.read_bytes()
     if path.suffix.lower() == ".zip" or raw.startswith(b"PK"):
         return raw
@@ -60,13 +73,11 @@ def load_fixture_bytes(
 
 
 def run_placsp(config: PlacspRunConfig) -> PipelineResult:
-    """Execute discover→…→upsert for a PLACSP syndication.
+    """Ejecuta discover→…→upsert para una sindicación PLACSP.
 
-    - ``fixture_path``: offline E2E (no live PLACSP network).
-    - without fixture: live discover/fetch for the configured month window.
-    - ``dry_run``: in-memory sync/canonical/storage (no Postgres/Storage writes).
-    - ``syndication``: default ``PLACSP`` (perfiles); also ``PLACSP_AGREGADAS``,
-      ``PLACSP_MENORES``.
+    - ``fixture_path``: transport fijo con ese ZIP (E2E offline).
+    - sin fixture: discover/fetch live de la ventana de meses.
+    - ``dry_run``: sync/canónico/storage en memoria (sin writes).
     """
     as_of = config.as_of or date.today()
     feed = config.syndication
@@ -80,7 +91,7 @@ def run_placsp(config: PlacspRunConfig) -> PipelineResult:
             {"content-type": "application/zip", "content-length": str(len(data))},
             data,
         )
-        # Force a single known month window for fixture runs.
+        # Fixture: forzar un mes conocido para que discover genere un solo artefacto.
         from_ym = config.from_year_month or f"{as_of.year:04d}-{as_of.month:02d}"
         to_ym = config.to_year_month or from_ym
     else:
@@ -124,21 +135,15 @@ def run_placsp(config: PlacspRunConfig) -> PipelineResult:
     else:
         artifact_store = InMemoryArtifactStore()
 
-    with connect() as conn:
-        sync_repo = PostgresSyncRepository(conn)
-        canonical_repo = PostgresCanonicalRepository(conn)
-        result = run_pipeline(
-            connector,
-            context,
-            artifact_store=artifact_store,  # type: ignore[arg-type]
-            sync_repo=sync_repo,
-            canonical_repo=canonical_repo,
-        )
-        conn.commit()
-    return result
+    return run_pipeline_postgres(
+        connector,
+        context,
+        artifact_store=artifact_store,  # type: ignore[arg-type]
+    )
 
 
 def format_result(result: PipelineResult) -> str:
+    """Resumen corto para CLI / logs de Actions (sin volcar payloads)."""
     sync = result.sync
     lines = [
         f"status={sync.status}",

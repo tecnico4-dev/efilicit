@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Tres versiones del mismo expediente; orden XML ≠ orden temporal.
+     Lo correcto es quedarse con la adjudicada (28 sep), no con la última del XML. -->
+<feed xmlns="http://www.w3.org/2005/Atom"
+      xmlns:cbc="urn:dgpe:names:draft:codice:schema:xsd:CommonBasicComponents-2"
+      xmlns:cac="urn:dgpe:names:draft:codice:schema:xsd:CommonAggregateComponents-2"
+      xmlns:cac-ext="urn:dgpe:names:draft:codice-place-ext:schema:xsd:CommonAggregateComponents-2">
+  <id>https://example.invalid/sindicacion/fixture-versions</id>
+  <title>PLACSP fixture — same folder versions</title>
+  <updated>2026-09-28T18:00:00+02:00</updated>
+  <!-- A: 2 sep, publicada -->
+  <entry>
+    <id>https://example.invalid/fixture?id=FIX-VER-A</id>
+    <title>Suministro versiones — publicada</title>
+    <updated>2026-09-02T10:00:00+02:00</updated>
+    <link href="https://example.invalid/fixture?id=FIX-VER-A" rel="alternate"/>
+    <content type="application/xml">
+      <cac-ext:ContractFolderStatus>
+        <cbc:ContractFolderID>EXP/2026/0001</cbc:ContractFolderID>
+        <cbc:ContractFolderStatusCode listURI="http://contrataciondelestado.es/codice/cl/2.08/TenderingProcessStatusCode-2.08.gc">PUB</cbc:ContractFolderStatusCode>
+        <cac-ext:LocatedContractingParty>
+          <cac:Party>
+            <cac:PartyIdentification>
+              <cbc:ID schemeName="NIF">B00000000</cbc:ID>
+            </cac:PartyIdentification>
+            <cac:PartyName>
+              <cbc:Name>Organismo Fixture de Pruebas S.A.</cbc:Name>
+            </cac:PartyName>
+          </cac:Party>
+        </cac-ext:LocatedContractingParty>
+        <cac:ProcurementProject>
+          <cbc:Name>Suministro versiones — publicada</cbc:Name>
+          <cbc:TypeCode listURI="http://contrataciondelestado.es/codice/cl/2.08/ContractCode-2.08.gc">1</cbc:TypeCode>
+          <cac:BudgetAmount>
+            <cbc:TotalAmount currencyID="EUR">1000.00</cbc:TotalAmount>
+          </cac:BudgetAmount>
+          <cac:RequiredCommodityClassification>
+            <cbc:ItemClassificationCode listURI="http://contrataciondelestado.es/codice/cl/1.04/CPV2008-1.04.gc">30192700</cbc:ItemClassificationCode>
+          </cac:RequiredCommodityClassification>
+          <cac:TenderingProcess>
+            <cac:TenderSubmissionDeadlinePeriod>
+              <cbc:EndDate>2026-09-30</cbc:EndDate>
+              <cbc:EndTime>14:00:00</cbc:EndTime>
+            </cac:TenderSubmissionDeadlinePeriod>
+          </cac:TenderingProcess>
+        </cac:ProcurementProject>
+      </cac-ext:ContractFolderStatus>
+    </content>
+  </entry>
+  <!-- C: 28 sep, adjudicada (más reciente; debe ganar) -->
+  <entry>
+    <id>https://example.invalid/fixture?id=FIX-VER-C</id>
+    <title>Suministro versiones — adjudicada</title>
+    <updated>2026-09-28T16:00:00+02:00</updated>
+    <link href="https://example.invalid/fixture?id=FIX-VER-C" rel="alternate"/>
+    <content type="application/xml">
+      <cac-ext:ContractFolderStatus>
+        <cbc:ContractFolderID>EXP/2026/0001</cbc:ContractFolderID>
+        <cbc:ContractFolderStatusCode listURI="http://contrataciondelestado.es/codice/cl/2.08/TenderingProcessStatusCode-2.08.gc">ADJ</cbc:ContractFolderStatusCode>
+        <cac-ext:LocatedContractingParty>
+          <cac:Party>
+            <cac:PartyIdentification>
+              <cbc:ID schemeName="NIF">B00000000</cbc:ID>
+            </cac:PartyIdentification>
+            <cac:PartyName>
+              <cbc:Name>Organismo Fixture de Pruebas S.A.</cbc:Name>
+            </cac:PartyName>
+          </cac:Party>
+        </cac-ext:LocatedContractingParty>
+        <cac:ProcurementProject>
+          <cbc:Name>Suministro versiones — adjudicada</cbc:Name>
+          <cbc:TypeCode listURI="http://contrataciondelestado.es/codice/cl/2.08/ContractCode-2.08.gc">1</cbc:TypeCode>
+          <cac:BudgetAmount>
+            <cbc:TotalAmount currencyID="EUR">1000.00</cbc:TotalAmount>
+          </cac:BudgetAmount>
+          <cac:RequiredCommodityClassification>
+            <cbc:ItemClassificationCode listURI="http://contrataciondelestado.es/codice/cl/1.04/CPV2008-1.04.gc">30192700</cbc:ItemClassificationCode>
+          </cac:RequiredCommodityClassification>
+          <cac:TenderingProcess>
+            <cac:TenderSubmissionDeadlinePeriod>
+              <cbc:EndDate>2026-10-15</cbc:EndDate>
+              <cbc:EndTime>14:00:00</cbc:EndTime>
+            </cac:TenderSubmissionDeadlinePeriod>
+          </cac:TenderingProcess>
+        </cac:ProcurementProject>
+      </cac-ext:ContractFolderStatus>
+    </content>
+  </entry>
+  <!-- B: 15 sep, plazo ampliado (última en el XML a propósito) -->
+  <entry>
+    <id>https://example.invalid/fixture?id=FIX-VER-B</id>
+    <title>Suministro versiones — plazo ampliado</title>
+    <updated>2026-09-15T12:00:00+02:00</updated>
+    <link href="https://example.invalid/fixture?id=FIX-VER-B" rel="alternate"/>
+    <content type="application/xml">
+      <cac-ext:ContractFolderStatus>
+        <cbc:ContractFolderID>EXP/2026/0001</cbc:ContractFolderID>
+        <cbc:ContractFolderStatusCode listURI="http://contrataciondelestado.es/codice/cl/2.08/TenderingProcessStatusCode-2.08.gc">PUB</cbc:ContractFolderStatusCode>
+        <cac-ext:LocatedContractingParty>
+          <cac:Party>
+            <cac:PartyIdentification>
+              <cbc:ID schemeName="NIF">B00000000</cbc:ID>
+            </cac:PartyIdentification>
+            <cac:PartyName>
+              <cbc:Name>Organismo Fixture de Pruebas S.A.</cbc:Name>
+            </cac:PartyName>
+          </cac:Party>
+        </cac-ext:LocatedContractingParty>
+        <cac:ProcurementProject>
+          <cbc:Name>Suministro versiones — plazo ampliado</cbc:Name>
+          <cbc:TypeCode listURI="http://contrataciondelestado.es/codice/cl/2.08/ContractCode-2.08.gc">1</cbc:TypeCode>
+          <cac:BudgetAmount>
+            <cbc:TotalAmount currencyID="EUR">1000.00</cbc:TotalAmount>
+          </cac:BudgetAmount>
+          <cac:RequiredCommodityClassification>
+            <cbc:ItemClassificationCode listURI="http://contrataciondelestado.es/codice/cl/1.04/CPV2008-1.04.gc">30192700</cbc:ItemClassificationCode>
+          </cac:RequiredCommodityClassification>
+          <cac:TenderingProcess>
+            <cac:TenderSubmissionDeadlinePeriod>
+              <cbc:EndDate>2026-10-15</cbc:EndDate>
+              <cbc:EndTime>14:00:00</cbc:EndTime>
+            </cac:TenderSubmissionDeadlinePeriod>
+          </cac:TenderingProcess>
+        </cac:ProcurementProject>
+      </cac-ext:ContractFolderStatus>
+    </content>
+  </entry>
+</feed>

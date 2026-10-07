@@ -10,16 +10,19 @@ Plataforma de vigilancia de contratación pública: ingiere licitaciones de fuen
 4. [docs/03-reglas-cursor.md](docs/03-reglas-cursor.md) — reglas para el asistente  
 5. [docs/04-roadmap-mvp.md](docs/04-roadmap-mvp.md) — plan fase a fase  
 
+Planes y checklists por semana: [docs/plans/](docs/plans/).  
+Decisiones de arquitectura (ADR): [docs/adr/](docs/adr/README.md).
+
 ## Estructura del monorepo
 
 ```text
-apps/web/          # Frontend Next.js (próximo paso de scaffold)
-packages/          # Paquetes compartidos (p. ej. tipos generados)
-ingestion/         # Motor ETL en Python 3.12 + uv
-supabase/          # Config, migraciones y seed (aún no inicializado)
-docs/              # Documentación, ADR, fuentes, runbooks
-.github/           # Workflows CI/CD (próximos pasos)
-.cursor/rules/     # Reglas del asistente (próximo paso)
+apps/web/          # Frontend Next.js (búsqueda, Auth, alertas)
+packages/          # Paquetes compartidos (tipos TS generados, etc.)
+ingestion/         # Motor ETL Python 3.12 + uv (conectores + alertas batch)
+supabase/          # Config, migraciones y seed
+docs/              # Norma (00–04), planes, ADR, fuentes, pruebas
+.github/           # CI + workflows de ingesta y digest de alertas
+.cursor/rules/     # Reglas del asistente
 ```
 
 ## Requisitos de herramientas (Fase 0)
@@ -49,9 +52,9 @@ supabase --version
 
 ## Estado actual
 
-Semana 1 cerrada (modelo canónico + infraestructura de ingesta). Siguiente: Semana 2 del roadmap (PLACSP vertical slice).
+Semana 5 cerrada (búsqueda + Auth + alertas). Siguiente: Semana 6 del roadmap (web integrada / UX).
 
-Planes y checklists de ejecución por semana: [docs/plans/](docs/plans/).
+Workflows de GitHub: [`.github/README.md`](.github/README.md).
 
 ## Contribuir
 

@@ -1,4 +1,4 @@
--- Semana 4: candidato best en pending (columna en tender_sources).
+-- Semana 4: candidato best en pending (columna en tender_sources). ADR 010.
 -- Solo informativo para revisión humana futura; no implica fusión.
 -- Evolución prevista: tabla match_suggestions (N candidatos) cuando exista UI de revisión.
 

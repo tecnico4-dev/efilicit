@@ -9,14 +9,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Cierre Semana 5: checklist Fase 5 completo; búsqueda FTS/`pg_trgm` + Auth/RLS + alertas batch/digest Resend + CLI/workflow (cron off); ADR N/A (arquitectura fija). Fusionada en `main`. Pendiente externo: dominio `eficen.com` en Resend. Siguiente: Semana 6 (web integrada + brand corporativo).
 - Plan y checklist Semana 6 (`semana06-plan`, `fase6-checklist`): web integrada + cierre MVP; Paso 0 = kit visual corporativo; rama `tecnico4/semana-06`.
+- Fuente ganadora canónica: columna `tenders.canonical_source_code` + ranking fijo PLACSP > CCAA; secundaria solo enlaza en `tender_sources`; promoción reemplaza la fila entera ([ADR 015](docs/adr/015-fuente-ganadora-canonica.md)).
+- Upsert de `contracting_authorities` por `platform_id` (p. ej. DIR3) cuando no hay NIF/CIF: columna + índice único parcial; re-ingestas Catalunya sin organismos huérfanos ([ADR 014](docs/adr/014-upsert-organismos-por-platform-id.md)).
+
+### Fixed
+
+- Cola de digests: tras un fallo de envío los ítems quedan en `failed` y el job los reintenta; umbral por clase de error (temporal `< 3`, gordo `< 2` intentos) y luego `cancelled`. Antes un único fallo dejaba la fila fuera del drain. Sin ADR (refinamiento operativo MVP).
+- Ingesta Postgres: si el pipeline falla a mitad, se hace rollback del canónico pero **sí** queda `source_sync` en `failed` (transacción aparte); antes el rollback borraba también la bitácora ([ADR 003](docs/adr/003-acceso-canonico-publico-etl-privado.md) actualizado).
+
+### Documentation
+
+- Checklist al añadir `source_code` nuevo: actualizar `SOURCE_PRIORITY` + [ADR 015](docs/adr/015-fuente-ganadora-canonica.md) (`docs/sources/README.md`, BACKLOG §4, `cobertura-ccaa.md`).
+- BACKLOG §1: posible doble envío de digest si el job falla tras Resend — aceptado en MVP (preferir duplicado a pérdida); endurecer solo si es recurrente.
+- Fichas PLACSP agregadas/menores alineadas al colapso por `atom:updated`; [ADR 003](docs/adr/003-acceso-canonico-publico-etl-privado.md) aclara bitácora `failed` tras rollback. Matching/reingesta documentados en `docs/plans/BACKLOG.md` (§ Hecho), no como ADR.
+
+### Changed
+
+- Re-ingesta canónica: `tender_events` / `tenders.updated_at` solo si cambian campos de negocio; `tender_sources.last_seen_at` sigue marcando que la fuente la ha vuelto a ver.
+- Matching multi-fuente: si ambas partes traen expediente y difiere → nunca `auto` (como mucho `pending`); evita fusionar contratos distintos del mismo NIF.
+- Parser PLACSP: si el mismo expediente aparece varias veces en un ZIP/Atom, gana la entry con `atom:updated` más reciente (no el orden del fichero/XML).
+- Semana 5: preferencia de digest de alertas a nivel de cuenta (`users.digest_frequency`: `daily` | `weekly`); un email por usuario/periodo; weekly envía solo lunes UTC; UI en `/account`; `instant` diferido (BACKLOG).
+- Cierre Semana 5: checklist Fase 5 completo; búsqueda FTS/`pg_trgm` + Auth/RLS + alertas batch/digest Resend + CLI/workflow (cron off); [ADR 011](docs/adr/011-busqueda-via-rpc-search-tenders.md) (RPC `search_tenders`), [ADR 012](docs/adr/012-digest-email-job-python-sin-edge-function.md) (digest desde job Python), [ADR 013](docs/adr/013-alert-frequencies-daily-weekly-instant-diferido.md) (`daily`|`weekly`; `instant` diferido). Pendiente externo: dominio `eficen.com` en Resend. Siguiente: Semana 6 (UX/producto).
 - Semana 5: badge de búsqueda — `match_kind=fts` solo si el texto escrito aparece como palabra en el título; si FTS encaja solo por stemming (p. ej. `fotocopiaas`) → `trgm` / errata.
 - Semana 5: erratas de búsqueda con `strict_word_similarity` / `<<%` (menos ruido que `word_similarity`; p. ej. `foas` ya no liga a fotocopiadoras); se mantiene `similarity` / `%`.
 - Semana 5: búsqueda de erratas cortas con `word_similarity` / `<%` en `search_tenders` (p. ej. `softwar` → títulos con “software”); se mantiene `similarity` / `%` para consultas más largas.
 - Semana 5 Paso 10: recorrido E2E local (login → `/search` → `/alerts` → `run-alerts --write` Fake → cola `sent` + idempotencia); guía `docs/plans/semana05-e2e-local.md`; Resend verificado con correo personal.
 - Semana 5 Paso 9: CLI `run-alerts` (dry-run por defecto) + `PostgresNotificationQueue` + workflow `alerts-digest.yml` (`workflow_dispatch`, cron off).
-- Semana 5 Paso 8: digest diario de alertas (`drain_daily_digests`) + `ResendEmailSender` / `FakeEmailSender`; secretos `RESEND_API_KEY` / `ALERT_FROM_EMAIL` solo en entorno; sin reenvío de `sent`.
+- Semana 5 Paso 8: digest diario/semanal de alertas (`drain_daily_digests`, preferencia de cuenta) + `ResendEmailSender` / `FakeEmailSender`; secretos `RESEND_API_KEY` / `ALERT_FROM_EMAIL` solo en entorno; sin reenvío de `sent`.
 - Semana 5 Paso 7: motor batch de alertas en Python (`match` → `notification_queue` in-memory) con tests de matching e idempotencia; sin envío email (Paso 8).
 - Semana 5 Paso 6: registro + UI `/alerts` (CRUD mínimo alertas/búsquedas) + script RLS Alice≠Bob (`verify:rls`); fondo web blanco fijo (brand en Semana 6).
 - Semana 5 Paso 5: Auth SSR (`@supabase/ssr`, middleware), sync `auth.users` → `public.users` (trigger), login/account mínimos; seed perfiles Alice/Bob.
@@ -25,6 +45,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Semana 5 Paso 2: FTS en `tenders` (`search_vector` generated spanish A/B, GIN) + `pg_trgm` en `title`; tipos TS regenerados.
 - Semana 5 Paso 1: contrato `criteria` v1 compartido para `alerts` / `saved_searches` (`packages/types/src/criteria.ts`, `efilicit_ingestion.alerts.criteria`) + comments SQL; sin DDL de columnas nuevas.
 - Plan y checklist Semana 5 (`semana05-plan`, `fase5-checklist`): búsqueda + Auth + alertas; rama `tecnico4/semana-05`.
+- Backlog general (`docs/plans/BACKLOG.md`): catálogo de aplazados / N/A / mejoras posibles sacadas del plan (sin el alcance de la semana siguiente); incluye `setup_rls_smoke` como andamiaje Fase 0 aún usado en health-check.
 - Plan y checklist Semana 4 (`semana04-plan`, `fase4-checklist`): cobertura territorial 17 CCAA + deduplicación; leftover `placsp_menores`; rama `tecnico4/semana-04`.
 - Semana 4 Paso 1: cobertura 17 CCAA en `docs/sources/cobertura-ccaa.md` (2 propias + 5 agregación + 10 perfiles alojados `placsp`); ficha `placsp_menores.md`; 0 CCAA propias extra. Plan sin duplicar fichas (solo decisiones breves).
 - Semana 4 Paso 2.2: `PLACSP_MENORES` (`sindicacion_1143`) en discover/fetch con tests sin red.
@@ -34,7 +55,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Semana 4 Paso 5: matching multi-fuente en pipeline (`stages.deduplicate` + `MatchLookup`); anota `payload['match']` (`auto`/`pending`/`unmatched`); tests sin red.
 - Semana 4 Paso 6: upsert respeta matching (`auto` reutiliza `tenders.id`; `pending`/`unmatched` crean fila; idempotente en `(source_code, source_tender_id)`).
 - Semana 4 Paso 7: fixtures de solape PLACSP↔Euskadi (`fixtures/overlap/`) + tests de auto-merge / no-merge / regresión Catalunya sin NIF; batería ingestion en verde.
-- Cierre Semana 4: checklist Fase 4 completo; catálogo de fuentes actualizado; cobertura 17 CCAA + `placsp_menores` + dedup multi-fuente; sin ADR nuevo (N/A — se implementó la arquitectura ya fijada). Siguiente: Semana 5 (búsqueda + Auth + alertas).
+- Cierre Semana 4: checklist Fase 4 completo; catálogo de fuentes actualizado; cobertura 17 CCAA + `placsp_menores` + dedup multi-fuente; [ADR 009](docs/adr/009-ccaa-propia-extra-na-semana4.md) (CCAA extra N/A), [ADR 010](docs/adr/010-match-candidate-tender-id-en-tender-sources.md) (candidato best). Siguiente: Semana 5 (búsqueda + Auth + alertas).
 - Documentación base de onboarding, arquitectura, setup, reglas Cursor y roadmap MVP.
 - Cimientos del monorepo: `.gitignore`, `.env.example`, `package.json`, `pnpm-workspace.yaml`, árbol de carpetas y guías `README` / `CONTRIBUTING`.
 - Reglas Cursor en `.cursor/rules/` (`00`–`08`) según `docs/03-reglas-cursor.md`.
@@ -54,7 +75,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Pipeline común mínimo (`run_pipeline`) con etapas del roadmap, `store_raw` (checksum + path) y prueba con stub in-memory.
 - Persistencia Postgres de `source_sync` / `source_artifacts` vía `psycopg` (cliente SQL de ETL) + tests de integración locales.
 - CI de ingestion: además del smoke `--help`, ejecuta `pytest` (`uv sync --extra dev`).
-- Cierre Semana 1: checklist completo; sin ADR nuevo (N/A — se implementó la arquitectura ya fijada).
+- Cierre Semana 1: checklist completo; [ADR 003](docs/adr/003-acceso-canonico-publico-etl-privado.md) (canónico público / ETL privado), [ADR 004](docs/adr/004-ci-ingestion-sin-postgres.md) (CI sin Postgres).
 - Plan y checklist Semana 2 (`semana02-plan`, `fase2-checklist`): PLACSP vertical slice.
 - Catálogo de fuentes: ficha `docs/sources/placsp.md` (sindicación `643`, Atom/CODICE, acceso Open Data sin scraping).
 - Conector PLACSP `discover`: paquetes mensuales ZIP por URI conocidas, `artifact_key` estable y tests sin red.
@@ -65,7 +86,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Upsert canónico en Postgres (`tenders`, `tender_sources`, `tender_events`, `documents`) con reejecución idempotente.
 - CLI `run-placsp`: pipeline PLACSP E2E local con `--fixture` / `--dry-run` (y escritura a Supabase local).
 - Workflow GitHub Actions `ingest-placsp.yml`: ingesta PLACSP manual (`dry-run` / `fixture-db` / `live`); cron desactivado; secretos fuera del código.
-- Cierre Semana 2: checklist Fase 2 completo; sin ADR nuevo (N/A — se implementó la arquitectura ya fijada).
+- Cierre Semana 2: checklist Fase 2 completo; [ADR 005](docs/adr/005-ingesta-actions-manual-first-cron-off.md) (cron off / manual-first), [ADR 006](docs/adr/006-raw-storage-httpx-sin-supabase-py.md) (Storage vía httpx).
 - Documento `docs/pruebas.md`: verificación local E2E con datos reales — `placsp` (Semana 2), `placsp_agregadas`, `catalunya` (8.6) y `euskadi` (9.5); RAW → canónico + idempotencia.
 - Semana 3 Paso 8.6: verificación live SODA `catalunya` (1 página × 1000 + idempotencia) documentada en `docs/pruebas.md` Parte C.
 - Semana 3 Paso 9.5: verificación live API `euskadi` (1 página × 10 + idempotencia) documentada en `docs/pruebas.md` Parte D.
@@ -87,9 +108,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Semana 3 Paso 8.4: CLI `run-catalunya` con `--fixture` / `--dry-run` (E2E local sin red SODA).
 - Semana 3 Paso 8.5: workflow `ingest-catalunya.yml` (manual, dry-run por defecto, cron off).
 - Semana 3 Paso 9: CCAA #2 `euskadi` — conector KontratazioA REST (`contracting-notices`), ficha, RAW `raw/euskadi/`, CLI `run-euskadi`, workflow `ingest-euskadi.yml`, tests sin red; live en Paso 9.5 / `docs/pruebas.md` Parte D.
-- Cierre Semana 3: checklist Fase 3 completo; catálogo de fuentes homogeneizado; regresión ingestion `112 passed`; sin ADR nuevo (N/A — se implementó la arquitectura ya fijada). `placsp_menores` y resto de CCAA → Semana 4+.
+- Cierre Semana 3: checklist Fase 3 completo; catálogo de fuentes homogeneizado; regresión ingestion `112 passed`; [ADR 007](docs/adr/007-adaptador-csv-familia-na-semana3.md) (CSV familia N/A), [ADR 008](docs/adr/008-placsp-menores-aplazado-semana4.md) (`placsp_menores` → Semana 4). Resto de CCAA → Semana 4+.
 
 ### Changed
 
-- Semana 4 (ajuste tras pruebas live): el matching en `tender_sources` ahora persiste `match_candidate_tender_id` — candidato best cuando `review_status=pending` (Studio / revisión humana futura); `auto`/`unmatched` → null; re-ingesta actualiza el best si sigue `pending`. Evolución prevista: tabla `match_suggestions` (N candidatos) cuando exista UI de revisión.
-- Decisión documentada: no aplicar branch protection en `main` por ahora (repo privado de prueba; no se contratará plan GitHub Team solo para ese bloqueo). Ver `.github/README.md`.
+- Semana 4 (ajuste tras pruebas live): el matching en `tender_sources` ahora persiste `match_candidate_tender_id` — candidato best cuando `review_status=pending` (Studio / revisión humana futura); `auto`/`unmatched` → null; re-ingesta actualiza el best si sigue `pending` ([ADR 010](docs/adr/010-match-candidate-tender-id-en-tender-sources.md)). Evolución prevista: tabla `match_suggestions` (N candidatos) cuando exista UI de revisión.
+- Decisión documentada: no aplicar branch protection en `main` por ahora (repo privado de prueba; no se contratará plan GitHub Team solo para ese bloqueo). [ADR 001](docs/adr/001-proteccion-main-aplazada.md); ver `.github/README.md`.

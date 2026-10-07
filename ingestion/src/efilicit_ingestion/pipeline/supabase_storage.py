@@ -1,4 +1,9 @@
-"""Supabase Storage ArtifactStore for immutable RAW uploads."""
+"""Cliente de Supabase Storage para subir RAW inmutable (Semana 2 Paso 4).
+
+Habla a la API HTTP de Storage con ``httpx`` + ``service_role`` (proceso
+confiable). No se añade ``supabase-py``: ``httpx`` ya está en el stack fijo
+(ADR 006). El bucket ``raw`` es privado; la web no usa esta clave.
+"""
 
 from __future__ import annotations
 
@@ -13,13 +18,14 @@ from efilicit_ingestion.pipeline.types import StoredArtifact
 
 
 class SupabaseStorageError(Exception):
-    """Failed to upload or talk to Supabase Storage."""
+    """Fallo al subir o hablar con Supabase Storage."""
 
 
 class SupabaseStorageArtifactStore:
-    """Uploads RAW bytes to the private ``raw`` bucket via Storage HTTP API.
+    """Sube bytes RAW al bucket privado ``raw`` vía API HTTP de Storage.
 
-    Uses the service role key (trusted ingestion only — never in the browser).
+    Idempotencia blanda: ``x-upsert`` permite reescribir el mismo object key
+    si se reejecuta el mismo artefacto (el checksum queda en metadata/DB).
     """
 
     def __init__(
@@ -48,6 +54,7 @@ class SupabaseStorageArtifactStore:
         artifact: RemoteArtifact,
         raw: bytes,
     ) -> StoredArtifact:
+        """Sube el payload y devuelve checksum + ruta lógica para ``source_artifacts``."""
         checksum = hashlib.sha256(raw).hexdigest()
         storage_path, object_key = build_raw_storage_path(
             source_code,
@@ -81,7 +88,7 @@ class SupabaseStorageArtifactStore:
 
         def _put(client: httpx.Client) -> None:
             response = client.post(url, content=raw, headers=headers)
-            # Some Storage versions use POST; if method not allowed, try PUT.
+            # Algunas versiones de Storage rechazan POST: reintentar con PUT.
             if response.status_code in {404, 405}:
                 response = client.put(url, content=raw, headers=headers)
             if response.status_code >= 400:
@@ -99,11 +106,12 @@ class SupabaseStorageArtifactStore:
 
 
 def default_supabase_url() -> str:
+    """URL de la API Supabase (local por defecto en dev)."""
     return os.environ.get("SUPABASE_URL", "http://127.0.0.1:54321")
 
 
-# Public demo JWT shipped by Supabase CLI for local stacks (role=service_role).
-# Safe only against local Supabase; never use against a remote project.
+# JWT demo público del CLI de Supabase para stacks locales (role=service_role).
+# Solo es seguro contra Supabase local; NUNCA usarlo contra un proyecto remoto.
 _LOCAL_SUPABASE_SERVICE_ROLE_KEY = (
     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9."
     "eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0."
@@ -112,10 +120,10 @@ _LOCAL_SUPABASE_SERVICE_ROLE_KEY = (
 
 
 def default_service_role_key() -> str | None:
-    """Resolve service_role for trusted local ingestion/tests.
+    """Resuelve service_role para ingesta/tests locales de confianza.
 
-    Prefer ``SUPABASE_SERVICE_ROLE_KEY``. If unset and the API URL is local,
-    fall back to the Supabase CLI demo service_role JWT.
+    Preferir ``SUPABASE_SERVICE_ROLE_KEY``. Si no hay y la URL es local,
+    cae al JWT demo del CLI (comodidad en laptop; no en prod).
     """
     explicit = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
     if explicit:

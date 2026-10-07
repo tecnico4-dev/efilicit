@@ -1,4 +1,9 @@
-"""Integration: pipeline stub persists source_sync / source_artifacts in local Postgres."""
+"""Integración Semana 1: stub del pipeline → ``source_sync`` / ``source_artifacts`` en Postgres.
+
+Comprueba que la bitácora ETL se escribe de verdad contra Supabase local.
+En CI sin Postgres estos tests se **saltan** (ADR 004): el job de ingestion
+sigue verde; la integración DB se valida en laptop / entorno con DB.
+"""
 
 from __future__ import annotations
 
@@ -30,7 +35,7 @@ def _db_available() -> bool:
 
 pytestmark = pytest.mark.skipif(
     not _db_available(),
-    reason="Local Supabase Postgres not reachable (start with supabase start)",
+    reason="Postgres local de Supabase no alcanzable (arrancar con supabase start)",
 )
 
 

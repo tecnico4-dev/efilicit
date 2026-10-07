@@ -80,20 +80,20 @@ def test_agregadas_inmemory_upsert_is_idempotent_and_links_artifact() -> None:
     )
 
     assert first.seen == 1 and first.new == 1 and first.updated == 0
-    assert second.seen == 1 and second.new == 0 and second.updated == 1
+    assert second.seen == 1 and second.new == 0 and second.updated == 0
     assert len(repo.tenders) == 1
     assert len(repo.tender_sources) == 1
 
     key = (SOURCE_CODE, "B00000000:EXP/2026/0001")
     assert key in repo.tender_sources
     assert repo.tender_sources[key]["artifact_id"] == ARTIFACT_ID
-    assert [e["event_type"] for e in repo.events] == ["published", "updated"]
+    assert [e["event_type"] for e in repo.events] == ["published"]
     assert len(repo.documents) == 1
     assert repo.documents[0]["artifact_id"] == ARTIFACT_ID
 
 
 def test_agregadas_source_code_does_not_collide_with_placsp() -> None:
-    """Same source_tender_id under distinct source_codes → two tender_sources."""
+    """Mismo source_tender_id bajo source_codes distintos → dos tender_sources."""
     repo = InMemoryCanonicalRepository()
     records = _normalized_agregadas_records()
 
@@ -143,7 +143,7 @@ def test_agregadas_pipeline_updates_source_sync_and_does_not_duplicate() -> None
     )
     assert second.sync.status == "success"
     assert second.sync.records_new == 0
-    assert second.sync.records_updated == 1
+    assert second.sync.records_updated == 0
     assert len(canonical.tenders) == 1
     assert len(canonical.tender_sources) == 1
 
@@ -185,7 +185,7 @@ def test_agregadas_postgres_upsert_does_not_duplicate() -> None:
         conn.commit()
 
         assert first.new == 1 and first.updated == 0
-        assert second.new == 0 and second.updated == 1
+        assert second.new == 0 and second.updated == 0
 
         count = conn.execute(
             """

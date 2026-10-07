@@ -176,6 +176,9 @@ Si no hay órgano identificable → solo `ContractFolderID`.
 Si tampoco hay expediente → `atom:id` (último recurso).  
 Entradas sin ninguna de estas señales se **omiten** (no se inventa identidad).
 
+**Varias versions del mismo expediente en un ZIP/Atom:** se conserva solo la
+entry con `atom:updated` más reciente (no el orden de ficheros ni el del XML).
+
 ---
 
 ## 8. Límites / rate limits / condiciones

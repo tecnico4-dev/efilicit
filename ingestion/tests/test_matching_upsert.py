@@ -270,7 +270,7 @@ def test_upsert_second_pass_does_not_duplicate_tender_sources() -> None:
     second_stats = repo.upsert_records(source_code="catalunya", records=annotated)
 
     assert first_stats.new == 1
-    assert second_stats.new == 0 and second_stats.updated == 1
+    assert second_stats.new == 0 and second_stats.updated == 0
     assert len(repo.tenders) == 1
     assert len(repo.tender_sources) == 2
     assert repo.tender_sources[("catalunya", "P2800000A:EXP-IDEM")]["tender_id"] == (
@@ -332,7 +332,7 @@ def test_postgres_upsert_auto_merges_and_is_idempotent() -> None:
         second = repo.upsert_records(source_code="catalunya", records=annotated)
         conn.commit()
 
-        assert first.new == 1 and second.updated == 1
+        assert first.new == 1 and second.updated == 0
 
         tender_count = conn.execute(
             """

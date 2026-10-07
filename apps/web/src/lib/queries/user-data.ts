@@ -1,3 +1,12 @@
+/**
+ * Acceso a datos de usuario bajo RLS (Semana 5 / Paso 6).
+ *
+ * Alertas, búsquedas guardadas y perfil (`public.users`) con el cliente
+ * autenticado (anon/publishable + sesión). Nunca service_role.
+ *
+ * `digest_frequency` es preferencia de cuenta (ADR 013): al cambiarla se
+ * sincroniza `alerts.frequency` para no dejar reglas con cadencia obsoleta.
+ */
 import type { Database, SearchCriteria } from "@efilicit/types";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
@@ -6,10 +15,13 @@ type SavedSearchRow = Database["public"]["Tables"]["saved_searches"]["Row"];
 type ProfileRow = Database["public"]["Tables"]["users"]["Row"];
 type Json = Database["public"]["Tables"]["alerts"]["Insert"]["criteria"];
 
+export type DigestFrequency = "daily" | "weekly";
+
 function asJson(criteria: SearchCriteria): Json {
   return criteria as unknown as Json;
 }
 
+/** Perfil de aplicación ligado al `auth.users` de la sesión actual. */
 export async function getOwnProfile(
   client: SupabaseClient<Database>,
 ): Promise<{ data: ProfileRow | null; error: Error | null }> {
@@ -31,6 +43,39 @@ export async function getOwnProfile(
   return { data, error: null };
 }
 
+/**
+ * Actualiza la frecuencia de digest de la cuenta y alinea `alerts.frequency`.
+ * Valores: daily | weekly (`instant` fuera del MVP).
+ */
+export async function updateOwnDigestFrequency(
+  client: SupabaseClient<Database>,
+  input: {
+    userId: string;
+    digestFrequency: DigestFrequency;
+  },
+): Promise<{ data: ProfileRow | null; error: Error | null }> {
+  const frequency = input.digestFrequency;
+
+  const { data, error } = await client
+    .from("users")
+    .update({ digest_frequency: frequency, updated_at: new Date().toISOString() })
+    .eq("id", input.userId)
+    .select("*")
+    .single();
+
+  if (error) return { data: null, error: new Error(error.message) };
+
+  // Mantener alerts.frequency alineada con la preferencia de cuenta.
+  const { error: syncError } = await client
+    .from("alerts")
+    .update({ frequency, updated_at: new Date().toISOString() })
+    .eq("user_id", input.userId);
+
+  if (syncError) return { data: null, error: new Error(syncError.message) };
+  return { data, error: null };
+}
+
+/** Lista alertas del usuario (RLS filtra por owner). */
 export async function listOwnAlerts(
   client: SupabaseClient<Database>,
 ): Promise<{ data: AlertRow[]; error: Error | null }> {
@@ -43,13 +88,14 @@ export async function listOwnAlerts(
   return { data: data ?? [], error: null };
 }
 
+/** Crea una alerta propia con Criteria v1 (criteria vacío no generará matches). */
 export async function createOwnAlert(
   client: SupabaseClient<Database>,
   input: {
     userId: string;
     name: string;
     criteria: SearchCriteria;
-    frequency?: "daily" | "weekly" | "instant";
+    frequency?: DigestFrequency;
   },
 ): Promise<{ data: AlertRow | null; error: Error | null }> {
   const { data, error } = await client

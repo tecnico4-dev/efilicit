@@ -1,7 +1,14 @@
-"""Contrato de criteria (jsonb) para alerts y saved_searches — Semana 5 Paso 1.
+"""Contrato de ``criteria`` (jsonb) para alerts y saved_searches — Semana 5 Paso 1.
 
-Misma forma que ``packages/types/src/criteria.ts``.
-No contiene el motor de matching (Paso 7); solo el shape y validación ligera.
+Misma forma que ``packages/types/src/criteria.ts`` (TS ↔ Python).
+Aquí solo shape + validación ligera; el motor de matching es Paso 7.
+
+Reglas de producto:
+
+- ``version: 1`` fijo en el MVP.
+- Dimensiones omitidas = no filtran.
+- Criteria vacío (solo version) → **sin matches** (anti-spam).
+- Dentro de una dimensión tipo lista: OR; entre dimensiones: AND (en el matcher).
 """
 
 from __future__ import annotations
@@ -14,6 +21,8 @@ CriteriaVersion = Literal[1]
 
 
 class AuthorityCriteria(BaseModel):
+    """Filtro de organismo: NIF/CIF primario; nombre solo como señal débil."""
+
     model_config = ConfigDict(extra="forbid")
 
     tax_ids: list[str] | None = None
@@ -22,6 +31,8 @@ class AuthorityCriteria(BaseModel):
 
 
 class GeographyCriteria(BaseModel):
+    """Geo vía campos del organismo canónico (sin catálogo NUTS completo)."""
+
     model_config = ConfigDict(extra="forbid")
 
     municipalities: list[str] | None = None
@@ -29,7 +40,10 @@ class GeographyCriteria(BaseModel):
 
 
 class SearchCriteria(BaseModel):
-    """Shape de ``alerts.criteria`` / ``saved_searches.criteria`` (version 1)."""
+    """Shape de ``alerts.criteria`` / ``saved_searches.criteria`` (version 1).
+
+    ``extra="forbid"``: claves desconocidas fallan al parsear (contrato estricto).
+    """
 
     model_config = ConfigDict(extra="forbid")
 
@@ -56,7 +70,10 @@ class SearchCriteria(BaseModel):
         return self
 
     def has_filters(self) -> bool:
-        """True si hay alguna dimensión de filtrado (además de version)."""
+        """True si hay alguna dimensión de filtrado (además de ``version``).
+
+        Usado por el matcher: sin filtros → no encolar (evita alertas “todo”).
+        """
         data = self.model_dump(exclude={"version"}, exclude_none=True)
         for key, value in data.items():
             if value in (None, [], {}, ""):
@@ -67,6 +84,7 @@ class SearchCriteria(BaseModel):
         return False
 
 
+# Alias semántico: misma forma para alertas y búsquedas guardadas.
 AlertCriteria = SearchCriteria
 
 CRITERIA_EXAMPLE_V1: dict[str, Any] = {
@@ -85,7 +103,7 @@ CRITERIA_EXAMPLE_V1: dict[str, Any] = {
 
 
 def parse_criteria(raw: Any) -> SearchCriteria:
-    """Parsea y valida un JSON/dict de criteria (falla si hay claves desconocidas)."""
+    """Parsea JSON/dict a Criteria v1; falla si hay claves desconocidas."""
     if raw is None:
         return SearchCriteria(version=1)
     return SearchCriteria.model_validate(raw)

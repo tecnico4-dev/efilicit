@@ -1,4 +1,12 @@
-"""Orchestrates connector + common pipeline stages for one sync run."""
+"""Orquesta conector + etapas comunes del pipeline (desde Semana 1).
+
+Nació con el stub + bitácora Postgres; Semana 2+ cableó fuentes reales sin
+cambiar este orquestador. Solo conoce ``SourceConnector`` y las etapas.
+
+Orden: discover → fetch → validate → store_raw → parse → normalize →
+identidad → matching → upsert → checkpoint. El RAW se guarda **antes** del
+parse para no perder evidencia si el parser falla.
+"""
 
 from __future__ import annotations
 
@@ -7,7 +15,20 @@ from efilicit_ingestion.models import SyncContext
 from efilicit_ingestion.pipeline import stages
 from efilicit_ingestion.pipeline.canonical_repo import CanonicalRepository
 from efilicit_ingestion.pipeline.ports import ArtifactStore, SyncRepository
-from efilicit_ingestion.pipeline.types import PipelineResult
+from efilicit_ingestion.pipeline.types import PipelineResult, SyncRun
+
+
+class PipelineRunError(Exception):
+    """Fallo del pipeline con el ``SyncRun`` ya cerrado en memoria (failed).
+
+    El caller Postgres debe hacer rollback del trabajo canónico y persistir
+    ``sync`` en una transacción aparte (ver ``db_run.run_pipeline_postgres``).
+    """
+
+    def __init__(self, sync: SyncRun, cause: BaseException) -> None:
+        self.sync = sync
+        self.cause = cause
+        super().__init__(str(cause))
 
 
 def run_pipeline(
@@ -18,7 +39,13 @@ def run_pipeline(
     sync_repo: SyncRepository,
     canonical_repo: CanonicalRepository | None = None,
 ) -> PipelineResult:
-    """discover → fetch → validate → store_raw → parse → normalize → upsert → checkpoint."""
+    """Una sync completa por cada artefacto descubierto.
+
+    Ante excepción: cierra el run como ``failed`` en ``source_sync``
+    (``error_message``) y relanza. No escribe en ``public.errors`` (ADR 003).
+    Sin ``canonical_repo``, el upsert Semana 1 solo cuenta registros como
+    ``new`` (útil para stub / tests de bitácora).
+    """
     run = sync_repo.start_run(
         source_code=connector.source_code,
         run_id=context.run_id,
@@ -67,10 +94,12 @@ def run_pipeline(
             run.cursor = stages.checkpoint(run.cursor, stored.artifact_key)
 
         sync_repo.finish_run(run, status="success")
-    except Exception as exc:  # noqa: BLE001 — classify richer in later weeks
+    except PipelineRunError:
+        raise
+    except Exception as exc:  # noqa: BLE001 — clasificación más rica en semanas posteriores
         run.records_failed += 1
         sync_repo.finish_run(run, status="failed", error_message=str(exc))
-        raise
+        raise PipelineRunError(run, exc) from exc
 
     return PipelineResult(
         sync=run,

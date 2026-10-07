@@ -1,6 +1,8 @@
 # Semana 3 / Paso 8.5 — ingesta Catalunya (Socrata) vía GitHub Actions.
-# Por defecto: dry-run con fixture JSON (sin secretos, sin writes).
-# Escritura a DB/Storage o SODA live: solo workflow_dispatch explícito + secrets.
+# Default seguro: dry-run con fixture JSON (sin secretos, sin writes a DB/Storage).
+# Live SODA o writes: solo workflow_dispatch explícito + secrets configurados.
+# Cron off a propósito hasta acordar entorno (ADR 005); no quemar cuota/API.
+# Artefacto = página JSON SODA (offset/limit), no ZIP mensual PLACSP.
 name: Ingest Catalunya
 
 on:
@@ -37,7 +39,7 @@ on:
         description: "Subir RAW a Storage (requiere SUPABASE_SERVICE_ROLE_KEY + SUPABASE_URL)"
         type: boolean
         default: false
-  # Cron desactivado a propósito: no quemar SODA/prod hasta acordar entorno + secrets.
+  # Cron desactivado (ADR 005): activar solo con entorno + secrets acordados.
   # schedule:
   #   - cron: "0 6 * * 1"
 

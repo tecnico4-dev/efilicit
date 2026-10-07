@@ -84,6 +84,7 @@ export type Database = {
           municipality: string | null
           name: string
           name_normalized: string | null
+          platform_id: string | null
           tax_id: string | null
           tax_id_country: string
           updated_at: string
@@ -96,6 +97,7 @@ export type Database = {
           municipality?: string | null
           name: string
           name_normalized?: string | null
+          platform_id?: string | null
           tax_id?: string | null
           tax_id_country?: string
           updated_at?: string
@@ -108,6 +110,7 @@ export type Database = {
           municipality?: string | null
           name?: string
           name_normalized?: string | null
+          platform_id?: string | null
           tax_id?: string | null
           tax_id_country?: string
           updated_at?: string
@@ -576,6 +579,7 @@ export type Database = {
       }
       tenders: {
         Row: {
+          canonical_source_code: string
           contract_type: string | null
           contracting_authority_id: string | null
           cpv_code: string | null
@@ -593,6 +597,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          canonical_source_code: string
           contract_type?: string | null
           contracting_authority_id?: string | null
           cpv_code?: string | null
@@ -610,6 +615,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          canonical_source_code?: string
           contract_type?: string | null
           contracting_authority_id?: string | null
           cpv_code?: string | null
@@ -640,6 +646,7 @@ export type Database = {
         Row: {
           auth_user_id: string
           created_at: string
+          digest_frequency: string
           display_name: string | null
           id: string
           updated_at: string
@@ -647,6 +654,7 @@ export type Database = {
         Insert: {
           auth_user_id: string
           created_at?: string
+          digest_frequency?: string
           display_name?: string | null
           id?: string
           updated_at?: string
@@ -654,6 +662,7 @@ export type Database = {
         Update: {
           auth_user_id?: string
           created_at?: string
+          digest_frequency?: string
           display_name?: string | null
           id?: string
           updated_at?: string

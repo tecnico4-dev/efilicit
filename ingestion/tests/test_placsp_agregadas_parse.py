@@ -17,7 +17,7 @@ from efilicit_ingestion.connectors.placsp import PLACSP_AGREGADAS, PlacspConnect
 from efilicit_ingestion.connectors.placsp.parser import PlacspParseError, parse_placsp_artifact
 from efilicit_ingestion.models import RemoteArtifact
 
-# Same CODICE fixtures as perfiles; agregadas share the Atom/CODICE shape.
+# Mismas fixtures CODICE que perfiles; agregadas comparten forma Atom/CODICE.
 FIXTURES = Path(__file__).parent / "fixtures" / "placsp"
 
 

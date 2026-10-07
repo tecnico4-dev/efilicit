@@ -11,7 +11,7 @@ Aquí se documenta **cómo se ha decidido ejecutar** cada semana del roadmap (or
 
 - Los documentos `docs/00`–`docs/04` son la norma de referencia; **no se sustituyen** por estos planes.
 - Cada `semanaXX-plan` debe incluir una sección **Decisiones durante la ejecución** que se actualiza a medida que se cierran pasos (lo acordado *antes* de implementar el siguiente).
-- No inventar arquitectura en los planes: si hace falta un cambio estructural → ADR.
+- No inventar arquitectura en los planes: si hace falta un cambio estructural → [ADR](../adr/README.md).
 
 ## Índice
 
@@ -24,6 +24,10 @@ Aquí se documenta **cómo se ha decidido ejecutar** cada semana del roadmap (or
 | Semana 4 / Fase 4 (cobertura territorial + deduplicación) | [semana04-plan.md](semana04-plan.md) | [fase4-checklist.md](fase4-checklist.md) | Cerrada |
 | Semana 5 / Fase 5 (búsqueda + Auth + alertas) | [semana05-plan.md](semana05-plan.md) | [fase5-checklist.md](fase5-checklist.md) | Cerrada |
 | Semana 6 / Fase 6 (web integrada + cierre MVP) | [semana06-plan.md](semana06-plan.md) | [fase6-checklist.md](fase6-checklist.md) | En curso |
+
+**Backlog unificado:** [BACKLOG.md](BACKLOG.md) — aplazados / N/A / mejoras posibles sacadas del plan (no el trabajo de la semana siguiente).
+
+**ADRs:** [docs/adr/README.md](../adr/README.md) — decisiones estructurales enlazadas desde planes y checklists.
 
 ## Relación con el roadmap
 

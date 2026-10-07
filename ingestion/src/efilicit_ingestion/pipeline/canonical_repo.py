@@ -1,9 +1,27 @@
-"""Upsert canonical tenders / authorities / events / documents (Semana 2 Paso 7)."""
+"""Upsert canónico: tenders / organisms / events / documents (Semana 2 Paso 7).
+
+Idempotencia por ``(source_code, source_tender_id)`` dentro de una fuente.
+Semana 4: además respeta ``payload['match']`` del Paso 5 —
+
+- ``auto`` → reutiliza ``tenders.id`` y enlaza la nueva fuente;
+- ``pending`` / ``unmatched`` → crea tender propio (no fusiona);
+- en ``pending``, guarda el candidato best en ``match_candidate_tender_id`` (ADR 010).
+
+ADR 015 — fuente ganadora: ``tenders`` es copia de una sola dueña
+(``canonical_source_code``). Ranking fijo PLACSP > CCAA; secundaria solo
+enlaza; promoción reemplaza la fila entera (sin mezcla campo a campo).
+
+Re-ingesta sin cambios de contenido: actualiza ``tender_sources.last_seen_at``
+(señal operativa “sigue viva”) pero **no** escribe ``tender_events`` ni mueve
+``tenders.updated_at``. ``stats.updated`` cuenta solo cambios reales.
+
+Sigue siendo el único punto de escritura canónica del ETL.
+"""
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from decimal import Decimal
 from typing import Any, Callable, Protocol
 from uuid import uuid4
@@ -20,6 +38,36 @@ from efilicit_ingestion.pipeline.matching import (
     expediente_from_source_tender_id,
 )
 
+# ADR 015: menor número = mayor prioridad. Fuentes desconocidas → 1000.
+# Al añadir un source_code nuevo: actualizar este dict + tabla del ADR 015
+# (ver docs/sources/README.md § «Al añadir un source_code nuevo»).
+SOURCE_PRIORITY: dict[str, int] = {
+    "placsp": 10,
+    "placsp_agregadas": 20,
+    "placsp_menores": 30,
+    "catalunya": 40,
+    "euskadi": 50,
+}
+_DEFAULT_SOURCE_PRIORITY = 1000
+
+
+
+def source_priority(source_code: str) -> int:
+    """Prioridad numérica de ``source_code`` (menor = gana)."""
+    return SOURCE_PRIORITY.get(source_code, _DEFAULT_SOURCE_PRIORITY)
+
+
+def beats_canonical_owner(challenger: str, owner: str | None) -> bool:
+    """True si ``challenger`` debe promoverse sobre la dueña actual."""
+    if owner is None:
+        return True
+    return source_priority(challenger) < source_priority(owner)
+
+
+def may_write_canonical_tender(source_code: str, owner: str | None) -> bool:
+    """La fuente puede reescribir ``tenders`` si es dueña o la supera en ranking."""
+    return owner == source_code or beats_canonical_owner(source_code, owner)
+
 
 @dataclass
 class UpsertStats:
@@ -31,14 +79,17 @@ class UpsertStats:
 
 @dataclass(frozen=True, slots=True)
 class _MatchLink:
-    """How upsert should link this source row to a canonical tender (Paso 6)."""
+    """Decisión de enlace que aplica el upsert (Paso 6), ya resuelta desde el payload.
+
+    - ``reuse_tender_id``: solo en ``auto`` (fusionar contra ese tender).
+    - ``match_candidate_tender_id``: solo en ``pending`` (pista, no fusión; ADR 010).
+    """
 
     review_status: str
     match_method: str | None
     match_score: float | None
     reuse_tender_id: str | None
     matched_at: datetime | None
-    # Best cross-source candidate when pending (not merged). Null for auto/unmatched.
     match_candidate_tender_id: str | None = None
 
 
@@ -50,7 +101,7 @@ class CanonicalRepository(Protocol):
         records: list[SourceRecord],
         artifact_id: str | None = None,
     ) -> UpsertStats:
-        """Persist canonical rows. Idempotent on (source_code, source_tender_id)."""
+        """Persiste filas canónicas. Idempotente en ``(source_code, source_tender_id)``."""
         ...
 
     def find_match_candidates(
@@ -62,12 +113,16 @@ class CanonicalRepository(Protocol):
         cpv_code: str | None = None,
         limit: int = 50,
     ) -> list[MatchCandidate]:
-        """Candidates from other sources for cross-source matching (Semana 4)."""
+        """Prefiltro de candidatos de otras fuentes (entrada del scorer Semana 4)."""
         ...
 
 
 class InMemoryCanonicalRepository:
-    """In-memory canonical store for unit tests (no Postgres)."""
+    """Almacén canónico en memoria para tests (sin Postgres).
+
+    Implementa el mismo contrato de matching/upsert que Postgres para poder
+    probar auto-merge, pending y candidato best sin red ni DB.
+    """
 
     def __init__(self) -> None:
         self.authorities: dict[str, dict[str, Any]] = {}
@@ -93,16 +148,29 @@ class InMemoryCanonicalRepository:
 
             existing = self.tender_sources.get(key)
             if existing is None:
+                # Primera vista de esta fuente: aplicar auto/pending/unmatched.
                 link = _match_link_from_payload(
                     record.payload,
                     tender_exists=lambda tid: tid in self.tenders,
                 )
                 if link.reuse_tender_id is not None:
                     tender_id = link.reuse_tender_id
-                    self.tenders[tender_id] = _tender_row(canonical, authority_id)
+                    owner = self.tenders[tender_id].get("canonical_source_code")
+                    if may_write_canonical_tender(source_code, owner):
+                        if (
+                            owner != source_code
+                            or _tender_content_differs(
+                                self.tenders[tender_id], canonical, authority_id
+                            )
+                        ):
+                            self.tenders[tender_id] = _tender_row(
+                                canonical, authority_id, source_code
+                            )
                 else:
                     tender_id = str(uuid4())
-                    self.tenders[tender_id] = _tender_row(canonical, authority_id)
+                    self.tenders[tender_id] = _tender_row(
+                        canonical, authority_id, source_code
+                    )
                 self.tender_sources[key] = {
                     "tender_id": tender_id,
                     "source_code": source_code,
@@ -137,18 +205,28 @@ class InMemoryCanonicalRepository:
                 stats.tender_ids.append(tender_id)
             else:
                 tender_id = existing["tender_id"]
-                self.tenders[tender_id] = _tender_row(canonical, authority_id)
                 existing["source_url"] = canonical.get("source_url")
                 existing["artifact_id"] = artifact_id
+                existing["last_seen_at"] = datetime.now().astimezone()
                 _apply_match_refresh_in_memory(existing, record.payload, self.tenders)
-                self.events.append(
-                    {
-                        "tender_id": tender_id,
-                        "event_type": "updated",
-                        "source_code": source_code,
-                    }
-                )
-                stats.updated += 1
+                owner = self.tenders[tender_id].get("canonical_source_code")
+                if may_write_canonical_tender(source_code, owner):
+                    owner_change = owner != source_code
+                    content_change = _tender_content_differs(
+                        self.tenders[tender_id], canonical, authority_id
+                    )
+                    if owner_change or content_change:
+                        self.tenders[tender_id] = _tender_row(
+                            canonical, authority_id, source_code
+                        )
+                        self.events.append(
+                            {
+                                "tender_id": tender_id,
+                                "event_type": "updated",
+                                "source_code": source_code,
+                            }
+                        )
+                        stats.updated += 1
                 stats.tender_ids.append(tender_id)
         return stats
 
@@ -161,6 +239,12 @@ class InMemoryCanonicalRepository:
         cpv_code: str | None = None,
         limit: int = 50,
     ) -> list[MatchCandidate]:
+        """Misma semántica que Postgres: prefiltro por NIF / expediente / CPV.
+
+        Sin ningún filtro no devolvemos el catálogo completo (evitar O(n) ciego
+        en tests grandes). Deduplica por ``tender_id`` por si una licitación
+        ya tiene varios ``tender_sources``.
+        """
         out: list[MatchCandidate] = []
         seen_tenders: set[str] = set()
         for (src, source_tender_id), link in self.tender_sources.items():
@@ -182,8 +266,7 @@ class InMemoryCanonicalRepository:
             elif cpv_code and cand_cpv == cpv_code:
                 pass
             else:
-                # Still include when no filters (broad scan) — but we always pass
-                # at least one filter from match_records. Skip if none match.
+                # Con filtros activos y sin coincidencia → fuera del prefiltro.
                 if tax_id or expediente or cpv_code:
                     continue
 
@@ -215,8 +298,17 @@ class InMemoryCanonicalRepository:
 
     def _upsert_authority(self, authority: dict[str, Any]) -> str:
         tax_id = authority.get("tax_id")
+        platform_id = authority.get("platform_id")
         if tax_id:
-            key = f"ES:{tax_id}"
+            key = f"ES:tax:{tax_id}"
+            if key in self.authorities:
+                self.authorities[key].update(authority)
+                return self.authorities[key]["id"]
+            auth_id = str(uuid4())
+            self.authorities[key] = {"id": auth_id, **authority}
+            return auth_id
+        if platform_id:
+            key = f"ES:plat:{platform_id}"
             if key in self.authorities:
                 self.authorities[key].update(authority)
                 return self.authorities[key]["id"]
@@ -229,7 +321,11 @@ class InMemoryCanonicalRepository:
 
 
 class PostgresCanonicalRepository:
-    """Writes canonical MVP tables using a trusted DB connection."""
+    """Escribe tablas canónicas MVP con una conexión confiable (p. ej. service_role).
+
+    Incluye ``find_match_candidates`` para que el pipeline pueda deduplicar
+    contra datos ya persistidos de otras fuentes antes del upsert.
+    """
 
     def __init__(self, conn: psycopg.Connection) -> None:
         self._conn = conn
@@ -243,6 +339,11 @@ class PostgresCanonicalRepository:
         cpv_code: str | None = None,
         limit: int = 50,
     ) -> list[MatchCandidate]:
+        """Prefiltro SQL: otras fuentes con mismo NIF, expediente o CPV.
+
+        Sin filtros → lista vacía (no escanear toda ``tender_sources``).
+        ``distinct on (t.id)`` evita duplicar el mismo tender canónico.
+        """
         clauses = ["ts.source_code <> %s"]
         params: list[Any] = [exclude_source_code]
         filters: list[str] = []
@@ -250,7 +351,7 @@ class PostgresCanonicalRepository:
             filters.append("a.tax_id = %s")
             params.append(tax_id)
         if expediente:
-            # source_tender_id may be ``tax:EXP`` or a bare expediente.
+            # PLACSP suele guardar ``tax:EXP``; otras fuentes pueden traer el EXP suelto.
             filters.append(
                 "(ts.source_tender_id = %s OR ts.source_tender_id LIKE %s)"
             )
@@ -331,15 +432,30 @@ class PostgresCanonicalRepository:
             ).fetchone()
 
             if existing is None:
+                # Primera vez que vemos (source_code, source_tender_id): aplicar match.
                 link = _match_link_from_payload(
                     record.payload,
                     tender_exists=self._tender_exists,
                 )
                 if link.reuse_tender_id is not None:
+                    # auto: reutilizar tender; solo reescribir si promovemos / somos dueña.
                     tender_id = link.reuse_tender_id
-                    self._update_tender(tender_id, canonical, authority_id)
+                    owner = self._canonical_owner(tender_id)
+                    if may_write_canonical_tender(source_code, owner):
+                        if owner != source_code or self._tender_row_differs(
+                            tender_id, canonical, authority_id
+                        ):
+                            self._update_tender(
+                                tender_id,
+                                canonical,
+                                authority_id,
+                                canonical_source_code=source_code,
+                            )
                 else:
-                    tender_id = self._insert_tender(canonical, authority_id)
+                    # pending / unmatched (o auto sin destino): tender nuevo.
+                    tender_id = self._insert_tender(
+                        canonical, authority_id, canonical_source_code=source_code
+                    )
                 self._insert_tender_source(
                     tender_id=tender_id,
                     source_code=source_code,
@@ -369,7 +485,7 @@ class PostgresCanonicalRepository:
                 stats.tender_ids.append(tender_id)
             else:
                 tender_id = str(existing[0])
-                self._update_tender(tender_id, canonical, authority_id)
+                # Siempre: last_seen_at (y metadata de fuente). Negocio solo si dueña/promoción.
                 self._touch_tender_source(
                     source_code=source_code,
                     source_tender_id=source_tender_id,
@@ -377,22 +493,68 @@ class PostgresCanonicalRepository:
                     artifact_id=artifact_id,
                     payload=record.payload,
                 )
-                self._insert_event(
-                    tender_id=tender_id,
-                    event_type="updated",
-                    source_code=source_code,
-                    payload={"source_tender_id": source_tender_id},
-                    occurred_at=record.recorded_at,
-                )
-                self._maybe_insert_document(
-                    tender_id=tender_id,
-                    canonical=canonical,
-                    source_code=source_code,
-                    artifact_id=artifact_id,
-                )
-                stats.updated += 1
+                owner = self._canonical_owner(tender_id)
+                if may_write_canonical_tender(source_code, owner):
+                    owner_change = owner != source_code
+                    content_change = self._tender_row_differs(
+                        tender_id, canonical, authority_id
+                    )
+                    if owner_change or content_change:
+                        self._update_tender(
+                            tender_id,
+                            canonical,
+                            authority_id,
+                            canonical_source_code=source_code,
+                        )
+                        self._insert_event(
+                            tender_id=tender_id,
+                            event_type="updated",
+                            source_code=source_code,
+                            payload={"source_tender_id": source_tender_id},
+                            occurred_at=record.recorded_at,
+                        )
+                        self._maybe_insert_document(
+                            tender_id=tender_id,
+                            canonical=canonical,
+                            source_code=source_code,
+                            artifact_id=artifact_id,
+                        )
+                        stats.updated += 1
                 stats.tender_ids.append(tender_id)
         return stats
+
+    def _tender_row_differs(
+        self,
+        tender_id: str,
+        canonical: dict[str, Any],
+        authority_id: str | None,
+    ) -> bool:
+        row = self._conn.execute(
+            """
+            select title, description, status, procedure_type, contract_type,
+                   estimated_value, currency, cpv_code, publication_date,
+                   deadline_at, contracting_authority_id
+            from public.tenders
+            where id = %s::uuid
+            """,
+            (tender_id,),
+        ).fetchone()
+        if row is None:
+            return True
+        current = {
+            "title": row[0],
+            "description": row[1],
+            "status": row[2],
+            "procedure_type": row[3],
+            "contract_type": row[4],
+            "estimated_value": row[5],
+            "currency": row[6],
+            "cpv_code": row[7],
+            "publication_date": row[8],
+            "deadline_at": row[9],
+            "contracting_authority_id": str(row[10]) if row[10] is not None else None,
+        }
+        return _tender_content_differs(current, canonical, authority_id)
 
     def _tender_exists(self, tender_id: str) -> bool:
         row = self._conn.execute(
@@ -401,10 +563,24 @@ class PostgresCanonicalRepository:
         ).fetchone()
         return row is not None
 
+    def _canonical_owner(self, tender_id: str) -> str | None:
+        row = self._conn.execute(
+            """
+            select canonical_source_code
+            from public.tenders
+            where id = %s::uuid
+            """,
+            (tender_id,),
+        ).fetchone()
+        if row is None or row[0] is None:
+            return None
+        return str(row[0])
+
     def _upsert_authority(self, authority: dict[str, Any]) -> str | None:
         name = (authority.get("name") or "Unknown authority").strip()
         tax_id = authority.get("tax_id")
         tax_id_country = authority.get("tax_id_country") or "ES"
+        platform_id = authority.get("platform_id")
         name_normalized = authority.get("name_normalized")
         confidence = authority.get("identity_confidence") or "UNRESOLVED"
 
@@ -412,10 +588,43 @@ class PostgresCanonicalRepository:
             row = self._conn.execute(
                 """
                 insert into public.contracting_authorities (
-                  tax_id, tax_id_country, name, name_normalized, identity_confidence
+                  tax_id, tax_id_country, platform_id, name, name_normalized,
+                  identity_confidence
                 )
-                values (%s, %s, %s, %s, %s)
+                values (%s, %s, %s, %s, %s, %s)
                 on conflict (tax_id_country, tax_id) where (tax_id is not null)
+                do update set
+                  name = excluded.name,
+                  name_normalized = excluded.name_normalized,
+                  identity_confidence = excluded.identity_confidence,
+                  platform_id = coalesce(
+                    excluded.platform_id, public.contracting_authorities.platform_id
+                  ),
+                  updated_at = now()
+                returning id
+                """,
+                (
+                    tax_id,
+                    tax_id_country,
+                    platform_id,
+                    name,
+                    name_normalized,
+                    confidence,
+                ),
+            ).fetchone()
+            assert row is not None
+            return str(row[0])
+
+        if platform_id:
+            row = self._conn.execute(
+                """
+                insert into public.contracting_authorities (
+                  tax_id, tax_id_country, platform_id, name, name_normalized,
+                  identity_confidence
+                )
+                values (null, %s, %s, %s, %s, %s)
+                on conflict (tax_id_country, platform_id)
+                  where (platform_id is not null and tax_id is null)
                 do update set
                   name = excluded.name,
                   name_normalized = excluded.name_normalized,
@@ -423,7 +632,13 @@ class PostgresCanonicalRepository:
                   updated_at = now()
                 returning id
                 """,
-                (tax_id, tax_id_country, name, name_normalized, confidence),
+                (
+                    tax_id_country,
+                    platform_id,
+                    name,
+                    name_normalized,
+                    confidence,
+                ),
             ).fetchone()
             assert row is not None
             return str(row[0])
@@ -431,9 +646,10 @@ class PostgresCanonicalRepository:
         row = self._conn.execute(
             """
             insert into public.contracting_authorities (
-              tax_id, tax_id_country, name, name_normalized, identity_confidence
+              tax_id, tax_id_country, platform_id, name, name_normalized,
+              identity_confidence
             )
-            values (null, %s, %s, %s, %s)
+            values (null, %s, null, %s, %s, %s)
             returning id
             """,
             (tax_id_country, name, name_normalized, confidence),
@@ -441,15 +657,21 @@ class PostgresCanonicalRepository:
         assert row is not None
         return str(row[0])
 
-    def _insert_tender(self, canonical: dict[str, Any], authority_id: str | None) -> str:
+    def _insert_tender(
+        self,
+        canonical: dict[str, Any],
+        authority_id: str | None,
+        *,
+        canonical_source_code: str,
+    ) -> str:
         row = self._conn.execute(
             """
             insert into public.tenders (
               title, description, status, procedure_type, contract_type,
               estimated_value, currency, cpv_code, publication_date, deadline_at,
-              contracting_authority_id
+              contracting_authority_id, canonical_source_code
             )
-            values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s::uuid)
+            values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s::uuid, %s)
             returning id
             """,
             (
@@ -464,6 +686,7 @@ class PostgresCanonicalRepository:
                 canonical.get("publication_date"),
                 canonical.get("deadline_at"),
                 authority_id,
+                canonical_source_code,
             ),
         ).fetchone()
         assert row is not None
@@ -474,6 +697,8 @@ class PostgresCanonicalRepository:
         tender_id: str,
         canonical: dict[str, Any],
         authority_id: str | None,
+        *,
+        canonical_source_code: str,
     ) -> None:
         self._conn.execute(
             """
@@ -489,6 +714,7 @@ class PostgresCanonicalRepository:
               publication_date = %s,
               deadline_at = %s,
               contracting_authority_id = %s::uuid,
+              canonical_source_code = %s,
               updated_at = now()
             where id = %s::uuid
             """,
@@ -504,6 +730,7 @@ class PostgresCanonicalRepository:
                 canonical.get("publication_date"),
                 canonical.get("deadline_at"),
                 authority_id,
+                canonical_source_code,
                 tender_id,
             ),
         )
@@ -558,7 +785,8 @@ class PostgresCanonicalRepository:
             payload,
             tender_exists=self._tender_exists,
         )
-        # Refresh match metadata while still pending (or clear candidate if unmatched).
+        # Re-ingesta: actualizar pista pending / limpiar si ya no hay candidato.
+        # No tocamos review_status=auto ya fusionado (solo last_seen abajo).
         if link.review_status == REVIEW_PENDING:
             self._conn.execute(
                 """
@@ -588,6 +816,8 @@ class PostgresCanonicalRepository:
             return
 
         if link.review_status == REVIEW_UNMATCHED:
+            # Si antes estaba pending y ahora no hay match, limpiar metadatos
+            # (incluido match_candidate_tender_id) sin borrar el enlace de fuente.
             self._conn.execute(
                 """
                 update public.tender_sources set
@@ -687,7 +917,16 @@ def _match_link_from_payload(
     *,
     tender_exists: Callable[[str], bool],
 ) -> _MatchLink:
-    """Map ``payload['match']`` to upsert link behaviour (Semana 4 Paso 6)."""
+    """Traduce ``payload['match']`` a comportamiento de upsert (Paso 6).
+
+    Aquí se separan los dos usos de ``matched_tender_id`` del matching:
+
+    - ``auto`` → ``reuse_tender_id`` (fusionar);
+    - ``pending`` → ``match_candidate_tender_id`` (solo pista; ADR 010).
+
+    Si el auto apunta a un tender que ya no existe, degradamos a ``unmatched``
+    en lugar de inventar una fusión.
+    """
     match = (payload or {}).get("match") or {}
     status = match.get("review_status") or REVIEW_UNMATCHED
     method = match.get("match_method")
@@ -707,7 +946,7 @@ def _match_link_from_payload(
             match_candidate_tender_id=None,
         )
     if status == REVIEW_AUTO:
-        # Stale / missing target → do not invent a merge.
+        # Destino obsoleto / ausente → no inventar fusión.
         return _MatchLink(
             review_status=REVIEW_UNMATCHED,
             match_method=None,
@@ -740,7 +979,10 @@ def _apply_match_refresh_in_memory(
     payload: dict[str, Any] | None,
     tenders: dict[str, dict[str, Any]],
 ) -> None:
-    """Refresh pending candidate on re-ingest (in-memory repo)."""
+    """Espejo en memoria de ``_touch_tender_source`` para tests de re-ingesta.
+
+    Actualiza o limpia el candidato pending; no deshace un ``auto`` ya fusionado.
+    """
     link = _match_link_from_payload(
         payload,
         tender_exists=lambda tid: tid in tenders,
@@ -761,8 +1003,11 @@ def _apply_match_refresh_in_memory(
         existing["matched_at"] = None
         existing["match_candidate_tender_id"] = None
 
-
-def _tender_row(canonical: dict[str, Any], authority_id: str) -> dict[str, Any]:
+def _tender_row(
+    canonical: dict[str, Any],
+    authority_id: str,
+    canonical_source_code: str,
+) -> dict[str, Any]:
     return {
         "title": canonical.get("title"),
         "description": canonical.get("description"),
@@ -775,7 +1020,73 @@ def _tender_row(canonical: dict[str, Any], authority_id: str) -> dict[str, Any]:
         "publication_date": canonical.get("publication_date"),
         "deadline_at": canonical.get("deadline_at"),
         "contracting_authority_id": authority_id,
+        "canonical_source_code": canonical_source_code,
     }
+
+
+def _tender_content_differs(
+    current: dict[str, Any],
+    canonical: dict[str, Any],
+    authority_id: str | None,
+) -> bool:
+    """True si los campos de negocio del tender cambian respecto a ``canonical``."""
+    return _tender_compare_snapshot(current) != _tender_compare_snapshot(
+        {
+            "title": canonical.get("title") or "Untitled",
+            "description": canonical.get("description"),
+            "status": canonical.get("status"),
+            "procedure_type": canonical.get("procedure_type"),
+            "contract_type": canonical.get("contract_type"),
+            "estimated_value": canonical.get("estimated_value"),
+            "currency": canonical.get("currency") or "EUR",
+            "cpv_code": canonical.get("cpv_code"),
+            "publication_date": canonical.get("publication_date"),
+            "deadline_at": canonical.get("deadline_at"),
+            "contracting_authority_id": authority_id,
+        }
+    )
+
+
+def _tender_compare_snapshot(row: dict[str, Any]) -> tuple[Any, ...]:
+    """Normaliza campos canónicos para comparar igualdad de contenido."""
+    auth = row.get("contracting_authority_id")
+    return (
+        (row.get("title") or "Untitled"),
+        row.get("description"),
+        row.get("status"),
+        row.get("procedure_type"),
+        row.get("contract_type"),
+        _as_decimal(row.get("estimated_value")),
+        (row.get("currency") or "EUR"),
+        row.get("cpv_code"),
+        _as_date(row.get("publication_date")),
+        _as_datetime(row.get("deadline_at")),
+        str(auth) if auth is not None else None,
+    )
+
+
+def _as_datetime(value: Any) -> datetime | None:
+    """Datetime comparable (UTC naive) para no marcar cambio por solo tzinfo."""
+    if value is None or value == "":
+        return None
+    if isinstance(value, datetime):
+        parsed = value
+    elif isinstance(value, date):
+        parsed = datetime(value.year, value.month, value.day)
+    else:
+        text = str(value).strip().replace("Z", "+00:00")
+        if not text:
+            return None
+        try:
+            parsed = datetime.fromisoformat(text)
+        except ValueError:
+            try:
+                parsed = datetime.fromisoformat(f"{text[:10]}T00:00:00")
+            except ValueError:
+                return None
+    if parsed.tzinfo is not None:
+        return parsed.astimezone(timezone.utc).replace(tzinfo=None)
+    return parsed
 
 
 def _as_decimal(value: Any) -> Decimal | None:

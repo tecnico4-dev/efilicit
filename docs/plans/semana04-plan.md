@@ -168,7 +168,9 @@ No debilitar tests de Semanas 1–3. Correr la batería completa de ingestion.
 
 Actualizar `docs/sources/README.md`, CHANGELOG, checklist. ADR `N/A` o ADR nuevo si hubo decisión estructural. Verificación live de menores / CCAA extra / un caso de dedup: solo cuando el paso correspondiente esté listo y de forma acotada (mismo patrón que `docs/pruebas.md`).
 
-**Listo cuando:** criterios de salida de `docs/04` § Semana 4 cumplidos.
+**Hecho:** catálogo + checklist cerrados; [ADR 009](../adr/009-ccaa-propia-extra-na-semana4.md) (CCAA extra N/A) + [ADR 010](../adr/010-match-candidate-tender-id-en-tender-sources.md) (candidato best); handoff Semana 5; CHANGELOG con cierre Semana 4.
+
+**Listo cuando:** criterios de salida de `docs/04` § Semana 4 cumplidos → **cumplidos** (ver tabla en checklist).
 
 **Fuera de alcance (→ Semana 5+):** buscador FTS, Auth/RLS de usuarios en UI, motor de alertas/email, web de ficha/dashboard, TED, subvenciones, UI de revisión humana de matches `pending`, cron de producción, infra nueva sin ADR.
 
@@ -187,21 +189,21 @@ Registro de lo acordado al cerrar (o antes de) cada paso:
 | Plan | Dedup en pipeline común + lookup al canónico persistido | El pass-through actual no ve otras fuentes |
 | Plan | Matching persistido en `tender_sources` (columnas) por defecto | Encaja el contrato ya existente; migración Semana 4 |
 | Plan | No adelantar `pg_trgm`/FTS | Eso es Semana 5; similitud de título en el ETL |
-| Plan | `placsp_menores` antes de CCAA extra | Reuso máximo; leftover explícito de Semana 3 |
+| Plan | `placsp_menores` antes de CCAA extra | Reuso máximo; leftover Semana 3 ([ADR 008](../adr/008-placsp-menores-aplazado-semana4.md)) |
 | Plan | Documentación de fuentes/cobertura solo en `docs/sources/` | El plan no acumula fichas ni matrices largas |
 | Paso 1 | `placsp_menores` = `sindicacion_1143` / `contratosMenoresPerfilesContratantes` | Confirmado en ficha Hacienda; conector en Paso 2 |
 | Paso 1 | 2 propias (Cat, Euskadi) + 5 agregación + 10 perfiles alojados `placsp` | Cumple “ruta identificada” sin 17 conectores; ver [cobertura-ccaa.md](../sources/cobertura-ccaa.md) |
-| Paso 1 | CCAA propia extra Semana 4 = **0 (N/A)** | Priorizar menores + dedup; Open Data / menores de agregadas = backlog |
+| Paso 1 | CCAA propia extra Semana 4 = **0 (N/A)** | Priorizar menores + dedup; Open Data / menores de agregadas = backlog ([ADR 009](../adr/009-ccaa-propia-extra-na-semana4.md)) |
 | Paso 1 | Fichas en `cobertura-ccaa.md` + `placsp_menores.md` | Detalle en catálogo de fuentes, no en el plan |
 | Paso 2.2 | `PLACSP_MENORES` en `PlacspSyndication` | Reuso discover/fetch; keys `contratosMenoresPerfilesContratantes_YYYYMM.zip` |
 | Paso 2.3 | RAW/parse/normalize/upsert reutilizan pipeline PLACSP | Prefijo `raw/placsp_menores/`; unique `(placsp_menores, source_tender_id)` |
 | Paso 2.4 | CLI + `ingest-placsp.yml` admiten `placsp_menores` | Dry-run default; cron off |
-| Paso 4 | Matching en columnas de `tender_sources` (migración) | `unmatched`/`auto`/`pending`; sin tabla auxiliar; ADR N/A |
+| Paso 4 | Matching en columnas de `tender_sources` (migración) | `unmatched`/`auto`/`pending`; sin tabla auxiliar; candidato best → [ADR 010](../adr/010-match-candidate-tender-id-en-tender-sources.md) |
 | Paso 5 | `stages.deduplicate` + `MatchLookup` en repo canónico | Anota `payload['match']`; título solo → `pending`; fusión = Paso 6 |
 | Paso 6 | Upsert respeta `payload['match']` | `auto` reusa `tenders.id`; `pending`/`unmatched` crean fila; idempotente |
 | Paso 7 | Fixtures solape PLACSP↔Euskadi + regresión | Auto-merge / no-merge; Catalunya sin NIF no auto; suite ingestion verde |
-| Paso 8 | Catálogo + cierre | ADR N/A; checklist cerrado; handoff Semana 5 |
-| Pruebas live (post Paso 6–7) | Columna `match_candidate_tender_id` en `tender_sources` (candidato **best** en `pending`) | Sin ella no se ve en Studio a qué tender se parece un `pending`; no cambia `auto`/`unmatched`. Evolución prevista cuando exista UI de revisión humana: tabla `match_suggestions` (varios candidatos por fila pending, no solo el best) |
+| Paso 8 | Catálogo + cierre | Checklist cerrado; handoff Semana 5; ADRs 009–010 |
+| Pruebas live (post Paso 6–7) | Columna `match_candidate_tender_id` en `tender_sources` (candidato **best** en `pending`) | Sin ella no se ve en Studio a qué tender se parece un `pending`; no cambia `auto`/`unmatched`. Evolución prevista cuando exista UI de revisión humana: tabla `match_suggestions` (varios candidatos por fila pending, no solo el best). [ADR 010](../adr/010-match-candidate-tender-id-en-tender-sources.md) |
 
 ---
 

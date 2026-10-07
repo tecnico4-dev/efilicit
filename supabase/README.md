@@ -36,6 +36,8 @@ URLs típicas (confirma con `supabase status`):
 
 ## Remoto (Paso 7)
 
+Bootstrap greenfield documentado en [ADR 002](../docs/adr/002-bootstrap-supabase-remoto-greenfield.md):
+
 - Proyecto vinculado: **EfiLicit** (`luvxqyajujlznocflymo`) — https://luvxqyajujlznocflymo.supabase.co  
 - PostgreSQL major local y remoto: **17** (alineados).  
 - El remoto empezó vacío; se aplicó la migración local `20260909090000_fase0_storage_raw_and_rls_smoke` con `supabase db push` (no `db reset --linked`).  

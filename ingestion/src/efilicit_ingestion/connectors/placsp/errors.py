@@ -1,18 +1,22 @@
-"""PLACSP fetch errors (controlled, classifiable)."""
+"""Errores de descarga PLACSP (controlados y clasificables).
+
+Clases tipadas para tests/logs; **mensajes** de excepción en inglés.
+No escriben en ``public.errors`` (ADR 003): el outcome del run va a ``source_sync``.
+"""
 
 from __future__ import annotations
 
 
 class PlacspFetchError(Exception):
-    """Base error for PLACSP download failures."""
+    """Error base de fallos de descarga PLACSP (red, tamaño, timeout…)."""
 
 
 class ArtifactTooLargeError(PlacspFetchError):
-    """Remote payload exceeds the configured size budget."""
+    """ZIP (o Content-Length) por encima del presupuesto configurado."""
 
 
 class PlacspHttpError(PlacspFetchError):
-    """Non-success HTTP response from the official syndication host."""
+    """Respuesta HTTP ≥400 del host oficial de sindicación (sin reintento ciego)."""
 
     def __init__(self, status_code: int, url: str) -> None:
         self.status_code = status_code

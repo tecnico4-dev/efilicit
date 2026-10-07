@@ -73,6 +73,47 @@ def test_parse_unexpected_malformed_xml_raises() -> None:
         list(parse_placsp_artifact(_load("unexpected_malformed.atom"), _artifact()))
 
 
+def test_parse_keeps_newest_atom_updated_for_same_folder() -> None:
+    """Misma carpeta 3 veces: gana atom:updated más reciente, no el orden XML."""
+    records = list(
+        parse_placsp_artifact(_load("same_folder_three_versions.atom"), _artifact())
+    )
+    assert len(records) == 1
+    record = records[0]
+    assert record.source_record_id == "B00000000:EXP/2026/0001"
+    assert record.payload["status"] == "ADJ"
+    assert "adjudicada" in record.payload["title"].lower()
+    assert record.recorded_at is not None
+    assert record.recorded_at.day == 28
+
+
+def test_parse_zip_keeps_newest_across_atom_members() -> None:
+    """ZIP con dos .atom: gana la entry más reciente aunque el fichero sea 'antes' alfabéticamente."""
+    buf = BytesIO()
+    with zipfile.ZipFile(buf, "w") as zf:
+        # Orden alfabético: a_old.atom antes que z_new.atom; sin colapso ganaría el orden.
+        zf.writestr(
+            "z_old.atom",
+            _load("valid_single_entry.atom"),
+        )
+        zf.writestr(
+            "a_new.atom",
+            _load("same_folder_three_versions.atom"),
+        )
+    records = list(
+        parse_placsp_artifact(
+            buf.getvalue(),
+            RemoteArtifact(
+                artifact_key="versions_202609.zip",
+                source_url="https://example.invalid/versions.zip",
+                content_type="application/zip",
+            ),
+        )
+    )
+    assert len(records) == 1
+    assert records[0].payload["status"] == "ADJ"
+
+
 def test_parse_zip_with_atom_member() -> None:
     buf = BytesIO()
     with zipfile.ZipFile(buf, "w") as zf:

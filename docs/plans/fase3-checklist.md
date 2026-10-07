@@ -13,11 +13,11 @@ Los pasos globales (1–10) se mantienen. Los Pasos **3**, **4** y **8** se desg
 | 3. Conector estatal (discover + fetch) | OK | Minipasos 3.1–3.2; ver tabla abajo |
 | 4. RAW + parse + normalize + upsert (estatal) | OK | 4.1–4.5; `run-placsp --syndication placsp_agregadas` |
 | 5. Workflow/job fuente estatal | OK | `ingest-placsp.yml` + input `syndication=placsp_agregadas`; dry-run default; cron off |
-| 6. Adaptador CSV genérico (o N/A) | N/A | Familia CSV no priorizada; reserva CSV → conector puntual |
+| 6. Adaptador CSV genérico (o N/A) | N/A | Familia CSV no priorizada; [ADR 007](../adr/007-adaptador-csv-familia-na-semana3.md) |
 | 7. Adaptador REST/Socrata (o N/A) | OK | `SocrataConnector` + preset `CATALUNYA` (`ybgg-dgi6`); ficha + tests sin red |
 | 8. CCAA propia #1 | OK | `catalunya` 8.1–8.6; live SODA + idempotencia en [docs/pruebas.md](../pruebas.md) |
 | 9. CCAA propia #2 (+) | OK | `euskadi` 9.1–9.5; live API + idempotencia en [docs/pruebas.md](../pruebas.md) Parte D |
-| 10. Catálogo + regresión + cierre | OK | Catálogo homogéneo; `112 passed`; CHANGELOG; ADR N/A |
+| 10. Catálogo + regresión + cierre | OK | Catálogo homogéneo; `112 passed`; CHANGELOG; [ADR 007](../adr/007-adaptador-csv-familia-na-semana3.md) + [ADR 008](../adr/008-placsp-menores-aplazado-semana4.md) |
 
 ## Paso 3 — minipasos (conector estatal)
 
@@ -66,14 +66,14 @@ Parse/normalize del adaptador ya cubiertos en Paso 7.
 | Reejecutar no duplica (fuentes nuevas) | OK | Live `placsp_agregadas` + `catalunya` + `euskadi`: 2ª corrida `records_new=0`; ver [docs/pruebas.md](../pruebas.md) |
 | `source_sync` por cada fuente añadida | OK | Live local: `prueba-live-agregadas-*`, `prueba-live-catalunya-*`, `prueba-live-euskadi-*` |
 | Tests en verde (parser / adaptadores / persistencia) | OK | Regresión Paso 10: `112 passed` (PLACSP + agregadas + catalunya + euskadi) |
-| ADRs estructurales (solo si hubo decisión nueva) | N/A | Sin cambio de arquitectura; se implementó lo fijado en `docs/01`–`04` |
+| ADRs estructurales (solo si hubo decisión nueva) | OK | [ADR 007](../adr/007-adaptador-csv-familia-na-semana3.md) (CSV N/A); [ADR 008](../adr/008-placsp-menores-aplazado-semana4.md) (menores → S4) |
 | CHANGELOG actualizado | OK | Unreleased con entradas Semana 3 + cierre |
 
 ## Criterios de salida `docs/04` § Semana 3
 
 | Criterio | Estado | Evidencia |
 |---|---|---|
-| Fuentes estatales priorizadas ingiriendo | OK | `placsp_agregadas` live ([pruebas.md](../pruebas.md) Parte B). `placsp_menores` queda para Semana 4+ |
+| Fuentes estatales priorizadas ingiriendo | OK | `placsp_agregadas` live ([pruebas.md](../pruebas.md) Parte B). `placsp_menores` → Semana 4+ ([ADR 008](../adr/008-placsp-menores-aplazado-semana4.md)) |
 | Varias CCAA propias con datos reales | OK | `catalunya` + `euskadi` live (Partes C–D) |
 | Cada fuente añadida: tests + `source_sync` | OK | Fixtures/tests + sync live por fuente |
 | Sin modelo de datos alternativo por fuente | OK | Mismo canónico / pipeline común |

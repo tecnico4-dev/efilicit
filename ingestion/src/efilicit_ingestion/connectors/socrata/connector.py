@@ -1,4 +1,12 @@
-"""Socrata SourceConnector — discover pages + fetch + parse (SODA JSON)."""
+"""SourceConnector Socrata — discover páginas + fetch + parse (SODA JSON).
+
+Implementa el contrato común (Semana 1): el pipeline no sabe de SoQL ni de
+Catalunya; solo ve artefactos y ``SourceRecord``.
+
+Discover no baja datos: lista ``RemoteArtifact`` (URL + key) acotados por
+``max_pages`` / ``start_offset``. En live conviene empezar con pocas páginas
+para no saturar la API ni el Storage.
+"""
 
 from __future__ import annotations
 
@@ -32,11 +40,14 @@ __all__ = [
 
 
 class SocrataConnector:
-    """Generic SODA / Socrata Open Data connector.
+    """Conector genérico SODA / Socrata Open Data.
 
-    Default dataset is Catalunya PSCP publications (``CATALUNYA`` / ``ybgg-dgi6``).
-    Discovery lists page artifacts via ``$limit`` / ``$offset``; fetch downloads JSON;
-    parse maps rows to ``SourceRecord`` (Catalunya field mapping for this dataset).
+    Por defecto: publicaciones PSCP de Catalunya (``CATALUNYA`` / ``ybgg-dgi6``).
+    - Discover: páginas vía ``$limit`` / ``$offset``.
+    - Fetch: JSON de esa página (artefacto RAW).
+    - Parse: filas → ``SourceRecord`` (mapeo Catalunya en el parser actual).
+
+    ``fetch_transport`` permite E2E con fixture sin red (tests / dry-run Actions).
     """
 
     def __init__(
@@ -52,6 +63,12 @@ class SocrataConnector:
         max_bytes: int = DEFAULT_MAX_BYTES,
         retry_attempts: int = DEFAULT_RETRY_ATTEMPTS,
     ) -> None:
+        """Configura paginación y política HTTP.
+
+        - ``page_size``: ``$limit`` SODA (Catalunya tolera ~1000).
+        - ``max_pages`` / ``start_offset``: ventana de discover (incremental).
+        - Sin from/to mensual: el “mes” de PLACSP aquí es una ventana de offsets.
+        """
         if page_size < 1:
             raise ValueError("page_size must be >= 1")
         if max_pages < 1:
@@ -73,6 +90,7 @@ class SocrataConnector:
         )
 
     def discover(self, context: SyncContext) -> list[RemoteArtifact]:
+        """Lista páginas a bajar; respeta cursor de sync si ya vimos keys anteriores."""
         artifacts: list[RemoteArtifact] = []
         offset = self._start_offset
         for _ in range(self._max_pages):
@@ -80,6 +98,7 @@ class SocrataConnector:
                 self.dataset, offset=offset, limit=self._page_size
             )
             if not self._is_after_cursor(artifact_key, context.cursor):
+                # Página ya cubierta: avanzamos offset igual para no redescubrirla.
                 offset += self._page_size
                 continue
 
@@ -103,6 +122,7 @@ class SocrataConnector:
         return artifacts
 
     def fetch(self, artifact: RemoteArtifact) -> bytes:
+        """Descarga el JSON de la página; el RAW aún no se parsea aquí."""
         if not artifact.source_url:
             raise ValueError(
                 f"artifact {artifact.artifact_key!r} is missing source_url"
@@ -123,6 +143,11 @@ class SocrataConnector:
 
     @staticmethod
     def _is_after_cursor(artifact_key: str, cursor: str | None) -> bool:
+        """True si la página es posterior al cursor de ``source_sync``.
+
+        Los keys llevan offset zero-padded: el orden lexicográfico coincide
+        con el orden de paginación.
+        """
         if cursor is None:
             return True
         return artifact_key > cursor

@@ -1,8 +1,9 @@
-# Queries / data access layer
+# Capa de acceso a datos (queries)
 
-Centralizar aquí el acceso a datos de Supabase (no en componentes React).
+Centralizar aquí el acceso a Supabase (no en componentes React).
+Los Server Components / Actions importan helpers tipados; la UI no arma SQL.
 
-## Búsqueda (Semana 5 / Paso 3)
+## Búsqueda (Semana 5 / Paso 3 / ADR 011)
 
 - `searchTenders(client, { query, criteria, limit, offset })` → RPC `public.search_tenders`
 - FTS (`search_vector`, config `spanish`) + fallback `pg_trgm` en `title`
@@ -11,6 +12,7 @@ Centralizar aquí el acceso a datos de Supabase (no en componentes React).
 - Ranking: `greatest(ts_rank, similarity, strict_word_similarity)` + fecha de publicación
 - Badge: `fts` solo si los tokens de la consulta aparecen **literalmente** en el título;
   si el hit es solo por stemming español → `trgm` (UI “errata”)
+- Cliente publishable/anon + sesión; nunca `service_role`
 
 Ejemplo (Node / consola con env de la web):
 
@@ -28,9 +30,9 @@ const { data, error } = await searchTenders(client, {
 
 Comprobación SQL directa: ver plan Semana 5 / checklist Paso 3.
 
-## Alertas / búsquedas (Semana 5 / Paso 6)
+## Alertas / búsquedas / perfil (Semana 5 / Paso 6)
 
 - `createOwnAlert` / `listOwnAlerts` / `createOwnSavedSearch` / `listOwnSavedSearches`
-- UI: `/alerts` (requiere login)
+- `getOwnProfile` / `updateOwnDigestFrequency` (daily|weekly; ADR 013)
+- UI: `/alerts`, `/account` (requieren login; middleware redirige)
 - Prueba RLS Alice≠Bob: `pnpm --filter @efilicit/web verify:rls`
-

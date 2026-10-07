@@ -1,4 +1,8 @@
-"""Run Euskadi (KontratazioA) ingestion end-to-end (Semana 3 Paso 9)."""
+"""Ejecuta la ingesta Euskadi (KontratazioA) de punta a punta (Semana 3 Paso 9).
+
+Análogo a ``run_catalunya``: fixture/dry-run o Postgres+Storage. La API fija
+10 avisos por página; ``max_pages`` es el dial de alcance en live.
+"""
 
 from __future__ import annotations
 
@@ -8,12 +12,9 @@ from pathlib import Path
 
 from efilicit_ingestion.connectors.euskadi import EUSKADI, EuskadiConnector, EuskadiDataset
 from efilicit_ingestion.models import SyncContext
-from efilicit_ingestion.pipeline.canonical_repo import (
-    InMemoryCanonicalRepository,
-    PostgresCanonicalRepository,
-)
+from efilicit_ingestion.pipeline.canonical_repo import InMemoryCanonicalRepository
+from efilicit_ingestion.pipeline.db_run import run_pipeline_postgres
 from efilicit_ingestion.pipeline.ports import InMemoryArtifactStore, InMemorySyncRepository
-from efilicit_ingestion.pipeline.postgres import PostgresSyncRepository, connect
 from efilicit_ingestion.pipeline.runner import run_pipeline
 from efilicit_ingestion.pipeline.supabase_storage import (
     SupabaseStorageArtifactStore,
@@ -33,6 +34,11 @@ __all__ = [
 
 @dataclass(frozen=True)
 class EuskadiRunConfig:
+    """Opciones de una corrida local / documentada del pipeline Euskadi.
+
+    ``start_page`` es 1-based (``currentPage`` de la API). ``dry_run`` = sin writes.
+    """
+
     fixture_path: Path | None = None
     max_pages: int = 1
     start_page: int = 1
@@ -43,6 +49,7 @@ class EuskadiRunConfig:
 
 
 def load_fixture_bytes(path: Path) -> bytes:
+    """Carga una página fixture JSON (objeto con ``items[]``, como la API)."""
     raw = path.read_bytes()
     if path.suffix.lower() != ".json":
         raise ValueError(f"unsupported fixture type (expected .json): {path}")
@@ -52,7 +59,11 @@ def load_fixture_bytes(path: Path) -> bytes:
 
 
 def run_euskadi(config: EuskadiRunConfig) -> PipelineResult:
-    """Execute discover→…→upsert for Euskadi contracting-notices pages."""
+    """Ejecuta discover→…→upsert para páginas contracting-notices de Euskadi.
+
+    Con fixture, el transport ignora la URL y siempre sirve el mismo JSON
+    (útil para dry-run Actions). Sin fixture: llamadas reales a la API.
+    """
     dataset = config.dataset
     run_id = config.run_id or f"{dataset.source_code}-{uuid.uuid4()}"
 
@@ -96,13 +107,8 @@ def run_euskadi(config: EuskadiRunConfig) -> PipelineResult:
     else:
         artifact_store = InMemoryArtifactStore()
 
-    with connect() as conn:
-        result = run_pipeline(
-            connector,
-            context,
-            artifact_store=artifact_store,  # type: ignore[arg-type]
-            sync_repo=PostgresSyncRepository(conn),
-            canonical_repo=PostgresCanonicalRepository(conn),
-        )
-        conn.commit()
-    return result
+    return run_pipeline_postgres(
+        connector,
+        context,
+        artifact_store=artifact_store,  # type: ignore[arg-type]
+    )

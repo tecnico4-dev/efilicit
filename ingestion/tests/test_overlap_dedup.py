@@ -54,7 +54,7 @@ def _catalunya_records():
 
 
 def test_overlap_fixtures_auto_merge_placsp_and_euskadi() -> None:
-    """Same expediente + NIF across CODICE Atom and Euskadi JSON → one tender."""
+    """Mismo expediente + NIF en Atom CODICE y JSON Euskadi → un tender."""
     repo = InMemoryCanonicalRepository()
     placsp = _placsp_records("same_tender_placsp.atom")
     assert len(placsp) == 1
@@ -86,7 +86,7 @@ def test_overlap_fixtures_auto_merge_placsp_and_euskadi() -> None:
     # Idempotent second pass on the Euskadi side.
     again = stages.deduplicate(euskadi, source_code="euskadi", canonical_repo=repo)
     second = repo.upsert_records(source_code="euskadi", records=again)
-    assert second.new == 0 and second.updated == 1
+    assert second.new == 0 and second.updated == 0
     assert len(repo.tenders) == 1
     assert len(repo.tender_sources) == 2
 

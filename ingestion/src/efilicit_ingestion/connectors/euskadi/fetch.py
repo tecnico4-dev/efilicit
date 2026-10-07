@@ -1,4 +1,8 @@
-"""HTTP download for Euskadi artifacts: timeout, retry, size limit, checksum."""
+"""Descarga HTTP de páginas Euskadi (artefacto = JSON ``contracting-notices``).
+
+Misma política que Socrata/PLACSP fetch: timeout, reintentos de transporte,
+tope de tamaño en stream. Presupuesto 32 MiB (página pequeña, no ZIP mensual).
+"""
 
 from __future__ import annotations
 
@@ -24,10 +28,12 @@ DEFAULT_MAX_BYTES = 32 * 1024 * 1024
 DEFAULT_TIMEOUT_SECONDS = 60.0
 DEFAULT_RETRY_ATTEMPTS = 3
 
+# Inyectable en tests: (url) -> (status, headers, body). Evita red real.
 FetchTransport = Callable[[str], tuple[int, dict[str, str], bytes]]
 
 
 def sha256_hex(payload: bytes) -> str:
+    """Checksum del payload (SHA-256 hex) para evidencia RAW."""
     return hashlib.sha256(payload).hexdigest()
 
 
@@ -45,7 +51,7 @@ def download_bytes(
     transport: FetchTransport | None = None,
     http_client: httpx.Client | None = None,
 ) -> bytes:
-    """Download URL bytes with timeout, retries, and size control."""
+    """Descarga con timeout/reintento; corta si el body supera ``max_bytes``."""
     cfg = settings or FetchSettings()
     if cfg.max_bytes <= 0:
         raise ValueError("max_bytes must be positive")
@@ -117,6 +123,7 @@ def _enforce_limits(
     body: bytes,
     max_bytes: int,
 ) -> bytes:
+    """Límites HTTP/tamaño cuando el body ya viene del transport de tests."""
     if status >= 400:
         raise EuskadiHttpError(status, url)
     normalized = {k.lower(): v for k, v in headers.items()}

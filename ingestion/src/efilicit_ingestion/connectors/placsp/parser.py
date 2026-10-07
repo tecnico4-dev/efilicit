@@ -1,13 +1,22 @@
-"""PLACSP Atom/CODICE parser (Semana 2 Paso 5).
+"""Parser Atom/CODICE de PLACSP (Semana 2 Paso 5).
 
-Produces SourceRecord payloads with neutral field names for later normalize/upsert.
-Does not write to the canonical DB.
+El ZIP mensual contiene uno o más ``.atom``. Cada ``atom:entry`` lleva un
+bloque CODICE (``ContractFolderStatus``). Aquí **no** se escribe en DB: solo
+se produce ``SourceRecord`` con payload neutro para normalize/upsert.
+
+Identidad estable (docs/sources/placsp.md):
+``{tax_id|platform_id}:{ContractFolderID}`` cuando hay organismo + carpeta;
+si no, folder id; último recurso ``atom:id``. Sin id usable → se omite la entry
+(mejor perder una fila que inventar claves que rompan el unique).
+
+Si el mismo expediente aparece varias veces en el ZIP/Atom (versiones),
+se conserva solo la entry con ``atom:updated`` más reciente.
 """
 
 from __future__ import annotations
 
 import zipfile
-from datetime import datetime
+from datetime import datetime, timezone
 from io import BytesIO
 from typing import Any, Iterable
 from xml.etree.ElementTree import ParseError as XmlParseError
@@ -32,25 +41,74 @@ NS = {
 
 
 class PlacspParseError(Exception):
-    """Unrecoverable parse failure for a PLACSP artifact."""
+    """Fallo de parseo irrecuperable (ZIP/XML inválido) — aborta el artefacto."""
 
 
 def parse_placsp_artifact(
     raw: bytes,
     artifact: RemoteArtifact,
 ) -> Iterable[SourceRecord]:
-    """Parse ZIP (preferred) or bare ``.atom`` bytes into source records."""
+    """Parsea ZIP (preferido en prod) o bytes ``.atom`` sueltos (fixtures).
+
+    Firma ``PK`` → ZIP; si no, se trata como un documento Atom único.
+    Varias entries con el mismo ``source_record_id`` → gana ``atom:updated``
+    más reciente (no el orden del ZIP/XML).
+    """
     if not raw:
         raise PlacspParseError(f"empty payload for {artifact.artifact_key}")
 
     if raw.startswith(b"PK"):
-        yield from _parse_zip(raw, artifact)
-        return
+        records = list(_parse_zip(raw, artifact))
+    else:
+        records = list(
+            _parse_atom_document(raw, artifact, member_name=artifact.artifact_key)
+        )
+    yield from _keep_newest_by_source_record_id(records)
 
-    yield from _parse_atom_document(raw, artifact, member_name=artifact.artifact_key)
+
+def _keep_newest_by_source_record_id(
+    records: list[SourceRecord],
+) -> list[SourceRecord]:
+    """Una fila por identidad: la de ``recorded_at`` (atom:updated) más nueva."""
+    best: dict[str, tuple[SourceRecord, int]] = {}
+    for index, record in enumerate(records):
+        prev = best.get(record.source_record_id)
+        if prev is None or _is_newer_version(record, index, prev[0], prev[1]):
+            best[record.source_record_id] = (record, index)
+    # Orden estable: primera aparición de cada identidad en el artefacto.
+    ordered = sorted(best.values(), key=lambda item: item[1])
+    return [record for record, _index in ordered]
+
+
+def _is_newer_version(
+    candidate: SourceRecord,
+    candidate_index: int,
+    incumbent: SourceRecord,
+    incumbent_index: int,
+) -> bool:
+    cand_ts = _as_utc_naive(candidate.recorded_at)
+    inc_ts = _as_utc_naive(incumbent.recorded_at)
+    if cand_ts is not None and inc_ts is not None:
+        if cand_ts != inc_ts:
+            return cand_ts > inc_ts
+    elif cand_ts is not None:
+        return True
+    elif inc_ts is not None:
+        return False
+    # Empate / sin fecha: gana la que aparece después en el artefacto.
+    return candidate_index > incumbent_index
+
+
+def _as_utc_naive(value: datetime | None) -> datetime | None:
+    if value is None:
+        return None
+    if value.tzinfo is not None:
+        return value.astimezone(timezone.utc).replace(tzinfo=None)
+    return value
 
 
 def _parse_zip(raw: bytes, artifact: RemoteArtifact) -> Iterable[SourceRecord]:
+    """Abre el ZIP y parsea cada miembro ``.atom`` (orden estable por nombre)."""
     try:
         with zipfile.ZipFile(BytesIO(raw)) as zf:
             names = sorted(
@@ -78,6 +136,7 @@ def _parse_atom_document(
     *,
     member_name: str,
 ) -> Iterable[SourceRecord]:
+    """Una raíz ``feed`` (varias entries) o un documento con una sola ``entry``."""
     try:
         root = etree.fromstring(raw)
     except etree.XMLSyntaxError as exc:
@@ -89,7 +148,6 @@ def _parse_atom_document(
             f"invalid Atom XML in {member_name} ({artifact.artifact_key})"
         ) from exc
 
-    # Accept feed root or a lone entry document.
     tag = etree.QName(root).localname
     if tag == "entry":
         entries = [root]
@@ -108,6 +166,7 @@ def _entry_to_source_record(
     *,
     member_name: str,
 ) -> SourceRecord | None:
+    """Mapea una entry Atom+CODICE a payload neutro; None si no hay id estable."""
     atom_id = _text(entry.find("atom:id", NS))
     title = _text(entry.find("atom:title", NS))
     updated = _text(entry.find("atom:updated", NS))
@@ -123,7 +182,7 @@ def _entry_to_source_record(
         atom_id=atom_id,
     )
     if source_record_id is None:
-        # Unexpected entry shape: skip rather than invent an identity.
+        # Forma inesperada: omitir en lugar de inventar identidad (rompe upsert).
         return None
 
     payload: dict[str, Any] = {
@@ -164,11 +223,10 @@ def _stable_source_record_id(
     authority: dict[str, Any],
     atom_id: str | None,
 ) -> str | None:
-    """Stable id for upsert: prefer party scope + ContractFolderID.
+    """Id estable para upsert: organismo + ContractFolderID cuando sea posible.
 
-    Documented in docs/sources/placsp.md:
-    ``{tax_id|platform_id}:{ContractFolderID}`` when possible, else folder id,
-    else atom:id as last resort.
+    Preferir NIF/CIF (``tax_id``) sobre id de plataforma. El unique canónico es
+    ``(source_code, source_tender_id)``; este string es el ``source_tender_id``.
     """
     if folder_id:
         party = authority.get("tax_id") or authority.get("platform_id")
@@ -179,6 +237,7 @@ def _stable_source_record_id(
 
 
 def _extract_authority(status_node: etree._Element) -> dict[str, Any]:
+    """Organismo contratante: nombre + NIF/CIF si el scheme lo indica."""
     party = status_node.find("cac_ext:LocatedContractingParty", NS)
     if party is None:
         party = status_node.find(".//cac_ext:LocatedContractingParty", NS)
@@ -198,7 +257,7 @@ def _extract_authority(status_node: etree._Element) -> dict[str, Any]:
         elif platform_id is None:
             platform_id = value
     if tax_id is None:
-        # Some feeds put NIF without a helpful scheme; take first ID-looking token.
+        # Algunos feeds meten el NIF sin scheme útil: heurística solo si “parece” NIF.
         first = _text(party.find(".//cac:PartyIdentification/cbc:ID", NS))
         if first and _looks_like_tax_id(first):
             tax_id = first
@@ -213,6 +272,7 @@ def _extract_authority(status_node: etree._Element) -> dict[str, Any]:
 
 
 def _extract_project_fields(status_node: etree._Element) -> dict[str, Any]:
+    """Importe, CPV, tipo, procedimiento y plazo desde ``ProcurementProject`` / process."""
     project = status_node.find("cac:ProcurementProject", NS)
     if project is None:
         project = status_node.find(".//cac:ProcurementProject", NS)
@@ -229,7 +289,7 @@ def _extract_project_fields(status_node: etree._Element) -> dict[str, Any]:
     if project is None:
         return out
 
-    # Prefer Name as object/title complement when entry title is empty.
+    # Complemento de título cuando atom:title viene vacío.
     project_name = _text(project.find("cbc:Name", NS))
     if project_name:
         out["project_name"] = project_name
@@ -283,6 +343,7 @@ def _extract_project_fields(status_node: etree._Element) -> dict[str, Any]:
 
 
 def _looks_like_tax_id(value: str) -> bool:
+    """Heurística mínima ES: mezcla letras/dígitos y longitud típica de NIF/CIF."""
     cleaned = value.replace("-", "").replace(" ", "").upper()
     if len(cleaned) < 8 or len(cleaned) > 12:
         return False
@@ -302,7 +363,7 @@ def _parse_atom_datetime(value: str | None) -> datetime | None:
     if not value:
         return None
     try:
-        # Support trailing Z.
+        # Atom suele traer Z (UTC); fromisoformat prefiere offset explícito.
         normalized = value.replace("Z", "+00:00")
         return datetime.fromisoformat(normalized)
     except ValueError:

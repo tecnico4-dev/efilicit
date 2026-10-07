@@ -24,6 +24,6 @@ Plan de ejecución: [semana00-plan.md](semana00-plan.md).
 | `pnpm dev` + consulta local | OK | `apps/web` + `.env.local` (no versionado) |
 | CLI ingestion `--help` | OK | |
 | Secretos fuera de Git | OK | `.env.local` gitignored |
-| Branch protection `main` | N/A por ahora | Decisión en `.github/README.md` |
+| Branch protection `main` | N/A por ahora | [ADR 001](../adr/001-proteccion-main-aplazada.md); `.github/README.md` |
 
 Cuando este checklist se cumpla, Semana 0 de setup está lista para empezar **Semana 1** (modelo canónico + infraestructura de ingesta).

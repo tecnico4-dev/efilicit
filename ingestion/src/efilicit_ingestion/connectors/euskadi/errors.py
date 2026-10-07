@@ -1,13 +1,19 @@
-"""Errors for the Euskadi / KontratazioA REST adapter."""
+"""Errores del adaptador REST Euskadi / KontratazioA.
+
+Clases tipadas para tests/logs; mensajes de excepción en inglés.
+No escriben en ``public.errors`` (ADR 003) — el outcome va a ``source_sync``.
+"""
 
 from __future__ import annotations
 
 
 class EuskadiFetchError(Exception):
-    """Base error while downloading an Euskadi procurements resource."""
+    """Error base al descargar un recurso de procurements Euskadi."""
 
 
 class EuskadiHttpError(EuskadiFetchError):
+    """Respuesta HTTP ≥400 (no se trata como reintento de transporte)."""
+
     def __init__(self, status_code: int, url: str) -> None:
         self.status_code = status_code
         self.url = url
@@ -15,8 +21,8 @@ class EuskadiHttpError(EuskadiFetchError):
 
 
 class ArtifactTooLargeError(EuskadiFetchError):
-    """Downloaded body exceeds the configured size budget."""
+    """Cuerpo o Content-Length por encima del presupuesto."""
 
 
 class EuskadiParseError(ValueError):
-    """Invalid JSON payload for an Euskadi artifact."""
+    """JSON inválido o sin ``items[]`` como espera el parser."""
