@@ -27,5 +27,3 @@ No uses un ADR para el estado de una fuente o un parser: eso va en `docs/sources
 | [012](012-digest-email-job-python-sin-edge-function.md) | Digest de alertas: envío desde job Python (Edge Function N/A) | Aceptado |
 | [013](013-alert-frequencies-daily-weekly-instant-diferido.md) | Frecuencias MVP `daily`\|`weekly`; `instant` diferido | Aceptado |
 | [014](014-upsert-organismos-por-platform-id.md) | Upsert de organismos por `platform_id` cuando no hay NIF/CIF | Aceptado |
-| [015](015-matching-veto-expediente-conflicto.md) | Matching: veto a `auto` si expedientes presentes y distintos | Aceptado |
-| [016](016-reingesta-eventos-solo-si-cambia-contenido.md) | Re-ingesta: eventos / `updated_at` solo si cambia el contenido | Aceptado |

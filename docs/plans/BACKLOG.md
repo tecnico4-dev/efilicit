@@ -95,6 +95,6 @@ Detalle por CCAA: [cobertura-ccaa.md](../sources/cobertura-ccaa.md).
 - Digest email desde job Python (Semana 5; Edge Function N/A a propósito).
 - Frecuencias de cuenta `daily` \| `weekly` (Semana 5; `instant` sigue en §1).
 - Upsert de organismos por `platform_id` / DIR3 sin NIF ([ADR 014](../adr/014-upsert-organismos-por-platform-id.md)).
-- Matching: veto `auto` si expedientes presentes y distintos ([ADR 015](../adr/015-matching-veto-expediente-conflicto.md)).
-- Re-ingesta: `tender_events` / `tenders.updated_at` solo con cambio de contenido ([ADR 016](../adr/016-reingesta-eventos-solo-si-cambia-contenido.md)); `last_seen_at` en `tender_sources` para “sigue viva”.
+- Matching: si ambas fuentes traen expediente y difiere → nunca `auto` (como mucho `pending`); NIF + señales blandas sigue válido si falta expediente en un lado.
+- Re-ingesta: `tender_events` / `tenders.updated_at` solo si cambian campos canónicos; `tender_sources.last_seen_at` marca que la fuente la ha vuelto a ver.
 - Bitácora `source_sync` `failed` persistida tras rollback del upsert (refuerzo [ADR 003](../adr/003-acceso-canonico-publico-etl-privado.md)).
