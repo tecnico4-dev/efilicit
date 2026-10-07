@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Upsert de `contracting_authorities` por `platform_id` (p. ej. DIR3) cuando no hay NIF/CIF: columna + índice único parcial; re-ingestas Catalunya sin organismos huérfanos ([ADR 014](docs/adr/014-upsert-organismos-por-platform-id.md)).
 
+### Fixed
+
+- Ingesta Postgres: si el pipeline falla a mitad, se hace rollback del canónico pero **sí** queda `source_sync` en `failed` (transacción aparte); antes el rollback borraba también la bitácora.
+
 ### Changed
 
 - Re-ingesta canónica: `tender_events` / `tenders.updated_at` solo si cambian campos de negocio; `tender_sources.last_seen_at` sigue marcando que la fuente la ha vuelto a ver.

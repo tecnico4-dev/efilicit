@@ -14,6 +14,57 @@ import psycopg
 from efilicit_ingestion.pipeline.types import StoredArtifact, SyncRun, utc_now
 
 
+def persist_failed_sync_run(run: SyncRun) -> None:
+    """Persiste (o reescribe) una corrida ``failed`` en transacción propia.
+
+    Tras un rollback del upsert, la fila ``running`` desaparece: hay que
+    volver a insertar por ``(source_code, run_id)`` con el estado final.
+    """
+    finished_at = run.finished_at or utc_now()
+    with connect() as conn:
+        conn.execute(
+            """
+            insert into public.source_sync (
+              source_code, run_id, status, cursor, last_artifact, checksum,
+              records_seen, records_new, records_updated, records_failed,
+              error_message, started_at, finished_at
+            )
+            values (
+              %s, %s, 'failed', %s, %s, %s,
+              %s, %s, %s, %s,
+              %s, %s, %s
+            )
+            on conflict (source_code, run_id) do update set
+              status = 'failed',
+              cursor = excluded.cursor,
+              last_artifact = excluded.last_artifact,
+              checksum = excluded.checksum,
+              records_seen = excluded.records_seen,
+              records_new = excluded.records_new,
+              records_updated = excluded.records_updated,
+              records_failed = excluded.records_failed,
+              error_message = excluded.error_message,
+              finished_at = excluded.finished_at
+            """,
+            (
+                run.source_code,
+                run.run_id,
+                run.cursor,
+                run.last_artifact,
+                run.checksum,
+                run.records_seen,
+                run.records_new,
+                run.records_updated,
+                max(run.records_failed, 1),
+                run.error_message,
+                run.started_at,
+                finished_at,
+            ),
+        )
+        conn.commit()
+
+
+
 class PostgresSyncRepository:
     """Implementación real de ``SyncRepository`` contra Postgres local/remoto."""
 

@@ -15,7 +15,20 @@ from efilicit_ingestion.models import SyncContext
 from efilicit_ingestion.pipeline import stages
 from efilicit_ingestion.pipeline.canonical_repo import CanonicalRepository
 from efilicit_ingestion.pipeline.ports import ArtifactStore, SyncRepository
-from efilicit_ingestion.pipeline.types import PipelineResult
+from efilicit_ingestion.pipeline.types import PipelineResult, SyncRun
+
+
+class PipelineRunError(Exception):
+    """Fallo del pipeline con el ``SyncRun`` ya cerrado en memoria (failed).
+
+    El caller Postgres debe hacer rollback del trabajo canónico y persistir
+    ``sync`` en una transacción aparte (ver ``db_run.run_pipeline_postgres``).
+    """
+
+    def __init__(self, sync: SyncRun, cause: BaseException) -> None:
+        self.sync = sync
+        self.cause = cause
+        super().__init__(str(cause))
 
 
 def run_pipeline(
@@ -81,10 +94,12 @@ def run_pipeline(
             run.cursor = stages.checkpoint(run.cursor, stored.artifact_key)
 
         sync_repo.finish_run(run, status="success")
+    except PipelineRunError:
+        raise
     except Exception as exc:  # noqa: BLE001 — clasificación más rica en semanas posteriores
         run.records_failed += 1
         sync_repo.finish_run(run, status="failed", error_message=str(exc))
-        raise
+        raise PipelineRunError(run, exc) from exc
 
     return PipelineResult(
         sync=run,

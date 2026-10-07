@@ -12,12 +12,9 @@ from pathlib import Path
 
 from efilicit_ingestion.connectors.euskadi import EUSKADI, EuskadiConnector, EuskadiDataset
 from efilicit_ingestion.models import SyncContext
-from efilicit_ingestion.pipeline.canonical_repo import (
-    InMemoryCanonicalRepository,
-    PostgresCanonicalRepository,
-)
+from efilicit_ingestion.pipeline.canonical_repo import InMemoryCanonicalRepository
+from efilicit_ingestion.pipeline.db_run import run_pipeline_postgres
 from efilicit_ingestion.pipeline.ports import InMemoryArtifactStore, InMemorySyncRepository
-from efilicit_ingestion.pipeline.postgres import PostgresSyncRepository, connect
 from efilicit_ingestion.pipeline.runner import run_pipeline
 from efilicit_ingestion.pipeline.supabase_storage import (
     SupabaseStorageArtifactStore,
@@ -110,13 +107,8 @@ def run_euskadi(config: EuskadiRunConfig) -> PipelineResult:
     else:
         artifact_store = InMemoryArtifactStore()
 
-    with connect() as conn:
-        result = run_pipeline(
-            connector,
-            context,
-            artifact_store=artifact_store,  # type: ignore[arg-type]
-            sync_repo=PostgresSyncRepository(conn),
-            canonical_repo=PostgresCanonicalRepository(conn),
-        )
-        conn.commit()
-    return result
+    return run_pipeline_postgres(
+        connector,
+        context,
+        artifact_store=artifact_store,  # type: ignore[arg-type]
+    )
