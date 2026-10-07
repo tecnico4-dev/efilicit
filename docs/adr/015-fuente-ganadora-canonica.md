@@ -54,7 +54,12 @@ Migración: `supabase/migrations/20261007100000_tenders_canonical_source_code.sq
 - Ficha canónica trazable a una fuente; enlaces multi-fuente siguen en `tender_sources`.
 - Fallo de `auto` menos destructivo (no frankenstein de campos).
 - Si la dueña es pobre y una fuente mejor aún no ha ganado/promovido, la ficha puede quedar incompleta a propósito.
-- Nuevas fuentes → ampliar la tabla de prioridades (y este ADR o uno que lo reemplace).
+- **Checklist al integrar cualquier `source_code` nuevo** (CCAA, TED, sindicación, etc.):
+  1. Añadir entrada en `SOURCE_PRIORITY` (`canonical_repo.py`) con prioridad acordada.
+  2. Actualizar la tabla de este ADR (o ADR de reemplazo).
+  3. Ficha en `docs/sources/` + tests.
+  4. Recordatorio también en [docs/sources/README.md](../sources/README.md) y [BACKLOG §4](../plans/BACKLOG.md).
+  Sin el paso 1–2 la fuente queda en prioridad default (1000) y **casi nunca** es dueña de `tenders` frente a las listadas.
 
 ---
 
@@ -62,7 +67,7 @@ Migración: `supabase/migrations/20261007100000_tenders_canonical_source_code.sq
 
 | Riesgo | Mitigación |
 |---|---|
-| Ranking desactualizado al añadir TED/CCAA | Revisar ADR + lista en código al integrar fuente |
+| Ranking desactualizado al añadir TED/CCAA | Checklist en `docs/sources/README.md` + BACKLOG §4; actualizar este ADR y `SOURCE_PRIORITY` en el mismo PR |
 | Promoción pisa cambios locales de la dueña anterior | Intencional: gana la fuente de mayor prioridad |
 | Filas legacy sin dueña | Backfill desde el `tender_sources` más antiguo |
 
@@ -71,5 +76,7 @@ Migración: `supabase/migrations/20261007100000_tenders_canonical_source_code.sq
 ## Referencias
 
 - `ingestion/src/efilicit_ingestion/pipeline/canonical_repo.py` (`SOURCE_PRIORITY`, upsert)
+- [docs/sources/README.md](../sources/README.md) — § «Al añadir un source_code nuevo»
+- [docs/plans/BACKLOG.md](../plans/BACKLOG.md) §4
 - `docs/sources/cobertura-ccaa.md` (solape agregadas ↔ Cat/Euskadi)
 - Matching Semana 4 / `docs/04-roadmap-mvp.md` § deduplicación

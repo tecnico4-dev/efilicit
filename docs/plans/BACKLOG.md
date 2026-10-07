@@ -48,15 +48,15 @@ No son bugs olvidados ni el trabajo de la siguiente semana del roadmap. Son huec
 
 ## 4. Fuentes / cobertura territorial
 
-Detalle por CCAA: [cobertura-ccaa.md](../sources/cobertura-ccaa.md).
+Detalle por CCAA: [cobertura-ccaa.md](../sources/cobertura-ccaa.md). Checklist al integrar un `source_code` nuevo: [sources/README.md](../sources/README.md) § «Al añadir un source_code nuevo» + [ADR 015](../adr/015-fuente-ganadora-canonica.md) (`SOURCE_PRIORITY`).
 
-- **Hueco: menores de plataformas solo-agregadas.** No entran en `placsp_agregadas` ni en `placsp_menores` (p. ej. Andalucía, La Rioja, …). Candidato post-MVP.
-- **Open Data / conectores propios por CCAA.** Alternativas documentadas (CSV/transparencia) donde hoy basta PLACSP: Andalucía, Asturias, Canarias, Castilla y León, C. Valenciana, Murcia, Navarra, La Rioja, etc. Validar vigencia y solape antes de atacar.
+- **Hueco: menores de plataformas solo-agregadas.** No entran en `placsp_agregadas` ni en `placsp_menores` (p. ej. Andalucía, La Rioja, …). Candidato post-MVP. Si se abre conector nuevo → meter `source_code` en `SOURCE_PRIORITY` / ADR 015 (no solo parser + ficha).
+- **Open Data / conectores propios por CCAA.** Alternativas documentadas (CSV/transparencia) donde hoy basta PLACSP: Andalucía, Asturias, Canarias, Castilla y León, C. Valenciana, Murcia, Navarra, La Rioja, etc. Validar vigencia y solape antes de atacar. **Al implementar:** ficha + conector **y** entrada en el ranking de fuente ganadora ([ADR 015](../adr/015-fuente-ganadora-canonica.md)); si no, la CCAA nueva casi nunca será dueña de `tenders` frente a PLACSP/listadas.
 - **Atom Madrid nativo.** No priorizado; solapa con agregadas para no-menores.
 - **CCAA propia extra en Semana 4 = 0 (cerrado).** No se añadieron conectores autonómicos nuevos ([ADR 009](../adr/009-ccaa-propia-extra-na-semana4.md)); reabrir solo con hueco medible.
 - **`placsp_menores` aplazado S3→S4 (histórico resuelto).** Aplazamiento documentado ([ADR 008](../adr/008-placsp-menores-aplazado-semana4.md)); **implementado** en Semana 4 — se mantiene aquí solo como referencia histórica.
 - **Sindicaciones estatales `1383` / `1403` (encargos / CPM).** Fuera de alcance Semana 3; no hay ficha en `docs/sources/`.
-- **TED.** Post-MVP / fuera del corte actual.
+- **TED.** Post-MVP / fuera del corte actual. Al integrar: mismo checklist (prioridad relativa vs PLACSP/CCAA en ADR 015 + `SOURCE_PRIORITY`).
 - **Subvenciones.** Post-MVP / fuera del corte actual.
 
 ---
@@ -84,6 +84,7 @@ Detalle por CCAA: [cobertura-ccaa.md](../sources/cobertura-ccaa.md).
 | 010 | `match_candidate_tender_id` | MVP; `match_suggestions` después |
 | 012 | Email job Python (sin Edge Function) | N/A Edge Function |
 | 013 | `daily`\|`weekly`; `instant` diferido | `instant` / otras cadencias |
+| 015 | Fuente ganadora / `SOURCE_PRIORITY` | Al añadir fuente: actualizar ranking (no solo conector) |
 
 ---
 

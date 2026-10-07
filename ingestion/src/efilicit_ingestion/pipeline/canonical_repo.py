@@ -39,6 +39,8 @@ from efilicit_ingestion.pipeline.matching import (
 )
 
 # ADR 015: menor número = mayor prioridad. Fuentes desconocidas → 1000.
+# Al añadir un source_code nuevo: actualizar este dict + tabla del ADR 015
+# (ver docs/sources/README.md § «Al añadir un source_code nuevo»).
 SOURCE_PRIORITY: dict[str, int] = {
     "placsp": 10,
     "placsp_agregadas": 20,
@@ -47,6 +49,7 @@ SOURCE_PRIORITY: dict[str, int] = {
     "euskadi": 50,
 }
 _DEFAULT_SOURCE_PRIORITY = 1000
+
 
 
 def source_priority(source_code: str) -> int:

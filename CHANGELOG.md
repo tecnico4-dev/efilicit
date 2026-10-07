@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Documentation
 
+- Checklist al añadir `source_code` nuevo: actualizar `SOURCE_PRIORITY` + [ADR 015](docs/adr/015-fuente-ganadora-canonica.md) (`docs/sources/README.md`, BACKLOG §4, `cobertura-ccaa.md`).
 - Fichas PLACSP agregadas/menores alineadas al colapso por `atom:updated`; [ADR 003](docs/adr/003-acceso-canonico-publico-etl-privado.md) aclara bitácora `failed` tras rollback. Matching/reingesta documentados en `docs/plans/BACKLOG.md` (§ Hecho), no como ADR.
 
 ### Changed
