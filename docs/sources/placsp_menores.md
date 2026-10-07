@@ -180,6 +180,8 @@ Si no hay órgano identificable → solo `ContractFolderID`.
 Si tampoco hay expediente → `atom:id` (último recurso).  
 Entradas sin ninguna de estas señales se **omiten**.
 
+**Varias versions del mismo expediente en un ZIP/Atom:** mismo criterio que [placsp.md](placsp.md) (parser compartido): gana el `atom:updated` más reciente.
+
 ---
 
 ## 8. Límites / rate limits / condiciones

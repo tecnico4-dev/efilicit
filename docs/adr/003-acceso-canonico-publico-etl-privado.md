@@ -55,7 +55,9 @@ En Semana 1 (y mientras no haya necesidad medible de detalle fino):
 - las excepciones tipadas de conectores sirven para control de flujo y tests, **no** se persisten en `errors`;
 - **`errors` queda sin escrituras** desde el código.
 
-Se puede cablear más adelante (p. ej. fallos parciales por registro, cuadros de observabilidad) si aparece una necesidad real. Hasta entonces no se elimina: evita drift respecto al modelo fijado y deja el hueco listo sin inventar otra tabla.
+**Garantía de persistencia del fallo (corridas Postgres):** el upsert canónico y la bitácora comparten transacción. Si el pipeline falla a mitad, se hace **rollback** del trabajo canónico a medias, pero el cierre `failed` de `source_sync` se vuelve a escribir en una **transacción aparte** (`persist_failed_sync_run` / `run_pipeline_postgres`), para que la bitácora no desaparezca con el rollback. Eso refuerza la decisión de este ADR (“fallo → `source_sync`”), no introduce escritura en `errors`.
+
+Se puede cablear `errors` más adelante (p. ej. fallos parciales por registro, cuadros de observabilidad) si aparece una necesidad real. Hasta entonces no se elimina: evita drift respecto al modelo fijado y deja el hueco listo sin inventar otra tabla.
 
 ### Alternativas descartadas
 
@@ -86,7 +88,7 @@ Se puede cablear más adelante (p. ej. fallos parciales por registro, cuadros de
 
 - Políticas `*_select_public` en migración canónica; revoke/grant select a `anon`/`authenticated`.
 - Migración operativa: revoke total de cliente sobre `source_sync` / `source_artifacts` / `errors`.
-- Grep / revisión de código: ninguna escritura a `public.errors` en el paquete de ingesta; fallos de pipeline → `finish_run(..., status="failed", error_message=...)`.
+- Grep / revisión de código: ninguna escritura a `public.errors` en el paquete de ingesta; fallos de pipeline → `source_sync` failed (`finish_run` en memoria + `persist_failed_sync_run` tras rollback en corridas Postgres).
 
 ---
 
@@ -98,3 +100,4 @@ Se puede cablear más adelante (p. ej. fallos parciales por registro, cuadros de
 - `supabase/migrations/20260909103000_semana1_source_sync_artifacts_errors.sql`
 - `supabase/migrations/20260909120000_semana1_canonical_core.sql`
 - `ingestion/src/efilicit_ingestion/pipeline/runner.py` (cierre de run en fallo)
+- `ingestion/src/efilicit_ingestion/pipeline/db_run.py` · `persist_failed_sync_run` (bitácora failed tras rollback)
