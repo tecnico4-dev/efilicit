@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Cola de digests: tras un fallo de envío los ítems quedan en `failed` y el job los reintenta; umbral por clase de error (temporal `< 3`, gordo `< 2` intentos) y luego `cancelled`. Antes un único fallo dejaba la fila fuera del drain. Sin ADR (refinamiento operativo MVP).
 - Ingesta Postgres: si el pipeline falla a mitad, se hace rollback del canónico pero **sí** queda `source_sync` en `failed` (transacción aparte); antes el rollback borraba también la bitácora ([ADR 003](docs/adr/003-acceso-canonico-publico-etl-privado.md) actualizado).
 
 ### Documentation

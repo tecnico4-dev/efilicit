@@ -139,8 +139,9 @@ def test_drain_marks_failed_without_resend_on_success_path() -> None:
     failed = drain_daily_digests(queue=queue, sender=sender, directory=directory)
     assert failed.digests_failed == 1
     assert failed.items_marked_failed == 2
+    assert failed.items_marked_cancelled == 0
     assert len(sender.sent) == 0
-    assert all(i.status == "failed" for i in queue.all_items())
+    assert all(i.status == "failed" and i.attempts == 1 for i in queue.all_items())
 
 
 def test_weekly_tuesday_enqueues_without_sending() -> None:

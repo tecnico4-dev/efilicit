@@ -42,11 +42,13 @@ class FakeEmailSender:
 
     sent: list[EmailMessage] = field(default_factory=list)
     fail_next: bool = False
+    fail_always: bool = False
+    fail_error: str = "fake_sender_forced_failure"
 
     def send(self, message: EmailMessage) -> EmailSendResult:
-        if self.fail_next:
+        if self.fail_always or self.fail_next:
             self.fail_next = False
-            return EmailSendResult(ok=False, error="fake_sender_forced_failure")
+            return EmailSendResult(ok=False, error=self.fail_error)
         self.sent.append(message)
         return EmailSendResult(ok=True, provider_id=f"fake-{len(self.sent)}")
 

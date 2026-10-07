@@ -172,8 +172,8 @@ def _run_write(*, cfg: AlertsRunConfig, job_date: date, digest_key: str) -> Aler
             frequencies=frequencies,
         )
 
-        user_ids = sorted({item.user_id for item in queue.pending_items()})
-        # Incluir frecuencias de usuarios con pending aunque no estén en el batch actual.
+        user_ids = sorted({item.user_id for item in queue.drainable_items()})
+        # Incluir frecuencias de usuarios con cola drenable aunque no estén en el batch.
         if user_ids:
             frequencies = {
                 **frequencies,
@@ -215,5 +215,7 @@ def format_result(result: AlertsRunResult) -> str:
         f"  drain attempted={d.digests_attempted} sent={d.digests_sent} "
         f"failed={d.digests_failed} skipped_not_due={d.digests_skipped_not_due} "
         f"items_sent={d.items_marked_sent} "
-        f"items_failed={d.items_marked_failed} emails_captured={result.emails_captured}"
+        f"items_failed={d.items_marked_failed} "
+        f"items_cancelled={d.items_marked_cancelled} "
+        f"emails_captured={result.emails_captured}"
     )

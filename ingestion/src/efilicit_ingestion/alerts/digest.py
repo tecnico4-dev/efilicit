@@ -1,13 +1,16 @@
-"""Digest diario/semanal: agrupa pending y envía un email por usuario/periodo (Paso 8).
+"""Digest diario/semanal: agrupa drainable y envía un email por usuario/periodo (Paso 8).
 
 Batch-first (ADR 012): un correo por (usuario, periodo), no por cada INSERT
 de ingesta. El envío lo hace el job Python vía Resend; no hay Edge Function.
 
 Frecuencias (ADR 013):
 
-- daily: drena siempre que haya pending.
-- weekly: solo lunes UTC; el resto deja pending.
+- daily: drena siempre que haya ítems drainable.
+- weekly: solo lunes UTC; el resto deja pending/failed.
 - instant: fuera del MVP.
+
+Reintentos de cola (sin ADR): tras un fallo, ``failed`` sigue siendo drainable
+hasta agotar el umbral del error actual; luego ``cancelled``.
 """
 
 from __future__ import annotations
@@ -37,6 +40,7 @@ class DigestDrainResult:
     digests_skipped_not_due: int = 0
     items_marked_sent: int = 0
     items_marked_failed: int = 0
+    items_marked_cancelled: int = 0
     skipped_already_sent: int = 0
 
 
@@ -100,17 +104,32 @@ def _escape(value: str) -> str:
     )
 
 
-def group_pending_by_user_digest(
+def group_drainable_by_user_digest(
     items: list[NotificationItem],
 ) -> dict[tuple[str, str], list[NotificationItem]]:
-    """Agrupa pending por (user_id, periodo) para un solo email por grupo."""
+    """Agrupa ``pending``/``failed`` por (user_id, periodo) para un solo email."""
     groups: dict[tuple[str, str], list[NotificationItem]] = defaultdict(list)
     for item in items:
-        if item.status != "pending":
+        if item.status not in {"pending", "failed"}:
             continue
         digest = str(item.payload.get("digest") or digest_day())
         groups[(item.user_id, digest)].append(item)
     return dict(groups)
+
+
+# Compat tests / callers antiguos
+group_pending_by_user_digest = group_drainable_by_user_digest
+
+
+def _record_failure_counts(
+    result: DigestDrainResult,
+    statuses: list[str],
+) -> None:
+    for status in statuses:
+        if status == "cancelled":
+            result.items_marked_cancelled += 1
+        else:
+            result.items_marked_failed += 1
 
 
 def drain_daily_digests(
@@ -124,17 +143,25 @@ def drain_daily_digests(
 ) -> DigestDrainResult:
     """Envía un digest por (usuario, periodo) cuando toca según la frecuencia.
 
-    - daily: siempre que haya pending.
-    - weekly: solo lunes UTC; el resto de días deja pending.
-    Reejecutar tras un envío OK no reenvía: los ítems ya no están ``pending``.
+    - daily: siempre que haya ítems drainable.
+    - weekly: solo lunes UTC; el resto de días no envía.
+    Reejecutar tras un envío OK no reenvía: los ítems ya no están drainable.
+    Tras fallo: ``failed`` reintentable o ``cancelled`` si agota el umbral.
     """
-    pending_fn = list_pending or getattr(queue, "pending_items", None)
+    if list_pending is not None:
+        pending_fn = list_pending
+    else:
+        pending_fn = getattr(queue, "drainable_items", None) or getattr(
+            queue, "pending_items", None
+        )
     if pending_fn is None:
-        raise TypeError("queue must expose pending_items() or pass list_pending=")
+        raise TypeError(
+            "queue must expose drainable_items()/pending_items() or pass list_pending="
+        )
 
     freqs = {k: (v or "daily").strip().lower() for k, v in (frequencies or {}).items()}
-    pending = list(pending_fn())
-    groups = group_pending_by_user_digest(pending)
+    drainable = list(pending_fn())
+    groups = group_drainable_by_user_digest(drainable)
     result = DigestDrainResult()
 
     for (user_id, digest), items in sorted(groups.items(), key=lambda x: (x[0][0], x[0][1])):
@@ -147,12 +174,14 @@ def drain_daily_digests(
         result.digests_attempted += 1
         to_email = directory.email_for(user_id)
         if not to_email:
-            for item in items:
+            statuses = [
                 queue.mark_failed(
                     item.idempotency_key,
                     error=f"no_email_for_user:{user_id}",
                 )
-                result.items_marked_failed += 1
+                for item in items
+            ]
+            _record_failure_counts(result, statuses)
             result.digests_failed += 1
             continue
 
@@ -175,12 +204,11 @@ def drain_daily_digests(
                 result.items_marked_sent += 1
             result.digests_sent += 1
         else:
-            for item in items:
-                queue.mark_failed(
-                    item.idempotency_key,
-                    error=send_result.error or "send_failed",
-                )
-                result.items_marked_failed += 1
+            err = send_result.error or "send_failed"
+            statuses = [
+                queue.mark_failed(item.idempotency_key, error=err) for item in items
+            ]
+            _record_failure_counts(result, statuses)
             result.digests_failed += 1
 
     return result

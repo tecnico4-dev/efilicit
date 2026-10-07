@@ -23,6 +23,7 @@ from psycopg.rows import dict_row
 from psycopg.types.json import Json
 
 from efilicit_ingestion.alerts.models import AlertRule, NotificationItem, TenderCandidate
+from efilicit_ingestion.alerts.retry import status_after_failed_attempt
 
 
 def _as_str(value: UUID | str | None) -> str | None:
@@ -271,6 +272,18 @@ class PostgresNotificationQueue:
             )
             return [_row_to_item(row) for row in cur.fetchall()]
 
+    def drainable_items(self) -> list[NotificationItem]:
+        with self._conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(
+                """
+                select *
+                from public.notification_queue
+                where status in ('pending', 'failed')
+                order by scheduled_at, created_at
+                """
+            )
+            return [_row_to_item(row) for row in cur.fetchall()]
+
     def mark_sent(
         self,
         idempotency_key: str,
@@ -304,15 +317,33 @@ class PostgresNotificationQueue:
                     (when, idempotency_key),
                 )
 
-    def mark_failed(self, idempotency_key: str, *, error: str) -> None:
-        with self._conn.cursor() as cur:
+    def mark_failed(self, idempotency_key: str, *, error: str) -> str:
+        err = error[:2000]
+        with self._conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(
+                """
+                select attempts
+                from public.notification_queue
+                where idempotency_key = %s
+                for update
+                """,
+                (idempotency_key,),
+            )
+            row = cur.fetchone()
+            if row is None:
+                raise RuntimeError(
+                    f"notification_queue missing for mark_failed: {idempotency_key}"
+                )
+            attempts = int(row["attempts"] or 0) + 1
+            status = status_after_failed_attempt(attempts=attempts, error=err)
             cur.execute(
                 """
                 update public.notification_queue
-                set status = 'failed',
-                    attempts = attempts + 1,
+                set status = %s,
+                    attempts = %s,
                     last_error = %s
                 where idempotency_key = %s
                 """,
-                (error[:2000], idempotency_key),
+                (status, attempts, err, idempotency_key),
             )
+            return status

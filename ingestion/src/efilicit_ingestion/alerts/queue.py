@@ -14,8 +14,11 @@ from datetime import date, datetime, timezone
 from typing import Protocol
 
 from efilicit_ingestion.alerts.models import AlertMatch, NotificationItem, TenderCandidate
+from efilicit_ingestion.alerts.retry import status_after_failed_attempt
 
 DigestFrequency = str  # "daily" | "weekly"
+
+_DRAINABLE_STATUSES = frozenset({"pending", "failed"})
 
 
 def _as_date(value: date | datetime | None = None) -> date:
@@ -105,7 +108,7 @@ def match_to_notification(
 
 
 class NotificationQueue(Protocol):
-    """Puerto de cola: insert idempotente + marcar sent/failed."""
+    """Puerto de cola: insert idempotente + marcar sent/failed/cancelled."""
 
     def enqueue(self, item: NotificationItem) -> tuple[NotificationItem, bool]:
         """Inserta o reutiliza por idempotency_key.
@@ -116,6 +119,11 @@ class NotificationQueue(Protocol):
         ...
 
     def pending_items(self) -> list[NotificationItem]:
+        """Solo ``pending`` (p. ej. tests). El drain usa ``drainable_items``."""
+        ...
+
+    def drainable_items(self) -> list[NotificationItem]:
+        """Ítems que el job puede intentar enviar: ``pending`` + ``failed``."""
         ...
 
     def mark_sent(
@@ -127,7 +135,12 @@ class NotificationQueue(Protocol):
     ) -> None:
         ...
 
-    def mark_failed(self, idempotency_key: str, *, error: str) -> None:
+    def mark_failed(self, idempotency_key: str, *, error: str) -> str:
+        """Suma ``attempts``; deja ``failed`` o ``cancelled`` según el error actual.
+
+        Returns:
+            Nuevo ``status`` (``failed`` | ``cancelled``).
+        """
         ...
 
 
@@ -140,7 +153,7 @@ class InMemoryNotificationQueue:
     def enqueue(self, item: NotificationItem) -> tuple[NotificationItem, bool]:
         existing = self._by_key.get(item.idempotency_key)
         if existing is not None:
-            # No reabrir enviados ni duplicar pendientes.
+            # No reabrir enviados / cancelled ni duplicar pendientes.
             return existing, False
         stored = NotificationItem(
             user_id=item.user_id,
@@ -160,6 +173,9 @@ class InMemoryNotificationQueue:
     def pending_items(self) -> list[NotificationItem]:
         return [i for i in self._by_key.values() if i.status == "pending"]
 
+    def drainable_items(self) -> list[NotificationItem]:
+        return [i for i in self._by_key.values() if i.status in _DRAINABLE_STATUSES]
+
     def mark_sent(
         self,
         idempotency_key: str,
@@ -174,11 +190,14 @@ class InMemoryNotificationQueue:
         if provider_id:
             item.payload = {**item.payload, "provider_id": provider_id}
 
-    def mark_failed(self, idempotency_key: str, *, error: str) -> None:
+    def mark_failed(self, idempotency_key: str, *, error: str) -> str:
         item = self._by_key[idempotency_key]
-        item.status = "failed"
         item.attempts += 1
         item.last_error = error
+        item.status = status_after_failed_attempt(
+            attempts=item.attempts, error=error
+        )
+        return item.status
 
     def get(self, idempotency_key: str) -> NotificationItem | None:
         return self._by_key.get(idempotency_key)

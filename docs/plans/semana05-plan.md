@@ -241,6 +241,7 @@ Registro de lo acordado al cerrar (o antes de) cada paso:
 | Paso 10 | E2E local buscar → alerta → batch → digest | Guía `semana05-e2e-local.md`; Resend OK (personal); dominio eficen → IT |
 | Post-Paso 10 | Erratas `strict_word_similarity` / `<<%` + badge literal | `foas` fuera; stemming-only → badge errata; `similarity` / `%` se mantiene |
 | Paso 11 | Cierre | CHANGELOG; ADRs 011–013; tipos N/A (firma RPC intacta); checklist cerrado; cron alertas sigue off |
+| Post-cierre (correcciones) | Reintentos de cola digest: drain `pending`+`failed`; `attempts` suma; umbral por error actual (temporal `<3`, gordo `<2`) → si no, `cancelled` | Evitar que un fallo puntual deje el aviso muerto; sin ADR; `cancelled` no se reabre por producto |
 
 ---
 
