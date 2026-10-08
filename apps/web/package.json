@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "verify:rls": "node --env-file=.env.local scripts/verify-rls-alerts.mjs"
+    "verify:rls": "node --env-file=.env.local scripts/verify-rls-alerts.mjs",
+    "verify:rls:favorites": "node --env-file=.env.local scripts/verify-rls-favorites.mjs"
   },
   "dependencies": {
     "@efilicit/types": "workspace:*",

@@ -13,7 +13,7 @@ Los pasos globales (0–11) se mantienen. El estado se marca **aquí**, no con �
 | 2. Buscador — UX de producto | Hecho | `/search` con tokens, sin placeholders/ejemplos; layout simple (sin overbuild) |
 | 3. Ficha de licitación | Hecho | `/tenders/[id]` + enlace desde `/search`; campos MVP canónicos |
 | 4. Multi-fuente en ficha | Hecho | Lista `tender_sources` en `/tenders/[id]` + badge canónica |
-| 5. Favoritos / seguimiento | Pendiente | + RLS A≠B |
+| 5. Favoritos / seguimiento | Hecho | Tabla `favorites` + RLS; toggle en ficha (solo sesión); `/favorites`; `verify:rls:favorites` |
 | 6. Alertas — gestión de producto | Pendiente | |
 | 7. Dashboard básico | Pendiente | |
 | 8. Estados + responsive global | Pendiente | carga / vacío / error |
@@ -27,7 +27,7 @@ Los pasos globales (0–11) se mantienen. El estado se marca **aquí**, no con �
 |---|---|---|
 | Web consume solo modelo canónico | Pendiente | |
 | `service_role` fuera del frontend | Pendiente | |
-| RLS owner-only en datos de usuario (favoritos/alertas) | Pendiente | |
+| RLS owner-only en datos de usuario (favoritos/alertas) | En curso | Favoritos A≠B script listo; alertas ya tenían verify:rls |
 | Brand corporativo documentado y aplicado | En curso | Documentado + shell/home/login; resto de rutas en Pasos 2–7 |
 | CI verde (lint / typecheck / tests / build) | Pendiente | |
 | Cron prod solo con OK explícito | Pendiente | |
@@ -39,7 +39,7 @@ Los pasos globales (0–11) se mantienen. El estado se marca **aquí**, no con �
 | Criterio | Estado | Evidencia |
 |---|---|---|
 | Usuario se registra | Pendiente | |
-| Busca licitaciones integradas | En curso | `/search` usable (Paso 2); ficha/favoritos pendientes |
+| Busca licitaciones integradas | Hecho | `/search` + ficha + favoritos |
 | Consulta la ficha | Hecho | Abrir resultado de búsqueda → `/tenders/[id]` |
 | Guarda una búsqueda | Pendiente | |
 | Crea una alerta | Pendiente | |

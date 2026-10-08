@@ -17,3 +17,10 @@ export {
   updateOwnDigestFrequency,
   type DigestFrequency,
 } from "./user-data";
+export {
+  addOwnFavorite,
+  isOwnFavorite,
+  listOwnFavorites,
+  removeOwnFavorite,
+  type FavoriteWithTender,
+} from "./favorites";

@@ -1,7 +1,13 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { FavoriteToggle } from "@/components/favorites/favorite-toggle";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { getTenderById, type TenderSourceSummary } from "@/lib/queries";
+import {
+  getOwnProfile,
+  getTenderById,
+  isOwnFavorite,
+  type TenderSourceSummary,
+} from "@/lib/queries";
 
 export const dynamic = "force-dynamic";
 
@@ -155,6 +161,23 @@ export default async function TenderDetailPage({ params }: PageProps) {
 
   const authority = tender.contracting_authority;
 
+  // Favoritos solo con sesión (mismo criterio que Alertas en la nav).
+  let favoriteUserId: string | null = null;
+  let initiallyFavorited = false;
+  try {
+    const profile = await getOwnProfile(supabase);
+    if (profile.data) {
+      favoriteUserId = profile.data.id;
+      const fav = await isOwnFavorite(supabase, {
+        userId: profile.data.id,
+        tenderId: tender.id,
+      });
+      initiallyFavorited = fav.data;
+    }
+  } catch {
+    favoriteUserId = null;
+  }
+
   return (
     <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-6 py-10">
       <p className="text-sm">
@@ -163,9 +186,18 @@ export default async function TenderDetailPage({ params }: PageProps) {
         </Link>
       </p>
 
-      <h1 className="mt-4 text-2xl font-semibold tracking-tight text-foreground">
-        {tender.title}
-      </h1>
+      <div className="mt-4 flex flex-wrap items-start justify-between gap-3">
+        <h1 className="min-w-0 flex-1 text-2xl font-semibold tracking-tight text-foreground">
+          {tender.title}
+        </h1>
+        {favoriteUserId ? (
+          <FavoriteToggle
+            userId={favoriteUserId}
+            tenderId={tender.id}
+            initiallyFavorited={initiallyFavorited}
+          />
+        ) : null}
+      </div>
 
       {tender.description ? (
         <p className="mt-4 whitespace-pre-wrap text-sm text-muted-foreground">

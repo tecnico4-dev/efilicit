@@ -22,6 +22,12 @@ const navItems: NavItem[] = [
     match: (path) => path.startsWith("/search"),
   },
   {
+    href: "/favorites",
+    label: "Favoritos",
+    match: (path) => path.startsWith("/favorites"),
+    authOnly: true,
+  },
+  {
     href: "/alerts",
     label: "Alertas",
     match: (path) => path.startsWith("/alerts"),

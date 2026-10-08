@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Semana 6 Paso 5: favoritos (`favorites` + RLS owner-only); marcar/desmarcar en ficha (solo sesión); lista `/favorites`; verificación Alice≠Bob.
 - Semana 6 Paso 4: multi-fuente en ficha — lista `tender_sources` con badge de fuente canónica.
 - Semana 6 Paso 3: ficha de licitación `/tenders/[id]` (campos canónicos MVP) y enlace desde resultados de `/search`.
 - Semana 6 Paso 2: buscador `/search` con UX de producto (filtros, estados vacío/error/carga, responsive); sigue usando `searchTenders`.

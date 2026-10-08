@@ -213,6 +213,42 @@ export type Database = {
           },
         ]
       }
+      favorites: {
+        Row: {
+          created_at: string
+          id: string
+          tender_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          tender_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          tender_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "favorites_tender_id_fkey"
+            columns: ["tender_id"]
+            isOneToOne: false
+            referencedRelation: "tenders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "favorites_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notification_queue: {
         Row: {
           alert_id: string | null

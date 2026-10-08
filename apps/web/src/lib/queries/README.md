@@ -36,6 +36,12 @@ Comprobación SQL directa: ver plan Semana 5 / checklist Paso 3.
 - UI: `/tenders/[id]`; enlace desde resultados de `/search`
 - Multi-fuente: lista de orígenes con badge “Canónica” si coincide `canonical_source_code`
 
+## Favoritos (Semana 6 / Paso 5)
+
+- `addOwnFavorite` / `removeOwnFavorite` / `isOwnFavorite` / `listOwnFavorites`
+- Tabla `favorites` (RLS owner-only); UI: toggle en ficha (solo sesión) + `/favorites`
+- Prueba A≠B: `pnpm --filter @efilicit/web verify:rls:favorites`
+
 ## Alertas / búsquedas / perfil (Semana 5 / Paso 6)
 
 - `createOwnAlert` / `listOwnAlerts` / `createOwnSavedSearch` / `listOwnSavedSearches`
