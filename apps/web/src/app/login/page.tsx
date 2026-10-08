@@ -19,28 +19,23 @@ export default async function LoginPage({
   const nextPath = first(params.next) || "/account";
 
   return (
-    <main className="mx-auto flex w-full max-w-md flex-1 flex-col px-6 py-10">
-      <p className="text-sm text-zinc-500">
-        <Link href="/" className="hover:underline">
-          EfiLicit
-        </Link>
-        <span className="mx-2">/</span>
-        Login
-      </p>
-      <h1 className="mt-1 text-2xl font-semibold tracking-tight text-zinc-900">
-        Iniciar sesión
-      </h1>
-      <p className="mt-2 text-sm text-zinc-600">
-        Semana 5 — Auth local (Supabase). Tras el login debe existir fila en{" "}
-        <code className="font-mono">public.users</code>.
-      </p>
-      <LoginForm nextPath={nextPath.startsWith("/") ? nextPath : "/account"} />
-      <p className="mt-6 text-sm text-zinc-600">
-        ¿No tienes cuenta?{" "}
-        <Link href="/register" className="underline">
-          Registrarse
-        </Link>
-      </p>
+    <main className="relative mx-auto flex w-full max-w-md flex-1 flex-col justify-center px-6 py-10">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(82,185,216,0.14),transparent_50%)]" />
+      <div className="relative rounded-2xl border border-border/80 bg-surface/95 p-7 shadow-xl backdrop-blur supports-[backdrop-filter]:bg-surface/90">
+        <h1 className="text-2xl font-bold tracking-tight text-foreground">
+          Iniciar sesión
+        </h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Accede con tus credenciales.
+        </p>
+        <LoginForm nextPath={nextPath.startsWith("/") ? nextPath : "/account"} />
+        <p className="mt-6 text-sm text-muted-foreground">
+          ¿No tienes cuenta?{" "}
+          <Link href="/register" className="font-medium text-link hover:underline">
+            Registrarse
+          </Link>
+        </p>
+      </div>
     </main>
   );
 }

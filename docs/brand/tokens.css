@@ -2,8 +2,7 @@
  * Tokens corporativos Eficen / EfiLumen → referencia para EfiLicit.
  * Origen: efilumen-web/src/app/globals.css (modo claro alineado a APK Color.kt).
  *
- * NO importar este fichero directamente en producción todavía:
- * en Paso 1 se adaptan a apps/web/src/app/globals.css.
+ * Referencia documental. Aplicados en apps/web/src/app/globals.css (Paso 1).
  */
 
 :root {

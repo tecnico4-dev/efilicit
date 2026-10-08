@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 export function LoginForm({ nextPath }: { nextPath: string }) {
@@ -36,10 +38,13 @@ export function LoginForm({ nextPath }: { nextPath: string }) {
   return (
     <form onSubmit={onSubmit} className="mt-8 space-y-4">
       <div>
-        <label htmlFor="email" className="block text-sm font-medium text-zinc-800">
+        <label
+          htmlFor="email"
+          className="mb-1 block text-sm text-muted-foreground"
+        >
           Email
         </label>
-        <input
+        <Input
           id="email"
           name="email"
           type="email"
@@ -47,14 +52,16 @@ export function LoginForm({ nextPath }: { nextPath: string }) {
           required
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm outline-none focus:border-zinc-500"
         />
       </div>
       <div>
-        <label htmlFor="password" className="block text-sm font-medium text-zinc-800">
+        <label
+          htmlFor="password"
+          className="mb-1 block text-sm text-muted-foreground"
+        >
           Contraseña
         </label>
-        <input
+        <Input
           id="password"
           name="password"
           type="password"
@@ -62,22 +69,20 @@ export function LoginForm({ nextPath }: { nextPath: string }) {
           required
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm outline-none focus:border-zinc-500"
         />
       </div>
       {error ? (
-        <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-900" role="alert">
+        <p
+          className="rounded-lg border border-destructive/40 bg-surface px-3 py-2 text-sm text-destructive"
+          role="alert"
+        >
           {error}
         </p>
       ) : null}
-      <button
-        type="submit"
-        disabled={pending}
-        className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-60"
-      >
+      <Button type="submit" disabled={pending} className="w-full">
         {pending ? "Entrando…" : "Entrar"}
-      </button>
-      <p className="text-xs text-zinc-500">
+      </Button>
+      <p className="text-xs text-muted-foreground">
         Local seed: <code className="font-mono">alice@example.com</code> /{" "}
         <code className="font-mono">bob@example.com</code> — contraseña{" "}
         <code className="font-mono">password123</code>

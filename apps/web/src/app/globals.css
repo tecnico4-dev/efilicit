@@ -1,21 +1,73 @@
 @import "tailwindcss";
 
-/* Semana 5: fondo claro fijo para legibilidad.
-   Brand / dark mode → Semana 6. */
+/**
+ * Tokens corporativos Eficen (Semana 6 Paso 1).
+ * Fuente: docs/brand/tokens.css (extraídos de efilumen-web).
+ * MVP: modo claro; dark opcional más adelante.
+ */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f4fbfd;
+  --foreground: #212121;
+
+  --primary: #52b9d8;
+  --primary-foreground: #ffffff;
+  --primary-dark: #3a9bbf;
+  --primary-light: #b3e3f0;
+
+  --surface: #ffffff;
+  --surface-foreground: #212121;
+  --muted: #eaf6fa;
+  --muted-foreground: #757575;
+  --border: #d6eaf1;
+  --ring: #52b9d8;
+  --link: #3a9bbf;
+
+  --destructive: #d32f2f;
+
+  --card: #ffffff;
+  --card-foreground: #212121;
+  --secondary: #eef8fc;
+  --secondary-foreground: #212121;
+  --accent: #d6f0f8;
+  --accent-foreground: #212121;
+  --input: #d6eaf1;
+
+  --radius: 0.625rem;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-dark: var(--primary-dark);
+  --color-primary-light: var(--primary-light);
+  --color-surface: var(--surface);
+  --color-surface-foreground: var(--surface-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-ring: var(--ring);
+  --color-link: var(--link);
+  --color-destructive: var(--destructive);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-input: var(--input);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
 }
 
 body {
-  background: #ffffff;
-  color: #171717;
-  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
 }

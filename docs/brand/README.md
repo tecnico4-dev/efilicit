@@ -53,12 +53,11 @@ En `efilumen-web/public` **no** hay logo corporativo Eficen/EfiLumen (solo SVGs 
 - Copy/módulos de inventario/mapa/telegestión: otro producto.
 - Código React completo de EfiLumen: solo patrones y tokens.
 
-## Dónde aplicar tokens en EfiLicit (Paso 1)
+## Dónde aplicar tokens en EfiLicit
 
-1. Copiar/adaptar variables de [tokens.css](tokens.css) a `apps/web/src/app/globals.css`.
-2. Mapear en `@theme inline` (Tailwind v4) como en EfiLumen.
-3. Shell (nav/header) + botones/inputs con `var(--primary)`, etc.
-4. No hardcodear `slate-*` / colores sueltos si ya hay token.
+**Hecho (Paso 1):** variables en `apps/web/src/app/globals.css` + `@theme inline`; shell (`AppHeader` / `AppShell`); `Button` / `Input` en `apps/web/src/components/ui/`.
+
+Siguientes pasos: rediseñar `/search`, ficha, alertas, etc. reutilizando estos tokens (evitar `zinc-*` sueltos).
 
 ## Origen
 
