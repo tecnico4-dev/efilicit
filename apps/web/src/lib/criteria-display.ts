@@ -95,3 +95,27 @@ export function criteriaHasFilters(criteria: SearchCriteria): boolean {
       criteria.statuses?.length,
   );
 }
+
+/**
+ * Firma estable de criteria (MVP: keywords, CPV, importes) para detectar
+ * búsquedas/alertas duplicadas sin depender del orden de arrays.
+ */
+export function criteriaSignature(criteria: SearchCriteria): string {
+  const keywords = criteria.keywords?.length
+    ? [...criteria.keywords].map((k) => k.toLowerCase()).sort()
+    : undefined;
+  const cpv = criteria.cpv_codes?.length
+    ? [...criteria.cpv_codes].sort()
+    : undefined;
+  return JSON.stringify({
+    v: 1,
+    keywords: keywords ?? null,
+    cpv: cpv ?? null,
+    min: criteria.estimated_value_min ?? null,
+    max: criteria.estimated_value_max ?? null,
+  });
+}
+
+export function criteriaEqual(a: SearchCriteria, b: SearchCriteria): boolean {
+  return criteriaSignature(a) === criteriaSignature(b);
+}

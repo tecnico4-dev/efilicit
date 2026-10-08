@@ -46,6 +46,14 @@ export default async function AlertsPage() {
 
       <section className="mt-10">
         <h2 className="text-base font-medium text-foreground">Mis alertas</h2>
+        <p className="mt-2 text-right text-xs text-muted-foreground">
+          Digest de la cuenta:{" "}
+          {digestFrequency === "weekly" ? "semanal" : "diaria"}. Cámbialo en{" "}
+          <a href="/account" className="font-medium text-link hover:underline">
+            Cuenta
+          </a>
+          .
+        </p>
         {alertsResult.error ? (
           <p className="mt-2 text-sm text-destructive" role="alert">
             {alertsResult.error.message}

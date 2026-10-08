@@ -3,8 +3,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { criteriaEqual, parseCriteria } from "@/lib/criteria-display";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
-import { createOwnSavedSearch } from "@/lib/queries";
+import { createOwnSavedSearch, listOwnSavedSearches } from "@/lib/queries";
 import type { SearchCriteria } from "@efilicit/types";
 
 const FORM_ID = "search-form";
@@ -87,6 +88,25 @@ export function SaveSearchButton({ userId }: { userId: string }) {
 
     setPending(true);
     const client = createSupabaseBrowserClient();
+    const existing = await listOwnSavedSearches(client);
+    if (existing.error) {
+      setPending(false);
+      setIsError(true);
+      setMessage(existing.error.message);
+      return;
+    }
+    const duplicate = existing.data.some((s) =>
+      criteriaEqual(built.criteria, parseCriteria(s.criteria)),
+    );
+    if (duplicate) {
+      setPending(false);
+      setIsError(true);
+      setMessage(
+        "Ya tienes una búsqueda guardada con esos mismos parámetros.",
+      );
+      return;
+    }
+
     const { error } = await createOwnSavedSearch(client, {
       userId,
       name: built.name,

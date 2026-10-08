@@ -94,11 +94,7 @@ function ResultsList({
   }
 
   if (!searched) {
-    return (
-      <p className="mt-8 text-sm text-muted-foreground">
-        Escribe un término o aplica filtros y pulsa Buscar.
-      </p>
-    );
+    return null;
   }
 
   if (rows.length === 0) {

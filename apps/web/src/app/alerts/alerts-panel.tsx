@@ -5,13 +5,16 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
+  criteriaEqual,
   criteriaHasFilters,
   formFieldsToCriteria,
+  parseCriteria,
 } from "@/lib/criteria-display";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import {
   createOwnAlert,
   createOwnSavedSearch,
+  listOwnSavedSearches,
   type DigestFrequency,
 } from "@/lib/queries";
 
@@ -81,6 +84,22 @@ export function AlertsPanel({
 
     setPending(true);
     const client = createSupabaseBrowserClient();
+    const existing = await listOwnSavedSearches(client);
+    if (existing.error) {
+      setPending(false);
+      setError(existing.error.message);
+      return;
+    }
+    if (
+      existing.data.some((s) =>
+        criteriaEqual(built.criteria, parseCriteria(s.criteria)),
+      )
+    ) {
+      setPending(false);
+      setError("Ya tienes una búsqueda guardada con esos mismos parámetros.");
+      return;
+    }
+
     const { error: createError } = await createOwnSavedSearch(client, {
       userId,
       name: built.name,
@@ -94,8 +113,6 @@ export function AlertsPanel({
     resetForm();
     router.refresh();
   }
-
-  const digestLabel = digestFrequency === "weekly" ? "semanal" : "diaria";
 
   return (
     <form className="mt-8 space-y-4 border-t border-border pt-8">
@@ -168,13 +185,6 @@ export function AlertsPanel({
           {error}
         </p>
       ) : null}
-      <p className="text-right text-xs text-muted-foreground">
-        Digest de la cuenta: {digestLabel}. Cámbialo en{" "}
-        <a href="/account" className="font-medium text-link hover:underline">
-          Cuenta
-        </a>
-        .
-      </p>
       <div className="flex flex-wrap gap-2">
         <Button type="button" disabled={pending} onClick={onCreateAlert}>
           Crear alerta
