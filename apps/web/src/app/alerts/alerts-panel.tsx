@@ -102,7 +102,7 @@ export function AlertsPanel({
       </div>
       <div>
         <label htmlFor="cpv" className="block text-sm font-medium text-foreground">
-          CPV
+          CPV (prefijo)
         </label>
         <input
           id="cpv"
