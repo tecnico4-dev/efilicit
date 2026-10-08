@@ -210,11 +210,10 @@ export default async function TenderDetailPage({ params }: PageProps) {
 
       <section className="mt-10">
         <h2 className="text-base font-semibold text-foreground">
-          Fuentes ({tender.sources.length})
+          {tender.sources.length === 1
+            ? "Fuente"
+            : `Fuentes (${tender.sources.length})`}
         </h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Orígenes en los que aparece esta misma licitación canónica.
-        </p>
         <SourcesList
           sources={tender.sources}
           canonicalSourceCode={tender.canonical_source_code}
