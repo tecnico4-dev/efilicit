@@ -251,7 +251,6 @@ export default async function SearchPage({
             name="q"
             type="search"
             defaultValue={q}
-            placeholder="Ej. mantenimiento software"
             autoComplete="off"
           />
         </div>
@@ -270,7 +269,6 @@ export default async function SearchPage({
               type="text"
               inputMode="numeric"
               defaultValue={cpv}
-              placeholder="72000000"
               className="font-mono"
             />
           </div>
@@ -288,7 +286,6 @@ export default async function SearchPage({
               min={0}
               step={1}
               defaultValue={minRaw}
-              placeholder="10000"
             />
           </div>
           <div>
@@ -305,7 +302,6 @@ export default async function SearchPage({
               min={0}
               step={1}
               defaultValue={maxRaw}
-              placeholder="500000"
             />
           </div>
         </div>
