@@ -71,17 +71,13 @@ export function AlertsPanel({
     router.refresh();
   }
 
+  const digestLabel = digestFrequency === "weekly" ? "semanal" : "diaria";
+
   return (
     <form className="mt-6 space-y-4 rounded-md border border-border bg-background p-4">
-      <h2 className="text-base font-medium text-foreground">Crear (propio)</h2>
-      <p className="text-sm text-muted-foreground">
-        El email de coincidencias usa la frecuencia de tu cuenta (
-        {digestFrequency === "weekly" ? "semanal" : "diaria"}). Cámbiala en{" "}
-        <a href="/account" className="underline">
-          Cuenta
-        </a>
-        .
-      </p>
+      <h2 className="text-base font-medium text-foreground">
+        Crear alerta / búsqueda propia
+      </h2>
       <div>
         <label htmlFor="item_name" className="block text-sm font-medium text-foreground">
           Nombre
@@ -95,7 +91,7 @@ export function AlertsPanel({
       </div>
       <div>
         <label htmlFor="keywords" className="block text-sm font-medium text-foreground">
-          Keywords (coma)
+          Keywords (separados por comas)
         </label>
         <input
           id="keywords"
@@ -138,6 +134,14 @@ export function AlertsPanel({
           Guardar búsqueda
         </button>
       </div>
+      <p className="text-right text-xs text-muted-foreground">
+        La configuración de frecuencia de tu cuenta es: {digestLabel}. Puedes
+        cambiarla en{" "}
+        <a href="/account" className="font-medium text-link hover:underline">
+          Cuenta
+        </a>
+        .
+      </p>
     </form>
   );
 }
