@@ -2,13 +2,18 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  criteriaHasFilters,
+  formFieldsToCriteria,
+} from "@/lib/criteria-display";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import {
   createOwnAlert,
   createOwnSavedSearch,
   type DigestFrequency,
 } from "@/lib/queries";
-import type { SearchCriteria } from "@efilicit/types";
 
 export function AlertsPanel({
   userId,
@@ -24,26 +29,36 @@ export function AlertsPanel({
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
-  function buildCriteria(): SearchCriteria {
-    const kw = keywords
-      .split(",")
-      .map((s) => s.trim())
-      .filter(Boolean);
-    return {
-      version: 1,
-      keywords: kw.length ? kw : undefined,
-      cpv_codes: cpv.trim() ? [cpv.trim()] : undefined,
-    };
+  function resetForm() {
+    setName("");
+    setKeywords("");
+    setCpv("");
+  }
+
+  function buildOrFail() {
+    const criteria = formFieldsToCriteria({ keywords, cpv });
+    if (!name.trim()) {
+      setError("Indica un nombre.");
+      return null;
+    }
+    if (!criteriaHasFilters(criteria)) {
+      setError("Indica al menos un criterio (keywords o CPV).");
+      return null;
+    }
+    return { name: name.trim(), criteria };
   }
 
   async function onCreateAlert() {
-    setPending(true);
     setError(null);
+    const built = buildOrFail();
+    if (!built) return;
+
+    setPending(true);
     const client = createSupabaseBrowserClient();
     const { error: createError } = await createOwnAlert(client, {
       userId,
-      name: name.trim() || "Alerta",
-      criteria: buildCriteria(),
+      name: built.name,
+      criteria: built.criteria,
       frequency: digestFrequency,
     });
     setPending(false);
@@ -51,92 +66,89 @@ export function AlertsPanel({
       setError(createError.message);
       return;
     }
+    resetForm();
     router.refresh();
   }
 
   async function onCreateSavedSearch() {
-    setPending(true);
     setError(null);
+    const built = buildOrFail();
+    if (!built) return;
+
+    setPending(true);
     const client = createSupabaseBrowserClient();
     const { error: createError } = await createOwnSavedSearch(client, {
       userId,
-      name: name.trim() || "Búsqueda guardada",
-      criteria: buildCriteria(),
+      name: built.name,
+      criteria: built.criteria,
     });
     setPending(false);
     if (createError) {
       setError(createError.message);
       return;
     }
+    resetForm();
     router.refresh();
   }
 
   const digestLabel = digestFrequency === "weekly" ? "semanal" : "diaria";
 
   return (
-    <form className="mt-6 space-y-4 rounded-md border border-border bg-background p-4">
-      <h2 className="text-base font-medium text-foreground">
-        Crear alerta / búsqueda propia
-      </h2>
+    <form className="mt-8 space-y-4 border-t border-border pt-8">
+      <h2 className="text-base font-medium text-foreground">Crear alerta</h2>
       <div>
         <label htmlFor="item_name" className="block text-sm font-medium text-foreground">
           Nombre de la alerta
         </label>
-        <input
+        <Input
           id="item_name"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
+          className="mt-1"
         />
       </div>
       <div>
         <label htmlFor="keywords" className="block text-sm font-medium text-foreground">
           Keywords (separados por comas)
         </label>
-        <input
+        <Input
           id="keywords"
           value={keywords}
           onChange={(e) => setKeywords(e.target.value)}
-          className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
+          className="mt-1"
         />
       </div>
       <div>
         <label htmlFor="cpv" className="block text-sm font-medium text-foreground">
           CPV (prefijo)
         </label>
-        <input
+        <Input
           id="cpv"
           value={cpv}
           onChange={(e) => setCpv(e.target.value)}
-          className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 font-mono text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
+          className="mt-1 font-mono"
         />
       </div>
       {error ? (
-        <p className="rounded-md bg-surface px-3 py-2 text-sm text-destructive" role="alert">
+        <p className="text-sm text-destructive" role="alert">
           {error}
         </p>
       ) : null}
       <div className="flex flex-wrap gap-2">
-        <button
-          type="button"
-          disabled={pending}
-          onClick={onCreateAlert}
-          className="rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary-dark disabled:opacity-60"
-        >
+        <Button type="button" disabled={pending} onClick={onCreateAlert}>
           Crear alerta
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
+          variant="outline"
           disabled={pending}
           onClick={onCreateSavedSearch}
-          className="rounded-md border border-border bg-background px-3 py-2 text-sm font-medium text-foreground hover:bg-muted disabled:opacity-60"
         >
           Guardar búsqueda
-        </button>
+        </Button>
       </div>
-      <p className="text-right text-xs text-muted-foreground">
-        La configuración de frecuencia de tu cuenta es: {digestLabel}. Puedes
-        cambiarla en{" "}
+      <p className="text-xs text-muted-foreground">
+        Digest de la cuenta: {digestLabel}. Cámbialo en{" "}
         <a href="/account" className="font-medium text-link hover:underline">
           Cuenta
         </a>

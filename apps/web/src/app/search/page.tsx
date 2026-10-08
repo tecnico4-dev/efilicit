@@ -1,6 +1,12 @@
 import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { getOwnProfile, searchTenders, type SearchTenderRow } from "@/lib/queries";
+import {
+  getOwnProfile,
+  searchTenders,
+  type DigestFrequency,
+  type SearchTenderRow,
+} from "@/lib/queries";
+import { CreateAlertButton } from "./create-alert-button";
 import { SaveSearchButton, SEARCH_FORM_ID } from "./save-search-button";
 
 export const dynamic = "force-dynamic";
@@ -125,11 +131,14 @@ export default async function SearchPage({
   let rows: SearchTenderRow[] = [];
   let error: string | null = null;
   let profileUserId: string | null = null;
+  let digestFrequency: DigestFrequency = "daily";
 
   try {
     const authClient = await createSupabaseServerClient();
     const profile = await getOwnProfile(authClient);
     profileUserId = profile.data?.id ?? null;
+    digestFrequency =
+      profile.data?.digest_frequency === "weekly" ? "weekly" : "daily";
   } catch {
     profileUserId = null;
   }
@@ -233,7 +242,15 @@ export default async function SearchPage({
           >
             Buscar
           </button>
-          {profileUserId ? <SaveSearchButton userId={profileUserId} /> : null}
+          {profileUserId ? (
+            <>
+              <SaveSearchButton userId={profileUserId} />
+              <CreateAlertButton
+                userId={profileUserId}
+                digestFrequency={digestFrequency}
+              />
+            </>
+          ) : null}
         </div>
       </form>
 

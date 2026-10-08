@@ -1,0 +1,175 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  criteriaHasFilters,
+  criteriaToFormFields,
+  formFieldsToCriteria,
+  formatCriteriaSummary,
+  parseCriteria,
+} from "@/lib/criteria-display";
+import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { updateOwnAlert } from "@/lib/queries";
+import type { Database } from "@efilicit/types";
+
+type AlertRow = Database["public"]["Tables"]["alerts"]["Row"];
+
+export function AlertRowItem({ alert }: { alert: AlertRow }) {
+  const router = useRouter();
+  const criteria = parseCriteria(alert.criteria);
+  const fields = criteriaToFormFields(criteria);
+
+  const [editing, setEditing] = useState(false);
+  const [name, setName] = useState(alert.name);
+  const [keywords, setKeywords] = useState(fields.keywords);
+  const [cpv, setCpv] = useState(fields.cpv);
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function toggleActive() {
+    setPending(true);
+    setError(null);
+    const client = createSupabaseBrowserClient();
+    const { error: updateError } = await updateOwnAlert(client, {
+      alertId: alert.id,
+      isActive: !alert.is_active,
+    });
+    setPending(false);
+    if (updateError) {
+      setError(updateError.message);
+      return;
+    }
+    router.refresh();
+  }
+
+  async function onSaveEdit() {
+    const nextCriteria = formFieldsToCriteria({ keywords, cpv });
+    if (!name.trim()) {
+      setError("Indica un nombre.");
+      return;
+    }
+    if (!criteriaHasFilters(nextCriteria)) {
+      setError("Indica al menos un criterio (keywords o CPV).");
+      return;
+    }
+
+    setPending(true);
+    setError(null);
+    const client = createSupabaseBrowserClient();
+    const { error: updateError } = await updateOwnAlert(client, {
+      alertId: alert.id,
+      name: name.trim(),
+      criteria: nextCriteria,
+    });
+    setPending(false);
+    if (updateError) {
+      setError(updateError.message);
+      return;
+    }
+    setEditing(false);
+    router.refresh();
+  }
+
+  return (
+    <li className="py-4">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <p className="font-medium text-foreground">{alert.name}</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {formatCriteriaSummary(criteria)}
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {alert.is_active ? "Activa" : "Inactiva"}
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={pending}
+            onClick={() => {
+              setEditing((v) => !v);
+              setError(null);
+            }}
+          >
+            {editing ? "Cancelar" : "Editar"}
+          </Button>
+          <Button
+            type="button"
+            variant={alert.is_active ? "outline" : "primary"}
+            size="sm"
+            disabled={pending}
+            onClick={toggleActive}
+          >
+            {alert.is_active ? "Desactivar" : "Activar"}
+          </Button>
+        </div>
+      </div>
+
+      {editing ? (
+        <div className="mt-4 space-y-3 rounded-lg border border-border bg-surface p-4">
+          <div>
+            <label
+              htmlFor={`edit-name-${alert.id}`}
+              className="block text-sm font-medium text-foreground"
+            >
+              Nombre de la alerta
+            </label>
+            <Input
+              id={`edit-name-${alert.id}`}
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="mt-1"
+            />
+          </div>
+          <div>
+            <label
+              htmlFor={`edit-kw-${alert.id}`}
+              className="block text-sm font-medium text-foreground"
+            >
+              Keywords (separados por comas)
+            </label>
+            <Input
+              id={`edit-kw-${alert.id}`}
+              value={keywords}
+              onChange={(e) => setKeywords(e.target.value)}
+              className="mt-1"
+            />
+          </div>
+          <div>
+            <label
+              htmlFor={`edit-cpv-${alert.id}`}
+              className="block text-sm font-medium text-foreground"
+            >
+              CPV (prefijo)
+            </label>
+            <Input
+              id={`edit-cpv-${alert.id}`}
+              value={cpv}
+              onChange={(e) => setCpv(e.target.value)}
+              className="mt-1 font-mono"
+            />
+          </div>
+          <Button
+            type="button"
+            size="sm"
+            disabled={pending}
+            onClick={onSaveEdit}
+          >
+            Guardar cambios
+          </Button>
+        </div>
+      ) : null}
+
+      {error ? (
+        <p className="mt-2 text-sm text-destructive" role="alert">
+          {error}
+        </p>
+      ) : null}
+    </li>
+  );
+}

@@ -114,6 +114,34 @@ export async function createOwnAlert(
   return { data, error: null };
 }
 
+/** Actualiza nombre, criteria y/o is_active de una alerta propia (RLS). */
+export async function updateOwnAlert(
+  client: SupabaseClient<Database>,
+  input: {
+    alertId: string;
+    name?: string;
+    criteria?: SearchCriteria;
+    isActive?: boolean;
+  },
+): Promise<{ data: AlertRow | null; error: Error | null }> {
+  const patch: Database["public"]["Tables"]["alerts"]["Update"] = {
+    updated_at: new Date().toISOString(),
+  };
+  if (input.name !== undefined) patch.name = input.name;
+  if (input.criteria !== undefined) patch.criteria = asJson(input.criteria);
+  if (input.isActive !== undefined) patch.is_active = input.isActive;
+
+  const { data, error } = await client
+    .from("alerts")
+    .update(patch)
+    .eq("id", input.alertId)
+    .select("*")
+    .single();
+
+  if (error) return { data: null, error: new Error(error.message) };
+  return { data, error: null };
+}
+
 export async function listOwnSavedSearches(
   client: SupabaseClient<Database>,
 ): Promise<{ data: SavedSearchRow[]; error: Error | null }> {

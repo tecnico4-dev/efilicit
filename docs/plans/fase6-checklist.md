@@ -14,7 +14,7 @@ Los pasos globales (0–11) se mantienen. El estado se marca **aquí**, no con �
 | 3. Ficha de licitación | Hecho | `/tenders/[id]` + enlace desde `/search`; campos MVP canónicos |
 | 4. Multi-fuente en ficha | Hecho | Lista `tender_sources` en `/tenders/[id]` + badge canónica |
 | 5. Favoritos / seguimiento | Hecho | Tabla `favorites` + RLS; toggle en ficha (solo sesión); `/favorites`; `verify:rls:favorites` |
-| 6. Alertas — gestión de producto | Pendiente | |
+| 6. Alertas — gestión de producto | Hecho | `/alerts` crear/editar/activar; criteria v1; crear desde `/search` |
 | 7. Dashboard básico | Pendiente | |
 | 8. Estados + responsive global | Pendiente | carga / vacío / error |
 | 9. Hardening (RLS, healthchecks, runbooks, CI) | Pendiente | |
@@ -41,8 +41,8 @@ Los pasos globales (0–11) se mantienen. El estado se marca **aquí**, no con �
 | Usuario se registra | Pendiente | |
 | Busca licitaciones integradas | Hecho | `/search` + ficha + favoritos |
 | Consulta la ficha | Hecho | Abrir resultado de búsqueda → `/tenders/[id]` |
-| Guarda una búsqueda | Pendiente | |
-| Crea una alerta | Pendiente | |
+| Guarda una búsqueda | Hecho | Botón en `/search` + form en `/alerts` |
+| Crea una alerta | Hecho | `/alerts` + «Crear alerta» en `/search` (sesión) |
 | Recibe un email | Pendiente | Resend; dominio eficen vía IT si aplica |
 | Fuentes se ejecutan programadamente | Pendiente | O N/A justificado si cron sigue off con OK |
 | Jobs idempotentes | Pendiente | Ya en ingestas/alertas; revalidar |
