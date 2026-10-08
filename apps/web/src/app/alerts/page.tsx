@@ -42,14 +42,7 @@ export default async function AlertsPage() {
 
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col bg-background px-6 py-10">
-      <p className="text-sm text-muted-foreground">
-        <Link href="/" className="hover:underline">
-          EfiLicit
-        </Link>
-        <span className="mx-2">/</span>
-        Alertas
-      </p>
-      <h1 className="mt-1 text-2xl font-semibold tracking-tight text-foreground">
+      <h1 className="text-2xl font-semibold tracking-tight text-foreground">
         Alertas y búsquedas guardadas
       </h1>
       <p className="mt-2 text-sm text-muted-foreground">

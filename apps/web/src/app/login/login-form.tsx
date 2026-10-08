@@ -8,8 +8,8 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 export function LoginForm({ nextPath }: { nextPath: string }) {
   const router = useRouter();
-  const [email, setEmail] = useState("alice@example.com");
-  const [password, setPassword] = useState("password123");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
@@ -82,11 +82,6 @@ export function LoginForm({ nextPath }: { nextPath: string }) {
       <Button type="submit" disabled={pending} className="w-full">
         {pending ? "Entrando…" : "Entrar"}
       </Button>
-      <p className="text-xs text-muted-foreground">
-        Local seed: <code className="font-mono">alice@example.com</code> /{" "}
-        <code className="font-mono">bob@example.com</code> — contraseña{" "}
-        <code className="font-mono">password123</code>
-      </p>
     </form>
   );
 }

@@ -30,18 +30,9 @@ export default async function AccountPage() {
   return (
     <main className="mx-auto flex w-full max-w-xl flex-1 flex-col px-6 py-10">
       <div className="flex items-start justify-between gap-4">
-        <div>
-          <p className="text-sm text-muted-foreground">
-            <Link href="/" className="hover:underline">
-              EfiLicit
-            </Link>
-            <span className="mx-2">/</span>
-            Cuenta
-          </p>
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight text-foreground">
-            Tu perfil
-          </h1>
-        </div>
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+          Tu perfil
+        </h1>
         <LogoutButton />
       </div>
 
