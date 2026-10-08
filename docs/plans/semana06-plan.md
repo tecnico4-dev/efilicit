@@ -151,7 +151,8 @@ CHANGELOG, checklist Fase 6, ADR N/A o ADRs puntuales, handoff. Criterios de sal
 | Paso 0 | MVP EfiLicit: modo claro corporativo primero; dark opcional | Dark EfiLumen es más “blue genérico” |
 | Paso 1 | Tokens en `apps/web/.../globals.css`; shell global `AppShell`/`AppHeader`; `Button`/`Input` | Identidad en home + login; `/search` etc. se rediseñan en Pasos 2+ |
 | Tras Paso 1 | Tema oscuro **default** + opción claro (`next-themes`, toggle cabecera); tokens `.dark` de brand | Alineado a EfiLumen; claro corporativo `#52b9d8` / dark más azul genérico |
-| Paso 2 | Rediseño `/search` con tokens + estados vacío/error/`loading.tsx`; sin copy Semana 5; sin ficha aún | Misma RPC `searchTenders`; enlaces a ficha en Paso 3 |
+| Paso 2 | `/search` usable con tokens; sin placeholders de ejemplo ni copy Semana 5 | Layout simple (revert del overbuild); misma RPC; ficha en Paso 3 |
+| Feedback UX | No inventar layout al quitar textos de ejemplo: solo quitar el texto pedido | Aplicable a búsqueda y formulario de alertas |
 
 ---
 

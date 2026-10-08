@@ -10,7 +10,7 @@ Los pasos globales (0–11) se mantienen. El estado se marca **aquí**, no con �
 |---|---|---|
 | 0. Kit visual corporativo (brand) | Hecho | Extraído de efilumen-web → `docs/brand/`; logo oficial pendiente (no bloquea) |
 | 1. Design system base en `apps/web` | Hecho | Tokens + shell + Button/Input; tema dark default + toggle claro (`next-themes`) |
-| 2. Buscador — UX de producto | Hecho | `/search` rediseñado: filtros, vacío/error/carga, responsive; misma `searchTenders` |
+| 2. Buscador — UX de producto | Hecho | `/search` con tokens, sin placeholders/ejemplos; layout simple (sin overbuild) |
 | 3. Ficha de licitación | Pendiente | |
 | 4. Multi-fuente en ficha | Pendiente | `tender_sources` |
 | 5. Favoritos / seguimiento | Pendiente | + RLS A≠B |
