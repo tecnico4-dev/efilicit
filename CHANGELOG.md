@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Semana 6 Paso 2: buscador `/search` con UX de producto (filtros, estados vacío/error/carga, responsive); sigue usando `searchTenders`.
 - Semana 6: tema oscuro por defecto + opción claro (`next-themes`, toggle en cabecera; tokens `.dark` corporativos).
 - Semana 6 Paso 1: design system base en `apps/web` (tokens corporativos, `AppShell`/`AppHeader`, `Button`/`Input`, home y login con identidad Eficen).
 - Semana 6 Paso 0: kit visual corporativo en `docs/brand/` (tokens CSS Eficen/EfiLumen, patrones UI, tipografía Geist); logo oficial pendiente.

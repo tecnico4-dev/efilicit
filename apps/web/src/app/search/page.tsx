@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { searchTenders, type SearchTenderRow } from "@/lib/queries";
 
@@ -24,13 +26,70 @@ function formatMoney(value: number | null, currency: string): string {
   }
 }
 
+function formatDate(value: string | null): string | null {
+  if (!value) return null;
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return null;
+  return new Intl.DateTimeFormat("es-ES", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  }).format(d);
+}
+
 function MatchKindBadge({ kind }: { kind: string }) {
   const label =
-    kind === "fts" ? "FTS" : kind === "trgm" ? "errata" : kind === "filter" ? "filtro" : kind;
+    kind === "fts"
+      ? "Texto"
+      : kind === "trgm"
+        ? "Errata"
+        : kind === "filter"
+          ? "Filtro"
+          : kind;
+
   return (
-    <span className="rounded border border-border bg-muted px-1.5 py-0.5 font-mono text-xs text-foreground">
+    <span className="inline-flex items-center rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-xs font-semibold text-link">
       {label}
     </span>
+  );
+}
+
+function EmptyState({ searched }: { searched: boolean }) {
+  if (!searched) {
+    return (
+      <div className="rounded-2xl border border-dashed border-border bg-surface/60 px-5 py-10 text-center">
+        <p className="text-sm font-medium text-foreground">
+          Empieza una búsqueda
+        </p>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Usa texto libre, un código CPV o un rango de importe. También
+          toleramos erratas tipográficas.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-2xl border border-dashed border-border bg-surface/60 px-5 py-10 text-center">
+      <p className="text-sm font-medium text-foreground">Sin resultados</p>
+      <p className="mt-2 text-sm text-muted-foreground">
+        Prueba otros términos, un CPV más corto o amplía el rango de importe.
+      </p>
+    </div>
+  );
+}
+
+function ErrorState({ message }: { message: string }) {
+  return (
+    <div
+      className="rounded-2xl border border-destructive/40 bg-surface px-5 py-4"
+      role="alert"
+    >
+      <p className="text-sm font-semibold text-destructive">
+        No se ha podido completar la búsqueda
+      </p>
+      <p className="mt-1 text-sm text-muted-foreground">{message}</p>
+    </div>
   );
 }
 
@@ -43,56 +102,76 @@ function ResultsList({
   error: string | null;
   searched: boolean;
 }) {
-  if (error) {
-    return (
-      <p className="mt-8 rounded-md bg-surface px-4 py-3 text-sm text-destructive" role="alert">
-        Error al buscar: {error}
-      </p>
-    );
-  }
-
-  if (!searched) {
-    return (
-      <p className="mt-8 text-sm text-muted-foreground">
-        Escribe un término (p. ej. <code className="font-mono">mantenimiento software</code>) o
-        una errata (<code className="font-mono">mantnimiento softwre</code>) y pulsa Buscar.
-      </p>
-    );
-  }
-
-  if (rows.length === 0) {
-    return <p className="mt-8 text-sm text-muted-foreground">Sin resultados para estos criterios.</p>;
+  if (error) return <ErrorState message={error} />;
+  if (!searched || rows.length === 0) {
+    return <EmptyState searched={searched} />;
   }
 
   return (
-    <ul className="mt-8 divide-y divide-border border-t border-border">
-      {rows.map((row) => (
-        <li key={row.id} className="py-4">
-          <div className="flex flex-wrap items-baseline gap-2">
-            <h2 className="text-base font-medium text-foreground">{row.title}</h2>
-            <MatchKindBadge kind={row.match_kind} />
-          </div>
-          <dl className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
-            <div>
-              <dt className="inline text-muted-foreground">Importe: </dt>
-              <dd className="inline">{formatMoney(row.estimated_value, row.currency)}</dd>
-            </div>
-            <div>
-              <dt className="inline text-muted-foreground">CPV: </dt>
-              <dd className="inline font-mono">{row.cpv_code ?? "—"}</dd>
-            </div>
-            <div>
-              <dt className="inline text-muted-foreground">Estado: </dt>
-              <dd className="inline">{row.status ?? "—"}</dd>
-            </div>
-            <div>
-              <dt className="inline text-muted-foreground">rank: </dt>
-              <dd className="inline font-mono">{row.rank.toFixed(3)}</dd>
-            </div>
-          </dl>
-        </li>
-      ))}
-    </ul>
+    <div className="space-y-3">
+      <p className="text-sm text-muted-foreground">
+        {rows.length} resultado{rows.length === 1 ? "" : "s"}
+      </p>
+      <ul className="space-y-3">
+        {rows.map((row) => {
+          const pub = formatDate(row.publication_date);
+          const deadline = formatDate(row.deadline_at);
+
+          return (
+            <li
+              key={row.id}
+              className="rounded-2xl border border-border/80 bg-surface p-4 shadow-sm sm:p-5"
+            >
+              <div className="flex flex-wrap items-start justify-between gap-2">
+                <h2 className="min-w-0 flex-1 text-base font-semibold tracking-tight text-foreground sm:text-lg">
+                  {row.title}
+                </h2>
+                <MatchKindBadge kind={row.match_kind} />
+              </div>
+
+              {row.description ? (
+                <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">
+                  {row.description}
+                </p>
+              ) : null}
+
+              <dl className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5 text-sm">
+                <div>
+                  <dt className="inline text-muted-foreground">Importe · </dt>
+                  <dd className="inline font-medium text-foreground">
+                    {formatMoney(row.estimated_value, row.currency)}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="inline text-muted-foreground">CPV · </dt>
+                  <dd className="inline font-mono text-foreground">
+                    {row.cpv_code ?? "—"}
+                  </dd>
+                </div>
+                {row.status ? (
+                  <div>
+                    <dt className="inline text-muted-foreground">Estado · </dt>
+                    <dd className="inline text-foreground">{row.status}</dd>
+                  </div>
+                ) : null}
+                {pub ? (
+                  <div>
+                    <dt className="inline text-muted-foreground">Publicación · </dt>
+                    <dd className="inline text-foreground">{pub}</dd>
+                  </div>
+                ) : null}
+                {deadline ? (
+                  <div>
+                    <dt className="inline text-muted-foreground">Plazo · </dt>
+                    <dd className="inline text-foreground">{deadline}</dd>
+                  </div>
+                ) : null}
+              </dl>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
   );
 }
 
@@ -144,60 +223,65 @@ export default async function SearchPage({
   }
 
   return (
-    <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-6 py-10">
-      <header className="flex items-baseline justify-between gap-4">
-        <div>
-          <p className="text-sm text-muted-foreground">
-            <Link href="/" className="hover:underline">
-              EfiLicit
-            </Link>
-            <span className="mx-2">/</span>
-            Búsqueda
-          </p>
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight text-foreground">
-            Buscar licitaciones
-          </h1>
-        </div>
+    <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-4 py-8 sm:px-6 sm:py-10">
+      <header>
+        <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+          Buscar licitaciones
+        </h1>
+        <p className="mt-2 text-sm text-muted-foreground sm:text-base">
+          Encuentra contratos por texto, CPV o importe sobre el catálogo
+          canónico.
+        </p>
       </header>
 
-      <p className="mt-2 text-sm text-muted-foreground">
-        Semana 5 — UI mínima sobre el modelo canónico (FTS + erratas + filtros).
-      </p>
-
-      <form method="get" className="mt-8 space-y-4" role="search">
+      <form
+        method="get"
+        className="mt-6 space-y-4 rounded-2xl border border-border/80 bg-surface p-4 shadow-sm sm:mt-8 sm:p-5"
+        role="search"
+      >
         <div>
-          <label htmlFor="q" className="block text-sm font-medium text-foreground">
+          <label
+            htmlFor="q"
+            className="mb-1 block text-sm text-muted-foreground"
+          >
             Texto
           </label>
-          <input
+          <Input
             id="q"
             name="q"
             type="search"
             defaultValue={q}
-            placeholder="mantenimiento software"
-            className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
+            placeholder="Ej. mantenimiento software"
+            autoComplete="off"
           />
         </div>
+
         <div className="grid gap-4 sm:grid-cols-3">
           <div>
-            <label htmlFor="cpv" className="block text-sm font-medium text-foreground">
+            <label
+              htmlFor="cpv"
+              className="mb-1 block text-sm text-muted-foreground"
+            >
               CPV (prefijo)
             </label>
-            <input
+            <Input
               id="cpv"
               name="cpv"
               type="text"
               inputMode="numeric"
               defaultValue={cpv}
               placeholder="72000000"
-              className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 font-mono text-sm outline-none focus:ring-2 focus:ring-ring"
+              className="font-mono"
             />
           </div>
           <div>
-            <label htmlFor="min" className="block text-sm font-medium text-foreground">
-              Importe mín.
+            <label
+              htmlFor="min"
+              className="mb-1 block text-sm text-muted-foreground"
+            >
+              Importe mín. (€)
             </label>
-            <input
+            <Input
               id="min"
               name="min"
               type="number"
@@ -205,14 +289,16 @@ export default async function SearchPage({
               step={1}
               defaultValue={minRaw}
               placeholder="10000"
-              className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
             />
           </div>
           <div>
-            <label htmlFor="max" className="block text-sm font-medium text-foreground">
-              Importe máx.
+            <label
+              htmlFor="max"
+              className="mb-1 block text-sm text-muted-foreground"
+            >
+              Importe máx. (€)
             </label>
-            <input
+            <Input
               id="max"
               name="max"
               type="number"
@@ -220,19 +306,32 @@ export default async function SearchPage({
               step={1}
               defaultValue={maxRaw}
               placeholder="500000"
-              className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
             />
           </div>
         </div>
-        <button
-          type="submit"
-          className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary-dark"
-        >
-          Buscar
-        </button>
+
+        <div className="flex flex-wrap items-center gap-2 pt-1">
+          <Button type="submit">Buscar</Button>
+          {hasParams ? (
+            <Button href="/search" variant="ghost">
+              Limpiar
+            </Button>
+          ) : null}
+        </div>
       </form>
 
-      <ResultsList rows={rows} error={error} searched={hasParams} />
+      <section className="mt-8" aria-live="polite">
+        <ResultsList rows={rows} error={error} searched={hasParams} />
+      </section>
+
+      {!hasParams ? (
+        <p className="mt-6 text-center text-xs text-muted-foreground">
+          ¿Prefieres alertas automáticas?{" "}
+          <Link href="/alerts" className="font-medium text-link hover:underline">
+            Configúralas aquí
+          </Link>
+        </p>
+      ) : null}
     </main>
   );
 }

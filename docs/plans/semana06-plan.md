@@ -1,6 +1,6 @@
 # Semana 6 — Plan: web integrada + cierre MVP
 
-> **Estado:** en curso (Pasos 0–1 hechos; siguiente: Paso 2 buscador UX).  
+> **Estado:** en curso (Pasos 0–2 hechos; siguiente: Paso 3 ficha de licitación).  
 > **Checklist:** [fase6-checklist.md](fase6-checklist.md)  
 > **Precondición:** Semana 5 cerrada y en `main` ([fase5-checklist.md](fase5-checklist.md)).  
 > **Norma:** `docs/00`–`04` y `.cursor/rules/`. La web sigue consumiendo el **modelo canónico**; sin parsers/RAW. ADR solo ante cambio estructural.  
@@ -151,6 +151,7 @@ CHANGELOG, checklist Fase 6, ADR N/A o ADRs puntuales, handoff. Criterios de sal
 | Paso 0 | MVP EfiLicit: modo claro corporativo primero; dark opcional | Dark EfiLumen es más “blue genérico” |
 | Paso 1 | Tokens en `apps/web/.../globals.css`; shell global `AppShell`/`AppHeader`; `Button`/`Input` | Identidad en home + login; `/search` etc. se rediseñan en Pasos 2+ |
 | Tras Paso 1 | Tema oscuro **default** + opción claro (`next-themes`, toggle cabecera); tokens `.dark` de brand | Alineado a EfiLumen; claro corporativo `#52b9d8` / dark más azul genérico |
+| Paso 2 | Rediseño `/search` con tokens + estados vacío/error/`loading.tsx`; sin copy Semana 5; sin ficha aún | Misma RPC `searchTenders`; enlaces a ficha en Paso 3 |
 
 ---
 
