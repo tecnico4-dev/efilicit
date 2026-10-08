@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { DigestFrequency } from "@/lib/queries";
@@ -59,9 +58,6 @@ export default async function AccountPage() {
               <dt className="text-muted-foreground">display_name</dt>
               <dd className="text-foreground">{profile.display_name ?? "—"}</dd>
             </div>
-            <p className="rounded-md bg-muted px-3 py-2 text-foreground">
-              Sync Auth → public.users OK.
-            </p>
           </>
         ) : (
           <p className="rounded-md bg-amber-50 px-3 py-2 text-amber-900">
@@ -76,16 +72,6 @@ export default async function AccountPage() {
           initialFrequency={asDigestFrequency(profile.digest_frequency)}
         />
       ) : null}
-
-      <p className="mt-8 text-sm">
-        <Link href="/search" className="text-foreground underline">
-          Ir a búsqueda
-        </Link>
-        {" · "}
-        <Link href="/alerts" className="text-foreground underline">
-          Alertas
-        </Link>
-      </p>
     </main>
   );
 }
