@@ -1,6 +1,6 @@
 # Semana 6 — Plan: web integrada + cierre MVP
 
-> **Estado:** en curso (Pasos 0–3 hechos; siguiente: Paso 4 multi-fuente en ficha).  
+> **Estado:** en curso (Pasos 0–4 hechos; siguiente: Paso 5 favoritos).  
 > **Checklist:** [fase6-checklist.md](fase6-checklist.md)  
 > **Precondición:** Semana 5 cerrada y en `main` ([fase5-checklist.md](fase5-checklist.md)).  
 > **Norma:** `docs/00`–`04` y `.cursor/rules/`. La web sigue consumiendo el **modelo canónico**; sin parsers/RAW. ADR solo ante cambio estructural.  
@@ -154,6 +154,7 @@ CHANGELOG, checklist Fase 6, ADR N/A o ADRs puntuales, handoff. Criterios de sal
 | Paso 2 | `/search` usable con tokens; sin placeholders de ejemplo ni copy Semana 5 | Layout simple (revert del overbuild); misma RPC; ficha en Paso 3 |
 | Feedback UX | No inventar layout al quitar textos de ejemplo: solo quitar el texto pedido | Aplicable a búsqueda y formulario de alertas |
 | Paso 3 | Ficha `/tenders/[id]` con `getTenderById`; enlace desde título en `/search` | Multi-fuente en Paso 4; favoritos/alertas en ficha solo con sesión (comentar al implementar) |
+| Paso 4 | `tender_sources` en ficha; badge Canónica si `source_code` = `canonical_source_code` | Lectura pública RLS ya existente |
 
 ---
 

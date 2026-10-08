@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { getTenderById } from "@/lib/queries";
+import { getTenderById, type TenderSourceSummary } from "@/lib/queries";
 
 export const dynamic = "force-dynamic";
 
@@ -45,6 +45,87 @@ function Field({
       <dt className="text-sm text-muted-foreground">{label}</dt>
       <dd className="mt-1 text-sm text-foreground sm:mt-0">{children}</dd>
     </div>
+  );
+}
+
+function SourcesList({
+  sources,
+  canonicalSourceCode,
+}: {
+  sources: TenderSourceSummary[];
+  canonicalSourceCode: string;
+}) {
+  if (sources.length === 0) {
+    return (
+      <p className="mt-2 text-sm text-muted-foreground">
+        No hay fuentes enlazadas para esta licitación.
+      </p>
+    );
+  }
+
+  return (
+    <ul className="mt-3 space-y-3">
+      {sources.map((source) => {
+        const isCanonical = source.source_code === canonicalSourceCode;
+        return (
+          <li
+            key={source.id}
+            className="rounded-md border border-border bg-surface px-4 py-3 text-sm"
+          >
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="font-mono font-medium text-foreground">
+                {source.source_code}
+              </span>
+              {isCanonical ? (
+                <span className="rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-xs font-semibold text-link">
+                  Canónica
+                </span>
+              ) : null}
+            </div>
+            <dl className="mt-2 space-y-1 text-muted-foreground">
+              <div>
+                <dt className="inline">Id en fuente · </dt>
+                <dd className="inline font-mono text-foreground">
+                  {source.source_tender_id}
+                </dd>
+              </div>
+              <div>
+                <dt className="inline">Visto · </dt>
+                <dd className="inline text-foreground">
+                  {formatDate(source.last_seen_at)}
+                </dd>
+              </div>
+              {source.match_method ? (
+                <div>
+                  <dt className="inline">Emparejado · </dt>
+                  <dd className="inline text-foreground">
+                    {source.match_method}
+                    {source.review_status
+                      ? ` · ${source.review_status}`
+                      : null}
+                  </dd>
+                </div>
+              ) : null}
+              {source.source_url ? (
+                <div>
+                  <dt className="inline">URL · </dt>
+                  <dd className="inline">
+                    <a
+                      href={source.source_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-medium text-link hover:underline break-all"
+                    >
+                      {source.source_url}
+                    </a>
+                  </dd>
+                </div>
+              ) : null}
+            </dl>
+          </li>
+        );
+      })}
+    </ul>
   );
 }
 
@@ -129,6 +210,19 @@ export default async function TenderDetailPage({ params }: PageProps) {
           <span className="font-mono">{tender.canonical_source_code}</span>
         </Field>
       </dl>
+
+      <section className="mt-10">
+        <h2 className="text-base font-semibold text-foreground">
+          Fuentes ({tender.sources.length})
+        </h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Orígenes en los que aparece esta misma licitación canónica.
+        </p>
+        <SourcesList
+          sources={tender.sources}
+          canonicalSourceCode={tender.canonical_source_code}
+        />
+      </section>
     </main>
   );
 }

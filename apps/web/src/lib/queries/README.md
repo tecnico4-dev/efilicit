@@ -30,11 +30,11 @@ const { data, error } = await searchTenders(client, {
 
 Comprobación SQL directa: ver plan Semana 5 / checklist Paso 3.
 
-## Ficha de licitación (Semana 6 / Paso 3)
+## Ficha de licitación (Semana 6 / Pasos 3–4)
 
-- `getTenderById(client, id)` → `tenders` + `contracting_authorities` (si hay)
+- `getTenderById(client, id)` → `tenders` + `contracting_authorities` + `tender_sources`
 - UI: `/tenders/[id]`; enlace desde resultados de `/search`
-- Fuentes múltiples (`tender_sources`) → Paso 4
+- Multi-fuente: lista de orígenes con badge “Canónica” si coincide `canonical_source_code`
 
 ## Alertas / búsquedas / perfil (Semana 5 / Paso 6)
 

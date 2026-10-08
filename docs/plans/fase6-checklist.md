@@ -12,7 +12,7 @@ Los pasos globales (0–11) se mantienen. El estado se marca **aquí**, no con �
 | 1. Design system base en `apps/web` | Hecho | Tokens + shell + Button/Input; tema dark default + toggle claro (`next-themes`) |
 | 2. Buscador — UX de producto | Hecho | `/search` con tokens, sin placeholders/ejemplos; layout simple (sin overbuild) |
 | 3. Ficha de licitación | Hecho | `/tenders/[id]` + enlace desde `/search`; campos MVP canónicos |
-| 4. Multi-fuente en ficha | Pendiente | `tender_sources` |
+| 4. Multi-fuente en ficha | Hecho | Lista `tender_sources` en `/tenders/[id]` + badge canónica |
 | 5. Favoritos / seguimiento | Pendiente | + RLS A≠B |
 | 6. Alertas — gestión de producto | Pendiente | |
 | 7. Dashboard básico | Pendiente | |

@@ -6,6 +6,7 @@ export {
 export {
   getTenderById,
   type TenderDetail,
+  type TenderSourceSummary,
 } from "./get-tender";
 export {
   createOwnAlert,
