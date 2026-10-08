@@ -60,10 +60,15 @@ export function FavoriteToggle({
     <div className="flex flex-col items-start gap-1">
       <Button
         type="button"
-        variant={favorited ? "primary" : "outline"}
+        variant="outline"
         size="sm"
         disabled={pending}
         onClick={onToggle}
+        className={
+          favorited
+            ? "border-destructive text-destructive hover:bg-destructive/10 hover:text-destructive"
+            : undefined
+        }
       >
         {pending
           ? "…"

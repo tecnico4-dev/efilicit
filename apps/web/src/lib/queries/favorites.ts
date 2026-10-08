@@ -35,6 +35,27 @@ export async function isOwnFavorite(
   return { data: Boolean(data), error: null };
 }
 
+/** IDs de licitaciones favoritas entre un conjunto (p. ej. resultados de búsqueda). */
+export async function listOwnFavoriteTenderIds(
+  client: SupabaseClient<Database>,
+  tenderIds: string[],
+): Promise<{ data: Set<string>; error: Error | null }> {
+  if (tenderIds.length === 0) {
+    return { data: new Set(), error: null };
+  }
+
+  const { data, error } = await client
+    .from("favorites")
+    .select("tender_id")
+    .in("tender_id", tenderIds);
+
+  if (error) return { data: new Set(), error: new Error(error.message) };
+  return {
+    data: new Set((data ?? []).map((row) => row.tender_id)),
+    error: null,
+  };
+}
+
 export async function listOwnFavorites(
   client: SupabaseClient<Database>,
 ): Promise<{ data: FavoriteWithTender[]; error: Error | null }> {

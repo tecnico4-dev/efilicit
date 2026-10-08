@@ -15,7 +15,6 @@ type NavItem = {
 };
 
 const navItems: NavItem[] = [
-  { href: "/", label: "Inicio", match: (path) => path === "/" },
   {
     href: "/search",
     label: "Búsqueda",

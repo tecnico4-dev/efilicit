@@ -26,6 +26,8 @@ export function AlertsPanel({
   const [name, setName] = useState("");
   const [keywords, setKeywords] = useState("");
   const [cpv, setCpv] = useState("");
+  const [min, setMin] = useState("");
+  const [max, setMax] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
@@ -33,16 +35,18 @@ export function AlertsPanel({
     setName("");
     setKeywords("");
     setCpv("");
+    setMin("");
+    setMax("");
   }
 
   function buildOrFail() {
-    const criteria = formFieldsToCriteria({ keywords, cpv });
+    const criteria = formFieldsToCriteria({ keywords, cpv, min, max });
     if (!name.trim()) {
       setError("Indica un nombre.");
       return null;
     }
     if (!criteriaHasFilters(criteria)) {
-      setError("Indica al menos un criterio (keywords o CPV).");
+      setError("Indica al menos un criterio (keywords, CPV o importe).");
       return null;
     }
     return { name: name.trim(), criteria };
@@ -128,6 +132,36 @@ export function AlertsPanel({
           onChange={(e) => setCpv(e.target.value)}
           className="mt-1 font-mono"
         />
+      </div>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div>
+          <label htmlFor="min" className="block text-sm font-medium text-foreground">
+            Importe mín.
+          </label>
+          <Input
+            id="min"
+            type="number"
+            min={0}
+            step={1}
+            value={min}
+            onChange={(e) => setMin(e.target.value)}
+            className="mt-1"
+          />
+        </div>
+        <div>
+          <label htmlFor="max" className="block text-sm font-medium text-foreground">
+            Importe máx.
+          </label>
+          <Input
+            id="max"
+            type="number"
+            min={0}
+            step={1}
+            value={max}
+            onChange={(e) => setMax(e.target.value)}
+            className="mt-1"
+          />
+        </div>
       </div>
       {error ? (
         <p className="text-sm text-destructive" role="alert">

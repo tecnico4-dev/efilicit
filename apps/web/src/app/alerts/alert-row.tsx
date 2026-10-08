@@ -26,6 +26,8 @@ export function AlertRowItem({ alert }: { alert: AlertRow }) {
   const [name, setName] = useState(alert.name);
   const [keywords, setKeywords] = useState(fields.keywords);
   const [cpv, setCpv] = useState(fields.cpv);
+  const [min, setMin] = useState(fields.min);
+  const [max, setMax] = useState(fields.max);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -46,13 +48,13 @@ export function AlertRowItem({ alert }: { alert: AlertRow }) {
   }
 
   async function onSaveEdit() {
-    const nextCriteria = formFieldsToCriteria({ keywords, cpv });
+    const nextCriteria = formFieldsToCriteria({ keywords, cpv, min, max });
     if (!name.trim()) {
       setError("Indica un nombre.");
       return;
     }
     if (!criteriaHasFilters(nextCriteria)) {
-      setError("Indica al menos un criterio (keywords o CPV).");
+      setError("Indica al menos un criterio (keywords, CPV o importe).");
       return;
     }
 
@@ -153,6 +155,42 @@ export function AlertRowItem({ alert }: { alert: AlertRow }) {
               onChange={(e) => setCpv(e.target.value)}
               className="mt-1 font-mono"
             />
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div>
+              <label
+                htmlFor={`edit-min-${alert.id}`}
+                className="block text-sm font-medium text-foreground"
+              >
+                Importe mín.
+              </label>
+              <Input
+                id={`edit-min-${alert.id}`}
+                type="number"
+                min={0}
+                step={1}
+                value={min}
+                onChange={(e) => setMin(e.target.value)}
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <label
+                htmlFor={`edit-max-${alert.id}`}
+                className="block text-sm font-medium text-foreground"
+              >
+                Importe máx.
+              </label>
+              <Input
+                id={`edit-max-${alert.id}`}
+                type="number"
+                min={0}
+                step={1}
+                value={max}
+                onChange={(e) => setMax(e.target.value)}
+                className="mt-1"
+              />
+            </div>
           </div>
           <Button
             type="button"

@@ -13,7 +13,44 @@ export const dynamic = "force-dynamic";
 
 type PageProps = {
   params: Promise<{ id: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
+
+function first(value: string | string[] | undefined): string {
+  if (Array.isArray(value)) return value[0] ?? "";
+  return value ?? "";
+}
+
+function backLinkFromParams(
+  params: Record<string, string | string[] | undefined>,
+): { href: string; label: string } {
+  const from = first(params.from);
+  if (from === "favorites") {
+    return {
+      href: "/favorites",
+      label: "← Volver a la lista de favoritos",
+    };
+  }
+
+  if (from === "search") {
+    const qs = new URLSearchParams();
+    const q = first(params.q).trim();
+    const cpv = first(params.cpv).trim();
+    const min = first(params.min).trim();
+    const max = first(params.max).trim();
+    if (q) qs.set("q", q);
+    if (cpv) qs.set("cpv", cpv);
+    if (min) qs.set("min", min);
+    if (max) qs.set("max", max);
+    const query = qs.toString();
+    return {
+      href: query ? `/search?${query}` : "/search",
+      label: "← Volver a la búsqueda",
+    };
+  }
+
+  return { href: "/search", label: "← Volver a la búsqueda" };
+}
 
 function formatMoney(value: number | null, currency: string): string {
   if (value == null) return "—";
@@ -135,8 +172,13 @@ function SourcesList({
   );
 }
 
-export default async function TenderDetailPage({ params }: PageProps) {
+export default async function TenderDetailPage({
+  params,
+  searchParams,
+}: PageProps) {
   const { id } = await params;
+  const query = await searchParams;
+  const back = backLinkFromParams(query);
   const supabase = await createSupabaseServerClient();
   const { data: tender, error } = await getTenderById(supabase, id);
 
@@ -147,8 +189,8 @@ export default async function TenderDetailPage({ params }: PageProps) {
           No se pudo cargar la licitación: {error.message}
         </p>
         <p className="mt-4 text-sm">
-          <Link href="/search" className="font-medium text-link hover:underline">
-            Volver a la búsqueda
+          <Link href={back.href} className="font-medium text-link hover:underline">
+            {back.label.replace(/^←\s*/, "")}
           </Link>
         </p>
       </main>
@@ -181,8 +223,8 @@ export default async function TenderDetailPage({ params }: PageProps) {
   return (
     <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-6 py-10">
       <p className="text-sm">
-        <Link href="/search" className="font-medium text-link hover:underline">
-          ← Volver a la búsqueda
+        <Link href={back.href} className="font-medium text-link hover:underline">
+          {back.label}
         </Link>
       </p>
 

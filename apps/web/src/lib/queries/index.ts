@@ -21,6 +21,7 @@ export {
 export {
   addOwnFavorite,
   isOwnFavorite,
+  listOwnFavoriteTenderIds,
   listOwnFavorites,
   removeOwnFavorite,
   type FavoriteWithTender,

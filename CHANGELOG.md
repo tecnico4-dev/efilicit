@@ -34,6 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Semana 6 UX: validación vacía al buscar; «volver» conserva filtros de búsqueda o vuelve a favoritos; corazón favorito en resultados; «Quitar de favoritos» outline destructivo; form de alertas con importe; nav sin «Inicio» (logo → home).
 - Re-ingesta canónica: `tender_events` / `tenders.updated_at` solo si cambian campos de negocio; `tender_sources.last_seen_at` sigue marcando que la fuente la ha vuelto a ver.
 - Matching multi-fuente: si ambas partes traen expediente y difiere → nunca `auto` (como mucho `pending`); evita fusionar contratos distintos del mismo NIF.
 - Parser PLACSP: si el mismo expediente aparece varias veces en un ZIP/Atom, gana la entry con `atom:updated` más reciente (no el orden del fichero/XML).

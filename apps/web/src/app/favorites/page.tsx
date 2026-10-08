@@ -71,7 +71,7 @@ export default async function FavoritesPage() {
             return (
               <li key={fav.id} className="py-4">
                 <Link
-                  href={`/tenders/${tender.id}`}
+                  href={`/tenders/${tender.id}?from=favorites`}
                   className="text-base font-medium text-foreground hover:text-link hover:underline"
                 >
                   {tender.title}

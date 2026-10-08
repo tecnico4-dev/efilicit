@@ -42,26 +42,44 @@ export function formatCriteriaSummary(criteria: SearchCriteria): string {
 export function criteriaToFormFields(criteria: SearchCriteria): {
   keywords: string;
   cpv: string;
+  min: string;
+  max: string;
 } {
   return {
     keywords: criteria.keywords?.join(", ") ?? "",
     cpv: criteria.cpv_codes?.[0] ?? "",
+    min:
+      criteria.estimated_value_min != null
+        ? String(criteria.estimated_value_min)
+        : "",
+    max:
+      criteria.estimated_value_max != null
+        ? String(criteria.estimated_value_max)
+        : "",
   };
 }
 
 export function formFieldsToCriteria(input: {
   keywords: string;
   cpv: string;
+  min?: string;
+  max?: string;
 }): SearchCriteria {
   const kw = input.keywords
     .split(",")
     .map((s) => s.trim())
     .filter(Boolean);
   const cpv = input.cpv.trim();
+  const minRaw = input.min?.trim() ?? "";
+  const maxRaw = input.max?.trim() ?? "";
+  const min = minRaw === "" ? undefined : Number(minRaw);
+  const max = maxRaw === "" ? undefined : Number(maxRaw);
   return {
     version: 1,
     keywords: kw.length ? kw : undefined,
     cpv_codes: cpv ? [cpv] : undefined,
+    estimated_value_min: min != null && !Number.isNaN(min) ? min : undefined,
+    estimated_value_max: max != null && !Number.isNaN(max) ? max : undefined,
   };
 }
 
