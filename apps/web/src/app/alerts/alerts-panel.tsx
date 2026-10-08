@@ -80,7 +80,7 @@ export function AlertsPanel({
       </h2>
       <div>
         <label htmlFor="item_name" className="block text-sm font-medium text-foreground">
-          Nombre
+          Nombre de la alerta
         </label>
         <input
           id="item_name"
