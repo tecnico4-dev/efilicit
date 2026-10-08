@@ -18,9 +18,9 @@ export function AlertsPanel({
   digestFrequency: DigestFrequency;
 }) {
   const router = useRouter();
-  const [name, setName] = useState("Alerta software");
-  const [keywords, setKeywords] = useState("software,mantenimiento");
-  const [cpv, setCpv] = useState("72000000");
+  const [name, setName] = useState("");
+  const [keywords, setKeywords] = useState("");
+  const [cpv, setCpv] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
