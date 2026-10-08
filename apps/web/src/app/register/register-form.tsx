@@ -50,7 +50,7 @@ export function RegisterForm() {
   return (
     <form onSubmit={onSubmit} className="mt-8 space-y-4">
       <div>
-        <label htmlFor="display_name" className="block text-sm font-medium text-zinc-800">
+        <label htmlFor="display_name" className="block text-sm font-medium text-foreground">
           Nombre (opcional)
         </label>
         <input
@@ -59,11 +59,11 @@ export function RegisterForm() {
           type="text"
           value={displayName}
           onChange={(e) => setDisplayName(e.target.value)}
-          className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:border-zinc-500"
+          className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
         />
       </div>
       <div>
-        <label htmlFor="email" className="block text-sm font-medium text-zinc-800">
+        <label htmlFor="email" className="block text-sm font-medium text-foreground">
           Email
         </label>
         <input
@@ -74,11 +74,11 @@ export function RegisterForm() {
           required
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:border-zinc-500"
+          className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
         />
       </div>
       <div>
-        <label htmlFor="password" className="block text-sm font-medium text-zinc-800">
+        <label htmlFor="password" className="block text-sm font-medium text-foreground">
           Contraseña (mín. 6)
         </label>
         <input
@@ -90,18 +90,18 @@ export function RegisterForm() {
           minLength={6}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:border-zinc-500"
+          className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
         />
       </div>
       {error ? (
-        <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-900" role="alert">
+        <p className="rounded-md bg-surface px-3 py-2 text-sm text-destructive" role="alert">
           {error}
         </p>
       ) : null}
       <button
         type="submit"
         disabled={pending}
-        className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-60"
+        className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary-dark disabled:opacity-60"
       >
         {pending ? "Creando…" : "Crear cuenta"}
       </button>

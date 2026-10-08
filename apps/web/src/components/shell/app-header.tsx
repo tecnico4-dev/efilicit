@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/cn";
+import { ThemeToggle } from "./theme-toggle";
 
 const navItems = [
   { href: "/", label: "Inicio", match: (path: string) => path === "/" },
@@ -57,6 +58,7 @@ export function AppHeader() {
         </nav>
 
         <div className="flex items-center gap-1.5">
+          <ThemeToggle />
           <Link
             href="/login"
             className={cn(

@@ -72,9 +72,9 @@ export function AlertsPanel({
   }
 
   return (
-    <form className="mt-6 space-y-4 rounded-md border border-zinc-200 bg-white p-4">
-      <h2 className="text-base font-medium text-zinc-900">Crear (propio)</h2>
-      <p className="text-sm text-zinc-600">
+    <form className="mt-6 space-y-4 rounded-md border border-border bg-background p-4">
+      <h2 className="text-base font-medium text-foreground">Crear (propio)</h2>
+      <p className="text-sm text-muted-foreground">
         El email de coincidencias usa la frecuencia de tu cuenta (
         {digestFrequency === "weekly" ? "semanal" : "diaria"}). Cámbiala en{" "}
         <a href="/account" className="underline">
@@ -83,40 +83,40 @@ export function AlertsPanel({
         .
       </p>
       <div>
-        <label htmlFor="item_name" className="block text-sm font-medium text-zinc-800">
+        <label htmlFor="item_name" className="block text-sm font-medium text-foreground">
           Nombre
         </label>
         <input
           id="item_name"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:border-zinc-500"
+          className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
         />
       </div>
       <div>
-        <label htmlFor="keywords" className="block text-sm font-medium text-zinc-800">
+        <label htmlFor="keywords" className="block text-sm font-medium text-foreground">
           Keywords (coma)
         </label>
         <input
           id="keywords"
           value={keywords}
           onChange={(e) => setKeywords(e.target.value)}
-          className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:border-zinc-500"
+          className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
         />
       </div>
       <div>
-        <label htmlFor="cpv" className="block text-sm font-medium text-zinc-800">
+        <label htmlFor="cpv" className="block text-sm font-medium text-foreground">
           CPV
         </label>
         <input
           id="cpv"
           value={cpv}
           onChange={(e) => setCpv(e.target.value)}
-          className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 font-mono text-sm text-zinc-900 outline-none focus:border-zinc-500"
+          className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 font-mono text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
         />
       </div>
       {error ? (
-        <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-900" role="alert">
+        <p className="rounded-md bg-surface px-3 py-2 text-sm text-destructive" role="alert">
           {error}
         </p>
       ) : null}
@@ -125,7 +125,7 @@ export function AlertsPanel({
           type="button"
           disabled={pending}
           onClick={onCreateAlert}
-          className="rounded-md bg-zinc-900 px-3 py-2 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-60"
+          className="rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary-dark disabled:opacity-60"
         >
           Crear alerta
         </button>
@@ -133,7 +133,7 @@ export function AlertsPanel({
           type="button"
           disabled={pending}
           onClick={onCreateSavedSearch}
-          className="rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm font-medium text-zinc-900 hover:bg-zinc-100 disabled:opacity-60"
+          className="rounded-md border border-border bg-background px-3 py-2 text-sm font-medium text-foreground hover:bg-muted disabled:opacity-60"
         >
           Guardar búsqueda
         </button>

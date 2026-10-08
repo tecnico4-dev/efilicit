@@ -31,7 +31,7 @@ Fondo claro con tinte azul-cielo suave, acento **cian corporativo** (`#52b9d8`),
 | Muted bg | `#eaf6fa` | Zebra / hover suave |
 | Destructive | `#d32f2f` | Errores |
 
-Modo oscuro en EfiLumen usa azules más “genéricos” (`#3b82f6`, fondo `#0b1226`). Para EfiLicit MVP se puede empezar **solo claro** (como Semana 5) y aplicar dark después si hace falta.
+Modo oscuro: azules más “genéricos” (`#3b82f6`, fondo `#0b1226`), como EfiLumen. En EfiLicit el **default es oscuro**; el claro sigue disponible (toggle en la cabecera, `next-themes`).
 
 ## Tipografía
 

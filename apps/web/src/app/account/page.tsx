@@ -31,14 +31,14 @@ export default async function AccountPage() {
     <main className="mx-auto flex w-full max-w-xl flex-1 flex-col px-6 py-10">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="text-sm text-zinc-500">
+          <p className="text-sm text-muted-foreground">
             <Link href="/" className="hover:underline">
               EfiLicit
             </Link>
             <span className="mx-2">/</span>
             Cuenta
           </p>
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight text-zinc-900">
+          <h1 className="mt-1 text-2xl font-semibold tracking-tight text-foreground">
             Tu perfil
           </h1>
         </div>
@@ -47,28 +47,28 @@ export default async function AccountPage() {
 
       <dl className="mt-8 space-y-3 text-sm">
         <div>
-          <dt className="text-zinc-500">Email (Auth)</dt>
-          <dd className="font-mono text-zinc-900">{user.email}</dd>
+          <dt className="text-muted-foreground">Email (Auth)</dt>
+          <dd className="font-mono text-foreground">{user.email}</dd>
         </div>
         <div>
-          <dt className="text-zinc-500">auth.users id</dt>
-          <dd className="font-mono text-zinc-900">{user.id}</dd>
+          <dt className="text-muted-foreground">auth.users id</dt>
+          <dd className="font-mono text-foreground">{user.id}</dd>
         </div>
         {error ? (
-          <p className="rounded-md bg-red-50 px-3 py-2 text-red-900" role="alert">
+          <p className="rounded-md bg-surface px-3 py-2 text-destructive" role="alert">
             No se pudo leer public.users: {error.message}
           </p>
         ) : profile ? (
           <>
             <div>
-              <dt className="text-zinc-500">public.users id</dt>
-              <dd className="font-mono text-zinc-900">{profile.id}</dd>
+              <dt className="text-muted-foreground">public.users id</dt>
+              <dd className="font-mono text-foreground">{profile.id}</dd>
             </div>
             <div>
-              <dt className="text-zinc-500">display_name</dt>
-              <dd className="text-zinc-900">{profile.display_name ?? "—"}</dd>
+              <dt className="text-muted-foreground">display_name</dt>
+              <dd className="text-foreground">{profile.display_name ?? "—"}</dd>
             </div>
-            <p className="rounded-md bg-emerald-50 px-3 py-2 text-emerald-900">
+            <p className="rounded-md bg-muted px-3 py-2 text-foreground">
               Sync Auth → public.users OK.
             </p>
           </>
@@ -87,11 +87,11 @@ export default async function AccountPage() {
       ) : null}
 
       <p className="mt-8 text-sm">
-        <Link href="/search" className="text-zinc-900 underline">
+        <Link href="/search" className="text-foreground underline">
           Ir a búsqueda
         </Link>
         {" · "}
-        <Link href="/alerts" className="text-zinc-900 underline">
+        <Link href="/alerts" className="text-foreground underline">
           Alertas
         </Link>
       </p>

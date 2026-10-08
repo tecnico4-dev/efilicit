@@ -17,7 +17,7 @@ export function LogoutButton() {
     <button
       type="button"
       onClick={onLogout}
-      className="rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-sm text-zinc-800 hover:bg-zinc-100"
+      className="rounded-md border border-border bg-background px-3 py-1.5 text-sm text-foreground hover:bg-muted"
     >
       Cerrar sesión
     </button>

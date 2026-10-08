@@ -9,7 +9,7 @@ Los pasos globales (0–11) se mantienen. El estado se marca **aquí**, no con �
 | Ítem | Estado | Notas |
 |---|---|---|
 | 0. Kit visual corporativo (brand) | Hecho | Extraído de efilumen-web → `docs/brand/`; logo oficial pendiente (no bloquea) |
-| 1. Design system base en `apps/web` | Hecho | Tokens en globals.css; AppShell/AppHeader; Button/Input; home + login con brand |
+| 1. Design system base en `apps/web` | Hecho | Tokens + shell + Button/Input; tema dark default + toggle claro (`next-themes`) |
 | 2. Buscador — UX de producto | Pendiente | Sustituye UI mínima S5 |
 | 3. Ficha de licitación | Pendiente | |
 | 4. Multi-fuente en ficha | Pendiente | `tender_sources` |

@@ -28,7 +28,7 @@ function MatchKindBadge({ kind }: { kind: string }) {
   const label =
     kind === "fts" ? "FTS" : kind === "trgm" ? "errata" : kind === "filter" ? "filtro" : kind;
   return (
-    <span className="rounded border border-zinc-300 bg-zinc-100 px-1.5 py-0.5 font-mono text-xs text-zinc-700">
+    <span className="rounded border border-border bg-muted px-1.5 py-0.5 font-mono text-xs text-foreground">
       {label}
     </span>
   );
@@ -45,7 +45,7 @@ function ResultsList({
 }) {
   if (error) {
     return (
-      <p className="mt-8 rounded-md bg-red-50 px-4 py-3 text-sm text-red-900" role="alert">
+      <p className="mt-8 rounded-md bg-surface px-4 py-3 text-sm text-destructive" role="alert">
         Error al buscar: {error}
       </p>
     );
@@ -53,7 +53,7 @@ function ResultsList({
 
   if (!searched) {
     return (
-      <p className="mt-8 text-sm text-zinc-600">
+      <p className="mt-8 text-sm text-muted-foreground">
         Escribe un término (p. ej. <code className="font-mono">mantenimiento software</code>) o
         una errata (<code className="font-mono">mantnimiento softwre</code>) y pulsa Buscar.
       </p>
@@ -61,32 +61,32 @@ function ResultsList({
   }
 
   if (rows.length === 0) {
-    return <p className="mt-8 text-sm text-zinc-600">Sin resultados para estos criterios.</p>;
+    return <p className="mt-8 text-sm text-muted-foreground">Sin resultados para estos criterios.</p>;
   }
 
   return (
-    <ul className="mt-8 divide-y divide-zinc-200 border-t border-zinc-200">
+    <ul className="mt-8 divide-y divide-border border-t border-border">
       {rows.map((row) => (
         <li key={row.id} className="py-4">
           <div className="flex flex-wrap items-baseline gap-2">
-            <h2 className="text-base font-medium text-zinc-900">{row.title}</h2>
+            <h2 className="text-base font-medium text-foreground">{row.title}</h2>
             <MatchKindBadge kind={row.match_kind} />
           </div>
-          <dl className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-zinc-600">
+          <dl className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
             <div>
-              <dt className="inline text-zinc-500">Importe: </dt>
+              <dt className="inline text-muted-foreground">Importe: </dt>
               <dd className="inline">{formatMoney(row.estimated_value, row.currency)}</dd>
             </div>
             <div>
-              <dt className="inline text-zinc-500">CPV: </dt>
+              <dt className="inline text-muted-foreground">CPV: </dt>
               <dd className="inline font-mono">{row.cpv_code ?? "—"}</dd>
             </div>
             <div>
-              <dt className="inline text-zinc-500">Estado: </dt>
+              <dt className="inline text-muted-foreground">Estado: </dt>
               <dd className="inline">{row.status ?? "—"}</dd>
             </div>
             <div>
-              <dt className="inline text-zinc-500">rank: </dt>
+              <dt className="inline text-muted-foreground">rank: </dt>
               <dd className="inline font-mono">{row.rank.toFixed(3)}</dd>
             </div>
           </dl>
@@ -147,26 +147,26 @@ export default async function SearchPage({
     <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-6 py-10">
       <header className="flex items-baseline justify-between gap-4">
         <div>
-          <p className="text-sm text-zinc-500">
+          <p className="text-sm text-muted-foreground">
             <Link href="/" className="hover:underline">
               EfiLicit
             </Link>
             <span className="mx-2">/</span>
             Búsqueda
           </p>
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight text-zinc-900">
+          <h1 className="mt-1 text-2xl font-semibold tracking-tight text-foreground">
             Buscar licitaciones
           </h1>
         </div>
       </header>
 
-      <p className="mt-2 text-sm text-zinc-600">
+      <p className="mt-2 text-sm text-muted-foreground">
         Semana 5 — UI mínima sobre el modelo canónico (FTS + erratas + filtros).
       </p>
 
       <form method="get" className="mt-8 space-y-4" role="search">
         <div>
-          <label htmlFor="q" className="block text-sm font-medium text-zinc-800">
+          <label htmlFor="q" className="block text-sm font-medium text-foreground">
             Texto
           </label>
           <input
@@ -175,12 +175,12 @@ export default async function SearchPage({
             type="search"
             defaultValue={q}
             placeholder="mantenimiento software"
-            className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:border-zinc-500"
+            className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
           />
         </div>
         <div className="grid gap-4 sm:grid-cols-3">
           <div>
-            <label htmlFor="cpv" className="block text-sm font-medium text-zinc-800">
+            <label htmlFor="cpv" className="block text-sm font-medium text-foreground">
               CPV (prefijo)
             </label>
             <input
@@ -190,11 +190,11 @@ export default async function SearchPage({
               inputMode="numeric"
               defaultValue={cpv}
               placeholder="72000000"
-              className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 font-mono text-sm outline-none focus:border-zinc-500"
+              className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 font-mono text-sm outline-none focus:ring-2 focus:ring-ring"
             />
           </div>
           <div>
-            <label htmlFor="min" className="block text-sm font-medium text-zinc-800">
+            <label htmlFor="min" className="block text-sm font-medium text-foreground">
               Importe mín.
             </label>
             <input
@@ -205,11 +205,11 @@ export default async function SearchPage({
               step={1}
               defaultValue={minRaw}
               placeholder="10000"
-              className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm outline-none focus:border-zinc-500"
+              className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
             />
           </div>
           <div>
-            <label htmlFor="max" className="block text-sm font-medium text-zinc-800">
+            <label htmlFor="max" className="block text-sm font-medium text-foreground">
               Importe máx.
             </label>
             <input
@@ -220,13 +220,13 @@ export default async function SearchPage({
               step={1}
               defaultValue={maxRaw}
               placeholder="500000"
-              className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm outline-none focus:border-zinc-500"
+              className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
             />
           </div>
         </div>
         <button
           type="submit"
-          className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800"
+          className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary-dark"
         >
           Buscar
         </button>

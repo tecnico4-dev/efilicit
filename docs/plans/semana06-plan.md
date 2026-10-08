@@ -150,6 +150,7 @@ CHANGELOG, checklist Fase 6, ADR N/A o ADRs puntuales, handoff. Criterios de sal
 | Paso 0 | Sin logo oficial en efilumen-web/public; pendiente aportar SVG/PNG | Mientras tanto: nombre producto + primary |
 | Paso 0 | MVP EfiLicit: modo claro corporativo primero; dark opcional | Dark EfiLumen es más “blue genérico” |
 | Paso 1 | Tokens en `apps/web/.../globals.css`; shell global `AppShell`/`AppHeader`; `Button`/`Input` | Identidad en home + login; `/search` etc. se rediseñan en Pasos 2+ |
+| Tras Paso 1 | Tema oscuro **default** + opción claro (`next-themes`, toggle cabecera); tokens `.dark` de brand | Alineado a EfiLumen; claro corporativo `#52b9d8` / dark más azul genérico |
 
 ---
 

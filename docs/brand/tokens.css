@@ -61,7 +61,7 @@
 }
 
 /**
- * Modo oscuro (referencia EfiLumen). Opcional en EfiLicit MVP.
+ * Modo oscuro (referencia EfiLumen). En EfiLicit: default de app + toggle a claro.
  */
 .dark {
   --background: #0b1226;
