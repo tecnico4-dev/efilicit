@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { searchTenders, type SearchTenderRow } from "@/lib/queries";
+import { getOwnProfile, searchTenders, type SearchTenderRow } from "@/lib/queries";
+import { SaveSearchButton, SEARCH_FORM_ID } from "./save-search-button";
 
 export const dynamic = "force-dynamic";
 
@@ -123,6 +124,15 @@ export default async function SearchPage({
 
   let rows: SearchTenderRow[] = [];
   let error: string | null = null;
+  let profileUserId: string | null = null;
+
+  try {
+    const authClient = await createSupabaseServerClient();
+    const profile = await getOwnProfile(authClient);
+    profileUserId = profile.data?.id ?? null;
+  } catch {
+    profileUserId = null;
+  }
 
   if (hasParams) {
     try {
@@ -155,7 +165,12 @@ export default async function SearchPage({
         Buscar licitaciones
       </h1>
 
-      <form method="get" className="mt-8 space-y-4" role="search">
+      <form
+        id={SEARCH_FORM_ID}
+        method="get"
+        className="mt-8 space-y-4"
+        role="search"
+      >
         <div>
           <label htmlFor="q" className="block text-sm font-medium text-foreground">
             Texto
@@ -211,12 +226,15 @@ export default async function SearchPage({
             />
           </div>
         </div>
-        <button
-          type="submit"
-          className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary-dark"
-        >
-          Buscar
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="submit"
+            className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary-dark"
+          >
+            Buscar
+          </button>
+          {profileUserId ? <SaveSearchButton userId={profileUserId} /> : null}
+        </div>
       </form>
 
       <ResultsList rows={rows} error={error} searched={hasParams} />
