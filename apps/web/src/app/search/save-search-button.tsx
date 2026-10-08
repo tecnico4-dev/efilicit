@@ -11,8 +11,8 @@ const FORM_ID = "search-form";
 
 function readField(form: HTMLFormElement, name: string): string {
   const el = form.elements.namedItem(name);
-  if (!el || !("value" in el)) return "";
-  return String((el as HTMLInputElement).value).trim();
+  if (el instanceof HTMLInputElement) return el.value.trim();
+  return "";
 }
 
 function buildCriteria(form: HTMLFormElement): {
