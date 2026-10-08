@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/cn";
 
 const OPEN_DELAY_MS = 350;
-const CLOSE_DELAY_MS = 200;
+const CLOSE_DELAY_MS = 60;
 
 /**
  * Favoritos en nav: hover (con retardo) abre un globo con atajos

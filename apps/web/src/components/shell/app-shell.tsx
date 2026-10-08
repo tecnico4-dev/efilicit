@@ -16,8 +16,9 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="relative flex min-h-full flex-col bg-background text-foreground">
+      {/* fixed = mismo tamaño en todas las rutas (viewport), como el haz de la home */}
       <div
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(82,185,216,0.18),transparent_45%)]"
+        className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_top,rgba(82,185,216,0.18),transparent_45%)]"
         aria-hidden
       />
       <div className="relative flex min-h-full flex-1 flex-col">

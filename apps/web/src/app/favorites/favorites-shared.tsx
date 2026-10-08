@@ -183,7 +183,7 @@ export function PreviewSection({
             ) : null}
           </div>
           {showMore ? (
-            <p className="relative z-10 border-t border-border pt-3 text-center">
+            <p className="relative z-10 py-3 text-center">
               <Link
                 href={moreHref}
                 className="text-sm font-medium text-primary hover:text-primary-dark hover:underline"
