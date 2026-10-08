@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { LogoutButton } from "@/components/auth/logout-button";
 import { cn } from "@/lib/cn";
 import { ThemeToggle } from "./theme-toggle";
 
@@ -75,7 +76,11 @@ export function AppHeader({ isAuthenticated }: { isAuthenticated: boolean }) {
 
         <div className="flex items-center gap-1.5">
           <ThemeToggle />
-          {isAuthenticated ? null : (
+          {isAuthenticated ? (
+            <LogoutButton
+              className="rounded-lg border-transparent bg-transparent px-3 py-2 text-sm font-medium text-muted-foreground shadow-none hover:bg-muted hover:text-foreground"
+            />
+          ) : (
             <>
               <Link
                 href="/login"
