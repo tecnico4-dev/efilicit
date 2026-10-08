@@ -161,7 +161,7 @@ export function PreviewSection({
   const showMore = totalCount > FAVORITES_PREVIEW_LIMIT;
 
   return (
-    <section className="mt-10">
+    <section className="mt-16 first:mt-10">
       <h2 className="text-xl font-semibold tracking-tight text-foreground">
         {title}
       </h2>
@@ -177,16 +177,16 @@ export function PreviewSection({
             {children}
             {showMore ? (
               <div
-                className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-background to-transparent"
+                className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-background to-transparent"
                 aria-hidden
               />
             ) : null}
           </div>
           {showMore ? (
-            <p className="mt-2">
+            <p className="relative z-10 border-t border-border pt-3 text-center">
               <Link
                 href={moreHref}
-                className="text-sm font-medium text-link hover:underline"
+                className="text-sm font-medium text-primary hover:text-primary-dark hover:underline"
               >
                 Mostrar más
               </Link>

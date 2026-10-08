@@ -6,14 +6,28 @@ import {
   listOwnSavedSearches,
   type DigestFrequency,
 } from "@/lib/queries";
-import {
-  FAVORITES_PREVIEW_LIMIT,
-  SavedSearchList,
-} from "../favorites-shared";
+import { SavedSearchList } from "../favorites-shared";
 
 export const dynamic = "force-dynamic";
 
-export default async function SavedSearchesPage() {
+type SearchParams = Promise<Record<string, string | string[] | undefined>>;
+
+function first(value: string | string[] | undefined): string {
+  if (Array.isArray(value)) return value[0] ?? "";
+  return value ?? "";
+}
+
+export default async function SavedSearchesPage({
+  searchParams,
+}: {
+  searchParams: SearchParams;
+}) {
+  const params = await searchParams;
+  const fromNav = first(params.from) === "nav";
+  const backLabel = fromNav
+    ? "← Ir a la lista de favoritos"
+    : "← Volver a la lista de favoritos";
+
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },
@@ -40,10 +54,6 @@ export default async function SavedSearchesPage() {
 
   const { data: searches, error } = await listOwnSavedSearches(supabase);
 
-  if (!error && searches.length <= FAVORITES_PREVIEW_LIMIT) {
-    redirect("/favorites");
-  }
-
   return (
     <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-6 py-10">
       <p className="text-sm">
@@ -51,7 +61,7 @@ export default async function SavedSearchesPage() {
           href="/favorites"
           className="font-medium text-link hover:underline"
         >
-          ← Volver a la lista de favoritos
+          {backLabel}
         </Link>
       </p>
 
@@ -62,6 +72,10 @@ export default async function SavedSearchesPage() {
       {error ? (
         <p className="mt-6 text-sm text-destructive" role="alert">
           {error.message}
+        </p>
+      ) : searches.length === 0 ? (
+        <p className="mt-6 text-sm text-muted-foreground">
+          Ninguna búsqueda guardada aún.
         </p>
       ) : (
         <div className="mt-8">

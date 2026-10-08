@@ -4,47 +4,20 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { LogoutButton } from "@/components/auth/logout-button";
 import { cn } from "@/lib/cn";
+import { FavoritesNavItem } from "./favorites-nav-item";
 import { ThemeToggle } from "./theme-toggle";
 
-type NavItem = {
-  href: string;
-  label: string;
-  match: (path: string) => boolean;
-  /** Si true, solo con sesión. */
-  authOnly?: boolean;
-};
-
-const navItems: NavItem[] = [
-  {
-    href: "/search",
-    label: "Búsqueda",
-    match: (path) => path.startsWith("/search"),
-  },
-  {
-    href: "/favorites",
-    label: "Favoritos",
-    match: (path) => path.startsWith("/favorites"),
-    authOnly: true,
-  },
-  {
-    href: "/alerts",
-    label: "Alertas",
-    match: (path) => path.startsWith("/alerts"),
-    authOnly: true,
-  },
-  {
-    href: "/account",
-    label: "Cuenta",
-    match: (path) => path.startsWith("/account"),
-    authOnly: true,
-  },
-];
+function navClass(active: boolean) {
+  return cn(
+    "inline-flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+    active
+      ? "bg-primary text-primary-foreground shadow-sm"
+      : "text-foreground hover:bg-muted",
+  );
+}
 
 export function AppHeader({ isAuthenticated }: { isAuthenticated: boolean }) {
   const pathname = usePathname() || "/";
-  const visibleNav = navItems.filter(
-    (item) => !item.authOnly || isAuthenticated,
-  );
 
   return (
     <header className="sticky top-0 z-40 border-b border-border/80 bg-surface/95 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-surface/85">
@@ -60,23 +33,29 @@ export function AppHeader({ isAuthenticated }: { isAuthenticated: boolean }) {
           aria-label="Principal"
           className="flex flex-1 flex-wrap items-center gap-1.5"
         >
-          {visibleNav.map((item) => {
-            const active = item.match(pathname);
-            return (
+          <Link
+            href="/search"
+            className={navClass(pathname.startsWith("/search"))}
+          >
+            Búsqueda
+          </Link>
+          {isAuthenticated ? (
+            <>
+              <FavoritesNavItem active={pathname.startsWith("/favorites")} />
               <Link
-                key={item.href}
-                href={item.href}
-                className={cn(
-                  "inline-flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-                  active
-                    ? "bg-primary text-primary-foreground shadow-sm"
-                    : "text-foreground hover:bg-muted",
-                )}
+                href="/alerts"
+                className={navClass(pathname.startsWith("/alerts"))}
               >
-                {item.label}
+                Alertas
               </Link>
-            );
-          })}
+              <Link
+                href="/account"
+                className={navClass(pathname.startsWith("/account"))}
+              >
+                Cuenta
+              </Link>
+            </>
+          ) : null}
         </nav>
 
         <div className="flex items-center gap-1.5">

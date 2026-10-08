@@ -15,9 +15,15 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="flex min-h-full flex-col bg-background text-foreground">
-      <AppHeader isAuthenticated={isAuthenticated} />
-      <div className="flex flex-1 flex-col">{children}</div>
+    <div className="relative flex min-h-full flex-col bg-background text-foreground">
+      <div
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(82,185,216,0.18),transparent_45%)]"
+        aria-hidden
+      />
+      <div className="relative flex min-h-full flex-1 flex-col">
+        <AppHeader isAuthenticated={isAuthenticated} />
+        <div className="flex flex-1 flex-col">{children}</div>
+      </div>
     </div>
   );
 }

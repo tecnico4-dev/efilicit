@@ -2,14 +2,28 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getOwnProfile, listOwnFavorites } from "@/lib/queries";
-import {
-  FAVORITES_PREVIEW_LIMIT,
-  FavoriteTenderList,
-} from "../favorites-shared";
+import { FavoriteTenderList } from "../favorites-shared";
 
 export const dynamic = "force-dynamic";
 
-export default async function FavoriteTendersPage() {
+type SearchParams = Promise<Record<string, string | string[] | undefined>>;
+
+function first(value: string | string[] | undefined): string {
+  if (Array.isArray(value)) return value[0] ?? "";
+  return value ?? "";
+}
+
+export default async function FavoriteTendersPage({
+  searchParams,
+}: {
+  searchParams: SearchParams;
+}) {
+  const params = await searchParams;
+  const fromNav = first(params.from) === "nav";
+  const backLabel = fromNav
+    ? "← Ir a la lista de favoritos"
+    : "← Volver a la lista de favoritos";
+
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },
@@ -33,11 +47,6 @@ export default async function FavoriteTendersPage() {
 
   const { data: favorites, error } = await listOwnFavorites(supabase);
 
-  // Sin overflow no hay página de listado completo.
-  if (!error && favorites.length <= FAVORITES_PREVIEW_LIMIT) {
-    redirect("/favorites");
-  }
-
   return (
     <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-6 py-10">
       <p className="text-sm">
@@ -45,7 +54,7 @@ export default async function FavoriteTendersPage() {
           href="/favorites"
           className="font-medium text-link hover:underline"
         >
-          ← Volver a la lista de favoritos
+          {backLabel}
         </Link>
       </p>
 
@@ -56,6 +65,10 @@ export default async function FavoriteTendersPage() {
       {error ? (
         <p className="mt-6 text-sm text-destructive" role="alert">
           {error.message}
+        </p>
+      ) : favorites.length === 0 ? (
+        <p className="mt-6 text-sm text-muted-foreground">
+          Aún no tienes licitaciones en favoritos.
         </p>
       ) : (
         <div className="mt-8">

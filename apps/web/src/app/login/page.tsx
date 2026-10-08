@@ -20,7 +20,6 @@ export default async function LoginPage({
 
   return (
     <main className="relative mx-auto flex w-full max-w-md flex-1 flex-col justify-center px-6 py-10">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(82,185,216,0.14),transparent_50%)]" />
       <div className="relative rounded-2xl border border-border/80 bg-surface/95 p-7 shadow-xl backdrop-blur supports-[backdrop-filter]:bg-surface/90">
         <h1 className="text-2xl font-bold tracking-tight text-foreground">
           Iniciar sesión

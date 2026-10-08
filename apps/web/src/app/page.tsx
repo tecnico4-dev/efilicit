@@ -17,8 +17,6 @@ export default async function Home() {
 
   return (
     <main className="relative flex flex-1 flex-col items-center justify-center px-6 py-16">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(82,185,216,0.18),transparent_45%)]" />
-
       <div className="relative flex max-w-lg flex-col items-center text-center">
         <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           Vigilancia de contratación pública
