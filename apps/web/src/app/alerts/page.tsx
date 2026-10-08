@@ -38,9 +38,6 @@ export default async function AlertsPage() {
       <h1 className="text-2xl font-semibold tracking-tight text-foreground">
         Alertas
       </h1>
-      <p className="mt-2 text-sm text-muted-foreground">
-        Recibe un digest con licitaciones que coincidan con tus criterios.
-      </p>
 
       <AlertsPanel
         userId={profileResult.data.id}

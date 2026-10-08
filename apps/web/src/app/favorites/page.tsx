@@ -4,6 +4,7 @@ import {
   getOwnProfile,
   listOwnFavorites,
   listOwnSavedSearches,
+  type DigestFrequency,
 } from "@/lib/queries";
 import {
   FAVORITES_PREVIEW_LIMIT,
@@ -35,6 +36,9 @@ export default async function FavoritesPage() {
       </main>
     );
   }
+
+  const digestFrequency: DigestFrequency =
+    profile.data.digest_frequency === "weekly" ? "weekly" : "daily";
 
   const [favoritesResult, searchesResult] = await Promise.all([
     listOwnFavorites(supabase),
@@ -69,7 +73,12 @@ export default async function FavoritesPage() {
         totalCount={searches.length}
         moreHref="/favorites/searches"
       >
-        <SavedSearchList searches={searches.slice(0, FAVORITES_PREVIEW_LIMIT)} />
+        <SavedSearchList
+          searches={searches.slice(0, FAVORITES_PREVIEW_LIMIT)}
+          userId={profile.data.id}
+          digestFrequency={digestFrequency}
+          searchFrom="favorites"
+        />
       </PreviewSection>
     </main>
   );

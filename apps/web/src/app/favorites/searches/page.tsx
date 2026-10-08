@@ -1,7 +1,11 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { getOwnProfile, listOwnSavedSearches } from "@/lib/queries";
+import {
+  getOwnProfile,
+  listOwnSavedSearches,
+  type DigestFrequency,
+} from "@/lib/queries";
 import {
   FAVORITES_PREVIEW_LIMIT,
   SavedSearchList,
@@ -31,6 +35,9 @@ export default async function SavedSearchesPage() {
     );
   }
 
+  const digestFrequency: DigestFrequency =
+    profile.data.digest_frequency === "weekly" ? "weekly" : "daily";
+
   const { data: searches, error } = await listOwnSavedSearches(supabase);
 
   if (!error && searches.length <= FAVORITES_PREVIEW_LIMIT) {
@@ -58,7 +65,12 @@ export default async function SavedSearchesPage() {
         </p>
       ) : (
         <div className="mt-8">
-          <SavedSearchList searches={searches} />
+          <SavedSearchList
+            searches={searches}
+            userId={profile.data.id}
+            digestFrequency={digestFrequency}
+            searchFrom="favorites-searches"
+          />
         </div>
       )}
     </main>

@@ -59,7 +59,10 @@ export default async function FavoriteTendersPage() {
         </p>
       ) : (
         <div className="mt-8">
-          <FavoriteTenderList favorites={favorites} />
+          <FavoriteTenderList
+            favorites={favorites}
+            from="favorites-tenders"
+          />
         </div>
       )}
     </main>

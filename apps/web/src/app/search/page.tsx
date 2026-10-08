@@ -10,6 +10,22 @@ import {
 import { SaveSearchButton } from "./save-search-button";
 import { SearchForm } from "./search-form";
 
+function backFromSavedSearch(from: string): { href: string; label: string } | null {
+  if (from === "favorites-searches") {
+    return {
+      href: "/favorites/searches",
+      label: "← Volver a la lista de búsquedas guardadas",
+    };
+  }
+  if (from === "favorites") {
+    return {
+      href: "/favorites",
+      label: "← Volver a la lista de favoritos",
+    };
+  }
+  return null;
+}
+
 export const dynamic = "force-dynamic";
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
@@ -149,6 +165,8 @@ export default async function SearchPage({
   const cpv = first(params.cpv).trim();
   const minRaw = first(params.min).trim();
   const maxRaw = first(params.max).trim();
+  const from = first(params.from).trim();
+  const back = backFromSavedSearch(from);
   const min = minRaw === "" ? undefined : Number(minRaw);
   const max = maxRaw === "" ? undefined : Number(maxRaw);
 
@@ -213,6 +231,13 @@ export default async function SearchPage({
 
   return (
     <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-6 py-10">
+      {back ? (
+        <p className="mb-4 text-sm">
+          <Link href={back.href} className="font-medium text-link hover:underline">
+            {back.label}
+          </Link>
+        </p>
+      ) : null}
       <h1 className="text-2xl font-semibold tracking-tight text-foreground">
         Buscar licitaciones
       </h1>
@@ -232,6 +257,9 @@ export default async function SearchPage({
           </>
         }
       >
+        {from === "favorites" || from === "favorites-searches" ? (
+          <input type="hidden" name="from" value={from} />
+        ) : null}
         <div>
           <label htmlFor="q" className="block text-sm font-medium text-foreground">
             Texto

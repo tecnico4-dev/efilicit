@@ -4,8 +4,9 @@ import {
   formatCriteriaSummary,
   parseCriteria,
 } from "@/lib/criteria-display";
-import type { FavoriteWithTender } from "@/lib/queries";
+import type { DigestFrequency, FavoriteWithTender } from "@/lib/queries";
 import type { Database } from "@efilicit/types";
+import { ConvertToAlertButton } from "./convert-to-alert-button";
 
 export const FAVORITES_PREVIEW_LIMIT = 5;
 
@@ -26,6 +27,7 @@ export function formatMoney(value: number | null, currency: string): string {
 
 export function searchHrefFromCriteria(
   criteria: ReturnType<typeof parseCriteria>,
+  from?: "favorites" | "favorites-searches",
 ): string {
   const params = new URLSearchParams();
   if (criteria.keywords?.length) {
@@ -40,14 +42,18 @@ export function searchHrefFromCriteria(
   if (criteria.estimated_value_max != null) {
     params.set("max", String(criteria.estimated_value_max));
   }
+  if (from) params.set("from", from);
   const qs = params.toString();
   return qs ? `/search?${qs}` : "/search";
 }
 
 export function FavoriteTenderList({
   favorites,
+  from = "favorites",
 }: {
   favorites: FavoriteWithTender[];
+  /** Origen del enlace a la ficha (para el «volver»). */
+  from?: "favorites" | "favorites-tenders";
 }) {
   return (
     <ul className="divide-y divide-border border-t border-border">
@@ -63,7 +69,7 @@ export function FavoriteTenderList({
         return (
           <li key={fav.id} className="py-4">
             <Link
-              href={`/tenders/${tender.id}?from=favorites`}
+              href={`/tenders/${tender.id}?from=${from}`}
               className="text-base font-medium text-foreground hover:text-link hover:underline"
             >
               {tender.title}
@@ -95,8 +101,15 @@ export function FavoriteTenderList({
 
 export function SavedSearchList({
   searches,
+  userId,
+  digestFrequency,
+  searchFrom = "favorites",
 }: {
   searches: SavedSearchRow[];
+  userId: string;
+  digestFrequency: DigestFrequency;
+  /** Origen al abrir en búsqueda (para el «volver»). */
+  searchFrom?: "favorites" | "favorites-searches";
 }) {
   return (
     <ul className="divide-y divide-border border-t border-border">
@@ -108,12 +121,20 @@ export function SavedSearchList({
             <p className="mt-1 text-muted-foreground">
               {formatCriteriaSummary(criteria)}
             </p>
-            <Link
-              href={searchHrefFromCriteria(criteria)}
-              className="mt-2 inline-block text-sm font-medium text-link hover:underline"
-            >
-              Abrir en búsqueda
-            </Link>
+            <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1">
+              <Link
+                href={searchHrefFromCriteria(criteria, searchFrom)}
+                className="font-medium text-link hover:underline"
+              >
+                Abrir en búsqueda
+              </Link>
+              <ConvertToAlertButton
+                userId={userId}
+                digestFrequency={digestFrequency}
+                defaultName={s.name}
+                criteria={criteria}
+              />
+            </div>
           </li>
         );
       })}

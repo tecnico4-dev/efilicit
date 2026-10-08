@@ -25,6 +25,12 @@ function backLinkFromParams(
   params: Record<string, string | string[] | undefined>,
 ): { href: string; label: string } {
   const from = first(params.from);
+  if (from === "favorites-tenders") {
+    return {
+      href: "/favorites/tenders",
+      label: "← Volver a la lista de licitaciones favoritas",
+    };
+  }
   if (from === "favorites") {
     return {
       href: "/favorites",

@@ -168,6 +168,13 @@ export function AlertsPanel({
           {error}
         </p>
       ) : null}
+      <p className="text-right text-xs text-muted-foreground">
+        Digest de la cuenta: {digestLabel}. Cámbialo en{" "}
+        <a href="/account" className="font-medium text-link hover:underline">
+          Cuenta
+        </a>
+        .
+      </p>
       <div className="flex flex-wrap gap-2">
         <Button type="button" disabled={pending} onClick={onCreateAlert}>
           Crear alerta
@@ -181,13 +188,6 @@ export function AlertsPanel({
           Guardar búsqueda
         </Button>
       </div>
-      <p className="text-xs text-muted-foreground">
-        Digest de la cuenta: {digestLabel}. Cámbialo en{" "}
-        <a href="/account" className="font-medium text-link hover:underline">
-          Cuenta
-        </a>
-        .
-      </p>
     </form>
   );
 }
