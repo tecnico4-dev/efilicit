@@ -101,7 +101,7 @@ export function SaveSearchButton({ userId }: { userId: string }) {
     }
 
     setIsError(false);
-    setMessage("Búsqueda guardada. Puedes verla en Alertas.");
+    setMessage("Búsqueda guardada. Puedes verla en Favoritos.");
     router.refresh();
   }
 
@@ -124,8 +124,11 @@ export function SaveSearchButton({ userId }: { userId: string }) {
           {!isError ? (
             <>
               {" "}
-              <a href="/alerts" className="font-medium text-link hover:underline">
-                Ir a Alertas
+              <a
+                href="/favorites"
+                className="font-medium text-link hover:underline"
+              >
+                Ir a Favoritos
               </a>
             </>
           ) : null}

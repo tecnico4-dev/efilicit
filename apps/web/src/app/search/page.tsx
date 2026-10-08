@@ -5,10 +5,8 @@ import {
   getOwnProfile,
   listOwnFavoriteTenderIds,
   searchTenders,
-  type DigestFrequency,
   type SearchTenderRow,
 } from "@/lib/queries";
-import { CreateAlertButton } from "./create-alert-button";
 import { SaveSearchButton } from "./save-search-button";
 import { SearchForm } from "./search-form";
 
@@ -165,15 +163,12 @@ export default async function SearchPage({
   let rows: SearchTenderRow[] = [];
   let error: string | null = null;
   let profileUserId: string | null = null;
-  let digestFrequency: DigestFrequency = "daily";
   let favoritedIds = new Set<string>();
 
   try {
     const authClient = await createSupabaseServerClient();
     const profile = await getOwnProfile(authClient);
     profileUserId = profile.data?.id ?? null;
-    digestFrequency =
-      profile.data?.digest_frequency === "weekly" ? "weekly" : "daily";
   } catch {
     profileUserId = null;
   }
@@ -232,13 +227,7 @@ export default async function SearchPage({
               Buscar
             </button>
             {profileUserId ? (
-              <>
-                <SaveSearchButton userId={profileUserId} />
-                <CreateAlertButton
-                  userId={profileUserId}
-                  digestFrequency={digestFrequency}
-                />
-              </>
+              <SaveSearchButton userId={profileUserId} />
             ) : null}
           </>
         }

@@ -1,22 +1,18 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { getOwnProfile, listOwnFavorites } from "@/lib/queries";
+import {
+  getOwnProfile,
+  listOwnFavorites,
+  listOwnSavedSearches,
+} from "@/lib/queries";
+import {
+  FAVORITES_PREVIEW_LIMIT,
+  FavoriteTenderList,
+  PreviewSection,
+  SavedSearchList,
+} from "./favorites-shared";
 
 export const dynamic = "force-dynamic";
-
-function formatMoney(value: number | null, currency: string): string {
-  if (value == null) return "—";
-  try {
-    return new Intl.NumberFormat("es-ES", {
-      style: "currency",
-      currency: currency || "EUR",
-      maximumFractionDigits: 0,
-    }).format(value);
-  } catch {
-    return `${value} ${currency}`;
-  }
-}
 
 export default async function FavoritesPage() {
   const supabase = await createSupabaseServerClient();
@@ -40,7 +36,13 @@ export default async function FavoritesPage() {
     );
   }
 
-  const { data: favorites, error } = await listOwnFavorites(supabase);
+  const [favoritesResult, searchesResult] = await Promise.all([
+    listOwnFavorites(supabase),
+    listOwnSavedSearches(supabase),
+  ]);
+
+  const favorites = favoritesResult.data;
+  const searches = searchesResult.data;
 
   return (
     <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-6 py-10">
@@ -48,57 +50,27 @@ export default async function FavoritesPage() {
         Favoritos
       </h1>
 
-      {error ? (
-        <p className="mt-6 text-sm text-destructive" role="alert">
-          {error.message}
-        </p>
-      ) : favorites.length === 0 ? (
-        <p className="mt-6 text-sm text-muted-foreground">
-          Aún no tienes licitaciones en favoritos. Ábrelas desde la búsqueda y
-          pulsa «Guardar en favoritos».
-        </p>
-      ) : (
-        <ul className="mt-8 divide-y divide-border border-t border-border">
-          {favorites.map((fav) => {
-            const tender = fav.tenders;
-            if (!tender) {
-              return (
-                <li key={fav.id} className="py-4 text-sm text-muted-foreground">
-                  Licitación no disponible
-                </li>
-              );
-            }
-            return (
-              <li key={fav.id} className="py-4">
-                <Link
-                  href={`/tenders/${tender.id}?from=favorites`}
-                  className="text-base font-medium text-foreground hover:text-link hover:underline"
-                >
-                  {tender.title}
-                </Link>
-                <dl className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
-                  <div>
-                    <dt className="inline">Importe · </dt>
-                    <dd className="inline">
-                      {formatMoney(tender.estimated_value, tender.currency)}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="inline">CPV · </dt>
-                    <dd className="inline font-mono">{tender.cpv_code ?? "—"}</dd>
-                  </div>
-                  {tender.status ? (
-                    <div>
-                      <dt className="inline">Estado · </dt>
-                      <dd className="inline">{tender.status}</dd>
-                    </div>
-                  ) : null}
-                </dl>
-              </li>
-            );
-          })}
-        </ul>
-      )}
+      <PreviewSection
+        title="Licitaciones favoritas"
+        emptyMessage="Aún no tienes licitaciones en favoritos. Ábrelas desde la búsqueda y pulsa «Guardar en favoritos»."
+        error={favoritesResult.error?.message ?? null}
+        totalCount={favorites.length}
+        moreHref="/favorites/tenders"
+      >
+        <FavoriteTenderList
+          favorites={favorites.slice(0, FAVORITES_PREVIEW_LIMIT)}
+        />
+      </PreviewSection>
+
+      <PreviewSection
+        title="Búsquedas guardadas"
+        emptyMessage="Ninguna aún. Puedes guardar criterios desde Buscar."
+        error={searchesResult.error?.message ?? null}
+        totalCount={searches.length}
+        moreHref="/favorites/searches"
+      >
+        <SavedSearchList searches={searches.slice(0, FAVORITES_PREVIEW_LIMIT)} />
+      </PreviewSection>
     </main>
   );
 }

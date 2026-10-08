@@ -34,6 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Semana 6 UX: Favoritos hub (licitaciones + búsquedas guardadas con preview/Mostrar más); alertas con badge Activa/Inactiva; sin «Crear alerta» en búsqueda; búsquedas guardadas fuera de `/alerts`.
 - Semana 6 UX: validación vacía al buscar; «volver» conserva filtros de búsqueda o vuelve a favoritos; corazón favorito en resultados; «Quitar de favoritos» outline destructivo; form de alertas con importe; nav sin «Inicio» (logo → home).
 - Re-ingesta canónica: `tender_events` / `tenders.updated_at` solo si cambian campos de negocio; `tender_sources.last_seen_at` sigue marcando que la fuente la ha vuelto a ver.
 - Matching multi-fuente: si ambas partes traen expediente y difiere → nunca `auto` (como mucho `pending`); evita fusionar contratos distintos del mismo NIF.

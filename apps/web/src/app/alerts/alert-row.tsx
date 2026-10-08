@@ -83,8 +83,16 @@ export function AlertRowItem({ alert }: { alert: AlertRow }) {
           <p className="mt-1 text-sm text-muted-foreground">
             {formatCriteriaSummary(criteria)}
           </p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            {alert.is_active ? "Activa" : "Inactiva"}
+          <p className="mt-2">
+            {alert.is_active ? (
+              <span className="rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-xs font-semibold text-link">
+                Activa
+              </span>
+            ) : (
+              <span className="rounded-full border border-destructive/30 bg-destructive/10 px-2 py-0.5 text-xs font-semibold text-destructive">
+                Inactiva
+              </span>
+            )}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
