@@ -59,7 +59,8 @@ export default async function AlertsPage() {
                 <p className="font-medium text-foreground">{a.name}</p>
                 <p className="font-mono text-xs text-muted-foreground">{a.id}</p>
                 <p className="text-muted-foreground">
-                  {a.is_active ? "activa" : "inactiva"} · digest cuenta: {digestLabel}
+                  {a.is_active ? "activa" : "inactiva"} · digest cuenta:{" "}
+                  {digestFrequency === "weekly" ? "semanal" : "diario"}
                 </p>
               </li>
             ))}

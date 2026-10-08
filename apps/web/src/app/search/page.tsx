@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { searchTenders, type SearchTenderRow } from "@/lib/queries";
 
@@ -67,7 +68,14 @@ function ResultsList({
       {rows.map((row) => (
         <li key={row.id} className="py-4">
           <div className="flex flex-wrap items-baseline gap-2">
-            <h2 className="text-base font-medium text-foreground">{row.title}</h2>
+            <h2 className="text-base font-medium text-foreground">
+              <Link
+                href={`/tenders/${row.id}`}
+                className="text-foreground hover:text-link hover:underline"
+              >
+                {row.title}
+              </Link>
+            </h2>
             <MatchKindBadge kind={row.match_kind} />
           </div>
           <dl className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">

@@ -4,6 +4,10 @@ export {
   type SearchTendersInput,
 } from "./search-tenders";
 export {
+  getTenderById,
+  type TenderDetail,
+} from "./get-tender";
+export {
   createOwnAlert,
   createOwnSavedSearch,
   getOwnProfile,
