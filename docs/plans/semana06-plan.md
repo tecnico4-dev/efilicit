@@ -1,6 +1,6 @@
 # Semana 6 — Plan: web integrada + cierre MVP
 
-> **Estado:** en curso (Pasos 0–6 hechos; siguiente: Paso 7 dashboard básico).  
+> **Estado:** en curso (Pasos 0–7 hechos; siguiente: Paso 8 estados + responsive).  
 > **Checklist:** [fase6-checklist.md](fase6-checklist.md)  
 > **Precondición:** Semana 5 cerrada y en `main` ([fase5-checklist.md](fase5-checklist.md)).  
 > **Norma:** `docs/00`–`04` y `.cursor/rules/`. La web sigue consumiendo el **modelo canónico**; sin parsers/RAW. ADR solo ante cambio estructural.  
@@ -157,6 +157,7 @@ CHANGELOG, checklist Fase 6, ADR N/A o ADRs puntuales, handoff. Criterios de sal
 | Paso 4 | `tender_sources` en ficha; badge Canónica si `source_code` = `canonical_source_code` | Lectura pública RLS ya existente |
 | Paso 5 | Tabla `favorites` + RLS; toggle solo con sesión; nav Favoritos; script A≠B | Sin botón favorito para anónimos |
 | Paso 6 | `/alerts` producto: crear/editar/activar; criteria v1; crear desde `/search` | Sin UUIDs ni copy de prueba; digest sigue en Cuenta |
+| Paso 7 | `/` autenticada = dashboard (alertas activas, favoritos, búsquedas; CTAs) | Sin ruta `/dashboard`; anónimo sigue en landing |
 
 ---
 

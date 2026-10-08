@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Semana 6 Paso 7: dashboard básico en `/` autenticada (alertas activas, favoritos recientes, búsquedas guardadas + accesos); landing anónima sin cambios.
 - Semana 6 Paso 6: gestión de alertas de producto — crear/editar/activar en `/alerts` (criteria v1); crear alerta desde `/search` (solo sesión); sin copy de prueba.
 - Semana 6 Paso 5: favoritos (`favorites` + RLS owner-only); marcar/desmarcar en ficha (solo sesión); lista `/favorites`; verificación Alice≠Bob.
 - Semana 6 Paso 4: multi-fuente en ficha — lista `tender_sources` con badge de fuente canónica.

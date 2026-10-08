@@ -1,58 +1,44 @@
-import { Button } from "@/components/ui/button";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import {
+  getOwnProfile,
+  listOwnAlerts,
+  listOwnFavorites,
+  listOwnSavedSearches,
+} from "@/lib/queries";
+import { HomeDashboard, HomeLanding } from "./home-dashboard";
 
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  let isAuthenticated = false;
   try {
     const supabase = await createSupabaseServerClient();
     const {
       data: { user },
     } = await supabase.auth.getUser();
-    isAuthenticated = Boolean(user);
+
+    if (!user) {
+      return <HomeLanding />;
+    }
+
+    const profile = await getOwnProfile(supabase);
+    if (!profile.data) {
+      return <HomeLanding />;
+    }
+
+    const [alertsResult, favoritesResult, searchesResult] = await Promise.all([
+      listOwnAlerts(supabase),
+      listOwnFavorites(supabase),
+      listOwnSavedSearches(supabase),
+    ]);
+
+    return (
+      <HomeDashboard
+        alerts={alertsResult.data}
+        favorites={favoritesResult.data}
+        searches={searchesResult.data}
+      />
+    );
   } catch {
-    isAuthenticated = false;
+    return <HomeLanding />;
   }
-
-  return (
-    <main className="relative flex flex-1 flex-col items-center justify-center px-6 py-16">
-      <div className="relative flex max-w-lg flex-col items-center text-center">
-        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-          Vigilancia de contratación pública
-        </p>
-        <h1 className="mt-2 text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
-          Efi<span className="text-primary-dark">Licit</span>
-        </h1>
-        <p className="mt-4 text-base text-muted-foreground">
-          {isAuthenticated
-            ? "Busca licitaciones, gestiona alertas y sigue las oportunidades que te interesan."
-            : "Busca licitaciones de forma sencilla. Inicia sesión para guardar alertas y personalizar tu seguimiento."}
-        </p>
-
-        <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-          <Button href="/search">Buscar licitaciones</Button>
-          {isAuthenticated ? (
-            <>
-              <Button href="/alerts" variant="outline">
-                Mis alertas
-              </Button>
-              <Button href="/account" variant="ghost">
-                Cuenta
-              </Button>
-            </>
-          ) : (
-            <>
-              <Button href="/login" variant="outline">
-                Iniciar sesión
-              </Button>
-              <Button href="/register" variant="ghost">
-                Registrarse
-              </Button>
-            </>
-          )}
-        </div>
-      </div>
-    </main>
-  );
 }

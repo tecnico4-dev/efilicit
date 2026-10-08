@@ -15,7 +15,7 @@ Los pasos globales (0–11) se mantienen. El estado se marca **aquí**, no con �
 | 4. Multi-fuente en ficha | Hecho | Lista `tender_sources` en `/tenders/[id]` + badge canónica |
 | 5. Favoritos / seguimiento | Hecho | Tabla `favorites` + RLS; toggle en ficha (solo sesión); `/favorites`; `verify:rls:favorites` |
 | 6. Alertas — gestión de producto | Hecho | `/alerts` crear/editar/activar; criteria v1; crear desde `/search` |
-| 7. Dashboard básico | Pendiente | |
+| 7. Dashboard básico | Hecho | `/` autenticada: resumen alertas/favoritos/búsquedas + CTAs |
 | 8. Estados + responsive global | Pendiente | carga / vacío / error |
 | 9. Hardening (RLS, healthchecks, runbooks, CI) | Pendiente | |
 | 10. Cron / programación (decisión) | Pendiente | Default: cron **off** hasta OK |
