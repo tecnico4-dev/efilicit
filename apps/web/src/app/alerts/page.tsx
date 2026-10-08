@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import {
@@ -33,7 +32,6 @@ export default async function AlertsPage() {
 
   const digestFrequency =
     profileResult.data.digest_frequency === "weekly" ? "weekly" : "daily";
-  const digestLabel = digestFrequency === "weekly" ? "semanal" : "diario";
 
   const [alertsResult, searchesResult] = await Promise.all([
     listOwnAlerts(supabase),
@@ -45,17 +43,6 @@ export default async function AlertsPage() {
       <h1 className="text-2xl font-semibold tracking-tight text-foreground">
         Alertas y búsquedas guardadas
       </h1>
-      <p className="mt-2 text-sm text-muted-foreground">
-        Solo ves y creas las tuyas (RLS). Usuario:{" "}
-        <span className="font-mono">{user.email}</span>
-      </p>
-      <p className="mt-1 text-sm text-muted-foreground">
-        Digest de email: <strong>{digestLabel}</strong> (preferencia de{" "}
-        <Link href="/account" className="underline">
-          cuenta
-        </Link>
-        ).
-      </p>
 
       <AlertsPanel userId={profileResult.data.id} digestFrequency={digestFrequency} />
 
