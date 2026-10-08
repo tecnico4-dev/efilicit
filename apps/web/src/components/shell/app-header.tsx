@@ -5,27 +5,40 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/cn";
 import { ThemeToggle } from "./theme-toggle";
 
-const navItems = [
-  { href: "/", label: "Inicio", match: (path: string) => path === "/" },
+type NavItem = {
+  href: string;
+  label: string;
+  match: (path: string) => boolean;
+  /** Si true, solo con sesión. */
+  authOnly?: boolean;
+};
+
+const navItems: NavItem[] = [
+  { href: "/", label: "Inicio", match: (path) => path === "/" },
   {
     href: "/search",
     label: "Búsqueda",
-    match: (path: string) => path.startsWith("/search"),
+    match: (path) => path.startsWith("/search"),
   },
   {
     href: "/alerts",
     label: "Alertas",
-    match: (path: string) => path.startsWith("/alerts"),
+    match: (path) => path.startsWith("/alerts"),
+    authOnly: true,
   },
   {
     href: "/account",
     label: "Cuenta",
-    match: (path: string) => path.startsWith("/account"),
+    match: (path) => path.startsWith("/account"),
+    authOnly: true,
   },
-] as const;
+];
 
-export function AppHeader() {
+export function AppHeader({ isAuthenticated }: { isAuthenticated: boolean }) {
   const pathname = usePathname() || "/";
+  const visibleNav = navItems.filter(
+    (item) => !item.authOnly || isAuthenticated,
+  );
 
   return (
     <header className="sticky top-0 z-40 border-b border-border/80 bg-surface/95 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-surface/85">
@@ -37,8 +50,11 @@ export function AppHeader() {
           Efi<span className="text-primary-dark">Licit</span>
         </Link>
 
-        <nav aria-label="Principal" className="flex flex-1 flex-wrap items-center gap-1.5">
-          {navItems.map((item) => {
+        <nav
+          aria-label="Principal"
+          className="flex flex-1 flex-wrap items-center gap-1.5"
+        >
+          {visibleNav.map((item) => {
             const active = item.match(pathname);
             return (
               <Link
@@ -59,28 +75,32 @@ export function AppHeader() {
 
         <div className="flex items-center gap-1.5">
           <ThemeToggle />
-          <Link
-            href="/login"
-            className={cn(
-              "inline-flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-              pathname.startsWith("/login")
-                ? "bg-primary text-primary-foreground shadow-sm"
-                : "text-muted-foreground hover:bg-muted hover:text-foreground",
-            )}
-          >
-            Login
-          </Link>
-          <Link
-            href="/register"
-            className={cn(
-              "inline-flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-              pathname.startsWith("/register")
-                ? "bg-primary text-primary-foreground shadow-sm"
-                : "text-muted-foreground hover:bg-muted hover:text-foreground",
-            )}
-          >
-            Registro
-          </Link>
+          {isAuthenticated ? null : (
+            <>
+              <Link
+                href="/login"
+                className={cn(
+                  "inline-flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                  pathname.startsWith("/login")
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                )}
+              >
+                Login
+              </Link>
+              <Link
+                href="/register"
+                className={cn(
+                  "inline-flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                  pathname.startsWith("/register")
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                )}
+              >
+                Registro
+              </Link>
+            </>
+          )}
         </div>
       </div>
     </header>

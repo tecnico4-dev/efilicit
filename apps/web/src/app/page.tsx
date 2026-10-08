@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { createSupabaseClient } from "@/lib/supabase/client";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 // Evita cachear la home: el health-check debe hablar siempre con Supabase “ahora”.
 export const dynamic = "force-dynamic";
@@ -52,6 +53,17 @@ async function checkLocalSupabase(): Promise<{
 export default async function Home() {
   const health = await checkLocalSupabase();
 
+  let isAuthenticated = false;
+  try {
+    const supabase = await createSupabaseServerClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    isAuthenticated = Boolean(user);
+  } catch {
+    isAuthenticated = false;
+  }
+
   return (
     <main className="relative flex flex-1 flex-col items-center justify-center px-6 py-16">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(82,185,216,0.18),transparent_45%)]" />
@@ -64,18 +76,32 @@ export default async function Home() {
           Efi<span className="text-primary-dark">Licit</span>
         </h1>
         <p className="mt-4 text-base text-muted-foreground">
-          Busca licitaciones, guarda alertas y sigue las oportunidades que te
-          interesan.
+          {isAuthenticated
+            ? "Busca licitaciones, gestiona alertas y sigue las oportunidades que te interesan."
+            : "Busca licitaciones de forma sencilla. Inicia sesión para guardar alertas y personalizar tu seguimiento."}
         </p>
 
         <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
           <Button href="/search">Buscar licitaciones</Button>
-          <Button href="/alerts" variant="outline">
-            Mis alertas
-          </Button>
-          <Button href="/account" variant="ghost">
-            Cuenta
-          </Button>
+          {isAuthenticated ? (
+            <>
+              <Button href="/alerts" variant="outline">
+                Mis alertas
+              </Button>
+              <Button href="/account" variant="ghost">
+                Cuenta
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button href="/login" variant="outline">
+                Iniciar sesión
+              </Button>
+              <Button href="/register" variant="ghost">
+                Registrarse
+              </Button>
+            </>
+          )}
         </div>
 
         <p

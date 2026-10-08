@@ -196,6 +196,17 @@ export default async function SearchPage({
 
   let rows: SearchTenderRow[] = [];
   let error: string | null = null;
+  let isAuthenticated = false;
+
+  try {
+    const authClient = await createSupabaseServerClient();
+    const {
+      data: { user },
+    } = await authClient.auth.getUser();
+    isAuthenticated = Boolean(user);
+  } catch {
+    isAuthenticated = false;
+  }
 
   if (hasParams) {
     try {
@@ -320,11 +331,19 @@ export default async function SearchPage({
         <ResultsList rows={rows} error={error} searched={hasParams} />
       </section>
 
-      {!hasParams ? (
+      {!hasParams && isAuthenticated ? (
         <p className="mt-6 text-center text-xs text-muted-foreground">
           ¿Prefieres alertas automáticas?{" "}
           <Link href="/alerts" className="font-medium text-link hover:underline">
             Configúralas aquí
+          </Link>
+        </p>
+      ) : null}
+      {!hasParams && !isAuthenticated ? (
+        <p className="mt-6 text-center text-xs text-muted-foreground">
+          ¿Quieres alertas automáticas?{" "}
+          <Link href="/login?next=/alerts" className="font-medium text-link hover:underline">
+            Inicia sesión
           </Link>
         </p>
       ) : null}
