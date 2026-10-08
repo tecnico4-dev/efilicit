@@ -206,9 +206,6 @@ export default async function TenderDetailPage({ params }: PageProps) {
             "—"
           )}
         </Field>
-        <Field label="Fuente canónica">
-          <span className="font-mono">{tender.canonical_source_code}</span>
-        </Field>
       </dl>
 
       <section className="mt-10">
