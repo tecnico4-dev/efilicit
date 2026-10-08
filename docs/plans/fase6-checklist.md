@@ -32,7 +32,7 @@ Los pasos globales (0–11) se mantienen. El estado se marca **aquí**, no con �
 | CI verde (lint / typecheck / tests / build) | Pendiente | |
 | Cron prod solo con OK explícito | Pendiente | |
 | ADRs estructurales (si hubo) | Pendiente | Default: N/A |
-| CHANGELOG actualizado | Pendiente | |
+| CHANGELOG actualizado | En curso | Paso 0 documentado; se sigue actualizando por paso hasta el cierre |
 
 ## Criterios de salida `docs/04` § Semana 6
 
