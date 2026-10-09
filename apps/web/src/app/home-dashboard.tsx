@@ -127,8 +127,9 @@ export function HomeLanding() {
           Efi<span className="text-primary-dark">Licit</span>
         </h1>
         <p className="mt-4 text-base text-muted-foreground">
-          Busca licitaciones de forma sencilla. Inicia sesión para guardar
-          alertas y personalizar tu seguimiento.
+          Busca licitaciones de forma sencilla.
+          <br />
+          Inicia sesión para guardar alertas y personalizar tu seguimiento.
         </p>
         <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
           <Button href="/search">Buscar licitaciones</Button>

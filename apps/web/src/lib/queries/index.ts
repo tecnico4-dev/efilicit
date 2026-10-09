@@ -11,10 +11,12 @@ export {
 export {
   createOwnAlert,
   createOwnSavedSearch,
+  deleteOwnAlert,
   deleteOwnSavedSearch,
   getOwnProfile,
   listOwnAlerts,
   listOwnSavedSearches,
+  ownAlertNameTaken,
   updateOwnAlert,
   updateOwnDigestFrequency,
   type DigestFrequency,

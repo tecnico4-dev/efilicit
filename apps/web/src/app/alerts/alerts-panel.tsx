@@ -15,6 +15,7 @@ import {
   createOwnAlert,
   createOwnSavedSearch,
   listOwnSavedSearches,
+  ownAlertNameTaken,
   type DigestFrequency,
 } from "@/lib/queries";
 
@@ -62,6 +63,18 @@ export function AlertsPanel({
 
     setPending(true);
     const client = createSupabaseBrowserClient();
+    const nameCheck = await ownAlertNameTaken(client, { name: built.name });
+    if (nameCheck.error) {
+      setPending(false);
+      setError(nameCheck.error.message);
+      return;
+    }
+    if (nameCheck.taken) {
+      setPending(false);
+      setError("Ya existe una alerta con este nombre.");
+      return;
+    }
+
     const { error: createError } = await createOwnAlert(client, {
       userId,
       name: built.name,

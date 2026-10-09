@@ -135,7 +135,12 @@ export function SavedSearchList({
                 defaultName={s.name}
                 criteria={criteria}
               />
-              <RemoveSavedSearchButton searchId={s.id} />
+              <RemoveSavedSearchButton
+                searchId={s.id}
+                userId={userId}
+                name={s.name}
+                criteria={criteria}
+              />
             </div>
           </li>
         );

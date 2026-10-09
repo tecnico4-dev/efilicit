@@ -1,4 +1,5 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { UndoToastProvider } from "@/components/undo-toast";
 import { AppHeader } from "./app-header";
 
 export async function AppShell({ children }: { children: React.ReactNode }) {
@@ -21,10 +22,12 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
         className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_top,rgba(82,185,216,0.18),transparent_45%)]"
         aria-hidden
       />
-      <div className="relative flex min-h-full flex-1 flex-col">
-        <AppHeader isAuthenticated={isAuthenticated} />
-        <div className="flex flex-1 flex-col">{children}</div>
-      </div>
+      <UndoToastProvider>
+        <div className="relative flex min-h-full flex-1 flex-col">
+          <AppHeader isAuthenticated={isAuthenticated} />
+          <div className="flex flex-1 flex-col">{children}</div>
+        </div>
+      </UndoToastProvider>
     </div>
   );
 }

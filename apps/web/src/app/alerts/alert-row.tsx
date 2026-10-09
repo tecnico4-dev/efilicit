@@ -12,8 +12,9 @@ import {
   parseCriteria,
 } from "@/lib/criteria-display";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
-import { updateOwnAlert } from "@/lib/queries";
+import { ownAlertNameTaken, updateOwnAlert } from "@/lib/queries";
 import type { Database } from "@efilicit/types";
+import { RemoveAlertButton } from "./remove-alert-button";
 
 type AlertRow = Database["public"]["Tables"]["alerts"]["Row"];
 
@@ -61,6 +62,21 @@ export function AlertRowItem({ alert }: { alert: AlertRow }) {
     setPending(true);
     setError(null);
     const client = createSupabaseBrowserClient();
+    const nameCheck = await ownAlertNameTaken(client, {
+      name: name.trim(),
+      excludeAlertId: alert.id,
+    });
+    if (nameCheck.error) {
+      setPending(false);
+      setError(nameCheck.error.message);
+      return;
+    }
+    if (nameCheck.taken) {
+      setPending(false);
+      setError("Ya existe una alerta con este nombre.");
+      return;
+    }
+
     const { error: updateError } = await updateOwnAlert(client, {
       alertId: alert.id,
       name: name.trim(),
@@ -117,6 +133,7 @@ export function AlertRowItem({ alert }: { alert: AlertRow }) {
           >
             {alert.is_active ? "Desactivar" : "Activar"}
           </Button>
+          <RemoveAlertButton alert={alert} />
         </div>
       </div>
 

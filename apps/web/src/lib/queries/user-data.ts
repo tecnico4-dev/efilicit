@@ -189,3 +189,30 @@ export async function deleteOwnSavedSearch(
   if (error) return { error: new Error(error.message) };
   return { error: null };
 }
+
+/** Borra una alerta propia (RLS). */
+export async function deleteOwnAlert(
+  client: SupabaseClient<Database>,
+  input: { alertId: string },
+): Promise<{ error: Error | null }> {
+  const { error } = await client.from("alerts").delete().eq("id", input.alertId);
+
+  if (error) return { error: new Error(error.message) };
+  return { error: null };
+}
+
+/** ¿Ya hay una alerta propia con ese nombre? (comparación sin distinguir mayúsculas). */
+export async function ownAlertNameTaken(
+  client: SupabaseClient<Database>,
+  input: { name: string; excludeAlertId?: string },
+): Promise<{ taken: boolean; error: Error | null }> {
+  const { data, error } = await listOwnAlerts(client);
+  if (error) return { taken: false, error };
+  const needle = input.name.trim().toLowerCase();
+  const taken = data.some(
+    (a) =>
+      a.name.trim().toLowerCase() === needle &&
+      a.id !== input.excludeAlertId,
+  );
+  return { taken, error: null };
+}

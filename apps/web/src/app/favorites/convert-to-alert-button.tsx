@@ -5,7 +5,11 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
-import { createOwnAlert, type DigestFrequency } from "@/lib/queries";
+import {
+  createOwnAlert,
+  ownAlertNameTaken,
+  type DigestFrequency,
+} from "@/lib/queries";
 import type { SearchCriteria } from "@efilicit/types";
 
 /**
@@ -38,6 +42,18 @@ export function ConvertToAlertButton({
     setPending(true);
     setError(null);
     const client = createSupabaseBrowserClient();
+    const nameCheck = await ownAlertNameTaken(client, { name: name.trim() });
+    if (nameCheck.error) {
+      setPending(false);
+      setError(nameCheck.error.message);
+      return;
+    }
+    if (nameCheck.taken) {
+      setPending(false);
+      setError("Ya existe una alerta con este nombre.");
+      return;
+    }
+
     const { error: createError } = await createOwnAlert(client, {
       userId,
       name: name.trim(),

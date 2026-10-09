@@ -2,12 +2,29 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useUndoToast } from "@/components/undo-toast";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
-import { deleteOwnSavedSearch } from "@/lib/queries";
+import {
+  createOwnSavedSearch,
+  deleteOwnSavedSearch,
+} from "@/lib/queries";
+import { parseCriteria } from "@/lib/criteria-display";
+import type { SearchCriteria } from "@efilicit/types";
 
-/** Quita una búsqueda guardada (mismo tono de acción que el resto de links de la fila). */
-export function RemoveSavedSearchButton({ searchId }: { searchId: string }) {
+/** Quita una búsqueda guardada, con aviso y Revertir durante unos segundos. */
+export function RemoveSavedSearchButton({
+  searchId,
+  userId,
+  name,
+  criteria,
+}: {
+  searchId: string;
+  userId: string;
+  name: string;
+  criteria: SearchCriteria;
+}) {
   const router = useRouter();
+  const { showUndo } = useUndoToast();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -15,6 +32,10 @@ export function RemoveSavedSearchButton({ searchId }: { searchId: string }) {
     if (pending) return;
     setPending(true);
     setError(null);
+    const snapshot = {
+      name,
+      criteria: parseCriteria(criteria),
+    };
     const client = createSupabaseBrowserClient();
     const { error: deleteError } = await deleteOwnSavedSearch(client, {
       searchId,
@@ -24,6 +45,16 @@ export function RemoveSavedSearchButton({ searchId }: { searchId: string }) {
       setError(deleteError.message);
       return;
     }
+
+    showUndo("Has eliminado la búsqueda guardada.", async () => {
+      const c = createSupabaseBrowserClient();
+      await createOwnSavedSearch(c, {
+        userId,
+        name: snapshot.name,
+        criteria: snapshot.criteria,
+      });
+      router.refresh();
+    });
     router.refresh();
   }
 
