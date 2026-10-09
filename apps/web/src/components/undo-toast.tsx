@@ -55,17 +55,29 @@ export function UndoToastProvider({ children }: { children: ReactNode }) {
       {children}
       {message ? (
         <div
-          className="fixed bottom-6 left-1/2 z-50 flex max-w-[min(24rem,calc(100vw-2rem))] -translate-x-1/2 flex-wrap items-center gap-3 rounded-lg border border-border bg-surface px-4 py-3 text-sm text-foreground shadow-lg"
+          className="fixed bottom-6 left-1/2 z-50 w-[min(24rem,calc(100vw-2rem))] -translate-x-1/2 rounded-lg border border-border bg-surface px-4 py-3 pr-10 text-sm text-foreground shadow-lg"
           role="status"
         >
-          <span className="text-muted-foreground">{message}</span>
           <button
             type="button"
-            className="font-medium text-link hover:underline"
-            onClick={onRevert}
+            aria-label="Cerrar"
+            onClick={clear}
+            className="absolute right-2 top-2 inline-flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground"
           >
-            Revertir
+            <span aria-hidden className="text-base leading-none">
+              ×
+            </span>
           </button>
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="text-muted-foreground">{message}</span>
+            <button
+              type="button"
+              className="font-medium text-link hover:underline"
+              onClick={onRevert}
+            >
+              Revertir
+            </button>
+          </div>
         </div>
       ) : null}
     </UndoToastContext.Provider>

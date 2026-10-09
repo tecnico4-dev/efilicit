@@ -116,24 +116,25 @@ export function AlertRowItem({ alert }: { alert: AlertRow }) {
             type="button"
             variant="outline"
             size="sm"
-            disabled={pending}
+            disabled={pending || editing}
+            aria-pressed={editing}
             onClick={() => {
-              setEditing((v) => !v);
+              setEditing(true);
               setError(null);
             }}
           >
-            {editing ? "Cancelar" : "Editar"}
+            Editar
           </Button>
           <Button
             type="button"
             variant={alert.is_active ? "outline" : "primary"}
             size="sm"
-            disabled={pending}
+            disabled={pending || editing}
             onClick={toggleActive}
           >
             {alert.is_active ? "Desactivar" : "Activar"}
           </Button>
-          <RemoveAlertButton alert={alert} />
+          <RemoveAlertButton alert={alert} disabled={editing} />
         </div>
       </div>
 
@@ -217,14 +218,33 @@ export function AlertRowItem({ alert }: { alert: AlertRow }) {
               />
             </div>
           </div>
-          <Button
-            type="button"
-            size="sm"
-            disabled={pending}
-            onClick={onSaveEdit}
-          >
-            Guardar cambios
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              size="sm"
+              disabled={pending}
+              onClick={onSaveEdit}
+            >
+              Guardar cambios
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={pending}
+              onClick={() => {
+                setName(alert.name);
+                setKeywords(fields.keywords);
+                setCpv(fields.cpv);
+                setMin(fields.min);
+                setMax(fields.max);
+                setError(null);
+                setEditing(false);
+              }}
+            >
+              Cancelar
+            </Button>
+          </div>
         </div>
       ) : null}
 

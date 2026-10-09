@@ -17,14 +17,20 @@ import type { Database } from "@efilicit/types";
 type AlertRow = Database["public"]["Tables"]["alerts"]["Row"];
 
 /** Elimina una alerta con aviso y Revertir (mismo patrón que búsquedas). */
-export function RemoveAlertButton({ alert }: { alert: AlertRow }) {
+export function RemoveAlertButton({
+  alert,
+  disabled = false,
+}: {
+  alert: AlertRow;
+  disabled?: boolean;
+}) {
   const router = useRouter();
   const { showUndo } = useUndoToast();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function onRemove() {
-    if (pending) return;
+    if (pending || disabled) return;
     setPending(true);
     setError(null);
 
@@ -70,7 +76,7 @@ export function RemoveAlertButton({ alert }: { alert: AlertRow }) {
         type="button"
         variant="outline"
         size="sm"
-        disabled={pending}
+        disabled={pending || disabled}
         onClick={onRemove}
         className="border-destructive text-destructive hover:bg-destructive/10 hover:text-destructive"
       >
