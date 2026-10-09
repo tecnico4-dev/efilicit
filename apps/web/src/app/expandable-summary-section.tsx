@@ -64,16 +64,24 @@ export function ExpandableSummarySection({
         </p>
       ) : (
         <div className="mt-3">
-          <ul className="divide-y divide-border border-t border-border">
-            {items.slice(0, shown).map((item, i) => (
-              <li key={i} className="py-3">
-                {item}
-              </li>
-            ))}
-          </ul>
+          <div className={showVerTodas ? "relative" : undefined}>
+            <ul className="divide-y divide-border border-t border-border">
+              {items.slice(0, shown).map((item, i) => (
+                <li key={i} className="py-3">
+                  {item}
+                </li>
+              ))}
+            </ul>
+            {showVerTodas ? (
+              <div
+                className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-background to-transparent"
+                aria-hidden
+              />
+            ) : null}
+          </div>
 
           {showControls ? (
-            <p className="py-3 text-center text-sm">
+            <p className="relative z-10 py-3 text-center text-sm">
               {canCollapse ? (
                 <button
                   type="button"
