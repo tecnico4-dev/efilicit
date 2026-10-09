@@ -158,6 +158,8 @@ CHANGELOG, checklist Fase 6, ADR N/A o ADRs puntuales, handoff. Criterios de sal
 | Paso 5 | Tabla `favorites` + RLS; toggle solo con sesión; nav Favoritos; script A≠B | Sin botón favorito para anónimos |
 | Paso 6 | `/alerts` producto: crear/editar/activar; criteria v1; crear desde `/search` | Sin UUIDs ni copy de prueba; digest sigue en Cuenta |
 | Paso 7 | `/` autenticada = dashboard (alertas activas, favoritos, búsquedas; CTAs) | Sin ruta `/dashboard`; anónimo sigue en landing |
+| Tras Paso 7 (UX) | Soft undo al borrar búsqueda/alerta: toast + Revertir (~7s); × circular flotante en esquina del globo | Preferencia usuario; dismiss inmediato opcional |
+| Tras Paso 7 (UX) | Editar alerta: Editar desactivado mientras edita; Cancelar junto a Guardar cambios | Cancela restaura valores previos |
 
 ---
 

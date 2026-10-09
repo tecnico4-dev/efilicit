@@ -55,16 +55,16 @@ export function UndoToastProvider({ children }: { children: ReactNode }) {
       {children}
       {message ? (
         <div
-          className="fixed bottom-6 left-1/2 z-50 w-[min(24rem,calc(100vw-2rem))] -translate-x-1/2 rounded-lg border border-border bg-surface px-4 py-3 pr-10 text-sm text-foreground shadow-lg"
+          className="fixed bottom-6 left-1/2 z-50 w-[min(24rem,calc(100vw-2rem))] -translate-x-1/2 rounded-lg border border-border bg-surface px-4 py-3 text-sm text-foreground shadow-lg"
           role="status"
         >
           <button
             type="button"
             aria-label="Cerrar"
             onClick={clear}
-            className="absolute right-2 top-2 inline-flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground"
+            className="absolute -right-2.5 -top-2.5 inline-flex h-6 w-6 items-center justify-center rounded-full border border-border bg-muted text-muted-foreground shadow-md hover:bg-muted/90 hover:text-foreground"
           >
-            <span aria-hidden className="text-base leading-none">
+            <span aria-hidden className="text-sm leading-none">
               ×
             </span>
           </button>
