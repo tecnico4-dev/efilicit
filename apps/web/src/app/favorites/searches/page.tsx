@@ -6,6 +6,7 @@ import {
   listOwnSavedSearches,
   type DigestFrequency,
 } from "@/lib/queries";
+import { EmptySavedSearchesHint } from "../empty-hints";
 import { SavedSearchList } from "../favorites-shared";
 
 export const dynamic = "force-dynamic";
@@ -75,7 +76,7 @@ export default async function SavedSearchesPage({
         </p>
       ) : searches.length === 0 ? (
         <p className="mt-6 text-sm text-muted-foreground">
-          Ninguna búsqueda guardada aún.
+          <EmptySavedSearchesHint />
         </p>
       ) : (
         <div className="mt-8">

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getOwnProfile, listOwnFavorites } from "@/lib/queries";
+import { EmptyFavoritesTendersHint } from "../empty-hints";
 import { FavoriteTenderList } from "../favorites-shared";
 
 export const dynamic = "force-dynamic";
@@ -68,7 +69,7 @@ export default async function FavoriteTendersPage({
         </p>
       ) : favorites.length === 0 ? (
         <p className="mt-6 text-sm text-muted-foreground">
-          Aún no tienes licitaciones en favoritos.
+          <EmptyFavoritesTendersHint />
         </p>
       ) : (
         <div className="mt-8">

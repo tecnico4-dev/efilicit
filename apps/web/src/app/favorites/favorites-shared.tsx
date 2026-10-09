@@ -154,7 +154,7 @@ export function PreviewSection({
   children,
 }: {
   title: string;
-  emptyMessage: string;
+  emptyMessage: ReactNode;
   error: string | null;
   totalCount: number;
   moreHref: string;

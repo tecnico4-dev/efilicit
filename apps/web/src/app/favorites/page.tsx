@@ -7,6 +7,10 @@ import {
   type DigestFrequency,
 } from "@/lib/queries";
 import {
+  EmptyFavoritesTendersHint,
+  EmptySavedSearchesHint,
+} from "./empty-hints";
+import {
   FAVORITES_PREVIEW_LIMIT,
   FavoriteTenderList,
   PreviewSection,
@@ -56,7 +60,7 @@ export default async function FavoritesPage() {
 
       <PreviewSection
         title="Licitaciones favoritas"
-        emptyMessage="Aún no tienes licitaciones en favoritos. Ábrelas desde la búsqueda y pulsa «Guardar en favoritos»."
+        emptyMessage={<EmptyFavoritesTendersHint />}
         error={favoritesResult.error?.message ?? null}
         totalCount={favorites.length}
         moreHref="/favorites/tenders"
@@ -68,7 +72,7 @@ export default async function FavoritesPage() {
 
       <PreviewSection
         title="Búsquedas guardadas"
-        emptyMessage="Ninguna aún. Puedes guardar criterios desde Buscar."
+        emptyMessage={<EmptySavedSearchesHint />}
         error={searchesResult.error?.message ?? null}
         totalCount={searches.length}
         moreHref="/favorites/searches"
