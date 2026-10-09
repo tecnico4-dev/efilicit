@@ -19,10 +19,13 @@ export default async function FavoriteTendersPage({
   searchParams: SearchParams;
 }) {
   const params = await searchParams;
-  const fromNav = first(params.from) === "nav";
-  const backLabel = fromNav
-    ? "← Ir a la lista de favoritos"
-    : "← Volver a la lista de favoritos";
+  const from = first(params.from);
+  const back =
+    from === "home"
+      ? { href: "/", label: "← Volver al Inicio" }
+      : from === "nav"
+        ? { href: "/favorites", label: "← Ir a la lista de favoritos" }
+        : { href: "/favorites", label: "← Volver a la lista de favoritos" };
 
   const supabase = await createSupabaseServerClient();
   const {
@@ -50,11 +53,8 @@ export default async function FavoriteTendersPage({
   return (
     <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-6 py-10">
       <p className="text-sm">
-        <Link
-          href="/favorites"
-          className="font-medium text-link hover:underline"
-        >
-          {backLabel}
+        <Link href={back.href} className="font-medium text-link hover:underline">
+          {back.label}
         </Link>
       </p>
 

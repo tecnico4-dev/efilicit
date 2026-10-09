@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { ClearSearchFieldsButton } from "./clear-search-fields";
 import {
   SearchFeedbackProvider,
   useSearchFeedback,
@@ -48,27 +49,32 @@ function SearchFormInner({
       }}
     >
       {children}
-      <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-        {actions}
-        {feedback ? (
-          <p
-            className={`text-xs ${feedback.isError ? "text-destructive" : "text-muted-foreground"}`}
-            role={feedback.isError ? "alert" : "status"}
-          >
-            {feedback.text}
-            {feedback.linkHref && feedback.linkLabel ? (
-              <>
-                {" "}
-                <a
-                  href={feedback.linkHref}
-                  className="font-medium text-link hover:underline"
-                >
-                  {feedback.linkLabel}
-                </a>
-              </>
-            ) : null}
-          </p>
-        ) : null}
+      <div className="space-y-2">
+        <div>
+          <ClearSearchFieldsButton />
+        </div>
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+          {actions}
+          {feedback ? (
+            <p
+              className={`text-xs ${feedback.isError ? "text-destructive" : "text-muted-foreground"}`}
+              role={feedback.isError ? "alert" : "status"}
+            >
+              {feedback.text}
+              {feedback.linkHref && feedback.linkLabel ? (
+                <>
+                  {" "}
+                  <a
+                    href={feedback.linkHref}
+                    className="font-medium text-link hover:underline"
+                  >
+                    {feedback.linkLabel}
+                  </a>
+                </>
+              ) : null}
+            </p>
+          ) : null}
+        </div>
       </div>
     </form>
   );
@@ -81,12 +87,15 @@ function SearchFormInner({
 export function SearchForm({
   children,
   actions,
+  formKey,
 }: {
   children: ReactNode;
   actions: ReactNode;
+  /** Remonta el form al cambiar la URL (p. ej. nav Búsqueda limpia). */
+  formKey?: string;
 }) {
   return (
-    <SearchFeedbackProvider>
+    <SearchFeedbackProvider key={formKey}>
       <SearchFormInner actions={actions}>{children}</SearchFormInner>
     </SearchFeedbackProvider>
   );

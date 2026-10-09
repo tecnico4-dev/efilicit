@@ -72,12 +72,9 @@ export function HomeDashboard({
           Resumen de tu seguimiento.
         </p>
         <p className="mt-1 text-base text-muted-foreground">
-          Frecuencia de correos: {digestLabel}.{" "}
-          <a
-            href="/account"
-            className="text-xs font-medium text-link hover:underline"
-          >
-            Cambiar en Cuenta
+          Frecuencia de correos: {digestLabel}. Cambiar en{" "}
+          <a href="/account" className="font-medium text-link hover:underline">
+            Cuenta
           </a>
         </p>
       </div>
@@ -94,8 +91,8 @@ export function HomeDashboard({
 
       <ExpandableSummarySection
         title="Licitaciones favoritas"
-        href="/favorites"
-        hrefLabel="Ir a Favoritos"
+        href="/favorites/tenders?from=home"
+        hrefLabel="Ver listado"
         emptyMessage="Aún no tienes favoritos."
         emptyHref="/search"
         emptyCta="Buscar"
@@ -104,8 +101,8 @@ export function HomeDashboard({
 
       <ExpandableSummarySection
         title="Búsquedas guardadas"
-        href="/favorites"
-        hrefLabel="Ir a Favoritos"
+        href="/favorites/searches?from=home"
+        hrefLabel="Ver listado"
         emptyMessage="Ninguna búsqueda guardada."
         emptyHref="/search"
         emptyCta="Buscar"

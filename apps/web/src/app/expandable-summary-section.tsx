@@ -7,7 +7,7 @@ const CHUNK = 5;
 
 /**
  * Sección de resumen con lista plegable:
- * Mostrar más (otro cacho) · Ver todas · Mostrar menos.
+ * Mostrar más solo si quedan más de un cacho; si quedan ≤ chunk → solo Ver todas.
  */
 export function ExpandableSummarySection({
   title,
@@ -31,14 +31,18 @@ export function ExpandableSummarySection({
   const [visible, setVisible] = useState(chunkSize);
   const total = items.length;
   const shown = Math.min(visible, total);
-  const fullyExpanded = total > 0 && shown >= total;
-  const hasMoreChunks = total > chunkSize;
+  const remaining = total - shown;
+  const fullyExpanded = total > 0 && remaining === 0;
+  const canCollapse = total > chunkSize && fullyExpanded;
+  const showMostrarMas = remaining > chunkSize;
+  const showVerTodas = remaining > 0;
+  const showControls = canCollapse || showVerTodas;
 
   return (
     <section className="mt-10">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h2 className="text-lg font-semibold tracking-tight text-foreground">
-          {title}
+        <h2 className="text-2xl font-semibold tracking-tight text-foreground">
+          {title} ({total})
         </h2>
         <Link
           href={href}
@@ -68,9 +72,9 @@ export function ExpandableSummarySection({
             ))}
           </ul>
 
-          {hasMoreChunks ? (
+          {showControls ? (
             <p className="py-3 text-center text-sm">
-              {fullyExpanded ? (
+              {canCollapse ? (
                 <button
                   type="button"
                   className="font-medium text-primary hover:text-primary-dark hover:underline"
@@ -80,23 +84,31 @@ export function ExpandableSummarySection({
                 </button>
               ) : (
                 <>
-                  <button
-                    type="button"
-                    className="font-medium text-primary hover:text-primary-dark hover:underline"
-                    onClick={() =>
-                      setVisible((v) => Math.min(v + chunkSize, total))
-                    }
-                  >
-                    Mostrar más
-                  </button>
-                  <span className="text-muted-foreground"> · </span>
-                  <button
-                    type="button"
-                    className="font-medium text-primary hover:text-primary-dark hover:underline"
-                    onClick={() => setVisible(total)}
-                  >
-                    Ver todas
-                  </button>
+                  {showMostrarMas ? (
+                    <>
+                      <button
+                        type="button"
+                        className="font-medium text-primary hover:text-primary-dark hover:underline"
+                        onClick={() =>
+                          setVisible((v) => Math.min(v + chunkSize, total))
+                        }
+                      >
+                        Mostrar más
+                      </button>
+                      {showVerTodas ? (
+                        <span className="text-muted-foreground"> · </span>
+                      ) : null}
+                    </>
+                  ) : null}
+                  {showVerTodas ? (
+                    <button
+                      type="button"
+                      className="font-medium text-primary hover:text-primary-dark hover:underline"
+                      onClick={() => setVisible(total)}
+                    >
+                      Ver todas
+                    </button>
+                  ) : null}
                 </>
               )}
             </p>

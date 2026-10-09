@@ -239,6 +239,7 @@ export default async function SearchPage({
       </h1>
 
       <SearchForm
+        formKey={`${q}|${cpv}|${minRaw}|${maxRaw}|${from}`}
         actions={
           <>
             <button
