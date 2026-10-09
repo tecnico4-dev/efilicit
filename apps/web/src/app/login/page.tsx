@@ -16,7 +16,7 @@ export default async function LoginPage({
   searchParams: SearchParams;
 }) {
   const params = await searchParams;
-  const nextPath = first(params.next) || "/account";
+  const nextPath = first(params.next) || "/";
 
   return (
     <main className="relative mx-auto flex w-full max-w-md flex-1 flex-col justify-center px-6 py-10">
@@ -27,7 +27,7 @@ export default async function LoginPage({
         <p className="mt-2 text-sm text-muted-foreground">
           Accede con tus credenciales.
         </p>
-        <LoginForm nextPath={nextPath.startsWith("/") ? nextPath : "/account"} />
+        <LoginForm nextPath={nextPath.startsWith("/") ? nextPath : "/"} />
         <p className="mt-6 text-sm text-muted-foreground">
           ¿No tienes cuenta?{" "}
           <Link href="/register" className="font-medium text-link hover:underline">

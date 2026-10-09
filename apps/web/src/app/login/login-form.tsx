@@ -31,7 +31,7 @@ export function LoginForm({ nextPath }: { nextPath: string }) {
       return;
     }
 
-    router.replace(nextPath || "/account");
+    router.replace(nextPath || "/");
     router.refresh();
   }
 

@@ -36,7 +36,7 @@ export function RegisterForm() {
 
     // En local la confirmación de email suele estar desactivada → sesión + perfil vía trigger.
     if (data.session) {
-      router.replace("/account");
+      router.replace("/");
       router.refresh();
       return;
     }
