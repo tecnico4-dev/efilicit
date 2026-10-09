@@ -7,6 +7,7 @@ import {
 import type { DigestFrequency, FavoriteWithTender } from "@/lib/queries";
 import type { Database } from "@efilicit/types";
 import { ConvertToAlertButton } from "./convert-to-alert-button";
+import { RemoveSavedSearchButton } from "./remove-saved-search-button";
 
 export const FAVORITES_PREVIEW_LIMIT = 5;
 
@@ -134,6 +135,7 @@ export function SavedSearchList({
                 defaultName={s.name}
                 criteria={criteria}
               />
+              <RemoveSavedSearchButton searchId={s.id} />
             </div>
           </li>
         );

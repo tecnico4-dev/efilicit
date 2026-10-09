@@ -44,7 +44,7 @@ Comprobación SQL directa: ver plan Semana 5 / checklist Paso 3.
 
 ## Alertas / búsquedas / perfil (Semana 5 / Paso 6)
 
-- `createOwnAlert` / `updateOwnAlert` / `listOwnAlerts` / `createOwnSavedSearch` / `listOwnSavedSearches`
+- `createOwnAlert` / `updateOwnAlert` / `listOwnAlerts` / `createOwnSavedSearch` / `deleteOwnSavedSearch` / `listOwnSavedSearches`
 - `getOwnProfile` / `updateOwnDigestFrequency` (daily|weekly; ADR 013)
 - UI: `/alerts` (crear/editar/activar), crear alerta desde `/search` (sesión), `/account`
 - Prueba RLS Alice≠Bob: `pnpm --filter @efilicit/web verify:rls`

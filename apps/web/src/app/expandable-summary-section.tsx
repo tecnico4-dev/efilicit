@@ -44,12 +44,14 @@ export function ExpandableSummarySection({
         <h2 className="text-2xl font-semibold tracking-tight text-foreground">
           {title} ({total})
         </h2>
-        <Link
-          href={href}
-          className="text-sm font-medium text-link hover:underline"
-        >
-          {hrefLabel}
-        </Link>
+        {total > 0 ? (
+          <Link
+            href={href}
+            className="text-sm font-medium text-link hover:underline"
+          >
+            {hrefLabel}
+          </Link>
+        ) : null}
       </div>
 
       {total === 0 ? (

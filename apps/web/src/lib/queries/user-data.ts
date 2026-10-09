@@ -175,3 +175,17 @@ export async function createOwnSavedSearch(
   if (error) return { data: null, error: new Error(error.message) };
   return { data, error: null };
 }
+
+/** Borra una búsqueda guardada propia (RLS). */
+export async function deleteOwnSavedSearch(
+  client: SupabaseClient<Database>,
+  input: { searchId: string },
+): Promise<{ error: Error | null }> {
+  const { error } = await client
+    .from("saved_searches")
+    .delete()
+    .eq("id", input.searchId);
+
+  if (error) return { error: new Error(error.message) };
+  return { error: null };
+}

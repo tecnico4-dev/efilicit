@@ -11,6 +11,7 @@ export {
 export {
   createOwnAlert,
   createOwnSavedSearch,
+  deleteOwnSavedSearch,
   getOwnProfile,
   listOwnAlerts,
   listOwnSavedSearches,
