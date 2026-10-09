@@ -7,6 +7,7 @@ import { criteriaEqual, parseCriteria } from "@/lib/criteria-display";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { createOwnSavedSearch, listOwnSavedSearches } from "@/lib/queries";
 import type { SearchCriteria } from "@efilicit/types";
+import { useSearchFeedback } from "./search-feedback";
 
 const FORM_ID = "search-form";
 
@@ -59,30 +60,30 @@ function buildCriteria(form: HTMLFormElement): {
 }
 
 /**
- * Guarda los criterios del formulario de búsqueda (misma capa que /alerts).
- * Solo se muestra con sesión; sin cuenta no aparece (como Alertas en la nav).
+ * Guarda los criterios del formulario de búsqueda.
+ * El mensaje usa el feedback compartido del SearchForm (sustituye al de Buscar).
  */
 export function SaveSearchButton({ userId }: { userId: string }) {
   const router = useRouter();
+  const { setFeedback } = useSearchFeedback();
   const [pending, setPending] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
-  const [isError, setIsError] = useState(false);
 
   async function onSave() {
-    setMessage(null);
-    setIsError(false);
-
     const form = document.getElementById(FORM_ID) as HTMLFormElement | null;
     if (!form) {
-      setIsError(true);
-      setMessage("No se encontró el formulario de búsqueda.");
+      setFeedback({
+        text: "No se encontró el formulario de búsqueda.",
+        isError: true,
+      });
       return;
     }
 
     const built = buildCriteria(form);
     if (!built) {
-      setIsError(true);
-      setMessage("Indica al menos un criterio antes de guardar.");
+      setFeedback({
+        text: "Indica al menos un criterio antes de guardar.",
+        isError: true,
+      });
       return;
     }
 
@@ -91,8 +92,7 @@ export function SaveSearchButton({ userId }: { userId: string }) {
     const existing = await listOwnSavedSearches(client);
     if (existing.error) {
       setPending(false);
-      setIsError(true);
-      setMessage(existing.error.message);
+      setFeedback({ text: existing.error.message, isError: true });
       return;
     }
     const duplicate = existing.data.some((s) =>
@@ -100,10 +100,10 @@ export function SaveSearchButton({ userId }: { userId: string }) {
     );
     if (duplicate) {
       setPending(false);
-      setIsError(true);
-      setMessage(
-        "Ya tienes una búsqueda guardada con esos mismos parámetros.",
-      );
+      setFeedback({
+        text: "Ya tienes una búsqueda guardada con esos mismos parámetros.",
+        isError: true,
+      });
       return;
     }
 
@@ -115,46 +115,28 @@ export function SaveSearchButton({ userId }: { userId: string }) {
     setPending(false);
 
     if (error) {
-      setIsError(true);
-      setMessage(error.message);
+      setFeedback({ text: error.message, isError: true });
       return;
     }
 
-    setIsError(false);
-    setMessage("Búsqueda guardada. Puedes verla en Favoritos.");
+    setFeedback({
+      text: "Búsqueda guardada. Puedes verla en Favoritos.",
+      isError: false,
+      linkHref: "/favorites",
+      linkLabel: "Ir a Favoritos",
+    });
     router.refresh();
   }
 
   return (
-    <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-3">
-      <Button
-        type="button"
-        variant="outline"
-        disabled={pending}
-        onClick={onSave}
-      >
-        {pending ? "Guardando…" : "Guardar búsqueda"}
-      </Button>
-      {message ? (
-        <p
-          className={`text-xs ${isError ? "text-destructive" : "text-muted-foreground"}`}
-          role={isError ? "alert" : "status"}
-        >
-          {message}
-          {!isError ? (
-            <>
-              {" "}
-              <a
-                href="/favorites"
-                className="font-medium text-link hover:underline"
-              >
-                Ir a Favoritos
-              </a>
-            </>
-          ) : null}
-        </p>
-      ) : null}
-    </div>
+    <Button
+      type="button"
+      variant="outline"
+      disabled={pending}
+      onClick={onSave}
+    >
+      {pending ? "Guardando…" : "Guardar búsqueda"}
+    </Button>
   );
 }
 

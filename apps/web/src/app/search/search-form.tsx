@@ -1,6 +1,10 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import type { ReactNode } from "react";
+import {
+  SearchFeedbackProvider,
+  useSearchFeedback,
+} from "./search-feedback";
 import { SEARCH_FORM_ID } from "./save-search-button";
 
 function hasAnyCriterion(form: HTMLFormElement): boolean {
@@ -16,18 +20,14 @@ function hasAnyCriterion(form: HTMLFormElement): boolean {
   return q !== "" || cpv !== "" || min !== "" || max !== "";
 }
 
-/**
- * Formulario GET de búsqueda con validación vacía (mismo tono de error
- * que «Guardar búsqueda»).
- */
-export function SearchForm({
+function SearchFormInner({
   children,
   actions,
 }: {
   children: ReactNode;
   actions: ReactNode;
 }) {
-  const [error, setError] = useState<string | null>(null);
+  const { feedback, setFeedback, clearFeedback } = useSearchFeedback();
 
   return (
     <form
@@ -38,21 +38,56 @@ export function SearchForm({
       onSubmit={(e) => {
         if (!hasAnyCriterion(e.currentTarget)) {
           e.preventDefault();
-          setError("Indica al menos un criterio antes de buscar.");
+          setFeedback({
+            text: "Indica al menos un criterio antes de buscar.",
+            isError: true,
+          });
           return;
         }
-        setError(null);
+        clearFeedback();
       }}
     >
       {children}
-      <div className="flex flex-col gap-1">
-        <div className="flex flex-wrap items-center gap-2">{actions}</div>
-        {error ? (
-          <p className="text-xs text-destructive" role="alert">
-            {error}
+      <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+        {actions}
+        {feedback ? (
+          <p
+            className={`text-xs ${feedback.isError ? "text-destructive" : "text-muted-foreground"}`}
+            role={feedback.isError ? "alert" : "status"}
+          >
+            {feedback.text}
+            {feedback.linkHref && feedback.linkLabel ? (
+              <>
+                {" "}
+                <a
+                  href={feedback.linkHref}
+                  className="font-medium text-link hover:underline"
+                >
+                  {feedback.linkLabel}
+                </a>
+              </>
+            ) : null}
           </p>
         ) : null}
       </div>
     </form>
+  );
+}
+
+/**
+ * Formulario GET de búsqueda; un solo hueco de feedback compartido
+ * (Buscar / Guardar búsqueda se sustituyen entre sí).
+ */
+export function SearchForm({
+  children,
+  actions,
+}: {
+  children: ReactNode;
+  actions: ReactNode;
+}) {
+  return (
+    <SearchFeedbackProvider>
+      <SearchFormInner actions={actions}>{children}</SearchFormInner>
+    </SearchFeedbackProvider>
   );
 }

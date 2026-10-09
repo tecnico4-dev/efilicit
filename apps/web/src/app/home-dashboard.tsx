@@ -41,7 +41,7 @@ export function HomeDashboard({
     return (
       <Link
         key={fav.id}
-        href={`/tenders/${tender.id}?from=favorites`}
+        href={`/tenders/${tender.id}?from=home`}
         className="font-medium text-foreground hover:text-link hover:underline"
       >
         {tender.title}
@@ -73,7 +73,10 @@ export function HomeDashboard({
         </p>
         <p className="mt-1 text-base text-muted-foreground">
           Frecuencia de correos: {digestLabel}.{" "}
-          <a href="/account" className="font-medium text-link hover:underline">
+          <a
+            href="/account"
+            className="text-xs font-medium text-link hover:underline"
+          >
             Cambiar en Cuenta
           </a>
         </p>
