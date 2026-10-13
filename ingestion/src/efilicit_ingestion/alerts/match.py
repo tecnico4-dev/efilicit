@@ -55,6 +55,16 @@ def _keyword_hit(tender: TenderCandidate, keywords: list[str]) -> bool:
     return any(_norm(k) in blob for k in keywords if k.strip())
 
 
+def _title_contains_hit(tender: TenderCandidate, needle: str | None) -> bool | None:
+    """None = dimensión no pedida; substring case-insensitive en el título."""
+    if not needle or not needle.strip():
+        return None
+    title = _norm(tender.title)
+    if not title:
+        return False
+    return _norm(needle) in title
+
+
 def _cpv_hit(tender: TenderCandidate, codes: list[str]) -> bool:
     """Prefijo CPV: ``72000000`` casa ``72000000-1`` y códigos hijos."""
     cpv = (tender.cpv_code or "").strip()
@@ -182,6 +192,7 @@ def evaluate_tender(
             "keywords",
             _keyword_hit(tender, criteria.keywords) if criteria.keywords else None,
         ),
+        ("title_contains", _title_contains_hit(tender, criteria.title_contains)),
         (
             "cpv_codes",
             _cpv_hit(tender, criteria.cpv_codes) if criteria.cpv_codes else None,

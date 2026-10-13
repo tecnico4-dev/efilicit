@@ -4,6 +4,10 @@
  * La web no arma SQL ni habla con motores externos: llama a la RPC
  * `public.search_tenders` (SECURITY INVOKER → aplica RLS) con Criteria v1
  * aplanado a parámetros `p_*`. FTS + pg_trgm viven en Postgres.
+ *
+ * Semántica texto (Semana 6):
+ * - `query` / `criteria.keywords` → buscador global (FTS sobre search_vector).
+ * - `criteria.title_contains` → filtro de título (trgm).
  */
 import type { Database, SearchCriteria } from "@efilicit/types";
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -29,9 +33,9 @@ export type SearchTenderRow = {
 };
 
 export type SearchTendersInput = {
-  /** Texto libre de la caja de búsqueda (FTS + fallback trigram). */
+  /** Buscador global (FTS título+descripción vía search_vector). */
   query?: string;
-  /** Criteria v1 (Paso 1). Campos omitidos no filtran. */
+  /** Criteria v1. Campos omitidos no filtran. */
   criteria?: Partial<SearchCriteria>;
   limit?: number;
   offset?: number;
@@ -48,9 +52,11 @@ function emptyToUndef<T>(value: T[] | null | undefined): T[] | undefined {
 function buildRpcArgs(input: SearchTendersInput): SearchTendersArgs {
   const c = input.criteria ?? {};
   const name = c.authority?.name_contains?.trim();
+  const title = c.title_contains?.trim();
   return {
     p_query: input.query?.trim() || undefined,
     p_keywords: emptyToUndef(c.keywords),
+    p_title_query: title || undefined,
     p_cpv_codes: emptyToUndef(c.cpv_codes),
     p_authority_tax_ids: emptyToUndef(c.authority?.tax_ids),
     p_authority_ids: emptyToUndef(c.authority?.ids),

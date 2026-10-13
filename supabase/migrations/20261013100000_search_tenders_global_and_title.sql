@@ -1,21 +1,6 @@
--- Revert Semana 6 UX de búsqueda ampliada: restaurar search_tenders previo
--- (FTS + trgm unificados en p_query/p_keywords) y quitar list_tender_statuses.
-
-drop function if exists public.list_tender_statuses();
-
--- Firma con p_title_query (migración experimental Semana 6), si existiera.
-drop function if exists public.search_tenders(
-  text, text[], text[], text[], uuid[], text, text[], text[],
-  numeric, numeric, text[], text[], text[], date, date,
-  timestamptz, timestamptz, integer, integer, text
-);
-
--- Firma previa (sin p_title_query) para recrear limpia.
-drop function if exists public.search_tenders(
-  text, text[], text[], text[], uuid[], text, text[], text[],
-  numeric, numeric, text[], text[], text[], date, date,
-  timestamptz, timestamptz, integer, integer
-);
+-- Semana 6 UX: separar buscador global (FTS search_vector) de filtro por título (trgm).
+-- Criteria v1: p_query + p_keywords = global; p_title_query = solo título.
+-- Filtros status / fechas / authority ya existían; la UI los expone ahora.
 
 create or replace function public.search_tenders(
   p_query text default null,
@@ -36,7 +21,8 @@ create or replace function public.search_tenders(
   p_deadline_from timestamptz default null,
   p_deadline_to timestamptz default null,
   p_limit integer default 20,
-  p_offset integer default 0
+  p_offset integer default 0,
+  p_title_query text default null
 )
 returns table (
   id uuid,
@@ -62,7 +48,7 @@ security invoker
 set search_path = public, extensions
 as $$
   with
-  q as (
+  g as (
     select nullif(
       trim(
         both from concat_ws(
@@ -72,38 +58,50 @@ as $$
         )
       ),
       ''
-    ) as text_q
+    ) as global_q
+  ),
+  tq as (
+    select nullif(trim(both from coalesce(p_title_query, '')), '') as title_q
   ),
   base as (
     select
       t.*,
       case
-        when (select text_q from q) is null then 0::real
+        when (select global_q from g) is null and (select title_q from tq) is null
+          then 0::real
         else greatest(
-          ts_rank(
-            t.search_vector,
-            plainto_tsquery('spanish', (select text_q from q))
-          ),
-          similarity(t.title, (select text_q from q)),
-          strict_word_similarity((select text_q from q), t.title)
+          case
+            when (select global_q from g) is null then 0::real
+            else ts_rank(
+              t.search_vector,
+              plainto_tsquery('spanish', (select global_q from g))
+            )
+          end,
+          case
+            when (select title_q from tq) is null then 0::real
+            else greatest(
+              similarity(t.title, (select title_q from tq)),
+              strict_word_similarity((select title_q from tq), t.title)
+            )
+          end
         )
       end as rank_score,
       (
-        (select text_q from q) is not null
-        and t.search_vector @@ plainto_tsquery('spanish', (select text_q from q))
+        (select global_q from g) is not null
+        and t.search_vector @@ plainto_tsquery('spanish', (select global_q from g))
       ) as fts_hit,
       (
-        (select text_q from q) is not null
+        (select title_q from tq) is not null
         and (
-          (select text_q from q) <<% t.title
-          or t.title % (select text_q from q)
+          (select title_q from tq) <<% t.title
+          or t.title % (select title_q from tq)
         )
       ) as trgm_hit,
       (
-        (select text_q from q) is not null
+        (select title_q from tq) is not null
         and not exists (
           select 1
-          from regexp_split_to_table(lower((select text_q from q)), '[^[:alnum:]]+') as qw(word)
+          from regexp_split_to_table(lower((select title_q from tq)), '[^[:alnum:]]+') as qw(word)
           where qw.word <> ''
             and not exists (
               select 1
@@ -117,10 +115,13 @@ as $$
       on ca.id = t.contracting_authority_id
     where
       (
-        (select text_q from q) is null
-        or t.search_vector @@ plainto_tsquery('spanish', (select text_q from q))
-        or (select text_q from q) <<% t.title
-        or t.title % (select text_q from q)
+        (select global_q from g) is null
+        or t.search_vector @@ plainto_tsquery('spanish', (select global_q from g))
+      )
+      and (
+        (select title_q from tq) is null
+        or (select title_q from tq) <<% t.title
+        or t.title % (select title_q from tq)
       )
       and (
         p_cpv_codes is null
@@ -208,9 +209,14 @@ as $$
     b.updated_at,
     b.rank_score as rank,
     case
-      when (select text_q from q) is null then 'filter'
-      when b.fts_hit and b.literal_title_hit then 'fts'
-      when b.fts_hit or b.trgm_hit then 'trgm'
+      when (select global_q from g) is null and (select title_q from tq) is null
+        then 'filter'
+      when (select title_q from tq) is not null and b.literal_title_hit
+        then 'fts'
+      when (select title_q from tq) is not null and b.trgm_hit
+        then 'trgm'
+      when b.fts_hit
+        then 'fts'
       else 'filter'
     end as match_kind
   from base b
@@ -223,9 +229,29 @@ as $$
 $$;
 
 comment on function public.search_tenders is
-  'Semana 5: FTS + pg_trgm (strict_word_similarity/<<%, similarity/%) + filtros Criteria v1. '
-  'match_kind=fts solo si cada token de la consulta aparece literalmente en el título; '
-  'si FTS encaja solo por stemming → trgm (UI errata). Restaurado tras revert UX búsqueda ampliada.';
+  'Semana 6: p_query/p_keywords = FTS global (search_vector); p_title_query = título (trgm). '
+  'Filtros Criteria v1. match_kind: fts/trgm/filter.';
 
 revoke all on function public.search_tenders from public;
 grant execute on function public.search_tenders to anon, authenticated;
+
+-- Distinct statuses for search UI (avoid scanning all tender rows in the app).
+create or replace function public.list_tender_statuses()
+returns setof text
+language sql
+stable
+security invoker
+set search_path = public
+as $$
+  select distinct t.status
+  from public.tenders t
+  where t.status is not null
+    and trim(t.status) <> ''
+  order by 1;
+$$;
+
+comment on function public.list_tender_statuses is
+  'Valores distintos de tenders.status para el select de búsqueda.';
+
+revoke all on function public.list_tender_statuses from public;
+grant execute on function public.list_tender_statuses to anon, authenticated;

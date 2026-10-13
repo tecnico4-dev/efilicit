@@ -164,7 +164,7 @@ CHANGELOG, checklist Fase 6, ADR N/A o ADRs puntuales, handoff. Criterios de sal
 | Tras Paso 7 (UX) | Frecuencia de notificaciones editable en `/alerts` (select daily/weekly) + toast de confirmación | Misma sync que Cuenta (`updateOwnDigestFrequency`); toast `showStatus` sin Revertir |
 | Tras Paso 7 (UX) | `/favorites/tenders` paginado 10/pág; controles solo si &gt;10; página editable con validación | Hub `/favorites` sin cambios |
 | Tras Paso 7 (UX) | Contenido `max-w-6xl` (cabecera alineada); móvil sigue fluido | Menos hueco lateral en escritorio |
-| Tras Paso 7 (UX) | Búsqueda ampliada (global/título/estado/órgano) **revertida** | UI + Criteria + RPC vuelven al buscador previo; migración `20261013120000_revert_search_tenders_ui` |
+| Tras Paso 7 (UX) | Búsqueda: Buscador global (FTS) + Filtros (título, CPV, importe, estado, fechas, órgano) | Órgano = select de `contracting_authorities` (legible). CCAA no está en canónico → no filtro CCAA aún. Migración `p_title_query` + `list_tender_statuses`; Criteria v1 + `title_contains` |
 
 ---
 
