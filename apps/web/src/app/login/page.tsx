@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { LoginForm } from "./login-form";
 
 export const dynamic = "force-dynamic";
@@ -21,19 +20,16 @@ export default async function LoginPage({
   return (
     <main className="relative mx-auto flex w-full max-w-md flex-1 flex-col justify-center px-6 py-10">
       <div className="relative rounded-2xl border border-border/80 bg-surface/95 p-7 shadow-xl backdrop-blur supports-[backdrop-filter]:bg-surface/90">
-        <h1 className="text-2xl font-bold tracking-tight text-foreground">
+        <p className="text-center text-lg font-bold tracking-tight text-foreground">
+          Efi<span className="text-primary-dark">Licit</span>
+        </p>
+        <h1 className="mt-4 text-2xl font-bold tracking-tight text-foreground">
           Iniciar sesión
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Accede con tus credenciales.
+          Accede con las credenciales que te hayan facilitado.
         </p>
         <LoginForm nextPath={nextPath.startsWith("/") ? nextPath : "/"} />
-        <p className="mt-6 text-sm text-muted-foreground">
-          ¿No tienes cuenta?{" "}
-          <Link href="/register" className="font-medium text-link hover:underline">
-            Registrarse
-          </Link>
-        </p>
       </div>
     </main>
   );

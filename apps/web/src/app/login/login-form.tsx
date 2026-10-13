@@ -5,6 +5,11 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import {
+  ChangePasswordForm,
+  markPasswordOfferSeen,
+  userNeedsPasswordOffer,
+} from "@/app/account/change-password-form";
 
 export function LoginForm({ nextPath }: { nextPath: string }) {
   const router = useRouter();
@@ -12,6 +17,12 @@ export function LoginForm({ nextPath }: { nextPath: string }) {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const [offerPassword, setOfferPassword] = useState(false);
+
+  function goNext() {
+    router.replace(nextPath || "/");
+    router.refresh();
+  }
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -19,7 +30,7 @@ export function LoginForm({ nextPath }: { nextPath: string }) {
     setError(null);
 
     const supabase = createSupabaseBrowserClient();
-    const { error: signInError } = await supabase.auth.signInWithPassword({
+    const { data, error: signInError } = await supabase.auth.signInWithPassword({
       email: email.trim(),
       password,
     });
@@ -31,8 +42,48 @@ export function LoginForm({ nextPath }: { nextPath: string }) {
       return;
     }
 
-    router.replace(nextPath || "/");
-    router.refresh();
+    if (userNeedsPasswordOffer(data.user)) {
+      setOfferPassword(true);
+      return;
+    }
+
+    goNext();
+  }
+
+  async function onSkipPassword() {
+    setPending(true);
+    await markPasswordOfferSeen();
+    setPending(false);
+    goNext();
+  }
+
+  if (offerPassword) {
+    return (
+      <div className="mt-8 space-y-6">
+        <div>
+          <h2 className="text-base font-medium text-foreground">
+            ¿Quieres cambiar tu contraseña?
+          </h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Es opcional. Si te la han dado temporal, puedes actualizarla ahora o
+            más tarde en Cuenta.
+          </p>
+        </div>
+        <ChangePasswordForm
+          submitLabel="Guardar y continuar"
+          onDone={goNext}
+        />
+        <Button
+          type="button"
+          variant="outline"
+          disabled={pending}
+          className="w-full"
+          onClick={onSkipPassword}
+        >
+          Continuar sin cambiar
+        </Button>
+      </div>
+    );
   }
 
   return (

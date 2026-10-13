@@ -16,8 +16,11 @@ function navClass(active: boolean) {
   );
 }
 
+/** Cabecera solo para sesión autenticada (ADR 016: anónimo sin nav). */
 export function AppHeader({ isAuthenticated }: { isAuthenticated: boolean }) {
   const pathname = usePathname() || "/";
+
+  if (!isAuthenticated) return null;
 
   return (
     <header className="sticky top-0 z-40 border-b border-border/80 bg-surface/95 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-surface/85">
@@ -39,57 +42,26 @@ export function AppHeader({ isAuthenticated }: { isAuthenticated: boolean }) {
           >
             Búsqueda
           </Link>
-          {isAuthenticated ? (
-            <>
-              <FavoritesNavItem active={pathname.startsWith("/favorites")} />
-              <Link
-                href="/alerts"
-                className={navClass(pathname.startsWith("/alerts"))}
-              >
-                Alertas
-              </Link>
-              <Link
-                href="/account"
-                className={navClass(pathname.startsWith("/account"))}
-              >
-                Cuenta
-              </Link>
-            </>
-          ) : null}
+          <FavoritesNavItem active={pathname.startsWith("/favorites")} />
+          <Link
+            href="/alerts"
+            className={navClass(pathname.startsWith("/alerts"))}
+          >
+            Alertas
+          </Link>
+          <Link
+            href="/account"
+            className={navClass(pathname.startsWith("/account"))}
+          >
+            Cuenta
+          </Link>
         </nav>
 
         <div className="flex items-center gap-1.5">
           <ThemeToggle />
-          {isAuthenticated ? (
-            <LogoutButton
-              className="rounded-lg border-transparent bg-transparent px-3 py-2 text-sm font-medium text-muted-foreground shadow-none hover:bg-muted hover:text-foreground"
-            />
-          ) : (
-            <>
-              <Link
-                href="/login"
-                className={cn(
-                  "inline-flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-                  pathname.startsWith("/login")
-                    ? "bg-primary text-primary-foreground shadow-sm"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground",
-                )}
-              >
-                Login
-              </Link>
-              <Link
-                href="/register"
-                className={cn(
-                  "inline-flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-                  pathname.startsWith("/register")
-                    ? "bg-primary text-primary-foreground shadow-sm"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground",
-                )}
-              >
-                Registro
-              </Link>
-            </>
-          )}
+          <LogoutButton
+            className="rounded-lg border-transparent bg-transparent px-3 py-2 text-sm font-medium text-muted-foreground shadow-none hover:bg-muted hover:text-foreground"
+          />
         </div>
       </div>
     </header>

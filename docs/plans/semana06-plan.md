@@ -165,6 +165,7 @@ CHANGELOG, checklist Fase 6, ADR N/A o ADRs puntuales, handoff. Criterios de sal
 | Tras Paso 7 (UX) | `/favorites/tenders` paginado 10/pág; controles solo si &gt;10; página editable con validación | Hub `/favorites` sin cambios |
 | Tras Paso 7 (UX) | Contenido `max-w-6xl` (cabecera alineada); móvil sigue fluido | Menos hueco lateral en escritorio |
 | Tras Paso 7 (UX) | Búsqueda ampliada (global/título/estado/órgano) revertida; UI = Texto + CPV + importes | Pendiente reintentar filtros cuando haya tiempo; layout `max-w-6xl` se mantiene |
+| Tras Paso 7 (UX) | Auth invite-only: landing sin nav; solo «Iniciar sesión»; sin registro público; búsqueda exige sesión | [ADR 016](../adr/016-auth-invite-only-sin-registro-publico.md); cambio de contraseña opcional al primer login + en Cuenta |
 
 ---
 

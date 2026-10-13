@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { DigestFrequency } from "@/lib/queries";
 import { LogoutButton } from "./logout-button";
+import { ChangePasswordForm } from "./change-password-form";
 import { DigestFrequencyForm } from "./digest-frequency-form";
 
 export const dynamic = "force-dynamic";
@@ -65,6 +66,18 @@ export default async function AccountPage() {
           </p>
         )}
       </dl>
+
+      <section className="mt-10 rounded-md border border-border bg-background p-4">
+        <h2 className="text-base font-medium text-foreground">
+          Cambiar contraseña
+        </h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Puedes actualizarla cuando quieras.
+        </p>
+        <div className="mt-4">
+          <ChangePasswordForm />
+        </div>
+      </section>
 
       {profile ? (
         <DigestFrequencyForm

@@ -115,7 +115,7 @@ export function HomeDashboard({
   );
 }
 
-/** Landing para visitantes sin sesión. */
+/** Landing para visitantes sin sesión (sin nav; solo login — ADR 016). */
 export function HomeLanding() {
   return (
     <main className="relative flex flex-1 flex-col items-center justify-center px-6 py-16">
@@ -132,13 +132,7 @@ export function HomeLanding() {
           Inicia sesión para guardar alertas y personalizar tu seguimiento.
         </p>
         <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-          <Button href="/search">Buscar licitaciones</Button>
-          <Button href="/login" variant="outline">
-            Iniciar sesión
-          </Button>
-          <Button href="/register" variant="ghost">
-            Registrarse
-          </Button>
+          <Button href="/login">Iniciar sesión</Button>
         </div>
       </div>
     </main>
