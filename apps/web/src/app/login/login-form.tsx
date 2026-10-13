@@ -52,8 +52,15 @@ export function LoginForm({ nextPath }: { nextPath: string }) {
 
   async function onSkipPassword() {
     setPending(true);
-    await markPasswordOfferSeen();
+    setError(null);
+    const { error: markError } = await markPasswordOfferSeen();
     setPending(false);
+    if (markError) {
+      setError(
+        "No se pudo guardar tu preferencia. Inténtalo de nuevo o continúa desde Cuenta.",
+      );
+      return;
+    }
     goNext();
   }
 
@@ -73,6 +80,14 @@ export function LoginForm({ nextPath }: { nextPath: string }) {
           submitLabel="Guardar y continuar"
           onDone={goNext}
         />
+        {error ? (
+          <p
+            className="rounded-lg border border-destructive/40 bg-surface px-3 py-2 text-sm text-destructive"
+            role="alert"
+          >
+            {error}
+          </p>
+        ) : null}
         <Button
           type="button"
           variant="outline"
@@ -80,7 +95,7 @@ export function LoginForm({ nextPath }: { nextPath: string }) {
           className="w-full"
           onClick={onSkipPassword}
         >
-          Continuar sin cambiar
+          {pending ? "Guardando…" : "Continuar sin cambiar"}
         </Button>
       </div>
     );

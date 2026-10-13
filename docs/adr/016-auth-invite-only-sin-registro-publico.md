@@ -24,7 +24,7 @@ ADR 003 sigue dejando el canónico legible con `anon` a nivel RLS (ETL/API); est
 2. **Usuarios** los crea la administradora en Supabase (email + contraseña temporal o invite).
 3. **Búsqueda y rutas de producto** (`/search`, `/tenders`, `/favorites`, `/alerts`, `/account`) exigen sesión (middleware → `/login?next=…`).
 4. **Landing anónima** sin cabecera/nav; único CTA: «Iniciar sesión».
-5. Tras el **primer login** (si aún no marcó `user_metadata.password_changed`), la UI ofrece **cambiar contraseña de forma opcional**; también disponible siempre en Cuenta.
+5. Tras el **primer login** (si no hay `user_metadata.password_changed` ni `password_offer_seen`), la UI ofrece **cambiar contraseña de forma opcional**. «Continuar sin cambiar» persiste `password_offer_seen` y **no se vuelve a mostrar**. El cambio sigue disponible siempre en Cuenta.
 6. Recomendación operativa: desactivar «Allow new users to sign up» en Supabase Auth para reforzar el cierre a nivel proveedor.
 
 ### Alternativas descartadas

@@ -8,22 +8,38 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 const META_PASSWORD_CHANGED = "password_changed";
 const META_PASSWORD_OFFER_SEEN = "password_offer_seen";
 
-/** Ofrecer cambio opcional solo la primera vez (hasta cambiar o omitir). */
+function metaFlagTrue(
+  meta: Record<string, unknown>,
+  key: string,
+): boolean {
+  const v = meta[key];
+  return v === true || v === "true" || v === 1;
+}
+
+/**
+ * Oferta de cambio de contraseña solo en el primer acceso:
+ * desaparece si ya la cambió o si eligió «Continuar sin cambiar».
+ */
 export function userNeedsPasswordOffer(
   user: { user_metadata?: Record<string, unknown> } | null,
 ): boolean {
   if (!user) return false;
   const meta = user.user_metadata ?? {};
-  if (meta[META_PASSWORD_CHANGED] === true) return false;
-  if (meta[META_PASSWORD_OFFER_SEEN] === true) return false;
+  if (metaFlagTrue(meta, META_PASSWORD_CHANGED)) return false;
+  if (metaFlagTrue(meta, META_PASSWORD_OFFER_SEEN)) return false;
   return true;
 }
 
-export async function markPasswordOfferSeen() {
+/** Persiste que ya se mostró/omitió la oferta (no volver a preguntar). */
+export async function markPasswordOfferSeen(): Promise<{ error: Error | null }> {
   const supabase = createSupabaseBrowserClient();
-  await supabase.auth.updateUser({
+  const { error } = await supabase.auth.updateUser({
     data: { [META_PASSWORD_OFFER_SEEN]: true },
   });
+  if (error) return { error: new Error(error.message) };
+  // Asegura que la sesión local lleva el metadata actualizado.
+  await supabase.auth.refreshSession();
+  return { error: null };
 }
 
 /** Formulario de cambio de contraseña (Cuenta o post-login opcional). */
