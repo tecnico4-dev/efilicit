@@ -1,17 +1,12 @@
 import Link from "next/link";
 import { FavoriteHeartButton } from "@/components/favorites/favorite-heart-button";
-import { PAGE_MAIN_CLASS } from "@/components/shell/page-width";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import {
   getOwnProfile,
-  listAuthorityOptions,
   listOwnFavoriteTenderIds,
-  listTenderStatuses,
   searchTenders,
-  type AuthorityOption,
   type SearchTenderRow,
 } from "@/lib/queries";
-import type { SearchCriteria } from "@efilicit/types";
 import { SaveSearchButton } from "./save-search-button";
 import { SearchForm } from "./search-form";
 
@@ -63,34 +58,17 @@ function MatchKindBadge({ kind }: { kind: string }) {
   );
 }
 
-type SearchFilters = {
-  q: string;
-  title: string;
-  cpv: string;
-  minRaw: string;
-  maxRaw: string;
-  status: string;
-  pubFrom: string;
-  pubTo: string;
-  authorityId: string;
-};
-
-function tenderHrefFromSearch(tenderId: string, filters: SearchFilters): string {
+function tenderHrefFromSearch(
+  tenderId: string,
+  filters: { q: string; cpv: string; minRaw: string; maxRaw: string },
+): string {
   const params = new URLSearchParams({ from: "search" });
   if (filters.q) params.set("q", filters.q);
-  if (filters.title) params.set("title", filters.title);
   if (filters.cpv) params.set("cpv", filters.cpv);
   if (filters.minRaw) params.set("min", filters.minRaw);
   if (filters.maxRaw) params.set("max", filters.maxRaw);
-  if (filters.status) params.set("status", filters.status);
-  if (filters.pubFrom) params.set("pub_from", filters.pubFrom);
-  if (filters.pubTo) params.set("pub_to", filters.pubTo);
-  if (filters.authorityId) params.set("authority", filters.authorityId);
   return `/tenders/${tenderId}?${params.toString()}`;
 }
-
-const fieldClass =
-  "mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring";
 
 function ResultsList({
   rows,
@@ -103,7 +81,7 @@ function ResultsList({
   rows: SearchTenderRow[];
   error: string | null;
   searched: boolean;
-  filters: SearchFilters;
+  filters: { q: string; cpv: string; minRaw: string; maxRaw: string };
   profileUserId: string | null;
   favoritedIds: Set<string>;
 }) {
@@ -180,14 +158,9 @@ export default async function SearchPage({
 }) {
   const params = await searchParams;
   const q = first(params.q).trim();
-  const title = first(params.title).trim();
   const cpv = first(params.cpv).trim();
   const minRaw = first(params.min).trim();
   const maxRaw = first(params.max).trim();
-  const status = first(params.status).trim();
-  const pubFrom = first(params.pub_from).trim();
-  const pubTo = first(params.pub_to).trim();
-  const authorityId = first(params.authority).trim();
   const from = first(params.from).trim();
   const back = backFromSavedSearch(from);
   const min = minRaw === "" ? undefined : Number(minRaw);
@@ -195,33 +168,16 @@ export default async function SearchPage({
 
   const hasParams =
     q !== "" ||
-    title !== "" ||
     cpv !== "" ||
     (min != null && !Number.isNaN(min)) ||
-    (max != null && !Number.isNaN(max)) ||
-    status !== "" ||
-    pubFrom !== "" ||
-    pubTo !== "" ||
-    authorityId !== "";
+    (max != null && !Number.isNaN(max));
 
-  const filters: SearchFilters = {
-    q,
-    title,
-    cpv,
-    minRaw,
-    maxRaw,
-    status,
-    pubFrom,
-    pubTo,
-    authorityId,
-  };
+  const filters = { q, cpv, minRaw, maxRaw };
 
   let rows: SearchTenderRow[] = [];
   let error: string | null = null;
   let profileUserId: string | null = null;
   let favoritedIds = new Set<string>();
-  let authorities: AuthorityOption[] = [];
-  let statuses: string[] = [];
 
   try {
     const authClient = await createSupabaseServerClient();
@@ -231,38 +187,19 @@ export default async function SearchPage({
     profileUserId = null;
   }
 
-  try {
-    const client = await createSupabaseServerClient();
-    const [authRes, statusRes] = await Promise.all([
-      listAuthorityOptions(client),
-      listTenderStatuses(client),
-    ]);
-    authorities = authRes.data;
-    statuses = statusRes.data;
-  } catch {
-    authorities = [];
-    statuses = [];
-  }
-
   if (hasParams) {
     try {
       const client = await createSupabaseServerClient();
-      const criteria: Partial<SearchCriteria> = {
-        version: 1,
-        title_contains: title || undefined,
-        cpv_codes: cpv ? [cpv] : undefined,
-        estimated_value_min:
-          min != null && !Number.isNaN(min) ? min : undefined,
-        estimated_value_max:
-          max != null && !Number.isNaN(max) ? max : undefined,
-        statuses: status ? [status] : undefined,
-        publication_date_from: pubFrom || undefined,
-        publication_date_to: pubTo || undefined,
-        authority: authorityId ? { ids: [authorityId] } : undefined,
-      };
       const result = await searchTenders(client, {
         query: q || undefined,
-        criteria,
+        criteria: {
+          version: 1,
+          cpv_codes: cpv ? [cpv] : undefined,
+          estimated_value_min:
+            min != null && !Number.isNaN(min) ? min : undefined,
+          estimated_value_max:
+            max != null && !Number.isNaN(max) ? max : undefined,
+        },
         limit: 20,
       });
       if (result.error) {
@@ -288,21 +225,8 @@ export default async function SearchPage({
     }
   }
 
-  const formKey = [
-    q,
-    title,
-    cpv,
-    minRaw,
-    maxRaw,
-    status,
-    pubFrom,
-    pubTo,
-    authorityId,
-    from,
-  ].join("|");
-
   return (
-    <main className={PAGE_MAIN_CLASS}>
+    <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-6 py-10">
       {back ? (
         <p className="mb-4 text-sm">
           <Link href={back.href} className="font-medium text-link hover:underline">
@@ -315,7 +239,7 @@ export default async function SearchPage({
       </h1>
 
       <SearchForm
-        formKey={formKey}
+        formKey={`${q}|${cpv}|${minRaw}|${maxRaw}|${from}`}
         actions={
           <>
             <button
@@ -333,152 +257,61 @@ export default async function SearchPage({
         {from === "favorites" || from === "favorites-searches" ? (
           <input type="hidden" name="from" value={from} />
         ) : null}
-
-        <section className="space-y-2">
-          <h2 className="text-base font-medium text-foreground">Buscador global</h2>
-          <p className="text-xs text-muted-foreground">
-            Palabras clave en título y descripción de la licitación.
-          </p>
+        <div>
+          <label htmlFor="q" className="block text-sm font-medium text-foreground">
+            Texto
+          </label>
+          <input
+            id="q"
+            name="q"
+            type="search"
+            defaultValue={q}
+            className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
+          />
+        </div>
+        <div className="grid gap-4 sm:grid-cols-3">
           <div>
-            <label htmlFor="q" className="sr-only">
-              Buscador global
+            <label htmlFor="cpv" className="block text-sm font-medium text-foreground">
+              CPV (prefijo)
             </label>
             <input
-              id="q"
-              name="q"
-              type="search"
-              defaultValue={q}
-              className={fieldClass}
+              id="cpv"
+              name="cpv"
+              type="text"
+              inputMode="numeric"
+              defaultValue={cpv}
+              className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 font-mono text-sm outline-none focus:ring-2 focus:ring-ring"
             />
           </div>
-        </section>
-
-        <section className="space-y-4 border-t border-border pt-6">
-          <h2 className="text-base font-medium text-foreground">Filtros</h2>
-
           <div>
-            <label htmlFor="title" className="block text-sm font-medium text-foreground">
-              Título
+            <label htmlFor="min" className="block text-sm font-medium text-foreground">
+              Importe mín.
             </label>
             <input
-              id="title"
-              name="title"
-              type="search"
-              defaultValue={title}
-              className={fieldClass}
+              id="min"
+              name="min"
+              type="number"
+              min={0}
+              step={1}
+              defaultValue={minRaw}
+              className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
             />
           </div>
-
-          <div className="grid gap-4 sm:grid-cols-3">
-            <div>
-              <label htmlFor="cpv" className="block text-sm font-medium text-foreground">
-                CPV (prefijo)
-              </label>
-              <input
-                id="cpv"
-                name="cpv"
-                type="text"
-                inputMode="numeric"
-                defaultValue={cpv}
-                className={`${fieldClass} font-mono`}
-              />
-            </div>
-            <div>
-              <label htmlFor="min" className="block text-sm font-medium text-foreground">
-                Importe mín.
-              </label>
-              <input
-                id="min"
-                name="min"
-                type="number"
-                min={0}
-                step={1}
-                defaultValue={minRaw}
-                className={fieldClass}
-              />
-            </div>
-            <div>
-              <label htmlFor="max" className="block text-sm font-medium text-foreground">
-                Importe máx.
-              </label>
-              <input
-                id="max"
-                name="max"
-                type="number"
-                min={0}
-                step={1}
-                defaultValue={maxRaw}
-                className={fieldClass}
-              />
-            </div>
+          <div>
+            <label htmlFor="max" className="block text-sm font-medium text-foreground">
+              Importe máx.
+            </label>
+            <input
+              id="max"
+              name="max"
+              type="number"
+              min={0}
+              step={1}
+              defaultValue={maxRaw}
+              className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+            />
           </div>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <label htmlFor="status" className="block text-sm font-medium text-foreground">
-                Estado
-              </label>
-              <select
-                id="status"
-                name="status"
-                defaultValue={status}
-                className={fieldClass}
-              >
-                <option value="">Cualquiera</option>
-                {statuses.map((s) => (
-                  <option key={s} value={s}>
-                    {s}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label htmlFor="authority" className="block text-sm font-medium text-foreground">
-                Órgano contratante
-              </label>
-              <select
-                id="authority"
-                name="authority"
-                defaultValue={authorityId}
-                className={fieldClass}
-              >
-                <option value="">Cualquiera</option>
-                {authorities.map((a) => (
-                  <option key={a.id} value={a.id}>
-                    {a.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <label htmlFor="pub_from" className="block text-sm font-medium text-foreground">
-                Fecha de publicación (desde)
-              </label>
-              <input
-                id="pub_from"
-                name="pub_from"
-                type="date"
-                defaultValue={pubFrom}
-                className={fieldClass}
-              />
-            </div>
-            <div>
-              <label htmlFor="pub_to" className="block text-sm font-medium text-foreground">
-                Fecha de publicación (hasta)
-              </label>
-              <input
-                id="pub_to"
-                name="pub_to"
-                type="date"
-                defaultValue={pubTo}
-                className={fieldClass}
-              />
-            </div>
-          </div>
-        </section>
+        </div>
       </SearchForm>
 
       <ResultsList

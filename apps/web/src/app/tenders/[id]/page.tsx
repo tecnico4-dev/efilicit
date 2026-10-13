@@ -48,23 +48,13 @@ function backLinkFromParams(
   if (from === "search") {
     const qs = new URLSearchParams();
     const q = first(params.q).trim();
-    const title = first(params.title).trim();
     const cpv = first(params.cpv).trim();
     const min = first(params.min).trim();
     const max = first(params.max).trim();
-    const status = first(params.status).trim();
-    const pubFrom = first(params.pub_from).trim();
-    const pubTo = first(params.pub_to).trim();
-    const authority = first(params.authority).trim();
     if (q) qs.set("q", q);
-    if (title) qs.set("title", title);
     if (cpv) qs.set("cpv", cpv);
     if (min) qs.set("min", min);
     if (max) qs.set("max", max);
-    if (status) qs.set("status", status);
-    if (pubFrom) qs.set("pub_from", pubFrom);
-    if (pubTo) qs.set("pub_to", pubTo);
-    if (authority) qs.set("authority", authority);
     const query = qs.toString();
     return {
       href: query ? `/search?${query}` : "/search",

@@ -45,13 +45,8 @@ export type GeographyCriteria = {
  * Fechas en ISO-8601 (`YYYY-MM-DD` o timestamptz completo según el campo).
  */
 export type CriteriaFields = {
-  /** Palabras clave; búsqueda/alertas sobre título+descripción (FTS / substring). */
+  /** Palabras clave; en búsqueda/alertas se aplican a título/descripción. */
   keywords?: string[];
-  /**
-   * Coincidencia orientada al título (`tenders.title`).
-   * En UI de búsqueda: campo «Título»; en alertas opcional.
-   */
-  title_contains?: string;
   /** Códigos CPV (`tenders.cpv_code`); suele bastar coincidencia por prefijo. */
   cpv_codes?: string[];
   authority?: AuthorityCriteria;
