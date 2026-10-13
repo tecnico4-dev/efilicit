@@ -4,11 +4,6 @@ export {
   type SearchTendersInput,
 } from "./search-tenders";
 export {
-  listAuthorityOptions,
-  listTenderStatuses,
-  type AuthorityOption,
-} from "./search-filters";
-export {
   getTenderById,
   type TenderDetail,
   type TenderSourceSummary,

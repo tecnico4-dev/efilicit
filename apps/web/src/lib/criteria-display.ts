@@ -10,15 +10,12 @@ export function parseCriteria(raw: unknown): SearchCriteria {
   return o as SearchCriteria;
 }
 
-/** Resumen legible de criteria v1. */
+/** Resumen legible de criteria v1 (MVP: keywords, CPV, importes). */
 export function formatCriteriaSummary(criteria: SearchCriteria): string {
   const parts: string[] = [];
 
   if (criteria.keywords?.length) {
     parts.push(criteria.keywords.join(", "));
-  }
-  if (criteria.title_contains?.trim()) {
-    parts.push(`título «${criteria.title_contains.trim()}»`);
   }
   if (criteria.cpv_codes?.length) {
     parts.push(`CPV ${criteria.cpv_codes.join(", ")}`);
@@ -36,17 +33,6 @@ export function formatCriteriaSummary(criteria: SearchCriteria): string {
         ? String(criteria.estimated_value_max)
         : "—";
     parts.push(`importe ${min}–${max}`);
-  }
-  if (criteria.statuses?.length) {
-    parts.push(`estado ${criteria.statuses.join(", ")}`);
-  }
-  if (criteria.publication_date_from || criteria.publication_date_to) {
-    parts.push(
-      `pub. ${criteria.publication_date_from ?? "—"}–${criteria.publication_date_to ?? "—"}`,
-    );
-  }
-  if (criteria.authority?.ids?.length) {
-    parts.push("órgano filtrado");
   }
 
   return parts.length ? parts.join(" · ") : "Sin criterios";
@@ -100,23 +86,19 @@ export function formFieldsToCriteria(input: {
 export function criteriaHasFilters(criteria: SearchCriteria): boolean {
   return Boolean(
     criteria.keywords?.length ||
-      criteria.title_contains?.trim() ||
       criteria.cpv_codes?.length ||
       criteria.estimated_value_min != null ||
       criteria.estimated_value_max != null ||
       criteria.authority ||
       criteria.geography ||
       criteria.contract_types?.length ||
-      criteria.statuses?.length ||
-      criteria.publication_date_from ||
-      criteria.publication_date_to ||
-      criteria.deadline_from ||
-      criteria.deadline_to,
+      criteria.statuses?.length,
   );
 }
 
 /**
- * Firma estable de criteria para detectar duplicados.
+ * Firma estable de criteria (MVP: keywords, CPV, importes) para detectar
+ * búsquedas/alertas duplicadas sin depender del orden de arrays.
  */
 export function criteriaSignature(criteria: SearchCriteria): string {
   const keywords = criteria.keywords?.length
@@ -125,23 +107,12 @@ export function criteriaSignature(criteria: SearchCriteria): string {
   const cpv = criteria.cpv_codes?.length
     ? [...criteria.cpv_codes].sort()
     : undefined;
-  const statuses = criteria.statuses?.length
-    ? [...criteria.statuses].sort()
-    : undefined;
-  const authIds = criteria.authority?.ids?.length
-    ? [...criteria.authority.ids].sort()
-    : undefined;
   return JSON.stringify({
     v: 1,
     keywords: keywords ?? null,
-    title: criteria.title_contains?.trim().toLowerCase() || null,
     cpv: cpv ?? null,
     min: criteria.estimated_value_min ?? null,
     max: criteria.estimated_value_max ?? null,
-    statuses: statuses ?? null,
-    pubFrom: criteria.publication_date_from ?? null,
-    pubTo: criteria.publication_date_to ?? null,
-    authIds: authIds ?? null,
   });
 }
 

@@ -8,26 +8,17 @@ import {
 } from "./search-feedback";
 import { SEARCH_FORM_ID } from "./save-search-button";
 
-function readValue(form: HTMLFormElement, name: string): string {
-  const el = form.elements.namedItem(name);
-  if (el instanceof HTMLInputElement || el instanceof HTMLSelectElement) {
-    return el.value.trim();
-  }
-  return "";
-}
-
 function hasAnyCriterion(form: HTMLFormElement): boolean {
-  return (
-    readValue(form, "q") !== "" ||
-    readValue(form, "title") !== "" ||
-    readValue(form, "cpv") !== "" ||
-    readValue(form, "min") !== "" ||
-    readValue(form, "max") !== "" ||
-    readValue(form, "status") !== "" ||
-    readValue(form, "pub_from") !== "" ||
-    readValue(form, "pub_to") !== "" ||
-    readValue(form, "authority") !== ""
-  );
+  const read = (name: string) => {
+    const el = form.elements.namedItem(name);
+    if (el instanceof HTMLInputElement) return el.value.trim();
+    return "";
+  };
+  const q = read("q");
+  const cpv = read("cpv");
+  const min = read("min");
+  const max = read("max");
+  return q !== "" || cpv !== "" || min !== "" || max !== "";
 }
 
 function SearchFormInner({
@@ -43,7 +34,7 @@ function SearchFormInner({
     <form
       id={SEARCH_FORM_ID}
       method="get"
-      className="mt-8 space-y-6"
+      className="mt-8 space-y-4"
       role="search"
       onSubmit={(e) => {
         if (!hasAnyCriterion(e.currentTarget)) {

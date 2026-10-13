@@ -710,10 +710,6 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      list_tender_statuses: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
       search_tenders: {
         Args: {
           p_authority_ids?: string[]
@@ -735,7 +731,6 @@ export type Database = {
           p_publication_date_to?: string
           p_query?: string
           p_statuses?: string[]
-          p_title_query?: string
         }
         Returns: {
           contract_type: string

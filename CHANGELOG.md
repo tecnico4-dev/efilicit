@@ -35,7 +35,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Semana 6 UX: búsqueda ampliada — Buscador global (FTS) + Filtros (Título, estado, fechas pub., órgano contratante); layout contenido `max-w-6xl`; frecuencia alertas alineada a la derecha.
+- Semana 6 UX: layout contenido `max-w-6xl`; frecuencia alertas alineada a la derecha. Búsqueda ampliada (global/título/estado/órgano) revertida — se mantiene el buscador previo.
 - Semana 6 UX: «Limpiar campos» solo con criterios escritos; frecuencia de notificaciones editable en Alertas (toast de confirmación); licitaciones favoritas paginadas (10/pág).
 - Semana 6 UX: soft undo al borrar búsqueda/alerta (toast + Revertir; × circular flotante); editar alerta con Cancelar junto a Guardar y Editar desactivado mientras se edita.
 - Semana 6 UX: Favoritos hub (licitaciones + búsquedas guardadas con preview/Mostrar más); alertas con badge Activa/Inactiva; sin «Crear alerta» en búsqueda; búsquedas guardadas fuera de `/alerts`.
