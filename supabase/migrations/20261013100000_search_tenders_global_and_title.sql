@@ -1,6 +1,15 @@
 -- Semana 6 UX: separar buscador global (FTS search_vector) de filtro por título (trgm).
 -- Criteria v1: p_query + p_keywords = global; p_title_query = solo título.
 -- Filtros status / fechas / authority ya existían; la UI los expone ahora.
+--
+-- IMPORTANTE: añadir un argumento crea otra sobrecarga si no se borra la firma anterior.
+-- DROP de la firma Semana 5 (sin p_title_query) antes del CREATE.
+
+drop function if exists public.search_tenders(
+  text, text[], text[], text[], uuid[], text, text[], text[],
+  numeric, numeric, text[], text[], text[], date, date,
+  timestamptz, timestamptz, integer, integer
+);
 
 create or replace function public.search_tenders(
   p_query text default null,
@@ -228,12 +237,25 @@ as $$
   offset greatest(0, coalesce(p_offset, 0));
 $$;
 
-comment on function public.search_tenders is
+comment on function public.search_tenders(
+  text, text[], text[], text[], uuid[], text, text[], text[],
+  numeric, numeric, text[], text[], text[], date, date,
+  timestamptz, timestamptz, integer, integer, text
+) is
   'Semana 6: p_query/p_keywords = FTS global (search_vector); p_title_query = título (trgm). '
   'Filtros Criteria v1. match_kind: fts/trgm/filter.';
 
-revoke all on function public.search_tenders from public;
-grant execute on function public.search_tenders to anon, authenticated;
+revoke all on function public.search_tenders(
+  text, text[], text[], text[], uuid[], text, text[], text[],
+  numeric, numeric, text[], text[], text[], date, date,
+  timestamptz, timestamptz, integer, integer, text
+) from public;
+
+grant execute on function public.search_tenders(
+  text, text[], text[], text[], uuid[], text, text[], text[],
+  numeric, numeric, text[], text[], text[], date, date,
+  timestamptz, timestamptz, integer, integer, text
+) to anon, authenticated;
 
 -- Distinct statuses for search UI (avoid scanning all tender rows in the app).
 create or replace function public.list_tender_statuses()
