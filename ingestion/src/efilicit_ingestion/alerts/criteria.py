@@ -49,6 +49,7 @@ class SearchCriteria(BaseModel):
 
     version: CriteriaVersion = 1
     keywords: list[str] | None = None
+    title_contains: str | None = None
     cpv_codes: list[str] | None = None
     authority: AuthorityCriteria | None = None
     geography: GeographyCriteria | None = None

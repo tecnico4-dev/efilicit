@@ -44,7 +44,7 @@ export default async function SavedSearchesPage({
   const profile = await getOwnProfile(supabase);
   if (!profile.data) {
     return (
-      <main className="mx-auto max-w-3xl px-6 py-10">
+      <main className="mx-auto max-w-6xl px-6 py-10">
         <p className="text-sm text-destructive">
           No hay perfil en public.users:{" "}
           {profile.error?.message ?? "desconocido"}
@@ -59,7 +59,7 @@ export default async function SavedSearchesPage({
   const { data: searches, error } = await listOwnSavedSearches(supabase);
 
   return (
-    <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-6 py-10">
+    <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-6 py-10">
       <p className="text-sm">
         <Link href={back.href} className="font-medium text-link hover:underline">
           {back.label}

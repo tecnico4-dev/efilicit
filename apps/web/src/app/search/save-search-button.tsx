@@ -13,7 +13,9 @@ const FORM_ID = "search-form";
 
 function readField(form: HTMLFormElement, name: string): string {
   const el = form.elements.namedItem(name);
-  if (el instanceof HTMLInputElement) return el.value.trim();
+  if (el instanceof HTMLInputElement || el instanceof HTMLSelectElement) {
+    return el.value.trim();
+  }
   return "";
 }
 
@@ -22,9 +24,14 @@ function buildCriteria(form: HTMLFormElement): {
   name: string;
 } | null {
   const q = readField(form, "q");
+  const title = readField(form, "title");
   const cpv = readField(form, "cpv");
   const minRaw = readField(form, "min");
   const maxRaw = readField(form, "max");
+  const status = readField(form, "status");
+  const pubFrom = readField(form, "pub_from");
+  const pubTo = readField(form, "pub_to");
+  const authorityId = readField(form, "authority");
   const min = minRaw === "" ? undefined : Number(minRaw);
   const max = maxRaw === "" ? undefined : Number(maxRaw);
 
@@ -37,23 +44,35 @@ function buildCriteria(form: HTMLFormElement): {
 
   const hasSomething =
     (keywords && keywords.length > 0) ||
+    title !== "" ||
     cpv !== "" ||
     (min != null && !Number.isNaN(min)) ||
-    (max != null && !Number.isNaN(max));
+    (max != null && !Number.isNaN(max)) ||
+    status !== "" ||
+    pubFrom !== "" ||
+    pubTo !== "" ||
+    authorityId !== "";
 
   if (!hasSomething) return null;
 
   const criteria: SearchCriteria = {
     version: 1,
     keywords: keywords?.length ? keywords : undefined,
+    title_contains: title || undefined,
     cpv_codes: cpv ? [cpv] : undefined,
     estimated_value_min: min != null && !Number.isNaN(min) ? min : undefined,
     estimated_value_max: max != null && !Number.isNaN(max) ? max : undefined,
+    statuses: status ? [status] : undefined,
+    publication_date_from: pubFrom || undefined,
+    publication_date_to: pubTo || undefined,
+    authority: authorityId ? { ids: [authorityId] } : undefined,
   };
 
   const name =
     q ||
+    title ||
     (cpv ? `CPV ${cpv}` : null) ||
+    (status ? `Estado ${status}` : null) ||
     "Búsqueda guardada";
 
   return { criteria, name };

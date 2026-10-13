@@ -4,20 +4,30 @@ import { useEffect, useState } from "react";
 import { useSearchFeedback } from "./search-feedback";
 import { SEARCH_FORM_ID } from "./save-search-button";
 
-const FIELD_NAMES = ["q", "cpv", "min", "max"] as const;
+const TEXT_FIELDS = ["q", "title", "cpv", "min", "max", "pub_from", "pub_to"] as const;
+const SELECT_FIELDS = ["status", "authority"] as const;
 
 function blankFormFields(form: HTMLFormElement) {
-  for (const name of FIELD_NAMES) {
+  for (const name of TEXT_FIELDS) {
     const el = form.elements.namedItem(name);
     if (el instanceof HTMLInputElement) el.value = "";
+  }
+  for (const name of SELECT_FIELDS) {
+    const el = form.elements.namedItem(name);
+    if (el instanceof HTMLSelectElement) el.value = "";
   }
 }
 
 function formHasValues(form: HTMLFormElement): boolean {
-  return FIELD_NAMES.some((name) => {
+  for (const name of TEXT_FIELDS) {
     const el = form.elements.namedItem(name);
-    return el instanceof HTMLInputElement && el.value.trim() !== "";
-  });
+    if (el instanceof HTMLInputElement && el.value.trim() !== "") return true;
+  }
+  for (const name of SELECT_FIELDS) {
+    const el = form.elements.namedItem(name);
+    if (el instanceof HTMLSelectElement && el.value.trim() !== "") return true;
+  }
+  return false;
 }
 
 /**

@@ -46,7 +46,7 @@ export function DigestFrequencyControl({
   }
 
   return (
-    <div className="mt-2 flex flex-wrap items-center gap-2 text-sm">
+    <div className="mt-2 flex flex-wrap items-center justify-end gap-2 text-sm">
       <label
         htmlFor="alerts_digest_frequency"
         className="text-muted-foreground"

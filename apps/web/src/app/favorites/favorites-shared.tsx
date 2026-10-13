@@ -34,6 +34,9 @@ export function searchHrefFromCriteria(
   if (criteria.keywords?.length) {
     params.set("q", criteria.keywords.join(" "));
   }
+  if (criteria.title_contains?.trim()) {
+    params.set("title", criteria.title_contains.trim());
+  }
   if (criteria.cpv_codes?.[0]) {
     params.set("cpv", criteria.cpv_codes[0]);
   }
@@ -42,6 +45,18 @@ export function searchHrefFromCriteria(
   }
   if (criteria.estimated_value_max != null) {
     params.set("max", String(criteria.estimated_value_max));
+  }
+  if (criteria.statuses?.[0]) {
+    params.set("status", criteria.statuses[0]);
+  }
+  if (criteria.publication_date_from) {
+    params.set("pub_from", criteria.publication_date_from);
+  }
+  if (criteria.publication_date_to) {
+    params.set("pub_to", criteria.publication_date_to);
+  }
+  if (criteria.authority?.ids?.[0]) {
+    params.set("authority", criteria.authority.ids[0]);
   }
   if (from) params.set("from", from);
   const qs = params.toString();

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { FavoriteToggle } from "@/components/favorites/favorite-toggle";
+import { PAGE_MAIN_CLASS } from "@/components/shell/page-width";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import {
   getOwnProfile,
@@ -47,13 +48,23 @@ function backLinkFromParams(
   if (from === "search") {
     const qs = new URLSearchParams();
     const q = first(params.q).trim();
+    const title = first(params.title).trim();
     const cpv = first(params.cpv).trim();
     const min = first(params.min).trim();
     const max = first(params.max).trim();
+    const status = first(params.status).trim();
+    const pubFrom = first(params.pub_from).trim();
+    const pubTo = first(params.pub_to).trim();
+    const authority = first(params.authority).trim();
     if (q) qs.set("q", q);
+    if (title) qs.set("title", title);
     if (cpv) qs.set("cpv", cpv);
     if (min) qs.set("min", min);
     if (max) qs.set("max", max);
+    if (status) qs.set("status", status);
+    if (pubFrom) qs.set("pub_from", pubFrom);
+    if (pubTo) qs.set("pub_to", pubTo);
+    if (authority) qs.set("authority", authority);
     const query = qs.toString();
     return {
       href: query ? `/search?${query}` : "/search",
@@ -196,7 +207,7 @@ export default async function TenderDetailPage({
 
   if (error) {
     return (
-      <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-6 py-10">
+      <main className={PAGE_MAIN_CLASS}>
         <p className="text-sm text-destructive" role="alert">
           No se pudo cargar la licitación: {error.message}
         </p>
@@ -233,7 +244,7 @@ export default async function TenderDetailPage({
   }
 
   return (
-    <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-6 py-10">
+    <main className={PAGE_MAIN_CLASS}>
       <p className="text-sm">
         <Link href={back.href} className="font-medium text-link hover:underline">
           {back.label}

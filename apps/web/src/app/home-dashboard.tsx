@@ -63,7 +63,7 @@ export function HomeDashboard({
   });
 
   return (
-    <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-6 py-10">
+    <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-6 py-10">
       <div className="flex flex-col items-center text-center">
         <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
           Efi<span className="text-primary-dark">Licit</span>

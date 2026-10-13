@@ -20,7 +20,7 @@ export default async function AlertsPage() {
   const profileResult = await getOwnProfile(supabase);
   if (!profileResult.data) {
     return (
-      <main className="mx-auto max-w-3xl px-6 py-10">
+      <main className="mx-auto max-w-6xl px-6 py-10">
         <p className="text-sm text-destructive">
           No hay perfil en public.users:{" "}
           {profileResult.error?.message ?? "desconocido"}
@@ -35,7 +35,7 @@ export default async function AlertsPage() {
   const alertsResult = await listOwnAlerts(supabase);
 
   return (
-    <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-6 py-10">
+    <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-6 py-10">
       <h1 className="text-2xl font-semibold tracking-tight text-foreground">
         Alertas
       </h1>
