@@ -3,6 +3,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getOwnProfile, listOwnAlerts } from "@/lib/queries";
 import { AlertRowItem } from "./alert-row";
 import { AlertsPanel } from "./alerts-panel";
+import { DigestFrequencyControl } from "./digest-frequency-control";
 
 export const dynamic = "force-dynamic";
 
@@ -46,14 +47,10 @@ export default async function AlertsPage() {
 
       <section className="mt-10">
         <h2 className="text-base font-medium text-foreground">Mis alertas</h2>
-        <p className="mt-2 text-right text-xs text-muted-foreground">
-          Digest de la cuenta:{" "}
-          {digestFrequency === "weekly" ? "semanal" : "diaria"}. Cámbialo en{" "}
-          <a href="/account" className="font-medium text-link hover:underline">
-            Cuenta
-          </a>
-          .
-        </p>
+        <DigestFrequencyControl
+          userId={profileResult.data.id}
+          initialFrequency={digestFrequency}
+        />
         {alertsResult.error ? (
           <p className="mt-2 text-sm text-destructive" role="alert">
             {alertsResult.error.message}

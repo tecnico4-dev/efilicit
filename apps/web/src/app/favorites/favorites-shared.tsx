@@ -51,13 +51,22 @@ export function searchHrefFromCriteria(
 export function FavoriteTenderList({
   favorites,
   from = "favorites",
+  bordered = true,
 }: {
   favorites: FavoriteWithTender[];
   /** Origen del enlace a la ficha (para el «volver»). */
   from?: "favorites" | "favorites-tenders";
+  /** Línea superior (false dentro de un recuadro con borde propio). */
+  bordered?: boolean;
 }) {
   return (
-    <ul className="divide-y divide-border border-t border-border">
+    <ul
+      className={
+        bordered
+          ? "divide-y divide-border border-t border-border"
+          : "divide-y divide-border"
+      }
+    >
       {favorites.map((fav) => {
         const tender = fav.tenders;
         if (!tender) {

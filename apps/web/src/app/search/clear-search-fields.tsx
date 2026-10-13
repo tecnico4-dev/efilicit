@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useSearchFeedback } from "./search-feedback";
 import { SEARCH_FORM_ID } from "./save-search-button";
 
@@ -21,15 +22,34 @@ function formHasValues(form: HTMLFormElement): boolean {
 
 /**
  * Solo vacía los inputs del formulario. No toca la URL ni los resultados.
+ * Visible únicamente si algún campo tiene valor.
  */
 export function ClearSearchFieldsButton() {
   const { clearFeedback } = useSearchFeedback();
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const form = document.getElementById(SEARCH_FORM_ID) as HTMLFormElement | null;
+    if (!form) return;
+
+    const sync = () => setVisible(formHasValues(form));
+    sync();
+    form.addEventListener("input", sync);
+    form.addEventListener("change", sync);
+    return () => {
+      form.removeEventListener("input", sync);
+      form.removeEventListener("change", sync);
+    };
+  }, []);
+
+  if (!visible) return null;
 
   function onClear() {
     clearFeedback();
     const form = document.getElementById(SEARCH_FORM_ID) as HTMLFormElement | null;
     if (form && formHasValues(form)) {
       blankFormFields(form);
+      setVisible(false);
     }
   }
 

@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getOwnProfile, listOwnFavorites } from "@/lib/queries";
 import { EmptyFavoritesTendersHint } from "../empty-hints";
-import { FavoriteTenderList } from "../favorites-shared";
+import { PaginatedFavoriteTenders } from "../paginated-favorite-tenders";
 
 export const dynamic = "force-dynamic";
 
@@ -73,7 +73,7 @@ export default async function FavoriteTendersPage({
         </p>
       ) : (
         <div className="mt-8">
-          <FavoriteTenderList
+          <PaginatedFavoriteTenders
             favorites={favorites}
             from="favorites-tenders"
           />

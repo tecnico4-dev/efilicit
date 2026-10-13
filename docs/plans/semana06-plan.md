@@ -160,6 +160,9 @@ CHANGELOG, checklist Fase 6, ADR N/A o ADRs puntuales, handoff. Criterios de sal
 | Paso 7 | `/` autenticada = dashboard (alertas activas, favoritos, búsquedas; CTAs) | Sin ruta `/dashboard`; anónimo sigue en landing |
 | Tras Paso 7 (UX) | Soft undo al borrar búsqueda/alerta: toast + Revertir (~7s); × circular flotante en esquina del globo | Preferencia usuario; dismiss inmediato opcional |
 | Tras Paso 7 (UX) | Editar alerta: Editar desactivado mientras edita; Cancelar junto a Guardar cambios | Cancela restaura valores previos |
+| Tras Paso 7 (UX) | «Limpiar campos» en búsqueda solo si hay algún campo con valor | No visible con form vacío |
+| Tras Paso 7 (UX) | Frecuencia de notificaciones editable en `/alerts` (select daily/weekly) + toast de confirmación | Misma sync que Cuenta (`updateOwnDigestFrequency`); toast `showStatus` sin Revertir |
+| Tras Paso 7 (UX) | `/favorites/tenders` paginado 10/pág; controles solo si &gt;10; página editable con validación | Hub `/favorites` sin cambios |
 
 ---
 
