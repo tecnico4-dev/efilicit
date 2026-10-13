@@ -87,6 +87,22 @@ export function SaveSearchButton({ userId }: { userId: string }) {
       return;
     }
 
+    const minVal = built.criteria.estimated_value_min;
+    const maxVal = built.criteria.estimated_value_max;
+    if (
+      minVal != null &&
+      maxVal != null &&
+      !Number.isNaN(minVal) &&
+      !Number.isNaN(maxVal) &&
+      minVal > maxVal
+    ) {
+      setFeedback({
+        text: "Importe solicitado inválido.",
+        isError: true,
+      });
+      return;
+    }
+
     setPending(true);
     const client = createSupabaseBrowserClient();
     const existing = await listOwnSavedSearches(client);

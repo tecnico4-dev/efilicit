@@ -8,17 +8,29 @@ import {
 } from "./search-feedback";
 import { SEARCH_FORM_ID } from "./save-search-button";
 
+function readField(form: HTMLFormElement, name: string): string {
+  const el = form.elements.namedItem(name);
+  if (el instanceof HTMLInputElement) return el.value.trim();
+  return "";
+}
+
 function hasAnyCriterion(form: HTMLFormElement): boolean {
-  const read = (name: string) => {
-    const el = form.elements.namedItem(name);
-    if (el instanceof HTMLInputElement) return el.value.trim();
-    return "";
-  };
-  const q = read("q");
-  const cpv = read("cpv");
-  const min = read("min");
-  const max = read("max");
+  const q = readField(form, "q");
+  const cpv = readField(form, "cpv");
+  const min = readField(form, "min");
+  const max = readField(form, "max");
   return q !== "" || cpv !== "" || min !== "" || max !== "";
+}
+
+/** Mínimo y máximo rellenados, y mínimo > máximo. */
+function hasInvalidAmountRange(form: HTMLFormElement): boolean {
+  const minRaw = readField(form, "min");
+  const maxRaw = readField(form, "max");
+  if (minRaw === "" || maxRaw === "") return false;
+  const min = Number(minRaw);
+  const max = Number(maxRaw);
+  if (Number.isNaN(min) || Number.isNaN(max)) return false;
+  return min > max;
 }
 
 function SearchFormInner({
@@ -41,6 +53,14 @@ function SearchFormInner({
           e.preventDefault();
           setFeedback({
             text: "Indica al menos un criterio antes de buscar.",
+            isError: true,
+          });
+          return;
+        }
+        if (hasInvalidAmountRange(e.currentTarget)) {
+          e.preventDefault();
+          setFeedback({
+            text: "Importe solicitado inválido.",
             isError: true,
           });
           return;
