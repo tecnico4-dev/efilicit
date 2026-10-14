@@ -23,7 +23,7 @@ export default async function AccountPage() {
 
   const { data: profile, error } = await supabase
     .from("users")
-    .select("id, auth_user_id, display_name, digest_frequency, created_at")
+    .select("id, digest_frequency")
     .eq("auth_user_id", user.id)
     .maybeSingle();
 
@@ -38,33 +38,18 @@ export default async function AccountPage() {
 
       <dl className="mt-8 space-y-3 text-sm">
         <div>
-          <dt className="text-muted-foreground">Email (Auth)</dt>
+          <dt className="text-muted-foreground">Email</dt>
           <dd className="font-mono text-foreground">{user.email}</dd>
-        </div>
-        <div>
-          <dt className="text-muted-foreground">auth.users id</dt>
-          <dd className="font-mono text-foreground">{user.id}</dd>
         </div>
         {error ? (
           <p className="rounded-md bg-surface px-3 py-2 text-destructive" role="alert">
             No se pudo leer public.users: {error.message}
           </p>
-        ) : profile ? (
-          <>
-            <div>
-              <dt className="text-muted-foreground">public.users id</dt>
-              <dd className="font-mono text-foreground">{profile.id}</dd>
-            </div>
-            <div>
-              <dt className="text-muted-foreground">display_name</dt>
-              <dd className="text-foreground">{profile.display_name ?? "—"}</dd>
-            </div>
-          </>
-        ) : (
+        ) : !profile ? (
           <p className="rounded-md bg-amber-50 px-3 py-2 text-amber-900">
             Sesión OK, pero no hay fila en public.users (revisa trigger / seed).
           </p>
-        )}
+        ) : null}
       </dl>
 
       <section className="mt-10 rounded-md border border-border bg-background p-4">

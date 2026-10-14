@@ -1,15 +1,19 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useUndoToast } from "@/components/undo-toast";
+import { cn } from "@/lib/cn";
 import type { FavoriteWithTender } from "@/lib/queries";
 import { FavoriteTenderList } from "./favorites-shared";
 
+const PAGE_SIZE_OPTIONS = [10, 50, 100] as const;
 export const FAVORITES_PAGE_SIZE = 10;
 
+type PageSize = (typeof PAGE_SIZE_OPTIONS)[number];
+
 /**
- * Lista paginada de licitaciones favoritas (10/pág).
- * Sin controles si hay 10 o menos.
+ * Lista paginada de licitaciones favoritas.
+ * Controles solo si hay más de 10; tamaño de página 10 / 50 / 100.
  */
 export function PaginatedFavoriteTenders({
   favorites,
@@ -20,17 +24,46 @@ export function PaginatedFavoriteTenders({
 }) {
   const { showStatus } = useUndoToast();
   const total = favorites.length;
-  const totalPages = Math.max(1, Math.ceil(total / FAVORITES_PAGE_SIZE));
   const showPager = total > FAVORITES_PAGE_SIZE;
 
+  const [pageSize, setPageSize] = useState<PageSize>(FAVORITES_PAGE_SIZE);
   const [page, setPage] = useState(1);
   const [draft, setDraft] = useState("1");
+  const [sizeOpen, setSizeOpen] = useState(false);
+  const sizeMenuRef = useRef<HTMLDivElement>(null);
+
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
   const pageItems = useMemo(() => {
     const safe = Math.min(Math.max(page, 1), totalPages);
-    const start = (safe - 1) * FAVORITES_PAGE_SIZE;
-    return favorites.slice(start, start + FAVORITES_PAGE_SIZE);
-  }, [favorites, page, totalPages]);
+    const start = (safe - 1) * pageSize;
+    return favorites.slice(start, start + pageSize);
+  }, [favorites, page, pageSize, totalPages]);
+
+  const showing = pageItems.length;
+  const atFirst = page <= 1;
+  const atLast = page >= totalPages;
+
+  useEffect(() => {
+    if (page > totalPages) {
+      setPage(totalPages);
+      setDraft(String(totalPages));
+    }
+  }, [page, totalPages]);
+
+  useEffect(() => {
+    if (!sizeOpen) return;
+    function onDocClick(e: MouseEvent) {
+      if (
+        sizeMenuRef.current &&
+        !sizeMenuRef.current.contains(e.target as Node)
+      ) {
+        setSizeOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", onDocClick);
+    return () => document.removeEventListener("mousedown", onDocClick);
+  }, [sizeOpen]);
 
   function applyPage(next: number) {
     const clamped = Math.min(Math.max(next, 1), totalPages);
@@ -48,6 +81,16 @@ export function PaginatedFavoriteTenders({
     applyPage(n);
   }
 
+  function onSelectPageSize(next: PageSize) {
+    setPageSize(next);
+    setPage(1);
+    setDraft("1");
+    setSizeOpen(false);
+  }
+
+  const boxClass =
+    "inline-flex min-w-14 items-center justify-center rounded-md border border-border bg-background px-2 py-1 text-sm tabular-nums text-foreground";
+
   return (
     <div>
       <div className="rounded-lg border border-border px-4">
@@ -61,11 +104,23 @@ export function PaginatedFavoriteTenders({
       {showPager ? (
         <div className="mt-4 flex flex-wrap items-center gap-x-2 gap-y-2 text-sm text-muted-foreground">
           <span>Página</span>
+          <button
+            type="button"
+            aria-label="Página anterior"
+            disabled={atFirst}
+            onClick={() => applyPage(page - 1)}
+            className={cn(
+              "inline-flex h-8 w-8 items-center justify-center rounded-md border border-border text-base leading-none",
+              atFirst
+                ? "cursor-not-allowed text-muted-foreground/40"
+                : "bg-background text-foreground hover:bg-muted",
+            )}
+          >
+            ‹
+          </button>
           <input
-            type="number"
-            min={1}
-            max={totalPages}
-            step={1}
+            type="text"
+            inputMode="numeric"
             value={draft}
             aria-label="Número de página"
             onChange={(e) => {
@@ -84,21 +139,75 @@ export function PaginatedFavoriteTenders({
                 (e.target as HTMLInputElement).blur();
               }
             }}
-            className="w-14 rounded-md border border-border bg-background px-2 py-1 text-center text-sm text-foreground tabular-nums outline-none focus:ring-2 focus:ring-ring"
+            className={cn(boxClass, "w-14 outline-none focus:ring-2 focus:ring-ring")}
           />
-          <span>de</span>
-          <span
-            className="inline-flex min-w-14 items-center justify-center rounded-md border border-border bg-muted/40 px-2 py-1 text-sm tabular-nums text-foreground"
-            aria-label="Total de páginas"
+          <button
+            type="button"
+            aria-label="Página siguiente"
+            disabled={atLast}
+            onClick={() => applyPage(page + 1)}
+            className={cn(
+              "inline-flex h-8 w-8 items-center justify-center rounded-md border border-border text-base leading-none",
+              atLast
+                ? "cursor-not-allowed text-muted-foreground/40"
+                : "bg-background text-foreground hover:bg-muted",
+            )}
           >
+            ›
+          </button>
+          <span>de</span>
+          <span className={cn(boxClass, "bg-muted/40")} aria-label="Total de páginas">
             {totalPages}
           </span>
           <span aria-hidden>→</span>
-          <span>
-            <span className="font-medium text-foreground tabular-nums">
-              {total}
-            </span>{" "}
-            licitaciones totales
+          <span className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-1">
+            <span>Mostrando</span>
+            <div className="relative" ref={sizeMenuRef}>
+              <button
+                type="button"
+                aria-label="Licitaciones por página"
+                aria-expanded={sizeOpen}
+                aria-haspopup="listbox"
+                onClick={() => setSizeOpen((o) => !o)}
+                className={cn(
+                  boxClass,
+                  "min-w-14 gap-1 hover:bg-muted focus:outline-none focus:ring-2 focus:ring-ring",
+                )}
+              >
+                <span className="font-medium tabular-nums">{showing}</span>
+                <span aria-hidden className="text-xs text-muted-foreground">
+                  ▾
+                </span>
+              </button>
+              {sizeOpen ? (
+                <ul
+                  role="listbox"
+                  className="absolute left-0 top-full z-20 mt-1 min-w-full overflow-hidden rounded-md border border-border bg-surface py-1 shadow-lg"
+                >
+                  {PAGE_SIZE_OPTIONS.map((opt) => (
+                    <li key={opt} role="option" aria-selected={pageSize === opt}>
+                      <button
+                        type="button"
+                        className={cn(
+                          "block w-full px-3 py-1.5 text-left text-sm tabular-nums text-foreground hover:bg-muted",
+                          pageSize === opt && "bg-muted font-medium",
+                        )}
+                        onClick={() => onSelectPageSize(opt)}
+                      >
+                        {opt}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+            </div>
+            <span>
+              de{" "}
+              <span className="font-medium text-foreground tabular-nums">
+                {total}
+              </span>{" "}
+              licitaciones totales
+            </span>
           </span>
         </div>
       ) : null}
