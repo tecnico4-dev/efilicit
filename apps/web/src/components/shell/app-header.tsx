@@ -16,7 +16,13 @@ function navClass(active: boolean) {
 }
 
 /** Cabecera solo para sesión autenticada (ADR 016: anónimo sin nav). */
-export function AppHeader({ isAuthenticated }: { isAuthenticated: boolean }) {
+export function AppHeader({
+  isAuthenticated,
+  displayName,
+}: {
+  isAuthenticated: boolean;
+  displayName: string;
+}) {
   const pathname = usePathname() || "/";
 
   if (!isAuthenticated) return null;
@@ -50,7 +56,7 @@ export function AppHeader({ isAuthenticated }: { isAuthenticated: boolean }) {
           </Link>
         </nav>
 
-        <AccountMenu />
+        <AccountMenu displayName={displayName} />
       </div>
     </header>
   );

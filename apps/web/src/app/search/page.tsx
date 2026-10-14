@@ -49,12 +49,12 @@ function formatMoney(value: number | null, currency: string): string {
   }
 }
 
+/** Solo «errata» (trgm); FTS/filtro no se muestran al usuario. */
 function MatchKindBadge({ kind }: { kind: string }) {
-  const label =
-    kind === "fts" ? "FTS" : kind === "trgm" ? "errata" : kind === "filter" ? "filtro" : kind;
+  if (kind !== "trgm") return null;
   return (
     <span className="rounded border border-border bg-muted px-1.5 py-0.5 font-mono text-xs text-foreground">
-      {label}
+      errata
     </span>
   );
 }

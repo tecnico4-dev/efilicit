@@ -104,57 +104,59 @@ export function PaginatedFavoriteTenders({
       {showPager ? (
         <div className="mt-4 flex flex-wrap items-center gap-x-2 gap-y-2 text-sm text-muted-foreground">
           <span>Página</span>
-          <button
-            type="button"
-            aria-label="Página anterior"
-            disabled={atFirst}
-            onClick={() => applyPage(page - 1)}
-            className={cn(
-              "inline-flex h-8 w-8 items-center justify-center rounded-md border border-border text-base leading-none",
-              atFirst
-                ? "cursor-not-allowed text-muted-foreground/40"
-                : "bg-background text-foreground hover:bg-muted",
-            )}
-          >
-            ‹
-          </button>
-          <input
-            type="text"
-            inputMode="numeric"
-            value={draft}
-            aria-label="Número de página"
-            onChange={(e) => {
-              const value = e.target.value;
-              setDraft(value);
-              const n = Number.parseInt(value, 10);
-              if (Number.isInteger(n) && n >= 1 && n <= totalPages) {
-                setPage(n);
-              }
-            }}
-            onBlur={commitDraft}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault();
-                commitDraft();
-                (e.target as HTMLInputElement).blur();
-              }
-            }}
-            className={cn(boxClass, "w-14 outline-none focus:ring-2 focus:ring-ring")}
-          />
-          <button
-            type="button"
-            aria-label="Página siguiente"
-            disabled={atLast}
-            onClick={() => applyPage(page + 1)}
-            className={cn(
-              "inline-flex h-8 w-8 items-center justify-center rounded-md border border-border text-base leading-none",
-              atLast
-                ? "cursor-not-allowed text-muted-foreground/40"
-                : "bg-background text-foreground hover:bg-muted",
-            )}
-          >
-            ›
-          </button>
+          <div className="inline-flex items-center gap-0.5">
+            <button
+              type="button"
+              aria-label="Página anterior"
+              disabled={atFirst}
+              onClick={() => applyPage(page - 1)}
+              className={cn(
+                "inline-flex h-8 w-7 items-center justify-center text-lg leading-none",
+                atFirst
+                  ? "cursor-not-allowed text-muted-foreground/35"
+                  : "text-foreground hover:text-primary",
+              )}
+            >
+              ‹
+            </button>
+            <input
+              type="text"
+              inputMode="numeric"
+              value={draft}
+              aria-label="Número de página"
+              onChange={(e) => {
+                const value = e.target.value;
+                setDraft(value);
+                const n = Number.parseInt(value, 10);
+                if (Number.isInteger(n) && n >= 1 && n <= totalPages) {
+                  setPage(n);
+                }
+              }}
+              onBlur={commitDraft}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  commitDraft();
+                  (e.target as HTMLInputElement).blur();
+                }
+              }}
+              className={cn(boxClass, "w-14 outline-none focus:ring-2 focus:ring-ring")}
+            />
+            <button
+              type="button"
+              aria-label="Página siguiente"
+              disabled={atLast}
+              onClick={() => applyPage(page + 1)}
+              className={cn(
+                "inline-flex h-8 w-7 items-center justify-center text-lg leading-none",
+                atLast
+                  ? "cursor-not-allowed text-muted-foreground/35"
+                  : "text-foreground hover:text-primary",
+              )}
+            >
+              ›
+            </button>
+          </div>
           <span>de</span>
           <span className={cn(boxClass, "bg-muted/40")} aria-label="Total de páginas">
             {totalPages}

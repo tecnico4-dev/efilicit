@@ -37,18 +37,21 @@ export async function markPasswordOfferSeen(): Promise<{ error: Error | null }> 
     data: { [META_PASSWORD_OFFER_SEEN]: true },
   });
   if (error) return { error: new Error(error.message) };
-  // Asegura que la sesión local lleva el metadata actualizado.
   await supabase.auth.refreshSession();
   return { error: null };
 }
 
-/** Formulario de cambio de contraseña (Cuenta o post-login opcional). */
+/** Formulario de cambio de contraseña (Cuenta, modal o post-login). */
 export function ChangePasswordForm({
   onDone,
+  onCancel,
   submitLabel = "Guardar contraseña",
+  cancelLabel = "Cancelar",
 }: {
   onDone?: () => void;
+  onCancel?: () => void;
   submitLabel?: string;
+  cancelLabel?: string;
 }) {
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -133,14 +136,61 @@ export function ChangePasswordForm({
           {error}
         </p>
       ) : null}
-      {saved ? (
+      {saved && !onDone ? (
         <p className="rounded-md bg-muted px-3 py-2 text-sm text-foreground" role="status">
           Contraseña actualizada.
         </p>
       ) : null}
-      <Button type="submit" disabled={pending}>
-        {pending ? "Guardando…" : submitLabel}
-      </Button>
+      <div className="flex flex-wrap gap-2">
+        <Button type="submit" disabled={pending}>
+          {pending ? "Guardando…" : submitLabel}
+        </Button>
+        {onCancel ? (
+          <Button
+            type="button"
+            variant="outline"
+            disabled={pending}
+            onClick={onCancel}
+          >
+            {cancelLabel}
+          </Button>
+        ) : null}
+      </div>
     </form>
+  );
+}
+
+/** Modal que bloquea la página hasta Guardar o Cancelar. */
+export function ChangePasswordModal({
+  open,
+  onClose,
+}: {
+  open: boolean;
+  onClose: () => void;
+}) {
+  if (!open) return null;
+
+  return (
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4"
+      role="presentation"
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="change-password-title"
+        className="w-full max-w-md rounded-xl border border-border bg-surface p-6 shadow-xl"
+      >
+        <h2
+          id="change-password-title"
+          className="text-lg font-semibold tracking-tight text-foreground"
+        >
+          Cambiar contraseña
+        </h2>
+        <div className="mt-4">
+          <ChangePasswordForm onDone={onClose} onCancel={onClose} />
+        </div>
+      </div>
+    </div>
   );
 }
