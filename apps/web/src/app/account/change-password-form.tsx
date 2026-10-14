@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
@@ -160,7 +161,7 @@ export function ChangePasswordForm({
   );
 }
 
-/** Modal que bloquea la página hasta Guardar o Cancelar. */
+/** Modal centrado en viewport (portal); bloquea hasta Guardar o Cancelar. */
 export function ChangePasswordModal({
   open,
   onClose,
@@ -168,18 +169,33 @@ export function ChangePasswordModal({
   open: boolean;
   onClose: () => void;
 }) {
-  if (!open) return null;
+  const [mounted, setMounted] = useState(false);
 
-  return (
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [open]);
+
+  if (!open || !mounted) return null;
+
+  return createPortal(
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4"
+      className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 p-4"
       role="presentation"
     >
       <div
         role="dialog"
         aria-modal="true"
         aria-labelledby="change-password-title"
-        className="w-full max-w-md rounded-xl border border-border bg-surface p-6 shadow-xl"
+        className="max-h-[min(90vh,36rem)] w-full max-w-md overflow-y-auto rounded-xl border border-border bg-surface p-6 shadow-xl"
       >
         <h2
           id="change-password-title"
@@ -191,6 +207,7 @@ export function ChangePasswordModal({
           <ChangePasswordForm onDone={onClose} onCancel={onClose} />
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
