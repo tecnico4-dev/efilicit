@@ -35,6 +35,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Semana 6 UX: icono de buzón en cabecera (puntito de no leídas placeholder) + página `/notifications`.
 - Semana 6: restaura RPC `search_tenders` Semana 5 (FTS+trgm) tras revertir la búsqueda ampliada; la UI solo oculta el badge «FTS» (sigue mostrando «errata»).
 - Semana 6 Auth: acceso invite-only — landing sin nav con solo «Iniciar sesión»; sin registro público; búsqueda y rutas de producto exigen sesión; cambio de contraseña opcional al primer login ([ADR 016](docs/adr/016-auth-invite-only-sin-registro-publico.md)).
 - Semana 6 UX: layout contenido `max-w-6xl`; frecuencia alertas alineada a la derecha. Buscador sigue con Texto / CPV / importes (la ampliación se revirtió).

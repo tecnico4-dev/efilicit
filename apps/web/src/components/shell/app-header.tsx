@@ -6,6 +6,7 @@ import type { DigestFrequency } from "@/lib/queries";
 import { cn } from "@/lib/cn";
 import { AccountMenu } from "./account-menu";
 import { FavoritesNavItem } from "./favorites-nav-item";
+import { NotificationsButton } from "./notifications-button";
 
 function navClass(active: boolean) {
   return cn(
@@ -61,13 +62,16 @@ export function AppHeader({
           </Link>
         </nav>
 
-        {userId ? (
-          <AccountMenu
-            displayName={displayName}
-            userId={userId}
-            digestFrequency={digestFrequency}
-          />
-        ) : null}
+        <div className="flex items-center gap-2">
+          <NotificationsButton hasUnread />
+          {userId ? (
+            <AccountMenu
+              displayName={displayName}
+              userId={userId}
+              digestFrequency={digestFrequency}
+            />
+          ) : null}
+        </div>
       </div>
     </header>
   );

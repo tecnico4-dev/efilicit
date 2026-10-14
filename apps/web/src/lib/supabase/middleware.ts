@@ -57,6 +57,7 @@ export async function updateSession(request: NextRequest) {
 
   const isProtected =
     path.startsWith("/alerts") ||
+    path.startsWith("/notifications") ||
     path.startsWith("/search") ||
     path.startsWith("/favorites") ||
     path.startsWith("/tenders");
