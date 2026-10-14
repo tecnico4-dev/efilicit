@@ -72,13 +72,7 @@ export function HomeDashboard({
           Resumen de tu seguimiento.
         </p>
         <p className="mt-1 text-base text-muted-foreground">
-          Frecuencia de correos: {digestLabel}.{" "}
-          <span className="text-xs">
-            Cambiar en{" "}
-            <a href="/account" className="font-medium text-link hover:underline">
-              Cuenta
-            </a>
-          </span>
+          Frecuencia de correos: {digestLabel}.
         </p>
       </div>
 

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 const META_PASSWORD_CHANGED = "password_changed";
@@ -102,9 +102,8 @@ export function ChangePasswordForm({
         >
           Nueva contraseña
         </label>
-        <Input
+        <PasswordInput
           id="new_password"
-          type="password"
           autoComplete="new-password"
           required
           minLength={8}
@@ -119,9 +118,8 @@ export function ChangePasswordForm({
         >
           Confirmar contraseña
         </label>
-        <Input
+        <PasswordInput
           id="confirm_password"
-          type="password"
           autoComplete="new-password"
           required
           minLength={8}

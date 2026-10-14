@@ -1,11 +1,15 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import { ChangePasswordModal } from "@/app/account/change-password-form";
+import { useUndoToast } from "@/components/undo-toast";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import {
+  updateOwnDigestFrequency,
+  type DigestFrequency,
+} from "@/lib/queries";
 import { cn } from "@/lib/cn";
 
 function UserIcon({ className }: { className?: string }) {
@@ -27,20 +31,34 @@ function UserIcon({ className }: { className?: string }) {
   );
 }
 
+function freqLabel(f: DigestFrequency): string {
+  return f === "weekly" ? "semanal" : "diaria";
+}
+
 /**
- * Control de cuenta a la derecha: círculo azul que se alarga al hover
- * (icono + nombre). Clic → /account. Menú: Tema, Cambiar contraseña, Cerrar sesión.
+ * Círculo azul a la derecha: hover → nombre; clic → menú
+ * (Tema, Frecuencia, Cambiar contraseña, Cerrar sesión).
  */
-export function AccountMenu({ displayName }: { displayName: string }) {
-  const pathname = usePathname() || "/";
+export function AccountMenu({
+  displayName,
+  userId,
+  digestFrequency: initialFrequency,
+}: {
+  displayName: string;
+  userId: string;
+  digestFrequency: DigestFrequency;
+}) {
   const router = useRouter();
   const { theme, setTheme } = useTheme();
+  const { showStatus } = useUndoToast();
   const [open, setOpen] = useState(false);
   const [themeOpen, setThemeOpen] = useState(false);
+  const [freqOpen, setFreqOpen] = useState(false);
   const [passwordOpen, setPasswordOpen] = useState(false);
+  const [frequency, setFrequency] = useState<DigestFrequency>(initialFrequency);
+  const [freqPending, setFreqPending] = useState(false);
   const [mounted, setMounted] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
-  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const label = displayName.trim() || "Usuario";
 
@@ -49,25 +67,32 @@ export function AccountMenu({ displayName }: { displayName: string }) {
   }, []);
 
   useEffect(() => {
+    setFrequency(initialFrequency);
+  }, [initialFrequency]);
+
+  useEffect(() => {
+    if (!open) return;
+    function onDoc(e: MouseEvent) {
+      if (rootRef.current && !rootRef.current.contains(e.target as Node)) {
+        setOpen(false);
+        setThemeOpen(false);
+        setFreqOpen(false);
+      }
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        setOpen(false);
+        setThemeOpen(false);
+        setFreqOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", onDoc);
+    document.addEventListener("keydown", onKey);
     return () => {
-      if (closeTimer.current) clearTimeout(closeTimer.current);
+      document.removeEventListener("mousedown", onDoc);
+      document.removeEventListener("keydown", onKey);
     };
-  }, []);
-
-  function openMenu() {
-    if (passwordOpen) return;
-    if (closeTimer.current) clearTimeout(closeTimer.current);
-    setOpen(true);
-  }
-
-  function scheduleClose() {
-    if (passwordOpen) return;
-    if (closeTimer.current) clearTimeout(closeTimer.current);
-    closeTimer.current = setTimeout(() => {
-      setOpen(false);
-      setThemeOpen(false);
-    }, 180);
-  }
+  }, [open]);
 
   async function onLogout() {
     const supabase = createSupabaseBrowserClient();
@@ -77,26 +102,49 @@ export function AccountMenu({ displayName }: { displayName: string }) {
     router.refresh();
   }
 
-  const onAccount = pathname.startsWith("/account");
+  async function onSelectFrequency(next: DigestFrequency) {
+    if (next === frequency || freqPending) return;
+    const previous = frequency;
+    setFrequency(next);
+    setFreqPending(true);
+    const client = createSupabaseBrowserClient();
+    const { error } = await updateOwnDigestFrequency(client, {
+      userId,
+      digestFrequency: next,
+    });
+    setFreqPending(false);
+    if (error) {
+      setFrequency(previous);
+      showStatus("No se pudo actualizar la frecuencia. Inténtalo de nuevo.");
+      return;
+    }
+    showStatus(
+      `Frecuencia de notificaciones cambiada a ${freqLabel(next)}.`,
+    );
+    router.refresh();
+  }
+
   const activeTheme = theme ?? "dark";
 
   return (
     <>
-      <div
-        className="relative"
-        ref={rootRef}
-        onMouseEnter={openMenu}
-        onMouseLeave={scheduleClose}
-      >
-        <Link
-          href="/account"
-          aria-label={`Cuenta de ${label}`}
+      <div className="relative" ref={rootRef}>
+        <button
+          type="button"
+          aria-label={`Menú de ${label}`}
           aria-expanded={open}
+          aria-haspopup="menu"
           title={label}
+          onClick={() => {
+            setOpen((v) => !v);
+            if (open) {
+              setThemeOpen(false);
+              setFreqOpen(false);
+            }
+          }}
           className={cn(
             "group inline-flex h-9 max-w-9 items-center overflow-hidden rounded-full bg-primary text-primary-foreground shadow-sm transition-[max-width] duration-200 ease-out hover:max-w-[14rem] hover:bg-primary-dark focus-visible:max-w-[14rem] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
             open && "max-w-[14rem] bg-primary-dark",
-            onAccount && "ring-2 ring-ring ring-offset-2 ring-offset-background",
           )}
         >
           <span className="inline-flex size-9 shrink-0 items-center justify-center">
@@ -105,14 +153,12 @@ export function AccountMenu({ displayName }: { displayName: string }) {
           <span className="truncate whitespace-nowrap pr-3 text-sm font-medium opacity-0 transition-opacity duration-200 group-hover:opacity-100 group-focus-visible:opacity-100 [[aria-expanded=true]_&]:opacity-100">
             {label}
           </span>
-        </Link>
+        </button>
 
         {open && !passwordOpen ? (
           <div
             role="menu"
-            className="absolute right-0 z-50 mt-2 min-w-[12rem] overflow-hidden rounded-lg border border-border bg-surface py-1 shadow-lg"
-            onMouseEnter={openMenu}
-            onMouseLeave={scheduleClose}
+            className="absolute right-0 z-50 mt-2 min-w-[13.5rem] overflow-hidden rounded-lg border border-border bg-surface py-1 shadow-lg"
           >
             <div>
               <button
@@ -120,7 +166,10 @@ export function AccountMenu({ displayName }: { displayName: string }) {
                 role="menuitem"
                 aria-expanded={themeOpen}
                 className="flex w-full items-center justify-between px-3 py-2 text-left text-sm text-foreground hover:bg-muted"
-                onClick={() => setThemeOpen((v) => !v)}
+                onClick={() => {
+                  setThemeOpen((v) => !v);
+                  setFreqOpen(false);
+                }}
               >
                 <span>Tema</span>
                 <span aria-hidden className="text-xs text-muted-foreground">
@@ -137,8 +186,8 @@ export function AccountMenu({ displayName }: { displayName: string }) {
                     className={cn(
                       "mt-0.5 block w-full rounded-md px-2 py-1.5 text-left text-sm",
                       mounted && activeTheme === "light"
-                        ? "bg-primary text-primary-foreground"
-                        : "text-foreground hover:bg-muted",
+                        ? "bg-muted font-medium text-foreground"
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground",
                     )}
                     onClick={() => setTheme("light")}
                   >
@@ -152,12 +201,64 @@ export function AccountMenu({ displayName }: { displayName: string }) {
                     className={cn(
                       "mt-0.5 block w-full rounded-md px-2 py-1.5 text-left text-sm",
                       mounted && activeTheme === "dark"
-                        ? "bg-primary text-primary-foreground"
-                        : "text-foreground hover:bg-muted",
+                        ? "bg-muted font-medium text-foreground"
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground",
                     )}
                     onClick={() => setTheme("dark")}
                   >
                     Oscuro
+                  </button>
+                </div>
+              ) : null}
+            </div>
+
+            <div className="border-t border-border">
+              <button
+                type="button"
+                role="menuitem"
+                aria-expanded={freqOpen}
+                className="flex w-full items-center justify-between px-3 py-2 text-left text-sm text-foreground hover:bg-muted"
+                onClick={() => {
+                  setFreqOpen((v) => !v);
+                  setThemeOpen(false);
+                }}
+              >
+                <span>Frecuencia de la cuenta</span>
+                <span aria-hidden className="text-xs text-muted-foreground">
+                  {freqOpen ? "▴" : "▾"}
+                </span>
+              </button>
+              {freqOpen ? (
+                <div className="bg-muted/30 px-2 pb-2">
+                  <button
+                    type="button"
+                    role="menuitemradio"
+                    aria-checked={frequency === "daily"}
+                    disabled={freqPending}
+                    className={cn(
+                      "mt-0.5 block w-full rounded-md px-2 py-1.5 text-left text-sm",
+                      frequency === "daily"
+                        ? "bg-muted font-medium text-foreground"
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                    )}
+                    onClick={() => onSelectFrequency("daily")}
+                  >
+                    Diaria
+                  </button>
+                  <button
+                    type="button"
+                    role="menuitemradio"
+                    aria-checked={frequency === "weekly"}
+                    disabled={freqPending}
+                    className={cn(
+                      "mt-0.5 block w-full rounded-md px-2 py-1.5 text-left text-sm",
+                      frequency === "weekly"
+                        ? "bg-muted font-medium text-foreground"
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                    )}
+                    onClick={() => onSelectFrequency("weekly")}
+                  >
+                    Semanal
                   </button>
                 </div>
               ) : null}

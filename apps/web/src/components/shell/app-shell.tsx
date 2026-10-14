@@ -1,4 +1,5 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import type { DigestFrequency } from "@/lib/queries";
 import { UndoToastProvider } from "@/components/undo-toast";
 import { AppHeader } from "./app-header";
 
@@ -16,6 +17,8 @@ function displayNameFrom(
 export async function AppShell({ children }: { children: React.ReactNode }) {
   let isAuthenticated = false;
   let displayName = "Usuario";
+  let userId = "";
+  let digestFrequency: DigestFrequency = "daily";
   try {
     const supabase = await createSupabaseServerClient();
     const {
@@ -25,7 +28,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
     if (user) {
       const { data: profile } = await supabase
         .from("users")
-        .select("display_name")
+        .select("id, display_name, digest_frequency")
         .eq("auth_user_id", user.id)
         .maybeSingle();
       displayName = displayNameFrom(
@@ -33,6 +36,9 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
         user.user_metadata?.display_name,
         user.email,
       );
+      userId = profile?.id ?? "";
+      digestFrequency =
+        profile?.digest_frequency === "weekly" ? "weekly" : "daily";
     }
   } catch {
     isAuthenticated = false;
@@ -47,7 +53,12 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
       <UndoToastProvider>
         <div className="relative flex min-h-full flex-1 flex-col">
           {isAuthenticated ? (
-            <AppHeader isAuthenticated displayName={displayName} />
+            <AppHeader
+              isAuthenticated
+              displayName={displayName}
+              userId={userId}
+              digestFrequency={digestFrequency}
+            />
           ) : null}
           <div className="flex flex-1 flex-col">{children}</div>
         </div>

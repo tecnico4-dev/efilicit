@@ -48,8 +48,14 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(redirectUrl);
   }
 
+  if (path === "/account" || path.startsWith("/account/")) {
+    const redirectUrl = request.nextUrl.clone();
+    redirectUrl.pathname = "/";
+    redirectUrl.search = "";
+    return NextResponse.redirect(redirectUrl);
+  }
+
   const isProtected =
-    path.startsWith("/account") ||
     path.startsWith("/alerts") ||
     path.startsWith("/search") ||
     path.startsWith("/favorites") ||

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import type { DigestFrequency } from "@/lib/queries";
 import { cn } from "@/lib/cn";
 import { AccountMenu } from "./account-menu";
 import { FavoritesNavItem } from "./favorites-nav-item";
@@ -19,9 +20,13 @@ function navClass(active: boolean) {
 export function AppHeader({
   isAuthenticated,
   displayName,
+  userId,
+  digestFrequency,
 }: {
   isAuthenticated: boolean;
   displayName: string;
+  userId: string;
+  digestFrequency: DigestFrequency;
 }) {
   const pathname = usePathname() || "/";
 
@@ -56,7 +61,13 @@ export function AppHeader({
           </Link>
         </nav>
 
-        <AccountMenu displayName={displayName} />
+        {userId ? (
+          <AccountMenu
+            displayName={displayName}
+            userId={userId}
+            digestFrequency={digestFrequency}
+          />
+        ) : null}
       </div>
     </header>
   );
