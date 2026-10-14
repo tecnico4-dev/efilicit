@@ -80,7 +80,7 @@ def test_catalunya_inmemory_upsert_is_idempotent_and_links_artifact() -> None:
         EVENT_TYPE_INGESTED,
         EVENT_TYPE_INGESTED,
     ]
-    assert [e["event_status"] for e in repo.events] == ["published", "awarded"]
+    assert [e["event_status"] for e in repo.events] == ["publicada", "adjudicada"]
     assert len(repo.documents) == 2
     assert all(d["artifact_id"] == ARTIFACT_ID for d in repo.documents)
 
@@ -207,7 +207,7 @@ def test_catalunya_postgres_upsert_does_not_duplicate() -> None:
         ).fetchone()
         assert row is not None
         assert row[0].startswith("Suministro")
-        assert row[1] == "published"
+        assert row[1] == "publicada"
         assert row[2] == "30192700"
         assert "Ajuntament Fixture" in (row[3] or "")
         assert row[4] == "MEDIUM"

@@ -30,8 +30,8 @@ def _tender(tid: str, title: str) -> TenderCandidate:
         id=tid,
         title=title,
         description=title,
-        status="published",
-        contract_type="services",
+        status="publicada",
+        contract_type="servicios",
         estimated_value=Decimal("50000"),
         cpv_code="72000000",
         publication_date=date(2026, 9, 1),
@@ -66,12 +66,12 @@ def _enqueue_software_match(
 
 
 def test_digest_period_daily_and_weekly_iso() -> None:
-    assert digest_period("daily", TUESDAY) == "2026-09-29"
-    assert digest_period("weekly", MONDAY) == digest_period("weekly", TUESDAY)
-    assert digest_period("weekly", TUESDAY).startswith("2026-W")
-    assert should_send_digest("daily", TUESDAY) is True
-    assert should_send_digest("weekly", TUESDAY) is False
-    assert should_send_digest("weekly", MONDAY) is True
+    assert digest_period("diaria", TUESDAY) == "2026-09-29"
+    assert digest_period("semanal", MONDAY) == digest_period("semanal", TUESDAY)
+    assert digest_period("semanal", TUESDAY).startswith("2026-W")
+    assert should_send_digest("diaria", TUESDAY) is True
+    assert should_send_digest("semanal", TUESDAY) is False
+    assert should_send_digest("semanal", MONDAY) is True
 
 
 def test_build_digest_message_groups_titles() -> None:
@@ -146,9 +146,9 @@ def test_drain_marks_failed_without_resend_on_success_path() -> None:
 
 def test_weekly_tuesday_enqueues_without_sending() -> None:
     queue = InMemoryNotificationQueue()
-    freqs = {"user-1": "weekly"}
+    freqs = {"user-1": "semanal"}
     _enqueue_software_match(queue, job_date=TUESDAY, frequencies=freqs)
-    week = digest_period("weekly", TUESDAY)
+    week = digest_period("semanal", TUESDAY)
     key = make_idempotency_key(alert_id="alert-1", tender_id="t-soft", digest=week)
     assert queue.get(key) is not None
     assert queue.get(key).status == "pending"  # type: ignore[union-attr]
@@ -170,7 +170,7 @@ def test_weekly_tuesday_enqueues_without_sending() -> None:
 
 def test_weekly_monday_drains_pending() -> None:
     queue = InMemoryNotificationQueue()
-    freqs = {"user-1": "weekly"}
+    freqs = {"user-1": "semanal"}
     # Coincidencias a mitad de semana quedan pending hasta el lunes.
     _enqueue_software_match(queue, job_date=TUESDAY, frequencies=freqs)
     sender = FakeEmailSender()
@@ -200,7 +200,7 @@ def test_weekly_monday_drains_pending() -> None:
 
 def test_weekly_same_tender_same_week_is_idempotent() -> None:
     queue = InMemoryNotificationQueue()
-    freqs = {"user-1": "weekly"}
+    freqs = {"user-1": "semanal"}
     alert = AlertRule(
         id="alert-1",
         user_id="user-1",
@@ -227,6 +227,6 @@ def test_weekly_same_tender_same_week_is_idempotent() -> None:
     assert second.enqueued_new == 0
     assert second.enqueued_existing == 1
     assert len(queue.all_items()) == 1
-    week = digest_period("weekly", MONDAY)
+    week = digest_period("semanal", MONDAY)
     key = make_idempotency_key(alert_id="alert-1", tender_id="t-soft", digest=week)
     assert queue.get(key) is not None

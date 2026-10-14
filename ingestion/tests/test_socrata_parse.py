@@ -56,8 +56,8 @@ def test_catalunya_connector_parse_normalize_identity() -> None:
     assert len(identified) == 2
     first = identified[0].payload["canonical"]
     assert first["title"].startswith("Suministro")
-    assert first["status"] == "published"
-    assert first["contract_type"] == "supplies"
+    assert first["status"] == "publicada"
+    assert first["contract_type"] == "suministros"
     assert first["estimated_value"] == Decimal("12500.50")
     assert first["cpv_code"] == "30192700"
     assert first["nuts_code"] == "ES511"

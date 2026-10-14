@@ -98,8 +98,8 @@ def test_euskadi_parse_normalize_identity() -> None:
     identified = stages.resolve_identity(stages.normalize(records))
     first = identified[0].payload["canonical"]
     assert first["title"].startswith("Suministro")
-    assert first["status"] == "published"
-    assert first["contract_type"] == "supplies"
+    assert first["status"] == "publicada"
+    assert first["contract_type"] == "suministros"
     assert first["estimated_value"] == Decimal("12500.5")
     assert first["authority"]["tax_id"] == "S4833001C"
     assert first["authority"]["identity_confidence"] == "HIGH"

@@ -4,8 +4,9 @@ Contrato compartido por la cola en memoria (tests) y Postgres
 (``PostgresNotificationQueue``). La clave evita reenviar el mismo
 match alerta×licitación en el mismo periodo de digest.
 
-Frecuencias de cuenta (ADR 013): ``daily`` | ``weekly``.
-``instant`` queda fuera del MVP (BACKLOG).
+Frecuencias de cuenta (ADR 013): ``diaria`` | ``semanal``.
+``instantanea`` queda fuera del MVP (BACKLOG).
+Acepta alias legacy ``daily`` / ``weekly`` al leer.
 """
 
 from __future__ import annotations
@@ -16,9 +17,17 @@ from typing import Protocol
 from efilicit_ingestion.alerts.models import AlertMatch, NotificationItem, TenderCandidate
 from efilicit_ingestion.alerts.retry import status_after_failed_attempt
 
-DigestFrequency = str  # "daily" | "weekly"
+DigestFrequency = str  # "diaria" | "semanal"
 
 _DRAINABLE_STATUSES = frozenset({"pending", "failed"})
+
+
+def normalize_digest_frequency(frequency: str | None) -> DigestFrequency:
+    """Normaliza a ``diaria`` | ``semanal`` (acepta daily/weekly legacy)."""
+    freq = (frequency or "diaria").strip().lower()
+    if freq in {"weekly", "semanal"}:
+        return "semanal"
+    return "diaria"
 
 
 def _as_date(value: date | datetime | None = None) -> date:
@@ -30,7 +39,7 @@ def _as_date(value: date | datetime | None = None) -> date:
 
 
 def digest_day(value: date | datetime | None = None) -> str:
-    """Periodo daily: YYYY-MM-DD en UTC."""
+    """Periodo diaria: YYYY-MM-DD en UTC."""
     return _as_date(value).isoformat()
 
 
@@ -38,10 +47,9 @@ def digest_period(
     frequency: DigestFrequency,
     value: date | datetime | None = None,
 ) -> str:
-    """Periodo de idempotencia: día (daily) o semana ISO (weekly)."""
+    """Periodo de idempotencia: día (diaria) o semana ISO (semanal)."""
     d = _as_date(value)
-    freq = (frequency or "daily").strip().lower()
-    if freq == "weekly":
+    if normalize_digest_frequency(frequency) == "semanal":
         iso = d.isocalendar()
         return f"{iso.year}-W{iso.week:02d}"
     return d.isoformat()
@@ -53,12 +61,11 @@ def should_send_digest(
 ) -> bool:
     """¿Toca drenar el digest hoy?
 
-    - daily: siempre (si hay pending).
-    - weekly: solo lunes UTC — el resto de días deja pending en cola.
+    - diaria: siempre (si hay pending).
+    - semanal: solo lunes UTC — el resto de días deja pending en cola.
     """
     d = _as_date(value)
-    freq = (frequency or "daily").strip().lower()
-    if freq == "weekly":
+    if normalize_digest_frequency(frequency) == "semanal":
         return d.weekday() == 0
     return True
 

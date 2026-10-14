@@ -50,7 +50,7 @@ def load_active_alerts(conn: psycopg.Connection) -> list[AlertRule]:
             user_id=str(row["user_id"]),
             name=row["name"],
             criteria=dict(row["criteria"] or {}),
-            frequency=row["frequency"] or "daily",
+            frequency=row["frequency"] or "diaria",
             is_active=bool(row["is_active"]),
         )
         for row in rows
@@ -163,7 +163,9 @@ def load_user_digest_frequencies(
     conn: psycopg.Connection,
     user_ids: list[str] | None = None,
 ) -> dict[str, str]:
-    """``public.users.id`` → ``digest_frequency`` (daily|weekly; ADR 013)."""
+    """``public.users.id`` → ``digest_frequency`` (diaria|semanal; ADR 013)."""
+    from efilicit_ingestion.alerts.queue import normalize_digest_frequency
+
     with conn.cursor(row_factory=dict_row) as cur:
         if user_ids:
             ids = [UUID(u) for u in user_ids]
@@ -184,7 +186,7 @@ def load_user_digest_frequencies(
             )
         rows = cur.fetchall()
     return {
-        row["user_id"]: (row["digest_frequency"] or "daily").strip().lower()
+        row["user_id"]: normalize_digest_frequency(row["digest_frequency"])
         for row in rows
     }
 

@@ -21,7 +21,7 @@ export function HomeDashboard({
   digestFrequency: DigestFrequency;
 }) {
   const activeAlerts = alerts.filter((a) => a.is_active);
-  const digestLabel = digestFrequency === "weekly" ? "semanal" : "diaria";
+  const digestLabel = digestFrequency === "semanal" ? "semanal" : "diaria";
 
   const alertItems = activeAlerts.map((a) => (
     <p key={a.id} className="font-medium text-foreground">

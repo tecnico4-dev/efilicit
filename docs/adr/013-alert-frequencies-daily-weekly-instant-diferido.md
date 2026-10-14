@@ -37,16 +37,18 @@ MVP de notificaciones por email en Semana 5:
 
 | Preferencia de cuenta | Comportamiento |
 |---|---|
-| `daily` | Periodo = día calendario UTC; drain cuando hay `pending`. |
-| `weekly` | Periodo = semana ISO (`YYYY-Www`); envío solo lunes UTC; entre medias se encola. |
+| `diaria` | Periodo = día calendario UTC; drain cuando hay `pending`. |
+| `semanal` | Periodo = semana ISO (`YYYY-Www`); envío solo lunes UTC; entre medias se encola. |
 
-- Columna: `public.users.digest_frequency` ∈ `{daily, weekly}` (default `daily`).
-- UI: `/account` (formulario) + copy en `/alerts`.
+- Columna: `public.users.digest_frequency` ∈ `{diaria, semanal}` (default `diaria`).
+- UI: menú de cuenta + copy en `/alerts`.
 - Motor: `digest_period` / `should_send_digest` + drain en `alerts/digest.py`.
 
-**`instant` = diferido** (no implementado en el motor ni expuesto en la preferencia de cuenta). Otras periodicidades = **backlog** solo si se cree necesario (`docs/plans/BACKLOG.md`).
+**Nota (2026-10-14):** los valores almacenados pasan de inglés (`daily`/`weekly`) a español (`diaria`/`semanal`); la semántica de producto no cambia. El motor acepta temporalmente los alias EN al leer.
 
-El CHECK histórico de `alerts.frequency` que menciona `instant` no implica soporte de producto: la cadencia operativa del digest es la de la **cuenta**.
+**`instantanea` = diferido** (no implementado en el motor ni expuesto en la preferencia de cuenta; el CHECK de `alerts.frequency` puede incluir el literal). Otras periodicidades = **backlog** solo si se cree necesario (`docs/plans/BACKLOG.md`).
+
+El CHECK histórico de `alerts.frequency` no implica soporte de producto para envío inmediato: la cadencia operativa del digest es la de la **cuenta**.
 
 ### Alternativas descartadas
 

@@ -74,8 +74,8 @@ def _fixture_tenders() -> list[TenderCandidate]:
             id="00000000-0000-4000-8000-0000000000t1",
             title="Mantenimiento de software",
             description="Servicios de mantenimiento de software",
-            status="published",
-            contract_type="services",
+            status="publicada",
+            contract_type="servicios",
             estimated_value=Decimal("50000"),
             cpv_code="72000000",
             publication_date=date(2026, 9, 1),
@@ -86,8 +86,8 @@ def _fixture_tenders() -> list[TenderCandidate]:
             id="00000000-0000-4000-8000-0000000000t2",
             title="Obras de asfaltado",
             description="Obras de carretera",
-            status="published",
-            contract_type="works",
+            status="publicada",
+            contract_type="obras",
             estimated_value=Decimal("200000"),
             cpv_code="45233140",
             publication_date=date(2026, 9, 2),
@@ -124,7 +124,7 @@ def _run_dry(*, job_date: date, digest_key: str) -> AlertsRunResult:
     queue = InMemoryNotificationQueue()
     sender = FakeEmailSender()
     directory = _fixture_directory()
-    frequencies = {"00000000-0000-4000-8000-0000000000u1": "daily"}
+    frequencies = {"00000000-0000-4000-8000-0000000000u1": "diaria"}
     batch = run_alert_batch(
         alerts=_fixture_alerts(),
         tenders=_fixture_tenders(),

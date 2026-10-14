@@ -18,7 +18,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
   let isAuthenticated = false;
   let displayName = "Usuario";
   let userId = "";
-  let digestFrequency: DigestFrequency = "daily";
+  let digestFrequency: DigestFrequency = "diaria";
   try {
     const supabase = await createSupabaseServerClient();
     const {
@@ -38,7 +38,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
       );
       userId = profile?.id ?? "";
       digestFrequency =
-        profile?.digest_frequency === "weekly" ? "weekly" : "daily";
+        profile?.digest_frequency === "semanal" ? "semanal" : "diaria";
     }
   } catch {
     isAuthenticated = false;

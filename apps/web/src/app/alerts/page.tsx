@@ -30,7 +30,7 @@ export default async function AlertsPage() {
   }
 
   const digestFrequency =
-    profileResult.data.digest_frequency === "weekly" ? "weekly" : "daily";
+    profileResult.data.digest_frequency === "semanal" ? "semanal" : "diaria";
 
   const alertsResult = await listOwnAlerts(supabase);
 

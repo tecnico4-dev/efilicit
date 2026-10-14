@@ -26,7 +26,7 @@ export default async function Home() {
     }
 
     const digestFrequency =
-      profile.data.digest_frequency === "weekly" ? "weekly" : "daily";
+      profile.data.digest_frequency === "semanal" ? "semanal" : "diaria";
 
     const [alertsResult, favoritesResult, searchesResult] = await Promise.all([
       listOwnAlerts(supabase),

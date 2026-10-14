@@ -9,7 +9,11 @@ import {
   isOwnFavorite,
   type TenderSourceSummary,
 } from "@/lib/queries";
-import { formatTenderStatus } from "@/lib/tender-labels";
+import {
+  formatContractType,
+  formatProcedureType,
+  formatTenderStatus,
+} from "@/lib/tender-labels";
 
 export const dynamic = "force-dynamic";
 
@@ -269,8 +273,8 @@ export default async function TenderDetailPage({
           <span className="font-mono">{tender.cpv_code ?? "—"}</span>
         </Field>
         <Field label="Estado">{formatTenderStatus(tender.status)}</Field>
-        <Field label="Tipo de contrato">{tender.contract_type ?? "—"}</Field>
-        <Field label="Procedimiento">{tender.procedure_type ?? "—"}</Field>
+        <Field label="Tipo de contrato">{formatContractType(tender.contract_type)}</Field>
+        <Field label="Procedimiento">{formatProcedureType(tender.procedure_type)}</Field>
         <Field label="Publicación">{formatDate(tender.publication_date)}</Field>
         <Field label="Plazo">{formatDate(tender.deadline_at)}</Field>
         <Field label="Órgano de contratación">

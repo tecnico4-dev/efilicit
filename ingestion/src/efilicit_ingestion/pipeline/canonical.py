@@ -17,31 +17,31 @@ from typing import Any
 
 from efilicit_ingestion.models import SourceRecord
 
-# Códigos CODICE / sindicación → etiquetas estables del modelo MVP.
+# Códigos CODICE / sindicación → vocabulario canónico ES (producto).
 _STATUS_MAP = {
-    "PUB": "published",
-    "PRE": "prepared",
-    "ADJ": "awarded",
-    "RES": "resolved",
-    "ANU": "cancelled",
-    "DES": "deserted",
-    "EV": "evaluation",
+    "PUB": "publicada",
+    "PRE": "preparada",
+    "ADJ": "adjudicada",
+    "RES": "resuelta",
+    "ANU": "anulada",
+    "DES": "desierta",
+    "EV": "evaluacion",
 }
 
 _CONTRACT_TYPE_MAP = {
-    "1": "supplies",
-    "2": "services",
-    "3": "works",
-    "8": "other",
+    "1": "suministros",
+    "2": "servicios",
+    "3": "obras",
+    "8": "otro",
 }
 
 _PROCEDURE_MAP = {
-    "1": "open",
-    "2": "restricted",
-    "3": "negotiated",
-    "4": "competitive_dialogue",
-    "5": "innovation_partnership",
-    "6": "other",
+    "1": "abierto",
+    "2": "restringido",
+    "3": "negociado",
+    "4": "dialogo_competitivo",
+    "5": "asociacion_innovacion",
+    "6": "otro",
 }
 
 

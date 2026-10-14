@@ -22,7 +22,7 @@ def _record(
     *,
     source_record_id: str = "chg-1",
     title: str = "Suministro fixture",
-    status: str = "published",
+    status: str = "publicada",
     deadline_at: str | None = "2026-09-30T12:00:00+00:00",
 ) -> SourceRecord:
     return SourceRecord(
@@ -65,17 +65,17 @@ def test_inmemory_identical_reingest_skips_event_and_updated_counter() -> None:
     assert second.new == 0 and second.updated == 0
     assert len(repo.events) == 1
     assert repo.events[0]["event_type"] == EVENT_TYPE_INGESTED
-    assert repo.events[0]["event_status"] == "published"
+    assert repo.events[0]["event_status"] == "publicada"
     assert repo.tender_sources[("placsp", "chg-1")].get("last_seen_at") is not None
 
 
 def test_inmemory_real_change_emits_updated_event() -> None:
     repo = InMemoryCanonicalRepository()
-    first_rec = _record(status="published")
+    first_rec = _record(status="publicada")
     repo.upsert_records(source_code="placsp", records=[first_rec])
 
     changed = deepcopy(first_rec)
-    changed.payload["canonical"]["status"] = "awarded"
+    changed.payload["canonical"]["status"] = "adjudicada"
     second = repo.upsert_records(source_code="placsp", records=[changed])
 
     assert second.updated == 1
@@ -83,9 +83,9 @@ def test_inmemory_real_change_emits_updated_event() -> None:
         EVENT_TYPE_INGESTED,
         EVENT_TYPE_UPDATED,
     ]
-    assert [e["event_status"] for e in repo.events] == ["published", "awarded"]
+    assert [e["event_status"] for e in repo.events] == ["publicada", "adjudicada"]
     tender = next(iter(repo.tenders.values()))
-    assert tender["status"] == "awarded"
+    assert tender["status"] == "adjudicada"
 
 
 def _db_available() -> bool:
@@ -164,12 +164,12 @@ def test_postgres_identical_reingest_keeps_updated_at_and_last_seen() -> None:
             ("placsp", source_tender_id),
         ).fetchall()
         assert [e[0] for e in events] == [EVENT_TYPE_INGESTED]
-        assert [e[1] for e in events] == ["published"]
+        assert [e[1] for e in events] == ["publicada"]
 
 
 @pytest.mark.skipif(not _db_available(), reason="Local Supabase Postgres not reachable")
 def test_postgres_status_change_bumps_updated_at_and_event() -> None:
-    record = _record(source_record_id="pg-chg-2", status="published")
+    record = _record(source_record_id="pg-chg-2", status="publicada")
     source_tender_id = "pg-chg-2"
 
     with connect() as conn:
@@ -199,7 +199,7 @@ def test_postgres_status_change_bumps_updated_at_and_event() -> None:
         assert before is not None
 
         changed = deepcopy(record)
-        changed.payload["canonical"]["status"] = "awarded"
+        changed.payload["canonical"]["status"] = "adjudicada"
         stats = repo.upsert_records(source_code="placsp", records=[changed])
         conn.commit()
 
@@ -215,7 +215,7 @@ def test_postgres_status_change_bumps_updated_at_and_event() -> None:
         ).fetchone()
         assert after is not None
         assert after[0] >= before[0]
-        assert after[1] == "awarded"
+        assert after[1] == "adjudicada"
 
         events = conn.execute(
             """
@@ -228,4 +228,4 @@ def test_postgres_status_change_bumps_updated_at_and_event() -> None:
             ("placsp", source_tender_id),
         ).fetchall()
         assert [e[0] for e in events] == [EVENT_TYPE_INGESTED, EVENT_TYPE_UPDATED]
-        assert [e[1] for e in events] == ["published", "awarded"]
+        assert [e[1] for e in events] == ["publicada", "adjudicada"]

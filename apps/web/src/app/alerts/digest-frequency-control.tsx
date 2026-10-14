@@ -60,8 +60,8 @@ export function DigestFrequencyControl({
         onChange={(e) => onChange(e.target.value as DigestFrequency)}
         className="rounded-md border border-border bg-background px-2.5 py-1.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring disabled:opacity-60"
       >
-        <option value="daily">Diaria</option>
-        <option value="weekly">Semanal</option>
+        <option value="diaria">Diaria</option>
+        <option value="semanal">Semanal</option>
       </select>
     </div>
   );

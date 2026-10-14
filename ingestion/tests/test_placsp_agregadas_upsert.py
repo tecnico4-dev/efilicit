@@ -89,7 +89,7 @@ def test_agregadas_inmemory_upsert_is_idempotent_and_links_artifact() -> None:
     assert key in repo.tender_sources
     assert repo.tender_sources[key]["artifact_id"] == ARTIFACT_ID
     assert [e["event_type"] for e in repo.events] == [EVENT_TYPE_INGESTED]
-    assert [e["event_status"] for e in repo.events] == ["published"]
+    assert [e["event_status"] for e in repo.events] == ["publicada"]
     assert len(repo.documents) == 1
     assert repo.documents[0]["artifact_id"] == ARTIFACT_ID
 

@@ -17,7 +17,7 @@ Re-ingesta sin cambios de contenido: actualiza ``tender_sources.last_seen_at``
 
 ``tender_events.event_type`` = hecho de pipeline (``ingerida`` | ``actualizada``);
 ``event_status`` = snapshot del status de negocio en ese momento (mismo vocabulario
-que ``tenders.status``; EN hasta el lote de traducción).
+ES que ``tenders.status``).
 
 Sigue siendo el único punto de escritura canónica del ETL.
 """
@@ -204,7 +204,7 @@ class InMemoryCanonicalRepository:
                         {
                             "tender_id": tender_id,
                             "title": canonical.get("title"),
-                            "document_type": "publication",
+                            "document_type": "publicacion",
                             "url": canonical.get("source_url"),
                             "source_code": source_code,
                             "artifact_id": artifact_id,
@@ -926,7 +926,7 @@ class PostgresCanonicalRepository:
             insert into public.documents (
               tender_id, title, document_type, url, source_code, artifact_id
             )
-            values (%s::uuid, %s, 'publication', %s, %s, %s::uuid)
+            values (%s::uuid, %s, 'publicacion', %s, %s, %s::uuid)
             """,
             (tender_id, canonical.get("title"), url, source_code, artifact_id),
         )

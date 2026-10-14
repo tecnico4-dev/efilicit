@@ -55,8 +55,8 @@ export function DigestFrequencyForm({
           onChange={(e) => setFrequency(e.target.value as DigestFrequency)}
           className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
         >
-          <option value="daily">Diario</option>
-          <option value="weekly">Semanal</option>
+          <option value="diaria">Diario</option>
+          <option value="semanal">Semanal</option>
         </select>
       </div>
       {error ? (

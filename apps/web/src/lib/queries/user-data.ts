@@ -15,7 +15,7 @@ type SavedSearchRow = Database["public"]["Tables"]["saved_searches"]["Row"];
 type ProfileRow = Database["public"]["Tables"]["users"]["Row"];
 type Json = Database["public"]["Tables"]["alerts"]["Insert"]["criteria"];
 
-export type DigestFrequency = "daily" | "weekly";
+export type DigestFrequency = "diaria" | "semanal";
 
 function asJson(criteria: SearchCriteria): Json {
   return criteria as unknown as Json;
@@ -45,7 +45,7 @@ export async function getOwnProfile(
 
 /**
  * Actualiza la frecuencia de digest de la cuenta y alinea `alerts.frequency`.
- * Valores: daily | weekly (`instant` fuera del MVP).
+ * Valores: diaria | semanal (`instantanea` fuera del MVP).
  */
 export async function updateOwnDigestFrequency(
   client: SupabaseClient<Database>,
@@ -104,7 +104,7 @@ export async function createOwnAlert(
       user_id: input.userId,
       name: input.name,
       criteria: asJson(input.criteria),
-      frequency: input.frequency ?? "daily",
+      frequency: input.frequency ?? "diaria",
       is_active: true,
     })
     .select("*")

@@ -92,8 +92,8 @@ export const CRITERIA_EXAMPLE_V1: SearchCriteria = {
   },
   estimated_value_min: 10_000,
   estimated_value_max: 500_000,
-  contract_types: ["services"],
-  procedure_types: ["open"],
+  contract_types: ["servicios"],
+  procedure_types: ["abierto"],
   publication_date_from: "2026-01-01",
   publication_date_to: "2026-12-31",
 };

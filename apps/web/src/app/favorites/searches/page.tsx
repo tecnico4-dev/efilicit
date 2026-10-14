@@ -54,7 +54,7 @@ export default async function SavedSearchesPage({
   }
 
   const digestFrequency: DigestFrequency =
-    profile.data.digest_frequency === "weekly" ? "weekly" : "daily";
+    profile.data.digest_frequency === "semanal" ? "semanal" : "diaria";
 
   const { data: searches, error } = await listOwnSavedSearches(supabase);
 

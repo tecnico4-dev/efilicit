@@ -45,10 +45,10 @@ def test_menores_normalize_valid_fixture_maps_mvp_fields() -> None:
     assert len(identified) == 1
     canonical = identified[0].payload["canonical"]
     assert canonical["title"].startswith("Suministro de material")
-    assert canonical["status"] == "published"
+    assert canonical["status"] == "publicada"
     assert canonical["status_code"] == "PUB"
-    assert canonical["contract_type"] == "supplies"
-    assert canonical["procedure_type"] == "open"
+    assert canonical["contract_type"] == "suministros"
+    assert canonical["procedure_type"] == "abierto"
     assert canonical["estimated_value"] == Decimal("12500.50")
     assert canonical["currency"] == "EUR"
     assert canonical["cpv_code"] == "30192700"

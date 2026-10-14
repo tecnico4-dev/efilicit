@@ -42,7 +42,7 @@ export default async function FavoritesPage() {
   }
 
   const digestFrequency: DigestFrequency =
-    profile.data.digest_frequency === "weekly" ? "weekly" : "daily";
+    profile.data.digest_frequency === "semanal" ? "semanal" : "diaria";
 
   const [favoritesResult, searchesResult] = await Promise.all([
     listOwnFavorites(supabase),

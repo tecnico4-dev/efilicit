@@ -59,17 +59,19 @@ def build_digest_message(
     to_email: str,
     digest: str,
     items: list[NotificationItem],
-    frequency: str = "daily",
+    frequency: str = "diaria",
 ) -> EmailMessage:
     """Plantilla mínima texto/HTML del resumen (MVP; sin deep-links aún)."""
+    from efilicit_ingestion.alerts.queue import normalize_digest_frequency
+
     titles = []
     for item in items:
         title = str(item.payload.get("title") or item.payload.get("tender_id") or "licitación")
         titles.append(f"- {title}")
 
     count = len(items)
-    freq = (frequency or "daily").strip().lower()
-    label = "semanal" if freq == "weekly" else "diario"
+    freq = normalize_digest_frequency(frequency)
+    label = "semanal" if freq == "semanal" else "diario"
     subject = (
         f"Resumen {label} EfiLicit — {count} nueva{'s' if count != 1 else ''} "
         f"oportunidad{'es' if count != 1 else ''}"
@@ -159,14 +161,20 @@ def drain_daily_digests(
             "queue must expose drainable_items()/pending_items() or pass list_pending="
         )
 
-    freqs = {k: (v or "daily").strip().lower() for k, v in (frequencies or {}).items()}
+    from efilicit_ingestion.alerts.queue import normalize_digest_frequency
+
+    freqs = {
+        k: normalize_digest_frequency(v) for k, v in (frequencies or {}).items()
+    }
     drainable = list(pending_fn())
     groups = group_drainable_by_user_digest(drainable)
     result = DigestDrainResult()
 
     for (user_id, digest), items in sorted(groups.items(), key=lambda x: (x[0][0], x[0][1])):
-        freq = freqs.get(user_id) or str(items[0].payload.get("frequency") or "daily")
-        freq = freq.strip().lower()
+        freq = normalize_digest_frequency(
+            freqs.get(user_id)
+            or str(items[0].payload.get("frequency") or "diaria")
+        )
         if not should_send_digest(freq, job_date):
             result.digests_skipped_not_due += 1
             continue

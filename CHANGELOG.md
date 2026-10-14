@@ -35,6 +35,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Vocabulario canónico de producto en español: `tenders.status` / `procedure_type` / `contract_type`, `users.digest_frequency` y `alerts.frequency` (`diaria`|`semanal`), `documents.document_type` (`publicacion`), `tender_events.event_status` alineado. Sin remap de `criteria` jsonb ni de `source_code`.
 - `tender_events`: `event_type` pasa a hecho de pipeline (`ingerida` | `actualizada`); nuevo `event_status` con el status de negocio en ese momento. Sin fila nueva si la re-ingesta no cambia contenido (`last_seen_at` sigue bastando).
 - Semana 6 UX: icono de buzón en cabecera (puntito de no leídas placeholder) + página `/notifications`.
 - Semana 6: restaura RPC `search_tenders` Semana 5 (FTS+trgm) tras revertir la búsqueda ampliada; la UI solo oculta el badge «FTS» (sigue mostrando «errata»).

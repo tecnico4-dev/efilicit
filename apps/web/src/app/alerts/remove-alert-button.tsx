@@ -38,9 +38,9 @@ export function RemoveAlertButton({
       userId: alert.user_id,
       name: alert.name,
       criteria: parseCriteria(alert.criteria),
-      frequency: (alert.frequency === "weekly"
-        ? "weekly"
-        : "daily") as DigestFrequency,
+      frequency: (alert.frequency === "semanal"
+        ? "semanal"
+        : "diaria") as DigestFrequency,
       wasActive: alert.is_active,
     };
 

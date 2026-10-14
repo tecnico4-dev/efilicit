@@ -39,7 +39,7 @@ def _record(
                 "estimated_value": Decimal("1000.00"),
                 "publication_date": "2024-06-01",
                 "deadline_at": deadline_at,
-                "status": "published",
+                "status": "publicada",
                 "authority": {
                     "tax_id": tax_id,
                     "name": "Ayuntamiento de Prueba",

@@ -49,7 +49,7 @@ def _record(
                     else None
                 ),
                 "publication_date": publication_date,
-                "status": "published",
+                "status": "publicada",
                 "authority": {
                     "tax_id": tax_id,
                     "name": "Ayuntamiento de Prueba",

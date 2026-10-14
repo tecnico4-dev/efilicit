@@ -5,8 +5,8 @@ con ``idempotency_key`` estable por alerta+licitación+periodo de digest.
 
 El periodo depende de ``users.digest_frequency`` (ADR 013):
 
-- ``daily`` → YYYY-MM-DD
-- ``weekly`` → semana ISO ``YYYY-Www``
+- ``diaria`` → YYYY-MM-DD
+- ``semanal`` → semana ISO ``YYYY-Www``
 
 Así un re-run del job no duplica filas ni reabre ítems ya ``sent``.
 """
@@ -56,9 +56,13 @@ def run_alert_batch(
     """Evalúa alertas activas contra licitaciones de la ventana y encola matches.
 
     No envía email. Idempotente vía ``idempotency_key``.
-    El periodo de digest es por cuenta: daily → día; weekly → semana ISO.
+    El periodo de digest es por cuenta: diaria → día; semanal → semana ISO.
     """
-    freqs = {k: (v or "daily").strip().lower() for k, v in (frequencies or {}).items()}
+    from efilicit_ingestion.alerts.queue import normalize_digest_frequency
+
+    freqs = {
+        k: normalize_digest_frequency(v) for k, v in (frequencies or {}).items()
+    }
     job_date = _job_date(digest)
     if isinstance(digest, str) and job_date is None and not freqs:
         default_period = digest
@@ -81,7 +85,7 @@ def run_alert_batch(
             result.skipped_empty_criteria += 1
             continue
 
-        freq = freqs.get(alert.user_id, "daily")
+        freq = freqs.get(alert.user_id, "diaria")
         if freqs and job_date is not None:
             period = digest_period(freq, job_date)
         else:

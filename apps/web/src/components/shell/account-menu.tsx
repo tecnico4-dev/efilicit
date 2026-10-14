@@ -32,7 +32,7 @@ function UserIcon({ className }: { className?: string }) {
 }
 
 function freqLabel(f: DigestFrequency): string {
-  return f === "weekly" ? "semanal" : "diaria";
+  return f === "semanal" ? "semanal" : "diaria";
 }
 
 /**
@@ -233,30 +233,30 @@ export function AccountMenu({
                   <button
                     type="button"
                     role="menuitemradio"
-                    aria-checked={frequency === "daily"}
+                    aria-checked={frequency === "diaria"}
                     disabled={freqPending}
                     className={cn(
                       "mt-0.5 block w-full rounded-md px-2 py-1.5 text-left text-sm",
-                      frequency === "daily"
+                      frequency === "diaria"
                         ? "bg-muted font-medium text-foreground"
                         : "text-muted-foreground hover:bg-muted hover:text-foreground",
                     )}
-                    onClick={() => onSelectFrequency("daily")}
+                    onClick={() => onSelectFrequency("diaria")}
                   >
                     Diaria
                   </button>
                   <button
                     type="button"
                     role="menuitemradio"
-                    aria-checked={frequency === "weekly"}
+                    aria-checked={frequency === "semanal"}
                     disabled={freqPending}
                     className={cn(
                       "mt-0.5 block w-full rounded-md px-2 py-1.5 text-left text-sm",
-                      frequency === "weekly"
+                      frequency === "semanal"
                         ? "bg-muted font-medium text-foreground"
                         : "text-muted-foreground hover:bg-muted hover:text-foreground",
                     )}
-                    onClick={() => onSelectFrequency("weekly")}
+                    onClick={() => onSelectFrequency("semanal")}
                   >
                     Semanal
                   </button>

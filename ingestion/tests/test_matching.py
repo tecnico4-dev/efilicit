@@ -41,7 +41,7 @@ def _record(
                 Decimal(str(estimated_value)) if estimated_value is not None else None
             ),
             "publication_date": publication_date,
-            "status": "published",
+            "status": "publicada",
             "authority": {
                 "tax_id": tax_id,
                 "name": "Ayuntamiento de Prueba",
