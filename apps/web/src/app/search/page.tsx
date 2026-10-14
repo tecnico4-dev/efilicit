@@ -7,6 +7,7 @@ import {
   searchTenders,
   type SearchTenderRow,
 } from "@/lib/queries";
+import { formatTenderStatus } from "@/lib/tender-labels";
 import { SaveSearchButton } from "./save-search-button";
 import { SearchForm } from "./search-form";
 
@@ -129,7 +130,7 @@ function ResultsList({
                 </div>
                 <div>
                   <dt className="inline text-muted-foreground">Estado: </dt>
-                  <dd className="inline">{row.status ?? "—"}</dd>
+                  <dd className="inline">{formatTenderStatus(row.status)}</dd>
                 </div>
                 <div>
                   <dt className="inline text-muted-foreground">rank: </dt>

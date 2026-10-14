@@ -2,10 +2,9 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LogoutButton } from "@/components/auth/logout-button";
 import { cn } from "@/lib/cn";
+import { AccountMenu } from "./account-menu";
 import { FavoritesNavItem } from "./favorites-nav-item";
-import { ThemeToggle } from "./theme-toggle";
 
 function navClass(active: boolean) {
   return cn(
@@ -49,20 +48,9 @@ export function AppHeader({ isAuthenticated }: { isAuthenticated: boolean }) {
           >
             Alertas
           </Link>
-          <Link
-            href="/account"
-            className={navClass(pathname.startsWith("/account"))}
-          >
-            Cuenta
-          </Link>
         </nav>
 
-        <div className="flex items-center gap-1.5">
-          <ThemeToggle />
-          <LogoutButton
-            className="rounded-lg border-transparent bg-transparent px-3 py-2 text-sm font-medium text-muted-foreground shadow-none hover:bg-muted hover:text-foreground"
-          />
-        </div>
+        <AccountMenu />
       </div>
     </header>
   );

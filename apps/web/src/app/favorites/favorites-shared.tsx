@@ -5,6 +5,7 @@ import {
   parseCriteria,
 } from "@/lib/criteria-display";
 import type { DigestFrequency, FavoriteWithTender } from "@/lib/queries";
+import { formatTenderStatus } from "@/lib/tender-labels";
 import type { Database } from "@efilicit/types";
 import { ConvertToAlertButton } from "./convert-to-alert-button";
 import { RemoveSavedSearchButton } from "./remove-saved-search-button";
@@ -98,7 +99,7 @@ export function FavoriteTenderList({
               {tender.status ? (
                 <div>
                   <dt className="inline">Estado · </dt>
-                  <dd className="inline">{tender.status}</dd>
+                  <dd className="inline">{formatTenderStatus(tender.status)}</dd>
                 </div>
               ) : null}
             </dl>

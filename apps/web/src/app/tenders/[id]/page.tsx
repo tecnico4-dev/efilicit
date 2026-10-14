@@ -9,6 +9,7 @@ import {
   isOwnFavorite,
   type TenderSourceSummary,
 } from "@/lib/queries";
+import { formatTenderStatus } from "@/lib/tender-labels";
 
 export const dynamic = "force-dynamic";
 
@@ -267,7 +268,7 @@ export default async function TenderDetailPage({
         <Field label="CPV">
           <span className="font-mono">{tender.cpv_code ?? "—"}</span>
         </Field>
-        <Field label="Estado">{tender.status ?? "—"}</Field>
+        <Field label="Estado">{formatTenderStatus(tender.status)}</Field>
         <Field label="Tipo de contrato">{tender.contract_type ?? "—"}</Field>
         <Field label="Procedimiento">{tender.procedure_type ?? "—"}</Field>
         <Field label="Publicación">{formatDate(tender.publication_date)}</Field>
