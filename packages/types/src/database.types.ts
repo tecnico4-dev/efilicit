@@ -508,6 +508,7 @@ export type Database = {
       tender_events: {
         Row: {
           created_at: string
+          event_status: string | null
           event_type: string
           id: string
           occurred_at: string
@@ -517,6 +518,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          event_status?: string | null
           event_type: string
           id?: string
           occurred_at?: string
@@ -526,6 +528,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          event_status?: string | null
           event_type?: string
           id?: string
           occurred_at?: string

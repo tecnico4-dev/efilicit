@@ -10,6 +10,8 @@ import pytest
 
 from efilicit_ingestion.models import SourceRecord
 from efilicit_ingestion.pipeline.canonical_repo import (
+    EVENT_TYPE_INGESTED,
+    EVENT_TYPE_UPDATED,
     InMemoryCanonicalRepository,
     PostgresCanonicalRepository,
 )
@@ -62,7 +64,8 @@ def test_inmemory_identical_reingest_skips_event_and_updated_counter() -> None:
     assert first.new == 1 and first.updated == 0
     assert second.new == 0 and second.updated == 0
     assert len(repo.events) == 1
-    assert repo.events[0]["event_type"] == "published"
+    assert repo.events[0]["event_type"] == EVENT_TYPE_INGESTED
+    assert repo.events[0]["event_status"] == "published"
     assert repo.tender_sources[("placsp", "chg-1")].get("last_seen_at") is not None
 
 
@@ -76,7 +79,11 @@ def test_inmemory_real_change_emits_updated_event() -> None:
     second = repo.upsert_records(source_code="placsp", records=[changed])
 
     assert second.updated == 1
-    assert [e["event_type"] for e in repo.events] == ["published", "updated"]
+    assert [e["event_type"] for e in repo.events] == [
+        EVENT_TYPE_INGESTED,
+        EVENT_TYPE_UPDATED,
+    ]
+    assert [e["event_status"] for e in repo.events] == ["published", "awarded"]
     tender = next(iter(repo.tenders.values()))
     assert tender["status"] == "awarded"
 
@@ -148,7 +155,7 @@ def test_postgres_identical_reingest_keeps_updated_at_and_last_seen() -> None:
 
         events = conn.execute(
             """
-            select event_type
+            select event_type, event_status
             from public.tender_events e
             join public.tender_sources ts on ts.tender_id = e.tender_id
             where ts.source_code = %s and ts.source_tender_id = %s
@@ -156,7 +163,8 @@ def test_postgres_identical_reingest_keeps_updated_at_and_last_seen() -> None:
             """,
             ("placsp", source_tender_id),
         ).fetchall()
-        assert [e[0] for e in events] == ["published"]
+        assert [e[0] for e in events] == [EVENT_TYPE_INGESTED]
+        assert [e[1] for e in events] == ["published"]
 
 
 @pytest.mark.skipif(not _db_available(), reason="Local Supabase Postgres not reachable")
@@ -211,7 +219,7 @@ def test_postgres_status_change_bumps_updated_at_and_event() -> None:
 
         events = conn.execute(
             """
-            select event_type
+            select event_type, event_status
             from public.tender_events e
             join public.tender_sources ts on ts.tender_id = e.tender_id
             where ts.source_code = %s and ts.source_tender_id = %s
@@ -219,4 +227,5 @@ def test_postgres_status_change_bumps_updated_at_and_event() -> None:
             """,
             ("placsp", source_tender_id),
         ).fetchall()
-        assert [e[0] for e in events] == ["published", "updated"]
+        assert [e[0] for e in events] == [EVENT_TYPE_INGESTED, EVENT_TYPE_UPDATED]
+        assert [e[1] for e in events] == ["published", "awarded"]

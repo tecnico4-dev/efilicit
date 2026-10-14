@@ -15,6 +15,10 @@ Re-ingesta sin cambios de contenido: actualiza ``tender_sources.last_seen_at``
 (señal operativa “sigue viva”) pero **no** escribe ``tender_events`` ni mueve
 ``tenders.updated_at``. ``stats.updated`` cuenta solo cambios reales.
 
+``tender_events.event_type`` = hecho de pipeline (``ingerida`` | ``actualizada``);
+``event_status`` = snapshot del status de negocio en ese momento (mismo vocabulario
+que ``tenders.status``; EN hasta el lote de traducción).
+
 Sigue siendo el único punto de escritura canónica del ETL.
 """
 
@@ -37,6 +41,10 @@ from efilicit_ingestion.pipeline.matching import (
     MatchCandidate,
     expediente_from_source_tender_id,
 )
+
+# Hechos de pipeline en tender_events (no confundir con status de negocio).
+EVENT_TYPE_INGESTED = "ingerida"
+EVENT_TYPE_UPDATED = "actualizada"
 
 # ADR 015: menor número = mayor prioridad. Fuentes desconocidas → 1000.
 # Al añadir un source_code nuevo: actualizar este dict + tabla del ADR 015
@@ -186,7 +194,8 @@ class InMemoryCanonicalRepository:
                 self.events.append(
                     {
                         "tender_id": tender_id,
-                        "event_type": canonical.get("status") or "ingested",
+                        "event_type": EVENT_TYPE_INGESTED,
+                        "event_status": canonical.get("status"),
                         "source_code": source_code,
                     }
                 )
@@ -222,7 +231,8 @@ class InMemoryCanonicalRepository:
                         self.events.append(
                             {
                                 "tender_id": tender_id,
-                                "event_type": "updated",
+                                "event_type": EVENT_TYPE_UPDATED,
+                                "event_status": canonical.get("status"),
                                 "source_code": source_code,
                             }
                         )
@@ -470,7 +480,8 @@ class PostgresCanonicalRepository:
                 )
                 self._insert_event(
                     tender_id=tender_id,
-                    event_type=canonical.get("status") or "ingested",
+                    event_type=EVENT_TYPE_INGESTED,
+                    event_status=canonical.get("status"),
                     source_code=source_code,
                     payload={"source_tender_id": source_tender_id},
                     occurred_at=record.recorded_at,
@@ -508,7 +519,8 @@ class PostgresCanonicalRepository:
                         )
                         self._insert_event(
                             tender_id=tender_id,
-                            event_type="updated",
+                            event_type=EVENT_TYPE_UPDATED,
+                            event_status=canonical.get("status"),
                             source_code=source_code,
                             payload={"source_tender_id": source_tender_id},
                             occurred_at=record.recorded_at,
@@ -866,6 +878,7 @@ class PostgresCanonicalRepository:
         *,
         tender_id: str,
         event_type: str,
+        event_status: str | None,
         source_code: str,
         payload: dict[str, Any],
         occurred_at: datetime | None,
@@ -873,11 +886,18 @@ class PostgresCanonicalRepository:
         self._conn.execute(
             """
             insert into public.tender_events (
-              tender_id, event_type, occurred_at, source_code, payload
+              tender_id, event_type, event_status, occurred_at, source_code, payload
             )
-            values (%s::uuid, %s, coalesce(%s, now()), %s, %s)
+            values (%s::uuid, %s, %s, coalesce(%s, now()), %s, %s)
             """,
-            (tender_id, event_type, occurred_at, source_code, Json(payload)),
+            (
+                tender_id,
+                event_type,
+                event_status,
+                occurred_at,
+                source_code,
+                Json(payload),
+            ),
         )
 
     def _maybe_insert_document(

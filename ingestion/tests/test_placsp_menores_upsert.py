@@ -24,6 +24,7 @@ from efilicit_ingestion.pipeline import (
     stages,
 )
 from efilicit_ingestion.pipeline.canonical_repo import (
+    EVENT_TYPE_INGESTED,
     InMemoryCanonicalRepository,
     PostgresCanonicalRepository,
 )
@@ -90,7 +91,8 @@ def test_menores_inmemory_upsert_is_idempotent_and_links_artifact() -> None:
     key = (SOURCE_CODE, "B00000000:EXP/2026/0001")
     assert key in repo.tender_sources
     assert repo.tender_sources[key]["artifact_id"] == ARTIFACT_ID
-    assert [e["event_type"] for e in repo.events] == ["published"]
+    assert [e["event_type"] for e in repo.events] == [EVENT_TYPE_INGESTED]
+    assert [e["event_status"] for e in repo.events] == ["published"]
     assert len(repo.documents) == 1
     assert repo.documents[0]["artifact_id"] == ARTIFACT_ID
 

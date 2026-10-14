@@ -11,6 +11,7 @@ from efilicit_ingestion.connectors.placsp.parser import parse_placsp_artifact
 from efilicit_ingestion.models import RemoteArtifact
 from efilicit_ingestion.pipeline import stages
 from efilicit_ingestion.pipeline.canonical_repo import (
+    EVENT_TYPE_INGESTED,
     InMemoryCanonicalRepository,
     PostgresCanonicalRepository,
 )
@@ -44,7 +45,8 @@ def test_inmemory_upsert_is_idempotent_on_source_tender_id() -> None:
     assert len(repo.tenders) == 1
     assert len(repo.tender_sources) == 1
     assert len(repo.events) == 1
-    assert repo.events[0]["event_type"] == "published"
+    assert repo.events[0]["event_type"] == EVENT_TYPE_INGESTED
+    assert repo.events[0]["event_status"] == "published"
 
     tender = next(iter(repo.tenders.values()))
     assert tender["title"].startswith("Suministro")
@@ -128,7 +130,7 @@ def test_postgres_upsert_populates_canonical_and_does_not_duplicate() -> None:
 
         events = conn.execute(
             """
-            select event_type
+            select event_type, event_status
             from public.tender_events e
             join public.tender_sources ts on ts.tender_id = e.tender_id
             where ts.source_code = %s and ts.source_tender_id = %s
@@ -136,7 +138,8 @@ def test_postgres_upsert_populates_canonical_and_does_not_duplicate() -> None:
             """,
             (SOURCE_CODE, source_tender_id),
         ).fetchall()
-        assert [e[0] for e in events] == ["published"]
+        assert [e[0] for e in events] == [EVENT_TYPE_INGESTED]
+        assert [e[1] for e in events] == ["published"]
 
         docs = conn.execute(
             """
