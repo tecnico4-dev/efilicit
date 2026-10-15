@@ -12,8 +12,9 @@
  * - Dentro de un array, los valores se combinan con OR.
  * - `{}` o solo `{ "version": 1 }` en una **alerta** no debe generar matches
  *   (evita spam); en **búsqueda guardada** significa “sin filtros”.
- * - Geografía e identidad de organismo se resuelven vía `contracting_authorities`
- *   (join), no vía columnas en `tenders`.
+ * - Geografía de ejecución: `geography.ccaa_codes` / `municipality_codes` →
+ *   `tenders.place_*` (ADR 018). Legacy `municipalities` = sede del organismo.
+ * - Identidad de organismo vía `contracting_authorities` (join).
  * - NIF/CIF (`authority.tax_ids`) es señal primaria de organismo; el nombre
  *   (`name_contains`) es filtro débil, nunca identidad única.
  */
@@ -34,7 +35,20 @@ export type AuthorityCriteria = {
 };
 
 export type GeographyCriteria = {
-  /** Municipios (texto canónico de `contracting_authorities.municipality`). */
+  /**
+   * Códigos INE de CCAA (`tenders.place_ccaa_code` / `geo_ccaa.code`).
+   * Preferido para filtrar lugar de ejecución (ADR 018).
+   */
+  ccaa_codes?: string[];
+  /**
+   * Códigos INE de municipio (`tenders.place_municipality_code`).
+   * Solo tendrá hits cuando el catálogo `geo_municipio` esté cargado y la fuente aporte código.
+   */
+  municipality_codes?: string[];
+  /**
+   * Legacy: municipios por texto sobre sede del organismo
+   * (`contracting_authorities.municipality`). No es lugar de ejecución.
+   */
   municipalities?: string[];
   /** País ISO-ish; por defecto los datos son ES. */
   countries?: string[];
@@ -87,7 +101,8 @@ export const CRITERIA_EXAMPLE_V1: SearchCriteria = {
     tax_ids: ["P2807900B"],
   },
   geography: {
-    municipalities: ["Madrid"],
+    ccaa_codes: ["13"],
+    municipality_codes: ["28079"],
     countries: ["ES"],
   },
   estimated_value_min: 10_000,

@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Geografía de lugar de ejecución: catálogos `geo_ccaa` / `geo_municipio`, columnas `tenders.place_nuts_code` / `place_ccaa_code` / `place_municipality_code`; NUTS→CCAA en normalize ([ADR 018](docs/adr/018-geografia-lugar-ejecucion-ccaa-municipio.md)).
 - Semana 6 Paso 7: dashboard básico en `/` autenticada (alertas activas, favoritos recientes, búsquedas guardadas + accesos); landing anónima sin cambios.
 - Semana 6 Paso 6: gestión de alertas de producto — crear/editar/activar en `/alerts` (criteria v1); crear alerta desde `/search` (solo sesión); sin copy de prueba.
 - Semana 6 Paso 5: favoritos (`favorites` + RLS owner-only); marcar/desmarcar en ficha (solo sesión); lista `/favorites`; verificación Alice≠Bob.
@@ -29,6 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Documentation
 
+- [ADR 018](docs/adr/018-geografia-lugar-ejecucion-ccaa-municipio.md): CCAA + municipio por códigos; sin provincia a corto plazo; geografía ≠ `source_code`.
 - [ADR 017](docs/adr/017-tender-events-tipo-pipeline-y-status.md): `tender_events` separa `event_type` (`ingerida`\|`actualizada`) de `event_status` (snapshot de negocio); sin evento si la re-ingesta no cambia contenido.
 - Checklist al añadir `source_code` nuevo: actualizar `SOURCE_PRIORITY` + [ADR 015](docs/adr/015-fuente-ganadora-canonica.md) (`docs/sources/README.md`, BACKLOG §4, `cobertura-ccaa.md`).
 - BACKLOG §1: posible doble envío de digest si el job falla tras Resend — aceptado en MVP (preferir duplicado a pérdida); endurecer solo si es recurrente.

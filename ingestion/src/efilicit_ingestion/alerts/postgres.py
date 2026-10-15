@@ -65,7 +65,7 @@ def load_tender_candidates(
 ) -> list[TenderCandidate]:
     """Ventana de licitaciones para matching (por updated_at / publication_date).
 
-    Incluye campos del organismo: criteria.authority / geography viven ahí.
+    Incluye organismo (authority) y place_* de la licitación (geography).
     """
     if since is None:
         since = datetime.now(timezone.utc) - timedelta(days=1)
@@ -90,6 +90,8 @@ def load_tender_candidates(
               t.deadline_at,
               t.updated_at,
               t.contracting_authority_id,
+              t.place_ccaa_code,
+              t.place_municipality_code,
               ca.tax_id as authority_tax_id,
               ca.name as authority_name,
               ca.name_normalized as authority_name_normalized,
@@ -129,6 +131,8 @@ def load_tender_candidates(
                 authority_name_normalized=row["authority_name_normalized"],
                 municipality=row["municipality"],
                 country=row["country"],
+                place_ccaa_code=row["place_ccaa_code"],
+                place_municipality_code=row["place_municipality_code"],
                 updated_at=row["updated_at"],
             )
         )

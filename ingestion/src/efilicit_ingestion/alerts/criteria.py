@@ -31,10 +31,16 @@ class AuthorityCriteria(BaseModel):
 
 
 class GeographyCriteria(BaseModel):
-    """Geo vía campos del organismo canónico (sin catálogo NUTS completo)."""
+    """Lugar de ejecución (códigos) + legacy sede organismo.
+
+    Preferido: ``ccaa_codes`` / ``municipality_codes`` sobre ``tenders.place_*``.
+    ``municipalities`` (texto) es legacy sobre sede del organismo (ADR 018).
+    """
 
     model_config = ConfigDict(extra="forbid")
 
+    ccaa_codes: list[str] | None = None
+    municipality_codes: list[str] | None = None
     municipalities: list[str] | None = None
     countries: list[str] | None = None
 
@@ -92,7 +98,11 @@ CRITERIA_EXAMPLE_V1: dict[str, Any] = {
     "keywords": ["software", "mantenimiento"],
     "cpv_codes": ["72000000"],
     "authority": {"tax_ids": ["P2807900B"]},
-    "geography": {"municipalities": ["Madrid"], "countries": ["ES"]},
+    "geography": {
+        "ccaa_codes": ["13"],
+        "municipality_codes": ["28079"],
+        "countries": ["ES"],
+    },
     "estimated_value_min": 10_000,
     "estimated_value_max": 500_000,
     "contract_types": ["servicios"],

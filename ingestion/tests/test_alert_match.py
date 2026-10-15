@@ -72,12 +72,21 @@ def test_value_range_and_geography() -> None:
             "version": 1,
             "estimated_value_min": 10_000,
             "estimated_value_max": 100_000,
-            "geography": {"municipalities": ["Madrid"]},
+            "geography": {"ccaa_codes": ["13"]},
         }
+    )
+    hit = evaluate_tender(criteria, _tender(place_ccaa_code="13"))
+    assert hit is not None
+    assert set(hit.reasons) == {"estimated_value", "geography"}
+
+
+def test_geography_legacy_municipality_text() -> None:
+    criteria = parse_criteria(
+        {"version": 1, "geography": {"municipalities": ["Madrid"]}}
     )
     hit = evaluate_tender(criteria, _tender())
     assert hit is not None
-    assert set(hit.reasons) == {"estimated_value", "geography"}
+    assert hit.reasons == ("geography",)
 
 
 def test_match_alert_to_tenders_filters_inactive_and_misses() -> None:

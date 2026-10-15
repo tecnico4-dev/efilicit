@@ -86,11 +86,17 @@ def _authority_hit(tender: TenderCandidate, criteria: SearchCriteria) -> bool | 
 
 
 def _geography_hit(tender: TenderCandidate, criteria: SearchCriteria) -> bool | None:
-    """Geo del organismo canónico (municipio/país), no de la licitación."""
+    """Lugar de ejecución (códigos) + legacy sede organismo / país."""
     geo = criteria.geography
     if geo is None:
         return None
     checks: list[bool] = []
+    if geo.ccaa_codes:
+        code = (tender.place_ccaa_code or "").strip()
+        checks.append(bool(code) and code in geo.ccaa_codes)
+    if geo.municipality_codes:
+        code = (tender.place_municipality_code or "").strip()
+        checks.append(bool(code) and code in geo.municipality_codes)
     if geo.municipalities:
         mun = _norm(tender.municipality)
         checks.append(bool(mun) and mun in {_norm(m) for m in geo.municipalities})

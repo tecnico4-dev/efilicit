@@ -545,7 +545,8 @@ class PostgresCanonicalRepository:
             """
             select title, description, status, procedure_type, contract_type,
                    estimated_value, currency, cpv_code, publication_date,
-                   deadline_at, contracting_authority_id
+                   deadline_at, contracting_authority_id,
+                   place_nuts_code, place_ccaa_code, place_municipality_code
             from public.tenders
             where id = %s::uuid
             """,
@@ -565,6 +566,9 @@ class PostgresCanonicalRepository:
             "publication_date": row[8],
             "deadline_at": row[9],
             "contracting_authority_id": str(row[10]) if row[10] is not None else None,
+            "place_nuts_code": row[11],
+            "place_ccaa_code": row[12],
+            "place_municipality_code": row[13],
         }
         return _tender_content_differs(current, canonical, authority_id)
 
@@ -669,6 +673,16 @@ class PostgresCanonicalRepository:
         assert row is not None
         return str(row[0])
 
+    def _known_municipality_code(self, code: str | None) -> str | None:
+        """Solo persiste municipio si está en ``geo_municipio`` (FK)."""
+        if not code:
+            return None
+        row = self._conn.execute(
+            "select 1 from public.geo_municipio where code = %s",
+            (code,),
+        ).fetchone()
+        return code if row is not None else None
+
     def _insert_tender(
         self,
         canonical: dict[str, Any],
@@ -676,14 +690,19 @@ class PostgresCanonicalRepository:
         *,
         canonical_source_code: str,
     ) -> str:
+        mun = self._known_municipality_code(canonical.get("place_municipality_code"))
         row = self._conn.execute(
             """
             insert into public.tenders (
               title, description, status, procedure_type, contract_type,
               estimated_value, currency, cpv_code, publication_date, deadline_at,
-              contracting_authority_id, canonical_source_code
+              contracting_authority_id, canonical_source_code,
+              place_nuts_code, place_ccaa_code, place_municipality_code
             )
-            values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s::uuid, %s)
+            values (
+              %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s::uuid, %s,
+              %s, %s, %s
+            )
             returning id
             """,
             (
@@ -699,6 +718,9 @@ class PostgresCanonicalRepository:
                 canonical.get("deadline_at"),
                 authority_id,
                 canonical_source_code,
+                canonical.get("place_nuts_code"),
+                canonical.get("place_ccaa_code"),
+                mun,
             ),
         ).fetchone()
         assert row is not None
@@ -712,6 +734,7 @@ class PostgresCanonicalRepository:
         *,
         canonical_source_code: str,
     ) -> None:
+        mun = self._known_municipality_code(canonical.get("place_municipality_code"))
         self._conn.execute(
             """
             update public.tenders set
@@ -727,6 +750,9 @@ class PostgresCanonicalRepository:
               deadline_at = %s,
               contracting_authority_id = %s::uuid,
               canonical_source_code = %s,
+              place_nuts_code = %s,
+              place_ccaa_code = %s,
+              place_municipality_code = %s,
               updated_at = now()
             where id = %s::uuid
             """,
@@ -743,6 +769,9 @@ class PostgresCanonicalRepository:
                 canonical.get("deadline_at"),
                 authority_id,
                 canonical_source_code,
+                canonical.get("place_nuts_code"),
+                canonical.get("place_ccaa_code"),
+                mun,
                 tender_id,
             ),
         )
@@ -1041,6 +1070,9 @@ def _tender_row(
         "deadline_at": canonical.get("deadline_at"),
         "contracting_authority_id": authority_id,
         "canonical_source_code": canonical_source_code,
+        "place_nuts_code": canonical.get("place_nuts_code"),
+        "place_ccaa_code": canonical.get("place_ccaa_code"),
+        "place_municipality_code": canonical.get("place_municipality_code"),
     }
 
 
@@ -1063,6 +1095,9 @@ def _tender_content_differs(
             "publication_date": canonical.get("publication_date"),
             "deadline_at": canonical.get("deadline_at"),
             "contracting_authority_id": authority_id,
+            "place_nuts_code": canonical.get("place_nuts_code"),
+            "place_ccaa_code": canonical.get("place_ccaa_code"),
+            "place_municipality_code": canonical.get("place_municipality_code"),
         }
     )
 
@@ -1082,6 +1117,9 @@ def _tender_compare_snapshot(row: dict[str, Any]) -> tuple[Any, ...]:
         _as_date(row.get("publication_date")),
         _as_datetime(row.get("deadline_at")),
         str(auth) if auth is not None else None,
+        row.get("place_nuts_code"),
+        row.get("place_ccaa_code"),
+        row.get("place_municipality_code"),
     )
 
 

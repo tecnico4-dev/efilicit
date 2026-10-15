@@ -616,6 +616,47 @@ export type Database = {
           },
         ]
       }
+      geo_ccaa: {
+        Row: {
+          code: string
+          name: string
+        }
+        Insert: {
+          code: string
+          name: string
+        }
+        Update: {
+          code?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      geo_municipio: {
+        Row: {
+          ccaa_code: string
+          code: string
+          name: string
+        }
+        Insert: {
+          ccaa_code: string
+          code: string
+          name: string
+        }
+        Update: {
+          ccaa_code?: string
+          code?: string
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "geo_municipio_ccaa_code_fkey"
+            columns: ["ccaa_code"]
+            isOneToOne: false
+            referencedRelation: "geo_ccaa"
+            referencedColumns: ["code"]
+          },
+        ]
+      }
       tenders: {
         Row: {
           canonical_source_code: string
@@ -628,6 +669,9 @@ export type Database = {
           description: string | null
           estimated_value: number | null
           id: string
+          place_ccaa_code: string | null
+          place_municipality_code: string | null
+          place_nuts_code: string | null
           procedure_type: string | null
           publication_date: string | null
           search_vector: unknown
@@ -646,6 +690,9 @@ export type Database = {
           description?: string | null
           estimated_value?: number | null
           id?: string
+          place_ccaa_code?: string | null
+          place_municipality_code?: string | null
+          place_nuts_code?: string | null
           procedure_type?: string | null
           publication_date?: string | null
           search_vector?: unknown
@@ -664,6 +711,9 @@ export type Database = {
           description?: string | null
           estimated_value?: number | null
           id?: string
+          place_ccaa_code?: string | null
+          place_municipality_code?: string | null
+          place_nuts_code?: string | null
           procedure_type?: string | null
           publication_date?: string | null
           search_vector?: unknown
@@ -678,6 +728,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "contracting_authorities"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tenders_place_ccaa_code_fkey"
+            columns: ["place_ccaa_code"]
+            isOneToOne: false
+            referencedRelation: "geo_ccaa"
+            referencedColumns: ["code"]
+          },
+          {
+            foreignKeyName: "tenders_place_municipality_code_fkey"
+            columns: ["place_municipality_code"]
+            isOneToOne: false
+            referencedRelation: "geo_municipio"
+            referencedColumns: ["code"]
           },
         ]
       }
