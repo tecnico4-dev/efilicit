@@ -93,6 +93,8 @@ def _map_catalunya_row(
 
     cpv = _text(row.get("codi_cpv"))
     nuts = _text(row.get("codi_nuts"))
+    # codi_ine10: entidad INE 10 dígitos; municipio = 5 primeros (provincia 01–52).
+    municipality_ine = _text(row.get("codi_ine10"))
     contract_type = _CONTRACT_TYPE.get(_fold(_text(row.get("tipus_contracte")) or ""), None)
 
     pub_url = _link_url(row.get("enllac_publicacio"))
@@ -119,6 +121,7 @@ def _map_catalunya_row(
         "currency": "EUR",
         "cpv_codes": [cpv] if cpv else [],
         "nuts_codes": [nuts] if nuts else [],
+        "municipality_ine_code": municipality_ine,
         "deadline_at": deadline,
         "updated_at": updated_at,
         "publication_url": pub_url,

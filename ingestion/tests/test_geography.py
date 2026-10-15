@@ -22,6 +22,21 @@ def test_nuts2_and_nuts3_map_to_ccaa() -> None:
     assert nuts_to_ccaa_code("FR10") is None
 
 
+def test_normalize_municipality_accepts_codi_ine10() -> None:
+    from efilicit_ingestion.pipeline.geography import normalize_municipality_ine_code
+
+    assert normalize_municipality_ine_code("0807710007") == "08077"
+    assert normalize_municipality_ine_code("08019") == "08019"
+    assert normalize_municipality_ine_code("8001763013") is None  # provincia inválida
+    assert normalize_municipality_ine_code("UKI") is None
+
+
+def test_resolve_place_derives_ccaa_from_municipality_when_no_nuts() -> None:
+    place = resolve_place_fields(municipality_code="28079")
+    assert place["place_municipality_code"] == "28079"
+    assert place["place_ccaa_code"] == "13"  # Madrid vía provincia 28
+
+
 def test_resolve_place_prefers_explicit_ccaa_and_municipality() -> None:
     place = resolve_place_fields(
         nuts_code="ES511",

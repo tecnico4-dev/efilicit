@@ -31,6 +31,62 @@ _NUTS2_TO_CCAA: dict[str, str] = {
     "ES70": "05",  # Canarias
 }
 
+# Provincia INE (2 dígitos del municipio) → CCAA INE (geo_ccaa.code).
+_PROVINCE_TO_CCAA: dict[str, str] = {
+    "01": "16",  # Álava → País Vasco
+    "02": "08",  # Albacete → Castilla-La Mancha
+    "03": "10",  # Alicante → Comunitat Valenciana
+    "04": "01",  # Almería → Andalucía
+    "05": "07",  # Ávila → Castilla y León
+    "06": "11",  # Badajoz → Extremadura
+    "07": "04",  # Illes Balears
+    "08": "09",  # Barcelona → Cataluña
+    "09": "07",  # Burgos → Castilla y León
+    "10": "11",  # Cáceres → Extremadura
+    "11": "01",  # Cádiz → Andalucía
+    "12": "10",  # Castellón → Comunitat Valenciana
+    "13": "08",  # Ciudad Real → Castilla-La Mancha
+    "14": "01",  # Córdoba → Andalucía
+    "15": "12",  # A Coruña → Galicia
+    "16": "08",  # Cuenca → Castilla-La Mancha
+    "17": "09",  # Girona → Cataluña
+    "18": "01",  # Granada → Andalucía
+    "19": "08",  # Guadalajara → Castilla-La Mancha
+    "20": "16",  # Gipuzkoa → País Vasco
+    "21": "01",  # Huelva → Andalucía
+    "22": "02",  # Huesca → Aragón
+    "23": "01",  # Jaén → Andalucía
+    "24": "07",  # León → Castilla y León
+    "25": "09",  # Lleida → Cataluña
+    "26": "17",  # La Rioja
+    "27": "12",  # Lugo → Galicia
+    "28": "13",  # Madrid
+    "29": "01",  # Málaga → Andalucía
+    "30": "14",  # Murcia
+    "31": "15",  # Navarra
+    "32": "12",  # Ourense → Galicia
+    "33": "03",  # Asturias
+    "34": "07",  # Palencia → Castilla y León
+    "35": "05",  # Las Palmas → Canarias
+    "36": "12",  # Pontevedra → Galicia
+    "37": "07",  # Salamanca → Castilla y León
+    "38": "05",  # S.C. Tenerife → Canarias
+    "39": "06",  # Cantabria
+    "40": "07",  # Segovia → Castilla y León
+    "41": "01",  # Sevilla → Andalucía
+    "42": "07",  # Soria → Castilla y León
+    "43": "09",  # Tarragona → Cataluña
+    "44": "02",  # Teruel → Aragón
+    "45": "08",  # Toledo → Castilla-La Mancha
+    "46": "10",  # Valencia → Comunitat Valenciana
+    "47": "07",  # Valladolid → Castilla y León
+    "48": "16",  # Bizkaia → País Vasco
+    "49": "07",  # Zamora → Castilla y León
+    "50": "02",  # Zaragoza → Aragón
+    "51": "18",  # Ceuta
+    "52": "19",  # Melilla
+}
+
 
 def normalize_nuts_code(value: str | None) -> str | None:
     """Normaliza un código NUTS (trim, mayúsculas)."""
@@ -49,16 +105,34 @@ def nuts_to_ccaa_code(nuts: str | None) -> str | None:
     return _NUTS2_TO_CCAA.get(nuts2)
 
 
+def province_to_ccaa_code(province_code: str | None) -> str | None:
+    """Deriva CCAA desde código de provincia INE (2 dígitos)."""
+    if province_code is None:
+        return None
+    digits = "".join(ch for ch in str(province_code).strip() if ch.isdigit())
+    if len(digits) == 1:
+        digits = digits.zfill(2)
+    if len(digits) != 2:
+        return None
+    return _PROVINCE_TO_CCAA.get(digits)
+
+
 def normalize_municipality_ine_code(value: str | None) -> str | None:
-    """Código INE de municipio (5 dígitos). Rechaza basura."""
+    """Código INE de municipio (5 dígitos).
+
+    Acepta 5 dígitos, 4 (zfill) o códigos largos tipo Catalunya ``codi_ine10``
+    (se toman los 5 primeros si la provincia es 01–52). Rechaza basura.
+    """
     if value is None:
         return None
     digits = "".join(ch for ch in str(value).strip() if ch.isdigit())
-    if len(digits) == 5:
-        return digits
     if len(digits) == 4:
-        # A veces falta el 0 inicial de provincia.
-        return digits.zfill(5)
+        digits = digits.zfill(5)
+    if len(digits) >= 5:
+        code = digits[:5]
+        if province_to_ccaa_code(code[:2]) is None:
+            return None
+        return code
     return None
 
 
@@ -70,9 +144,8 @@ def resolve_place_fields(
 ) -> dict[str, str | None]:
     """Resuelve place_* canónicos.
 
-    - Si hay municipio INE válido, se guarda; la CCAA puede venir explícita
-      o quedar solo la derivada de NUTS (el catálogo geo_municipio enlaza CCAA).
-    - CCAA: explícita > derivada de NUTS.
+    - Municipio INE válido se guarda (el upsert exige que exista en ``geo_municipio``).
+    - CCAA: explícita > NUTS > provincia del municipio.
     """
     nuts = normalize_nuts_code(nuts_code)
     mun = normalize_municipality_ine_code(municipality_code)
@@ -80,8 +153,9 @@ def resolve_place_fields(
     if explicit_ccaa is not None and len(explicit_ccaa) == 1:
         explicit_ccaa = explicit_ccaa.zfill(2)
 
-    derived = nuts_to_ccaa_code(nuts)
-    ccaa = explicit_ccaa or derived
+    derived_nuts = nuts_to_ccaa_code(nuts)
+    derived_mun = province_to_ccaa_code(mun[:2]) if mun else None
+    ccaa = explicit_ccaa or derived_nuts or derived_mun
 
     return {
         "place_nuts_code": nuts,
