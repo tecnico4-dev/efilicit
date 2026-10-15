@@ -1,3 +1,5 @@
+import { ThemeToggle } from "@/components/shell/theme-toggle";
+import { FallingPapersBackground } from "./falling-papers-background";
 import { LoginForm } from "./login-form";
 
 export const dynamic = "force-dynamic";
@@ -18,19 +20,25 @@ export default async function LoginPage({
   const nextPath = first(params.next) || "/";
 
   return (
-    <main className="relative mx-auto flex w-full max-w-md flex-1 flex-col justify-center px-6 py-10">
-      <div className="relative rounded-2xl border border-border/80 bg-surface/95 p-7 shadow-xl backdrop-blur supports-[backdrop-filter]:bg-surface/90">
-        <p className="text-center text-lg font-bold tracking-tight text-foreground">
-          Efi<span className="text-primary-dark">Licit</span>
-        </p>
-        <h1 className="mt-4 text-2xl font-bold tracking-tight text-foreground">
-          Iniciar sesión
-        </h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Accede con las credenciales que te hayan facilitado.
-        </p>
-        <LoginForm nextPath={nextPath.startsWith("/") ? nextPath : "/"} />
+    <>
+      <FallingPapersBackground />
+      <div className="fixed right-4 top-4 z-20">
+        <ThemeToggle />
       </div>
-    </main>
+      <main className="relative z-10 mx-auto flex w-full max-w-md flex-1 flex-col justify-center px-6 py-10">
+        <div className="relative rounded-2xl border border-border/70 bg-surface/80 p-7 shadow-xl backdrop-blur-md supports-[backdrop-filter]:bg-surface/70">
+          <p className="text-center text-lg font-bold tracking-tight text-foreground">
+            Efi<span className="text-primary-dark">Licit</span>
+          </p>
+          <h1 className="mt-4 text-2xl font-bold tracking-tight text-foreground">
+            Iniciar sesión
+          </h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Accede con las credenciales que te hayan facilitado.
+          </p>
+          <LoginForm nextPath={nextPath.startsWith("/") ? nextPath : "/"} />
+        </div>
+      </main>
+    </>
   );
 }
