@@ -26,11 +26,22 @@ export default async function LoginPage({
         <ThemeToggle />
       </div>
       <main className="relative z-10 mx-auto flex w-full max-w-md flex-1 flex-col justify-center px-6 py-10">
-        <div className="relative rounded-2xl border border-border/70 bg-surface/80 p-7 shadow-xl backdrop-blur-md supports-[backdrop-filter]:bg-surface/70">
+        <div
+          className={[
+            "login-card relative rounded-2xl border border-border/70 bg-surface/80 p-7 backdrop-blur-md",
+            "supports-[backdrop-filter]:bg-surface/70",
+            /* Claro: sombra marcada; oscuro: halo cian suave + profundidad */
+            "shadow-[0_22px_50px_-14px_rgba(15,45,70,0.38),0_8px_16px_-8px_rgba(15,45,70,0.2)]",
+            "dark:border-border/50 dark:shadow-[0_0_48px_-10px_rgba(82,185,216,0.35),0_24px_48px_-20px_rgba(0,0,0,0.65)]",
+          ].join(" ")}
+        >
           <p className="text-center text-lg font-bold tracking-tight text-foreground">
             Efi<span className="text-primary-dark">Licit</span>
           </p>
-          <h1 className="mt-4 text-2xl font-bold tracking-tight text-foreground">
+          <p className="mt-1.5 text-center text-xs text-muted-foreground">
+            Vigilancia de contratación pública
+          </p>
+          <h1 className="mt-5 text-2xl font-bold tracking-tight text-foreground">
             Iniciar sesión
           </h1>
           <LoginForm nextPath={nextPath.startsWith("/") ? nextPath : "/"} />

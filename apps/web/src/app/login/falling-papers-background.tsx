@@ -25,9 +25,11 @@ type Paper = {
   opacity: number;
 };
 
-/** Cian marca desaturado (entre primary `#52b9d8` y primary-light `#b3e3f0`). */
-const LIGHT_BG = "#9ed4e6";
-const DARK_BG = "#0b1226";
+/** Cielo con gradiente suave (marca: primary / primary-light / navy). */
+const LIGHT_BG_TOP = "#c5e8f2";
+const LIGHT_BG_BOTTOM = "#7ec5db";
+const DARK_BG_TOP = "#152038";
+const DARK_BG_BOTTOM = "#0b1226";
 const PAPER_FILL = "#ffffff";
 const FOLDER_FILL = "#fff8eb";
 const ZIP_FILL = "#f3f4f6";
@@ -290,11 +292,18 @@ export function FallingPapersBackground() {
       const w = window.innerWidth;
       const h = window.innerHeight;
       const dark = themeRef.current === "dark";
-      const bg = dark ? DARK_BG : LIGHT_BG;
       const stroke = dark ? PAPER_STROKE_DARK : PAPER_STROKE_LIGHT;
       const ink = dark ? INK_DARK : INK_LIGHT;
 
-      ctx.fillStyle = bg;
+      const sky = ctx.createLinearGradient(0, 0, 0, h);
+      if (dark) {
+        sky.addColorStop(0, DARK_BG_TOP);
+        sky.addColorStop(1, DARK_BG_BOTTOM);
+      } else {
+        sky.addColorStop(0, LIGHT_BG_TOP);
+        sky.addColorStop(1, LIGHT_BG_BOTTOM);
+      }
+      ctx.fillStyle = sky;
       ctx.fillRect(0, 0, w, h);
 
       if (!reduced) {
