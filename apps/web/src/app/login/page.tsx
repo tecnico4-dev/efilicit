@@ -33,9 +33,6 @@ export default async function LoginPage({
           <h1 className="mt-4 text-2xl font-bold tracking-tight text-foreground">
             Iniciar sesión
           </h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Accede con las credenciales que te hayan facilitado.
-          </p>
           <LoginForm nextPath={nextPath.startsWith("/") ? nextPath : "/"} />
         </div>
       </main>

@@ -98,7 +98,7 @@ export function AccountMenu({
     const supabase = createSupabaseBrowserClient();
     await supabase.auth.signOut();
     setOpen(false);
-    router.replace("/");
+    router.replace("/login");
     router.refresh();
   }
 

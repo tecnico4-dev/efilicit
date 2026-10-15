@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
 import { searchHrefFromCriteria } from "./favorites/favorites-shared";
 import { parseCriteria } from "@/lib/criteria-display";
 import type { DigestFrequency, FavoriteWithTender } from "@/lib/queries";
@@ -105,30 +104,6 @@ export function HomeDashboard({
         emptyCta="Buscar"
         items={searchItems}
       />
-    </main>
-  );
-}
-
-/** Landing para visitantes sin sesión (sin nav; solo login — ADR 016). */
-export function HomeLanding() {
-  return (
-    <main className="relative flex flex-1 flex-col items-center justify-center px-6 py-16">
-      <div className="relative flex max-w-lg flex-col items-center text-center">
-        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-          Vigilancia de contratación pública
-        </p>
-        <h1 className="mt-2 text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
-          Efi<span className="text-primary-dark">Licit</span>
-        </h1>
-        <p className="mt-4 text-base text-muted-foreground">
-          Busca licitaciones de forma sencilla.
-          <br />
-          Inicia sesión para guardar alertas y personalizar tu seguimiento.
-        </p>
-        <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-          <Button href="/login">Iniciar sesión</Button>
-        </div>
-      </div>
     </main>
   );
 }

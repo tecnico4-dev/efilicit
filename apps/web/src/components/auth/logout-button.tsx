@@ -6,13 +6,13 @@ import { cn } from "@/lib/cn";
 
 type LogoutButtonProps = {
   className?: string;
-  /** Destino tras cerrar sesión (default: inicio público). */
+  /** Destino tras cerrar sesión (default: pantalla de login). */
   redirectTo?: string;
 };
 
 export function LogoutButton({
   className,
-  redirectTo = "/",
+  redirectTo = "/login",
 }: LogoutButtonProps) {
   const router = useRouter();
 
