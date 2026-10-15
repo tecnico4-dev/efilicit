@@ -15,27 +15,28 @@ comment on table public.geo_ccaa is
 comment on column public.geo_ccaa.code is
   'Código INE de CCAA (01–19).';
 
--- Nombres con U& (escapes Unicode) para que un pipe Windows no rompa tildes.
+-- Nombres en UTF-8 literal. Aplicar con cliente UTF-8 (supabase db push / reset);
+-- no usar Get-Content | docker exec psql en Windows (rompe tildes → ??).
 insert into public.geo_ccaa (code, name) values
-  ('01', U&'Andaluc\00EDa'),
-  ('02', U&'Arag\00F3n'),
+  ('01', 'Andalucía'),
+  ('02', 'Aragón'),
   ('03', 'Principado de Asturias'),
   ('04', 'Illes Balears'),
   ('05', 'Canarias'),
   ('06', 'Cantabria'),
-  ('07', U&'Castilla y Le\00F3n'),
+  ('07', 'Castilla y León'),
   ('08', 'Castilla-La Mancha'),
-  ('09', U&'Catalu\00F1a'),
+  ('09', 'Cataluña'),
   ('10', 'Comunitat Valenciana'),
   ('11', 'Extremadura'),
   ('12', 'Galicia'),
   ('13', 'Comunidad de Madrid'),
-  ('14', U&'Regi\00F3n de Murcia'),
+  ('14', 'Región de Murcia'),
   ('15', 'Comunidad Foral de Navarra'),
-  ('16', U&'Pa\00EDs Vasco'),
+  ('16', 'País Vasco'),
   ('17', 'La Rioja'),
-  ('18', U&'Ciudad Aut\00F3noma de Ceuta'),
-  ('19', U&'Ciudad Aut\00F3noma de Melilla');
+  ('18', 'Ciudad Autónoma de Ceuta'),
+  ('19', 'Ciudad Autónoma de Melilla');
 
 -- ---------------------------------------------------------------------------
 -- geo_municipio — catálogo (código INE 5 dígitos); seed vacío (carga en bloque)
