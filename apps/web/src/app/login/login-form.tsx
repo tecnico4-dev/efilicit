@@ -46,6 +46,7 @@ export function LoginForm({ nextPath }: { nextPath: string }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [showForgotHint, setShowForgotHint] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const [offerPassword, setOfferPassword] = useState(false);
@@ -181,6 +182,23 @@ export function LoginForm({ nextPath }: { nextPath: string }) {
             <EyeIcon crossed={!showPassword} />
           </button>
         </div>
+        <p className="mt-1.5 text-right">
+          <button
+            type="button"
+            onClick={() => setShowForgotHint(true)}
+            className="text-xs text-primary underline-offset-2 hover:text-primary-dark hover:underline"
+          >
+            ¿Has olvidado tu contraseña?
+          </button>
+        </p>
+        {showForgotHint ? (
+          <p
+            className="mt-2 rounded-lg border border-border bg-muted/50 px-3 py-2 text-xs text-muted-foreground"
+            role="status"
+          >
+            Contacta con el administrador para restablecerla.
+          </p>
+        ) : null}
       </div>
       {error ? (
         <p
