@@ -4,7 +4,10 @@ import { cn } from "@/lib/cn";
 
 const variants = {
   primary:
-    "border-transparent bg-primary text-primary-foreground hover:bg-primary-dark shadow-sm",
+    "border-transparent bg-primary text-primary-foreground shadow-sm " +
+    "transition-[colors,transform,box-shadow] " +
+    "hover:bg-primary-dark hover:-translate-y-px hover:shadow-md " +
+    "active:translate-y-0 active:scale-[0.98] active:shadow-sm",
   outline:
     "border-border bg-surface text-foreground hover:bg-muted",
   ghost:
@@ -47,8 +50,8 @@ function buttonClassName(
   className?: string,
 ): string {
   return cn(
-    "inline-flex items-center justify-center gap-1.5 rounded-lg border font-semibold transition-colors outline-none select-none",
-    "focus-visible:ring-2 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50",
+    "inline-flex items-center justify-center gap-1.5 rounded-lg border font-semibold outline-none select-none",
+    "transition-colors focus-visible:ring-2 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50",
     variants[variant],
     sizes[size],
     className,
