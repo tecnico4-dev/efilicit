@@ -115,15 +115,24 @@ export function SavedSearchList({
   userId,
   digestFrequency,
   searchFrom = "favorites",
+  bordered = true,
 }: {
   searches: SavedSearchRow[];
   userId: string;
   digestFrequency: DigestFrequency;
   /** Origen al abrir en búsqueda (para el «volver»). */
   searchFrom?: "favorites" | "favorites-searches";
+  /** Línea superior (false dentro de un recuadro con borde propio). */
+  bordered?: boolean;
 }) {
   return (
-    <ul className="divide-y divide-border border-t border-border">
+    <ul
+      className={
+        bordered
+          ? "divide-y divide-border border-t border-border"
+          : "divide-y divide-border"
+      }
+    >
       {searches.map((s) => {
         const criteria = parseCriteria(s.criteria);
         return (

@@ -7,7 +7,7 @@ import {
   type DigestFrequency,
 } from "@/lib/queries";
 import { EmptySavedSearchesHint } from "../empty-hints";
-import { SavedSearchList } from "../favorites-shared";
+import { PaginatedSavedSearches } from "../paginated-saved-searches";
 
 export const dynamic = "force-dynamic";
 
@@ -80,7 +80,7 @@ export default async function SavedSearchesPage({
         </p>
       ) : (
         <div className="mt-8">
-          <SavedSearchList
+          <PaginatedSavedSearches
             searches={searches}
             userId={profile.data.id}
             digestFrequency={digestFrequency}
