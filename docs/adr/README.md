@@ -28,6 +28,7 @@ No uses un ADR para el estado de una fuente o un parser: eso va en `docs/sources
 | [013](013-alert-frequencies-daily-weekly-instant-diferido.md) | Frecuencias MVP `daily`\|`weekly`; `instant` diferido | Aceptado |
 | [014](014-upsert-organismos-por-platform-id.md) | Upsert de organismos por `platform_id` cuando no hay NIF/CIF | Aceptado |
 | [015](015-fuente-ganadora-canonica.md) | Fuente ganadora canónica (ranking fijo, sin mezcla de campos) | Aceptado |
-| [016](016-auth-invite-only-sin-registro-publico.md) | Auth invite-only: sin registro público ni búsqueda anónima en UI | Aceptado |
+| [016](016-auth-invite-only-sin-registro-publico.md) | Auth invite-only: sin registro público ni búsqueda anónima en UI | Aceptado (landing §4 → [019](019-login-como-entrada-sin-landing.md)) |
 | [017](017-tender-events-tipo-pipeline-y-status.md) | `tender_events`: hecho de pipeline vs estado de negocio | Aceptado |
 | [018](018-geografia-lugar-ejecucion-ccaa-municipio.md) | Geografía lugar de ejecución: CCAA + municipio (sin provincia) | Aceptado |
+| [019](019-login-como-entrada-sin-landing.md) | Login como entrada: sin landing anónima intermedia | Aceptado |

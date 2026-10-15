@@ -6,7 +6,7 @@
 
 **Reemplaza:** Ninguno
 
-**Reemplazado por:** Ninguno
+**Reemplazado por:** [019](019-login-como-entrada-sin-landing.md) (solo § decisión 4 — landing intermedia; el resto de este ADR sigue vigente)
 
 ---
 
@@ -23,7 +23,7 @@ ADR 003 sigue dejando el canónico legible con `anon` a nivel RLS (ETL/API); est
 1. **Sin registro público** en la web: `/register` redirige a `/login`; no hay enlaces de «Registrarse».
 2. **Usuarios** los crea la administradora en Supabase (email + contraseña temporal o invite).
 3. **Búsqueda y rutas de producto** (`/search`, `/tenders`, `/favorites`, `/alerts`, `/account`) exigen sesión (middleware → `/login?next=…`).
-4. **Landing anónima** sin cabecera/nav; único CTA: «Iniciar sesión».
+4. **Landing anónima** sin cabecera/nav; único CTA: «Iniciar sesión». *(Enmendado por [ADR 019](019-login-como-entrada-sin-landing.md): `/` anónimo → `/login` directo; sin `HomeLanding`.)*
 5. Tras el **primer login** (si no hay `user_metadata.password_changed` ni `password_offer_seen`), la UI ofrece **cambiar contraseña de forma opcional**. «Continuar sin cambiar» persiste `password_offer_seen` y **no se vuelve a mostrar**. El cambio sigue disponible siempre en Cuenta.
 6. Recomendación operativa: desactivar «Allow new users to sign up» en Supabase Auth para reforzar el cierre a nivel proveedor.
 
@@ -60,5 +60,5 @@ ADR 003 sigue dejando el canónico legible con `anon` a nivel RLS (ETL/API); est
 
 - [ADR 003](003-acceso-canonico-publico-etl-privado.md)
 - `apps/web/src/lib/supabase/middleware.ts`
-- `apps/web/src/app/home-dashboard.tsx` (`HomeLanding`)
+- `apps/web/src/app/login/` (entrada anónima; ver ADR 019)
 - `apps/web/src/components/shell/app-shell.tsx`
