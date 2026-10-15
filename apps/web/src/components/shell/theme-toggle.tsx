@@ -53,7 +53,8 @@ export function ThemeToggle({ className }: { className?: string }) {
     setMounted(true);
   }, []);
 
-  const isDark = (resolvedTheme ?? "dark") === "dark";
+  // Hasta `mounted`, no leer el tema (localStorage ≠ SSR → hydration mismatch).
+  const isDark = mounted && (resolvedTheme ?? "dark") === "dark";
   const next = isDark ? "light" : "dark";
 
   return (
@@ -67,8 +68,14 @@ export function ThemeToggle({ className }: { className?: string }) {
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
         className,
       )}
-      aria-label={isDark ? "Cambiar a tema claro" : "Cambiar a tema oscuro"}
-      title={isDark ? "Tema claro" : "Tema oscuro"}
+      aria-label={
+        mounted
+          ? isDark
+            ? "Cambiar a tema claro"
+            : "Cambiar a tema oscuro"
+          : "Cambiar tema"
+      }
+      title={mounted ? (isDark ? "Tema claro" : "Tema oscuro") : "Tema"}
     >
       {mounted ? (isDark ? <SunIcon /> : <MoonIcon />) : (
         <span className="size-4" aria-hidden />
