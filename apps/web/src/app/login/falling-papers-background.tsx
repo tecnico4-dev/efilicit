@@ -3,7 +3,13 @@
 import { useEffect, useRef } from "react";
 import { useTheme } from "next-themes";
 
-type PaperKind = "lined" | "contract" | "form";
+type PaperKind =
+  | "lined"
+  | "contract"
+  | "form"
+  | "licitacion"
+  | "folder"
+  | "zip";
 
 type Paper = {
   x: number;
@@ -19,16 +25,20 @@ type Paper = {
   opacity: number;
 };
 
-const LIGHT_BG = "#52b9d8";
+/** Cian marca desaturado (entre primary `#52b9d8` y primary-light `#b3e3f0`). */
+const LIGHT_BG = "#9ed4e6";
 const DARK_BG = "#0b1226";
 const PAPER_FILL = "#ffffff";
-const PAPER_STROKE_LIGHT = "#3a9bbf";
+const FOLDER_FILL = "#fff8eb";
+const ZIP_FILL = "#f3f4f6";
+const PAPER_STROKE_LIGHT = "#5aa8c0";
 const PAPER_STROKE_DARK = "#94a3b8";
 const INK_LIGHT = "#1e4a5c";
 const INK_DARK = "#334155";
 
 const MAX_PAPERS = 55;
-const SPAWN_EVERY_MS = 280;
+/** Un poco más lento al spawnear; misma densidad final. */
+const SPAWN_EVERY_MS = 420;
 const GROUND_MARGIN = 28;
 
 function prefersReducedMotion(): boolean {
@@ -38,28 +48,87 @@ function prefersReducedMotion(): boolean {
 
 function randomKind(): PaperKind {
   const r = Math.random();
-  if (r < 0.2) return "contract";
-  if (r < 0.45) return "form";
+  if (r < 0.14) return "contract";
+  if (r < 0.26) return "licitacion";
+  if (r < 0.4) return "form";
+  if (r < 0.52) return "folder";
+  if (r < 0.62) return "zip";
   return "lined";
 }
 
 function createPaper(width: number, falling: boolean): Paper {
+  const kind = randomKind();
   const scale = 0.55 + Math.random() * 0.55;
-  const w = 52 * scale;
-  const h = 68 * scale;
+  const isFolder = kind === "folder" || kind === "zip";
+  const w = (isFolder ? 58 : 52) * scale;
+  const h = (isFolder ? 48 : 68) * scale;
   return {
     x: Math.random() * Math.max(width - w, 1),
     y: falling ? -h - Math.random() * 80 : 0,
     w,
     h,
     rot: (Math.random() - 0.5) * 1.2,
-    vx: (Math.random() - 0.5) * 0.6,
-    vy: falling ? 0.8 + Math.random() * 1.4 : 0,
-    vr: (Math.random() - 0.5) * 0.04,
-    kind: randomKind(),
+    vx: (Math.random() - 0.5) * 0.45,
+    // Ritmos distintos, pero ~30–40% más lentos que la v1.
+    vy: falling ? 0.45 + Math.random() * 0.95 : 0,
+    vr: (Math.random() - 0.5) * 0.028,
+    kind,
     landed: !falling,
     opacity: 0.92 + Math.random() * 0.08,
   };
+}
+
+function drawSheetBody(
+  ctx: CanvasRenderingContext2D,
+  p: Paper,
+  fill: string,
+  stroke: string,
+) {
+  ctx.fillStyle = fill;
+  ctx.strokeStyle = stroke;
+  ctx.lineWidth = 1.25;
+  ctx.beginPath();
+  ctx.roundRect(-p.w / 2, -p.h / 2, p.w, p.h, 2);
+  ctx.fill();
+  ctx.stroke();
+
+  const corner = Math.min(10, p.w * 0.18);
+  ctx.beginPath();
+  ctx.moveTo(p.w / 2 - corner, -p.h / 2);
+  ctx.lineTo(p.w / 2, -p.h / 2 + corner);
+  ctx.lineTo(p.w / 2, -p.h / 2);
+  ctx.closePath();
+  ctx.fillStyle = "#f0f9fc";
+  ctx.fill();
+  ctx.strokeStyle = stroke;
+  ctx.stroke();
+}
+
+function drawFolderBody(
+  ctx: CanvasRenderingContext2D,
+  p: Paper,
+  fill: string,
+  stroke: string,
+) {
+  const hw = p.w / 2;
+  const hh = p.h / 2;
+  const tabW = p.w * 0.38;
+  const tabH = p.h * 0.18;
+
+  ctx.fillStyle = fill;
+  ctx.strokeStyle = stroke;
+  ctx.lineWidth = 1.25;
+  ctx.beginPath();
+  ctx.moveTo(-hw, -hh + tabH);
+  ctx.lineTo(-hw, hh);
+  ctx.lineTo(hw, hh);
+  ctx.lineTo(hw, -hh + tabH);
+  ctx.lineTo(-hw + tabW, -hh + tabH);
+  ctx.lineTo(-hw + tabW - 4, -hh);
+  ctx.lineTo(-hw, -hh);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
 }
 
 function drawPaper(
@@ -73,68 +142,86 @@ function drawPaper(
   ctx.rotate(p.rot);
   ctx.globalAlpha = p.opacity;
 
-  ctx.fillStyle = PAPER_FILL;
-  ctx.strokeStyle = stroke;
-  ctx.lineWidth = 1.25;
-  ctx.beginPath();
-  ctx.roundRect(-p.w / 2, -p.h / 2, p.w, p.h, 2);
-  ctx.fill();
-  ctx.stroke();
-
-  // Folded corner
-  const corner = Math.min(10, p.w * 0.18);
-  ctx.beginPath();
-  ctx.moveTo(p.w / 2 - corner, -p.h / 2);
-  ctx.lineTo(p.w / 2, -p.h / 2 + corner);
-  ctx.lineTo(p.w / 2, -p.h / 2);
-  ctx.closePath();
-  ctx.fillStyle = "#f0f9fc";
-  ctx.fill();
-  ctx.strokeStyle = stroke;
-  ctx.stroke();
-
-  ctx.strokeStyle = ink;
-  ctx.fillStyle = ink;
-  ctx.lineWidth = 1;
   const left = -p.w / 2 + 6;
   const right = p.w / 2 - 6;
   const top = -p.h / 2 + 8;
 
-  if (p.kind === "contract") {
-    ctx.font = `bold ${Math.max(7, p.w * 0.16)}px system-ui, sans-serif`;
+  if (p.kind === "folder") {
+    drawFolderBody(ctx, p, FOLDER_FILL, stroke);
+    ctx.fillStyle = ink;
+    ctx.font = `bold ${Math.max(6, p.w * 0.14)}px system-ui, sans-serif`;
     ctx.textAlign = "center";
-    ctx.fillText("CONTRACT", 0, top + p.h * 0.18);
+    ctx.fillText("EXP.", 0, p.h * 0.12);
+  } else if (p.kind === "zip") {
+    drawFolderBody(ctx, p, ZIP_FILL, stroke);
+    // Zipper-ish marks
+    ctx.strokeStyle = ink;
+    ctx.lineWidth = 1;
     ctx.beginPath();
+    const zipX = 0;
     for (let i = 0; i < 5; i++) {
-      const y = top + p.h * 0.32 + i * (p.h * 0.1);
-      ctx.moveTo(left, y);
-      ctx.lineTo(right - (i % 2) * 8, y);
+      const y = -p.h / 2 + p.h * 0.28 + i * (p.h * 0.12);
+      ctx.moveTo(zipX - 4, y);
+      ctx.lineTo(zipX + 4, y);
     }
     ctx.stroke();
-  } else if (p.kind === "form") {
-    ctx.strokeRect(left, top, p.w * 0.28, p.h * 0.22);
-    ctx.beginPath();
-    for (let i = 0; i < 4; i++) {
-      const y = top + p.h * 0.35 + i * (p.h * 0.12);
-      ctx.moveTo(left, y);
-      ctx.lineTo(right, y);
-    }
-    ctx.stroke();
+    ctx.fillStyle = ink;
+    ctx.font = `bold ${Math.max(6, p.w * 0.15)}px system-ui, sans-serif`;
+    ctx.textAlign = "center";
+    ctx.fillText(".zip", 0, p.h * 0.28);
   } else {
-    ctx.beginPath();
-    for (let i = 0; i < 6; i++) {
-      const y = top + i * (p.h * 0.12);
-      ctx.moveTo(left, y);
-      ctx.lineTo(right - (i === 5 ? 12 : 0), y);
+    drawSheetBody(ctx, p, PAPER_FILL, stroke);
+    ctx.strokeStyle = ink;
+    ctx.fillStyle = ink;
+    ctx.lineWidth = 1;
+
+    if (p.kind === "contract") {
+      ctx.font = `bold ${Math.max(7, p.w * 0.16)}px system-ui, sans-serif`;
+      ctx.textAlign = "center";
+      ctx.fillText("CONTRACT", 0, top + p.h * 0.18);
+      ctx.beginPath();
+      for (let i = 0; i < 5; i++) {
+        const y = top + p.h * 0.32 + i * (p.h * 0.1);
+        ctx.moveTo(left, y);
+        ctx.lineTo(right - (i % 2) * 8, y);
+      }
+      ctx.stroke();
+    } else if (p.kind === "licitacion") {
+      ctx.font = `bold ${Math.max(6, p.w * 0.13)}px system-ui, sans-serif`;
+      ctx.textAlign = "center";
+      ctx.fillText("LICITACIÓN", 0, top + p.h * 0.18);
+      ctx.beginPath();
+      for (let i = 0; i < 5; i++) {
+        const y = top + p.h * 0.32 + i * (p.h * 0.1);
+        ctx.moveTo(left, y);
+        ctx.lineTo(right - (i % 3) * 6, y);
+      }
+      ctx.stroke();
+    } else if (p.kind === "form") {
+      ctx.strokeRect(left, top, p.w * 0.28, p.h * 0.22);
+      ctx.beginPath();
+      for (let i = 0; i < 4; i++) {
+        const y = top + p.h * 0.35 + i * (p.h * 0.12);
+        ctx.moveTo(left, y);
+        ctx.lineTo(right, y);
+      }
+      ctx.stroke();
+    } else {
+      ctx.beginPath();
+      for (let i = 0; i < 6; i++) {
+        const y = top + i * (p.h * 0.12);
+        ctx.moveTo(left, y);
+        ctx.lineTo(right - (i === 5 ? 12 : 0), y);
+      }
+      ctx.stroke();
     }
-    ctx.stroke();
   }
 
   ctx.restore();
 }
 
 /**
- * Fondo a pantalla completa: hojas blancas que caen y se amontonan.
+ * Fondo a pantalla completa: hojas/carpetas que caen y se amontonan.
  * Reacciona suavemente al ratón. Solo visual (`pointer-events: none`).
  */
 export function FallingPapersBackground() {
@@ -211,10 +298,7 @@ export function FallingPapersBackground() {
       ctx.fillRect(0, 0, w, h);
 
       if (!reduced) {
-        if (
-          papers.length < MAX_PAPERS &&
-          now - lastSpawn > SPAWN_EVERY_MS
-        ) {
+        if (papers.length < MAX_PAPERS && now - lastSpawn > SPAWN_EVERY_MS) {
           papers.push(createPaper(w, true));
           lastSpawn = now;
         }
@@ -230,14 +314,14 @@ export function FallingPapersBackground() {
               const dy = cy - mouse.y;
               const dist = Math.hypot(dx, dy) || 1;
               if (dist < 180) {
-                const force = (1 - dist / 180) * 0.35;
+                const force = (1 - dist / 180) * 0.28;
                 p.vx += (dx / dist) * force;
-                p.vy += (dy / dist) * force * 0.35;
+                p.vy += (dy / dist) * force * 0.3;
               }
             }
 
-            p.vy += 0.045;
-            p.vx *= 0.995;
+            p.vy += 0.028;
+            p.vx *= 0.996;
             p.x += p.vx;
             p.y += p.vy;
             p.rot += p.vr;
@@ -252,16 +336,12 @@ export function FallingPapersBackground() {
               p.vy = 0;
               p.vr = 0;
               p.rot += (Math.random() - 0.5) * 0.25;
-              pileHeight = Math.min(
-                h * 0.42,
-                pileHeight + p.h * 0.08,
-              );
+              pileHeight = Math.min(h * 0.42, pileHeight + p.h * 0.08);
             }
           }
         }
       }
 
-      // Draw landed first, then falling (simple depth)
       for (const p of papers) {
         if (p.landed) drawPaper(ctx, p, stroke, ink);
       }
