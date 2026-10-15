@@ -15,26 +15,27 @@ comment on table public.geo_ccaa is
 comment on column public.geo_ccaa.code is
   'Código INE de CCAA (01–19).';
 
+-- Nombres con U& (escapes Unicode) para que un pipe Windows no rompa tildes.
 insert into public.geo_ccaa (code, name) values
-  ('01', 'Andalucía'),
-  ('02', 'Aragón'),
+  ('01', U&'Andaluc\00EDa'),
+  ('02', U&'Arag\00F3n'),
   ('03', 'Principado de Asturias'),
   ('04', 'Illes Balears'),
   ('05', 'Canarias'),
   ('06', 'Cantabria'),
-  ('07', 'Castilla y León'),
+  ('07', U&'Castilla y Le\00F3n'),
   ('08', 'Castilla-La Mancha'),
-  ('09', 'Cataluña'),
+  ('09', U&'Catalu\00F1a'),
   ('10', 'Comunitat Valenciana'),
   ('11', 'Extremadura'),
   ('12', 'Galicia'),
   ('13', 'Comunidad de Madrid'),
-  ('14', 'Región de Murcia'),
+  ('14', U&'Regi\00F3n de Murcia'),
   ('15', 'Comunidad Foral de Navarra'),
-  ('16', 'País Vasco'),
+  ('16', U&'Pa\00EDs Vasco'),
   ('17', 'La Rioja'),
-  ('18', 'Ciudad Autónoma de Ceuta'),
-  ('19', 'Ciudad Autónoma de Melilla');
+  ('18', U&'Ciudad Aut\00F3noma de Ceuta'),
+  ('19', U&'Ciudad Aut\00F3noma de Melilla');
 
 -- ---------------------------------------------------------------------------
 -- geo_municipio — catálogo (código INE 5 dígitos); seed vacío (carga en bloque)
