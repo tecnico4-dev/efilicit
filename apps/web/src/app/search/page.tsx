@@ -4,11 +4,13 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import {
   getOwnProfile,
   listOwnFavoriteTenderIds,
+  listPlaceMunicipalities,
   searchTenders,
   type SearchTenderRow,
 } from "@/lib/queries";
 import { SEARCH_CCAA_OPTIONS } from "@/lib/geo-ccaa";
 import { formatTenderStatus } from "@/lib/tender-labels";
+import { MunicipalityFilter } from "./municipality-filter";
 import { SaveSearchButton } from "./save-search-button";
 import { SearchForm } from "./search-form";
 
@@ -62,7 +64,14 @@ function MatchKindBadge({ kind }: { kind: string }) {
 
 function tenderHrefFromSearch(
   tenderId: string,
-  filters: { q: string; cpv: string; minRaw: string; maxRaw: string; ccaa: string },
+  filters: {
+    q: string;
+    cpv: string;
+    minRaw: string;
+    maxRaw: string;
+    ccaa: string;
+    municipality: string;
+  },
 ): string {
   const params = new URLSearchParams({ from: "search" });
   if (filters.q) params.set("q", filters.q);
@@ -70,6 +79,7 @@ function tenderHrefFromSearch(
   if (filters.minRaw) params.set("min", filters.minRaw);
   if (filters.maxRaw) params.set("max", filters.maxRaw);
   if (filters.ccaa) params.set("ccaa", filters.ccaa);
+  if (filters.municipality) params.set("municipality", filters.municipality);
   return `/tenders/${tenderId}?${params.toString()}`;
 }
 
@@ -84,7 +94,14 @@ function ResultsList({
   rows: SearchTenderRow[];
   error: string | null;
   searched: boolean;
-  filters: { q: string; cpv: string; minRaw: string; maxRaw: string; ccaa: string };
+  filters: {
+    q: string;
+    cpv: string;
+    minRaw: string;
+    maxRaw: string;
+    ccaa: string;
+    municipality: string;
+  };
   profileUserId: string | null;
   favoritedIds: Set<string>;
 }) {
@@ -165,6 +182,7 @@ export default async function SearchPage({
   const minRaw = first(params.min).trim();
   const maxRaw = first(params.max).trim();
   const ccaa = first(params.ccaa).trim();
+  const municipalityRaw = first(params.municipality).trim();
   const from = first(params.from).trim();
   const back = backFromSavedSearch(from);
   const min = minRaw === "" ? undefined : Number(minRaw);
@@ -173,14 +191,38 @@ export default async function SearchPage({
     ? ccaa
     : "";
 
+  let municipalityValid = "";
+  let municipalityName = "";
+  if (ccaaValid && municipalityRaw) {
+    try {
+      const client = await createSupabaseServerClient();
+      const listed = await listPlaceMunicipalities(client, ccaaValid);
+      const hit = listed.data.find((m) => m.code === municipalityRaw);
+      if (hit) {
+        municipalityValid = hit.code;
+        municipalityName = hit.name;
+      }
+    } catch {
+      municipalityValid = "";
+    }
+  }
+
   const hasParams =
     q !== "" ||
     cpv !== "" ||
     (min != null && !Number.isNaN(min)) ||
     (max != null && !Number.isNaN(max)) ||
-    ccaaValid !== "";
+    ccaaValid !== "" ||
+    municipalityValid !== "";
 
-  const filters = { q, cpv, minRaw, maxRaw, ccaa: ccaaValid };
+  const filters = {
+    q,
+    cpv,
+    minRaw,
+    maxRaw,
+    ccaa: ccaaValid,
+    municipality: municipalityValid,
+  };
 
   let rows: SearchTenderRow[] = [];
   let error: string | null = null;
@@ -207,9 +249,15 @@ export default async function SearchPage({
             min != null && !Number.isNaN(min) ? min : undefined,
           estimated_value_max:
             max != null && !Number.isNaN(max) ? max : undefined,
-          geography: ccaaValid
-            ? { ccaa_codes: [ccaaValid] }
-            : undefined,
+          geography:
+            ccaaValid || municipalityValid
+              ? {
+                  ccaa_codes: ccaaValid ? [ccaaValid] : undefined,
+                  municipality_codes: municipalityValid
+                    ? [municipalityValid]
+                    : undefined,
+                }
+              : undefined,
         },
         limit: 20,
       });
@@ -250,7 +298,7 @@ export default async function SearchPage({
       </h1>
 
       <SearchForm
-        formKey={`${q}|${cpv}|${minRaw}|${maxRaw}|${ccaaValid}|${from}`}
+        formKey={`${q}|${cpv}|${minRaw}|${maxRaw}|${ccaaValid}|${municipalityValid}|${from}`}
         actions={
           <>
             <button
@@ -280,7 +328,7 @@ export default async function SearchPage({
             className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
           />
         </div>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <label htmlFor="ccaa" className="block text-sm font-medium text-foreground">
               Comunidad Autónoma
@@ -299,6 +347,13 @@ export default async function SearchPage({
               ))}
             </select>
           </div>
+          <MunicipalityFilter
+            initialCcaa={ccaaValid}
+            initialMunicipalityCode={municipalityValid}
+            initialMunicipalityName={municipalityName}
+          />
+        </div>
+        <div className="grid gap-4 sm:grid-cols-3">
           <div>
             <label htmlFor="cpv" className="block text-sm font-medium text-foreground">
               CPV (prefijo)

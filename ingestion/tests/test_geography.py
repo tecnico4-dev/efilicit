@@ -116,6 +116,37 @@ def test_infer_requires_ccaa() -> None:
     assert infer_municipality_code_from_title("Obras de Leioa", None) is None
 
 
+def test_infer_municipality_from_ayuntamiento() -> None:
+    from efilicit_ingestion.pipeline.geography import infer_municipality_code_from_authority
+
+    assert (
+        infer_municipality_code_from_authority("Ayuntamiento de Leioa", "16")
+        == "48054"
+    )
+    assert (
+        infer_municipality_code_from_authority("Ajuntament de Sabadell", "09")
+        == "08187"
+    )
+    assert infer_municipality_code_from_authority("Gobierno Vasco", "16") is None
+
+
+def test_authority_inference_only_after_title_misses() -> None:
+    from efilicit_ingestion.pipeline.geography import enrich_place_with_title_inference
+
+    place = {
+        "place_nuts_code": "ES21",
+        "place_ccaa_code": "16",
+        "place_municipality_code": None,
+    }
+    # Título sin patrón; órgano sí.
+    out = enrich_place_with_title_inference(
+        place,
+        title="Mantenimiento de fotocopiadoras marca Toshiba",
+        authority_name="Ayuntamiento de Bilbao",
+    )
+    assert out["place_municipality_code"] == "48020"
+
+
 def test_normalize_enriches_euskadi_style_title() -> None:
     record = SourceRecord(
         source_record_id="eus-geo-1",

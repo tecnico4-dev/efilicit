@@ -28,6 +28,7 @@ function buildCriteria(form: HTMLFormElement): {
   const minRaw = readField(form, "min");
   const maxRaw = readField(form, "max");
   const ccaa = readField(form, "ccaa");
+  const municipality = readField(form, "municipality");
   const min = minRaw === "" ? undefined : Number(minRaw);
   const max = maxRaw === "" ? undefined : Number(maxRaw);
 
@@ -43,7 +44,8 @@ function buildCriteria(form: HTMLFormElement): {
     cpv !== "" ||
     (min != null && !Number.isNaN(min)) ||
     (max != null && !Number.isNaN(max)) ||
-    ccaa !== "";
+    ccaa !== "" ||
+    municipality !== "";
 
   if (!hasSomething) return null;
 
@@ -53,11 +55,18 @@ function buildCriteria(form: HTMLFormElement): {
     cpv_codes: cpv ? [cpv] : undefined,
     estimated_value_min: min != null && !Number.isNaN(min) ? min : undefined,
     estimated_value_max: max != null && !Number.isNaN(max) ? max : undefined,
-    geography: ccaa ? { ccaa_codes: [ccaa] } : undefined,
+    geography:
+      ccaa || municipality
+        ? {
+            ccaa_codes: ccaa ? [ccaa] : undefined,
+            municipality_codes: municipality ? [municipality] : undefined,
+          }
+        : undefined,
   };
 
   const name =
     q ||
+    (municipality ? `Municipio ${municipality}` : null) ||
     (ccaa ? `CCAA ${ccaa}` : null) ||
     (cpv ? `CPV ${cpv}` : null) ||
     "Búsqueda guardada";

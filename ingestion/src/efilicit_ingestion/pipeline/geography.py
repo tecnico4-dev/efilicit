@@ -320,15 +320,53 @@ def infer_municipality_code_from_title(
     return _best_catalog_hit(folded_title, munis, require_de_particle=True)
 
 
+# Órgano local: Ayuntamiento / Ajuntament / Concello / Concejo + de/del/…
+_AYTO_PREFIX_RE = re.compile(
+    rf"^(?:ayuntamiento|ajuntament|concello|concejo|consistorio)\s+{_DE_PARTICLE}\s+(.+)$",
+    flags=re.IGNORECASE,
+)
+
+
+def infer_municipality_code_from_authority(
+    authority_name: str | None,
+    ccaa_code: str | None,
+    municipalities: tuple[tuple[str, str], ...] | None = None,
+) -> str | None:
+    """Infiere municipio si el órgano es un ayuntamiento de X (ADR 018, 3.º escalón).
+
+    Solo con CCAA conocida; el resto del nombre tras el prefijo debe encajar
+    en el catálogo de esa CCAA (nombre más largo gana).
+    """
+    if not authority_name or not ccaa_code:
+        return None
+    munis = municipalities if municipalities is not None else municipalities_for_ccaa(ccaa_code)
+    if not munis:
+        return None
+
+    folded = _fold_place_text(authority_name)
+    match = _AYTO_PREFIX_RE.match(folded)
+    if not match:
+        return None
+    remainder = match.group(1).strip()
+    if not remainder:
+        return None
+    return _best_catalog_hit(remainder, munis, require_de_particle=False)
+
+
 def enrich_place_with_title_inference(
     place: dict[str, str | None],
     *,
     title: str | None,
+    authority_name: str | None = None,
 ) -> dict[str, str | None]:
-    """Si falta municipio pero hay CCAA, intenta inferir desde el título."""
+    """Si falta municipio pero hay CCAA: título, luego ayuntamiento del órgano."""
     if place.get("place_municipality_code") or not place.get("place_ccaa_code"):
         return place
-    inferred = infer_municipality_code_from_title(title, place.get("place_ccaa_code"))
+    ccaa = place.get("place_ccaa_code")
+    inferred = infer_municipality_code_from_title(title, ccaa)
+    if inferred:
+        return {**place, "place_municipality_code": inferred}
+    inferred = infer_municipality_code_from_authority(authority_name, ccaa)
     if inferred:
         return {**place, "place_municipality_code": inferred}
     return place

@@ -36,21 +36,24 @@ Las fuentes a menudo aportan **NUTS** (UE); el municipio INE es menos frecuente.
 
 4. **Criteria / buscador** — `geography.ccaa_codes` → RPC `search_tenders.p_ccaa_codes` sobre `tenders.place_ccaa_code`. `municipality_codes` para filtros futuros por municipio. El texto legacy `municipalities` (sede del órgano) no es lugar de ejecución.
 
-5. **ETL — resolución de `place_*`**
+5. **ETL — resolución de `place_*`** (escalones; el primero que acierte gana)
    1. Código INE de fuente si existe (p. ej. Catalunya `codi_ine10` → 5 dígitos).
    2. Si **no** hay municipio y **sí** hay CCAA: inferencia desde el **título**, solo contra municipios de esa CCAA:
       - `(Municipio)` en paréntesis; o
       - partícula `de` / `del` / `de la` / `de los` / `de las` + nombre.
       - Prioridad: **paréntesis > partícula `de…`**; dentro de cada clase, el nombre de catálogo **más largo**.
-      - Sin alias bilingües libres por ahora (sí se aceptan variantes estructurales del nombre INE: artículo final `…, El` y lados de `/` en nombres oficiales).
-   3. Upsert: municipio solo si está en `geo_municipio` (FK).
+   3. Si sigue sin municipio: órgano tipo **ayuntamiento** (`Ayuntamiento` / `Ajuntament` / `Concello` / `Concejo` / `Consistorio` + `de/del/…` + nombre) coincidente con el catálogo de esa CCAA. Más débil que título/INE; no se usa la sede de organismos no municipales.
+   4. Sin alias bilingües libres por ahora (sí variantes estructurales del nombre INE: artículo final `…, El` y lados de `/`).
+   5. Upsert: municipio solo si está en `geo_municipio` (FK).
 
 6. **Fuentes**
    - Catalunya: suele traer `codi_ine10` (prioridad sobre inferencia).
-   - PLACSP agregadas: en la práctica solo NUTS en `RealizedLocation`; municipio vía título si aplica.
-   - Euskadi: NUTS del órgano → CCAA; municipio vía inferencia de título cuando encaja.
+   - PLACSP agregadas: en la práctica solo NUTS en `RealizedLocation`; municipio vía título/ayuntamiento si aplica.
+   - Euskadi: NUTS del órgano → CCAA; municipio vía título o ayuntamiento cuando encaja.
 
-Migraciones: `20261015100000_geo_place_ccaa_municipio.sql`, `20261015120000_search_tenders_ccaa_codes.sql`.
+7. **Buscador web** — filtro CCAA (17) + municipio typeahead (solo municipios de esa CCAA con ≥1 tender; prefijo de texto; sin match válido al buscar/blur → se ignora).
+
+Migraciones: `20261015100000_geo_place_ccaa_municipio.sql`, `20261015120000_search_tenders_ccaa_codes.sql`, `20261015130000_search_municipality_codes.sql`.
 
 ### Alternativas descartadas
 
@@ -58,7 +61,7 @@ Migraciones: `20261015100000_geo_place_ccaa_municipio.sql`, `20261015120000_sear
 - **Solo nombres libres en `tenders`.** Duplicados y filtros frágiles.
 - **Tabla única mezclando CCAA y municipios.** Más lío que dos catálogos.
 - **Provincia como filtro MVP.** Poco valor frente a CCAA + municipio.
-- **Usar sede del organismo como lugar de obra por defecto.** Proxy engañoso.
+- **Usar sede de cualquier organismo como lugar de obra.** Proxy engañoso; solo ayuntamientos con nombre de municipio en catálogo.
 - **Match libre del nombre en cualquier posición del título.** Demasiados falsos positivos; se acota a `de…` / `(…)`.
 - **Inferir municipio sin CCAA conocida.** Ambigüedad entre homónimos; fuera de alcance.
 
@@ -67,7 +70,7 @@ Migraciones: `20261015100000_geo_place_ccaa_municipio.sql`, `20261015120000_sear
 ## Consecuencias
 
 - El buscador puede filtrar por CCAA (`place_ccaa_code`); la ficha muestra CCAA y municipio (join al catálogo).
-- Muchas filas tendrán CCAA vía NUTS; el municipio llegará por INE de fuente o por inferencia de título (con riesgo residual de falso positivo).
+- Muchas filas tendrán CCAA vía NUTS; el municipio llegará por INE, título o ayuntamiento (con riesgo residual de falso positivo).
 - El catálogo `geo_municipio` es completo a propósito: habrá municipios sin ningún tender.
 
 ---

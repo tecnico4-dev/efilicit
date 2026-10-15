@@ -22,7 +22,15 @@ function hasAnyCriterion(form: HTMLFormElement): boolean {
   const min = readField(form, "min");
   const max = readField(form, "max");
   const ccaa = readField(form, "ccaa");
-  return q !== "" || cpv !== "" || min !== "" || max !== "" || ccaa !== "";
+  const municipality = readField(form, "municipality");
+  return (
+    q !== "" ||
+    cpv !== "" ||
+    min !== "" ||
+    max !== "" ||
+    ccaa !== "" ||
+    municipality !== ""
+  );
 }
 
 /** Mínimo y máximo rellenados, y mínimo > máximo. */

@@ -102,7 +102,11 @@ def normalize_record(record: SourceRecord) -> SourceRecord:
             "ccaa_code": raw.get("ccaa_code"),
         }
     )
-    place = enrich_place_with_title_inference(place, title=title)
+    place = enrich_place_with_title_inference(
+        place,
+        title=title,
+        authority_name=authority_name,
+    )
     canonical.update(place)
 
     payload = dict(raw)

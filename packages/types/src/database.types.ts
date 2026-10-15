@@ -793,6 +793,7 @@ export type Database = {
           p_limit?: number
           p_ccaa_codes?: string[]
           p_municipalities?: string[]
+          p_municipality_codes?: string[]
           p_offset?: number
           p_procedure_types?: string[]
           p_publication_date_from?: string
@@ -817,6 +818,15 @@ export type Database = {
           status: string
           title: string
           updated_at: string
+        }[]
+      }
+      list_place_municipalities: {
+        Args: {
+          p_ccaa_code: string
+        }
+        Returns: {
+          code: string
+          name: string
         }[]
       }
     }

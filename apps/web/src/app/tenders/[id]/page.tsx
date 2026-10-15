@@ -57,11 +57,13 @@ function backLinkFromParams(
     const min = first(params.min).trim();
     const max = first(params.max).trim();
     const ccaa = first(params.ccaa).trim();
+    const municipality = first(params.municipality).trim();
     if (q) qs.set("q", q);
     if (cpv) qs.set("cpv", cpv);
     if (min) qs.set("min", min);
     if (max) qs.set("max", max);
     if (ccaa) qs.set("ccaa", ccaa);
+    if (municipality) qs.set("municipality", municipality);
     const query = qs.toString();
     return {
       href: query ? `/search?${query}` : "/search",

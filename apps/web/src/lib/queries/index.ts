@@ -4,6 +4,10 @@ export {
   type SearchTendersInput,
 } from "./search-tenders";
 export {
+  listPlaceMunicipalities,
+  type PlaceMunicipalityOption,
+} from "./list-place-municipalities";
+export {
   getTenderById,
   type TenderDetail,
   type TenderSourceSummary,
