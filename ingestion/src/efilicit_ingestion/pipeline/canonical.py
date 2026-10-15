@@ -16,7 +16,10 @@ from decimal import Decimal, InvalidOperation
 from typing import Any
 
 from efilicit_ingestion.models import SourceRecord
-from efilicit_ingestion.pipeline.geography import place_from_canonical_raw
+from efilicit_ingestion.pipeline.geography import (
+    enrich_place_with_title_inference,
+    place_from_canonical_raw,
+)
 
 # Códigos CODICE / sindicación → vocabulario canónico ES (producto).
 _STATUS_MAP = {
@@ -90,7 +93,7 @@ def normalize_record(record: SourceRecord) -> SourceRecord:
             "identity_confidence": "UNRESOLVED",
         },
     }
-    # Lugar de ejecución (NUTS → CCAA; municipio INE solo si la fuente lo aporta).
+    # Lugar de ejecución (NUTS → CCAA; municipio INE o inferido del título).
     place = place_from_canonical_raw(
         {
             "nuts_codes": raw.get("nuts_codes"),
@@ -99,6 +102,7 @@ def normalize_record(record: SourceRecord) -> SourceRecord:
             "ccaa_code": raw.get("ccaa_code"),
         }
     )
+    place = enrich_place_with_title_inference(place, title=title)
     canonical.update(place)
 
     payload = dict(raw)

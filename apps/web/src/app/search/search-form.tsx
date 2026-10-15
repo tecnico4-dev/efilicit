@@ -10,7 +10,9 @@ import { SEARCH_FORM_ID } from "./save-search-button";
 
 function readField(form: HTMLFormElement, name: string): string {
   const el = form.elements.namedItem(name);
-  if (el instanceof HTMLInputElement) return el.value.trim();
+  if (el instanceof HTMLInputElement || el instanceof HTMLSelectElement) {
+    return el.value.trim();
+  }
   return "";
 }
 
@@ -19,7 +21,8 @@ function hasAnyCriterion(form: HTMLFormElement): boolean {
   const cpv = readField(form, "cpv");
   const min = readField(form, "min");
   const max = readField(form, "max");
-  return q !== "" || cpv !== "" || min !== "" || max !== "";
+  const ccaa = readField(form, "ccaa");
+  return q !== "" || cpv !== "" || min !== "" || max !== "" || ccaa !== "";
 }
 
 /** Mínimo y máximo rellenados, y mínimo > máximo. */

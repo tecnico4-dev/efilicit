@@ -13,7 +13,9 @@ const FORM_ID = "search-form";
 
 function readField(form: HTMLFormElement, name: string): string {
   const el = form.elements.namedItem(name);
-  if (el instanceof HTMLInputElement) return el.value.trim();
+  if (el instanceof HTMLInputElement || el instanceof HTMLSelectElement) {
+    return el.value.trim();
+  }
   return "";
 }
 
@@ -25,6 +27,7 @@ function buildCriteria(form: HTMLFormElement): {
   const cpv = readField(form, "cpv");
   const minRaw = readField(form, "min");
   const maxRaw = readField(form, "max");
+  const ccaa = readField(form, "ccaa");
   const min = minRaw === "" ? undefined : Number(minRaw);
   const max = maxRaw === "" ? undefined : Number(maxRaw);
 
@@ -39,7 +42,8 @@ function buildCriteria(form: HTMLFormElement): {
     (keywords && keywords.length > 0) ||
     cpv !== "" ||
     (min != null && !Number.isNaN(min)) ||
-    (max != null && !Number.isNaN(max));
+    (max != null && !Number.isNaN(max)) ||
+    ccaa !== "";
 
   if (!hasSomething) return null;
 
@@ -49,10 +53,12 @@ function buildCriteria(form: HTMLFormElement): {
     cpv_codes: cpv ? [cpv] : undefined,
     estimated_value_min: min != null && !Number.isNaN(min) ? min : undefined,
     estimated_value_max: max != null && !Number.isNaN(max) ? max : undefined,
+    geography: ccaa ? { ccaa_codes: [ccaa] } : undefined,
   };
 
   const name =
     q ||
+    (ccaa ? `CCAA ${ccaa}` : null) ||
     (cpv ? `CPV ${cpv}` : null) ||
     "Búsqueda guardada";
 

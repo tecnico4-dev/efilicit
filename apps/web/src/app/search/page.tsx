@@ -7,6 +7,7 @@ import {
   searchTenders,
   type SearchTenderRow,
 } from "@/lib/queries";
+import { SEARCH_CCAA_OPTIONS } from "@/lib/geo-ccaa";
 import { formatTenderStatus } from "@/lib/tender-labels";
 import { SaveSearchButton } from "./save-search-button";
 import { SearchForm } from "./search-form";
@@ -61,13 +62,14 @@ function MatchKindBadge({ kind }: { kind: string }) {
 
 function tenderHrefFromSearch(
   tenderId: string,
-  filters: { q: string; cpv: string; minRaw: string; maxRaw: string },
+  filters: { q: string; cpv: string; minRaw: string; maxRaw: string; ccaa: string },
 ): string {
   const params = new URLSearchParams({ from: "search" });
   if (filters.q) params.set("q", filters.q);
   if (filters.cpv) params.set("cpv", filters.cpv);
   if (filters.minRaw) params.set("min", filters.minRaw);
   if (filters.maxRaw) params.set("max", filters.maxRaw);
+  if (filters.ccaa) params.set("ccaa", filters.ccaa);
   return `/tenders/${tenderId}?${params.toString()}`;
 }
 
@@ -82,7 +84,7 @@ function ResultsList({
   rows: SearchTenderRow[];
   error: string | null;
   searched: boolean;
-  filters: { q: string; cpv: string; minRaw: string; maxRaw: string };
+  filters: { q: string; cpv: string; minRaw: string; maxRaw: string; ccaa: string };
   profileUserId: string | null;
   favoritedIds: Set<string>;
 }) {
@@ -162,18 +164,23 @@ export default async function SearchPage({
   const cpv = first(params.cpv).trim();
   const minRaw = first(params.min).trim();
   const maxRaw = first(params.max).trim();
+  const ccaa = first(params.ccaa).trim();
   const from = first(params.from).trim();
   const back = backFromSavedSearch(from);
   const min = minRaw === "" ? undefined : Number(minRaw);
   const max = maxRaw === "" ? undefined : Number(maxRaw);
+  const ccaaValid = SEARCH_CCAA_OPTIONS.some((o) => o.code === ccaa)
+    ? ccaa
+    : "";
 
   const hasParams =
     q !== "" ||
     cpv !== "" ||
     (min != null && !Number.isNaN(min)) ||
-    (max != null && !Number.isNaN(max));
+    (max != null && !Number.isNaN(max)) ||
+    ccaaValid !== "";
 
-  const filters = { q, cpv, minRaw, maxRaw };
+  const filters = { q, cpv, minRaw, maxRaw, ccaa: ccaaValid };
 
   let rows: SearchTenderRow[] = [];
   let error: string | null = null;
@@ -200,6 +207,9 @@ export default async function SearchPage({
             min != null && !Number.isNaN(min) ? min : undefined,
           estimated_value_max:
             max != null && !Number.isNaN(max) ? max : undefined,
+          geography: ccaaValid
+            ? { ccaa_codes: [ccaaValid] }
+            : undefined,
         },
         limit: 20,
       });
@@ -240,7 +250,7 @@ export default async function SearchPage({
       </h1>
 
       <SearchForm
-        formKey={`${q}|${cpv}|${minRaw}|${maxRaw}|${from}`}
+        formKey={`${q}|${cpv}|${minRaw}|${maxRaw}|${ccaaValid}|${from}`}
         actions={
           <>
             <button
@@ -270,7 +280,25 @@ export default async function SearchPage({
             className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
           />
         </div>
-        <div className="grid gap-4 sm:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div>
+            <label htmlFor="ccaa" className="block text-sm font-medium text-foreground">
+              Comunidad Autónoma
+            </label>
+            <select
+              id="ccaa"
+              name="ccaa"
+              defaultValue={ccaaValid}
+              className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
+            >
+              <option value="">Cualquiera</option>
+              {SEARCH_CCAA_OPTIONS.map((opt) => (
+                <option key={opt.code} value={opt.code}>
+                  {opt.name}
+                </option>
+              ))}
+            </select>
+          </div>
           <div>
             <label htmlFor="cpv" className="block text-sm font-medium text-foreground">
               CPV (prefijo)

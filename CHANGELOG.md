@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Geografía de lugar de ejecución: catálogos `geo_ccaa` / `geo_municipio`, columnas `tenders.place_nuts_code` / `place_ccaa_code` / `place_municipality_code`; NUTS→CCAA en normalize ([ADR 018](docs/adr/018-geografia-lugar-ejecucion-ccaa-municipio.md)).
 - Catalunya: `codi_ine10` → `place_municipality_code`; seed `geo_municipio` (`ingestion/data/geo_municipio.csv` + `scripts/seed_geo_municipio.py`).
+- Inferencia de municipio desde título (`de/del/de la…` o `(Municipio)`) si hay CCAA y falta código INE; filtro CCAA en `/search` y campos CCAA/municipio en ficha ([ADR 018](docs/adr/018-geografia-lugar-ejecucion-ccaa-municipio.md)).
 - Semana 6 Paso 7: dashboard básico en `/` autenticada (alertas activas, favoritos recientes, búsquedas guardadas + accesos); landing anónima sin cambios.
 - Semana 6 Paso 6: gestión de alertas de producto — crear/editar/activar en `/alerts` (criteria v1); crear alerta desde `/search` (solo sesión); sin copy de prueba.
 - Semana 6 Paso 5: favoritos (`favorites` + RLS owner-only); marcar/desmarcar en ficha (solo sesión); lista `/favorites`; verificación Alice≠Bob.

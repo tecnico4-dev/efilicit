@@ -78,3 +78,57 @@ def test_place_from_raw_first_nuts() -> None:
     place = place_from_canonical_raw({"nuts_codes": ["ES30", "ES51"]})
     assert place["place_nuts_code"] == "ES30"
     assert place["place_ccaa_code"] == "13"
+
+
+def test_infer_municipality_from_de_particle() -> None:
+    from efilicit_ingestion.pipeline.geography import infer_municipality_code_from_title
+
+    code = infer_municipality_code_from_title(
+        "Reparación en el IES José Miguel Barandiaran BHI de Leioa",
+        "16",
+    )
+    assert code == "48054"  # Leioa
+
+
+def test_infer_municipality_from_parentheses() -> None:
+    from efilicit_ingestion.pipeline.geography import infer_municipality_code_from_title
+
+    code = infer_municipality_code_from_title(
+        "Servicio de limpieza (Durango) en fase 2",
+        "16",
+    )
+    assert code == "48027"
+
+
+def test_infer_parentheses_beats_de_particle() -> None:
+    from efilicit_ingestion.pipeline.geography import infer_municipality_code_from_title
+
+    code = infer_municipality_code_from_title(
+        "Obras de Leioa en el Palacio (Durango)",
+        "16",
+    )
+    assert code == "48027"  # paréntesis gana a «de Leioa»
+
+
+def test_infer_requires_ccaa() -> None:
+    from efilicit_ingestion.pipeline.geography import infer_municipality_code_from_title
+
+    assert infer_municipality_code_from_title("Obras de Leioa", None) is None
+
+
+def test_normalize_enriches_euskadi_style_title() -> None:
+    record = SourceRecord(
+        source_record_id="eus-geo-1",
+        recorded_at=datetime(2026, 10, 1, tzinfo=timezone.utc),
+        payload={
+            "title": "DESMONTAJE DE PIEDRAS EN EL PALACIO DE JUSTICIA DE DURANGO",
+            "status": "PUB",
+            "contract_type": "2",
+            "nuts_codes": ["ES21"],
+            "authority": {"name": "Gobierno Vasco"},
+        },
+    )
+    out = stages.normalize([record])[0]
+    canonical = out.payload["canonical"]
+    assert canonical["place_ccaa_code"] == "16"
+    assert canonical["place_municipality_code"] == "48027"

@@ -6,6 +6,11 @@ Ver ADR 018.
 
 from __future__ import annotations
 
+import csv
+import re
+import unicodedata
+from functools import lru_cache
+from pathlib import Path
 from typing import Any
 
 # NUTS-2 (ES + 2 dígitos) → código INE de CCAA.
@@ -182,3 +187,148 @@ def place_from_canonical_raw(raw_or_canonical: dict[str, Any]) -> dict[str, str 
         municipality_code=str(mun) if mun else None,
         ccaa_code=str(ccaa) if ccaa else None,
     )
+
+
+# ---------------------------------------------------------------------------
+# Inferencia de municipio desde título (ADR 018)
+# ---------------------------------------------------------------------------
+
+_GEO_CSV = Path(__file__).resolve().parents[3] / "data" / "geo_municipio.csv"
+
+# Partículas: de / del / de la / de los / de las (más largo primero).
+_DE_PARTICLE = r"(?:de\s+las|de\s+los|de\s+la|del|de)"
+_PAREN_RE = re.compile(r"\(([^)]+)\)")
+
+
+def _fold_place_text(value: str) -> str:
+    """Minúsculas + sin acentos para comparar título ↔ catálogo."""
+    norm = unicodedata.normalize("NFKD", value.strip().lower())
+    return "".join(ch for ch in norm if not unicodedata.combining(ch))
+
+
+def _municipality_name_variants(name: str) -> list[str]:
+    """Variantes estructurales del nombre INE (artículo final, barras oficiales)."""
+    folded = _fold_place_text(name)
+    out: list[str] = [folded]
+    # "Prat de Llobregat, El" → "el prat de llobregat"
+    if ", " in folded:
+        left, right = folded.rsplit(", ", 1)
+        if right in {"el", "la", "los", "las", "l'"}:
+            out.append(f"{right} {left}")
+            out.append(left)
+    # "Donostia/San Sebastian" → cada lado (nombre oficial compuesto, no alias libre)
+    if "/" in folded:
+        for part in folded.split("/"):
+            part = part.strip()
+            if part:
+                out.append(part)
+    # Únicos preservando orden (más largo primero al usar).
+    seen: set[str] = set()
+    unique: list[str] = []
+    for v in sorted(out, key=len, reverse=True):
+        if v and v not in seen:
+            seen.add(v)
+            unique.append(v)
+    return unique
+
+
+@lru_cache(maxsize=1)
+def _municipalities_by_ccaa() -> dict[str, tuple[tuple[str, str], ...]]:
+    """Carga ``geo_municipio.csv`` → ccaa_code → ((code, name), ...) ordenado por nombre largo."""
+    if not _GEO_CSV.is_file():
+        return {}
+    buckets: dict[str, list[tuple[str, str]]] = {}
+    with _GEO_CSV.open(encoding="utf-8", newline="") as fh:
+        for row in csv.DictReader(fh):
+            code = (row.get("code") or "").strip()
+            name = (row.get("name") or "").strip()
+            ccaa = (row.get("ccaa_code") or "").strip()
+            if code and name and ccaa:
+                buckets.setdefault(ccaa, []).append((code, name))
+    return {
+        ccaa: tuple(sorted(items, key=lambda it: len(it[1]), reverse=True))
+        for ccaa, items in buckets.items()
+    }
+
+
+def municipalities_for_ccaa(ccaa_code: str) -> tuple[tuple[str, str], ...]:
+    """Municipios del catálogo para una CCAA (code, name)."""
+    code = (ccaa_code or "").strip().zfill(2) if ccaa_code else ""
+    return _municipalities_by_ccaa().get(code, ())
+
+
+def _best_catalog_hit(
+    haystack_folded: str,
+    municipalities: tuple[tuple[str, str], ...],
+    *,
+    require_de_particle: bool,
+) -> str | None:
+    """Devuelve código INE del match más largo; None si no hay."""
+    best_code: str | None = None
+    best_len = 0
+    for code, name in municipalities:
+        for variant in _municipality_name_variants(name):
+            if len(variant) < best_len:
+                continue
+            if require_de_particle:
+                pattern = rf"(?<![\w]){_DE_PARTICLE}\s+{re.escape(variant)}(?![\w])"
+            else:
+                # Contenido de paréntesis: igualdad exacta del trozo plegado.
+                pattern = rf"^{re.escape(variant)}$"
+            if re.search(pattern, haystack_folded, flags=re.IGNORECASE):
+                if len(variant) > best_len:
+                    best_len = len(variant)
+                    best_code = code
+    return best_code
+
+
+def infer_municipality_code_from_title(
+    title: str | None,
+    ccaa_code: str | None,
+    municipalities: tuple[tuple[str, str], ...] | None = None,
+) -> str | None:
+    """Infiere municipio INE desde el título (solo si hay CCAA).
+
+    Reglas (ADR 018):
+    - Solo con ``ccaa_code`` conocido y catálogo de esa CCAA.
+    - Candidatos: ``(Municipio)`` o ``de/del/de la/de los/de las Municipio``.
+    - Prioridad: paréntesis > partícula ``de…``; dentro de cada clase, nombre más largo.
+    """
+    if not title or not ccaa_code:
+        return None
+    munis = municipalities if municipalities is not None else municipalities_for_ccaa(ccaa_code)
+    if not munis:
+        return None
+
+    # 1) Paréntesis gana (el match más largo entre todos los (...)).
+    best_paren: str | None = None
+    best_paren_len = 0
+    for match in _PAREN_RE.finditer(title):
+        inner = _fold_place_text(match.group(1))
+        hit = _best_catalog_hit(inner, munis, require_de_particle=False)
+        if hit:
+            # Longitud ≈ variante usada: re-derivar por longitud del inner si encaja.
+            length = len(inner)
+            if length >= best_paren_len:
+                best_paren_len = length
+                best_paren = hit
+    if best_paren:
+        return best_paren
+
+    # 2) Partícula de / del / de la / …
+    folded_title = _fold_place_text(title)
+    return _best_catalog_hit(folded_title, munis, require_de_particle=True)
+
+
+def enrich_place_with_title_inference(
+    place: dict[str, str | None],
+    *,
+    title: str | None,
+) -> dict[str, str | None]:
+    """Si falta municipio pero hay CCAA, intenta inferir desde el título."""
+    if place.get("place_municipality_code") or not place.get("place_ccaa_code"):
+        return place
+    inferred = infer_municipality_code_from_title(title, place.get("place_ccaa_code"))
+    if inferred:
+        return {**place, "place_municipality_code": inferred}
+    return place

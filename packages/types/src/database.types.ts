@@ -791,6 +791,7 @@ export type Database = {
           p_estimated_value_min?: number
           p_keywords?: string[]
           p_limit?: number
+          p_ccaa_codes?: string[]
           p_municipalities?: string[]
           p_offset?: number
           p_procedure_types?: string[]

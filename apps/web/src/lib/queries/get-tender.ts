@@ -27,11 +27,15 @@ export type TenderDetail = TenderRow & {
     municipality: string | null;
     country: string;
   } | null;
+  place_ccaa: { code: string; name: string } | null;
+  place_municipality: { code: string; name: string } | null;
   sources: TenderSourceSummary[];
 };
 
 type TenderWithJoins = TenderRow & {
   contracting_authorities: TenderDetail["contracting_authority"] | null;
+  geo_ccaa: TenderDetail["place_ccaa"] | null;
+  geo_municipio: TenderDetail["place_municipality"] | null;
   tender_sources: TenderSourceSummary[] | null;
 };
 
@@ -55,6 +59,14 @@ export async function getTenderById(
         municipality,
         country
       ),
+      geo_ccaa!tenders_place_ccaa_code_fkey (
+        code,
+        name
+      ),
+      geo_municipio!tenders_place_municipality_code_fkey (
+        code,
+        name
+      ),
       tender_sources!tender_sources_tender_id_fkey (
         id,
         source_code,
@@ -77,7 +89,13 @@ export async function getTenderById(
   }
 
   const row = data as TenderWithJoins;
-  const { contracting_authorities, tender_sources, ...tender } = row;
+  const {
+    contracting_authorities,
+    geo_ccaa,
+    geo_municipio,
+    tender_sources,
+    ...tender
+  } = row;
   const sources = [...(tender_sources ?? [])].sort((a, b) =>
     a.source_code.localeCompare(b.source_code),
   );
@@ -86,6 +104,8 @@ export async function getTenderById(
     data: {
       ...tender,
       contracting_authority: contracting_authorities ?? null,
+      place_ccaa: geo_ccaa ?? null,
+      place_municipality: geo_municipio ?? null,
       sources,
     },
     error: null,

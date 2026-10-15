@@ -56,10 +56,12 @@ function backLinkFromParams(
     const cpv = first(params.cpv).trim();
     const min = first(params.min).trim();
     const max = first(params.max).trim();
+    const ccaa = first(params.ccaa).trim();
     if (q) qs.set("q", q);
     if (cpv) qs.set("cpv", cpv);
     if (min) qs.set("min", min);
     if (max) qs.set("max", max);
+    if (ccaa) qs.set("ccaa", ccaa);
     const query = qs.toString();
     return {
       href: query ? `/search?${query}` : "/search",
@@ -277,6 +279,12 @@ export default async function TenderDetailPage({
         <Field label="Procedimiento">{formatProcedureType(tender.procedure_type)}</Field>
         <Field label="Publicación">{formatDate(tender.publication_date)}</Field>
         <Field label="Plazo">{formatDate(tender.deadline_at)}</Field>
+        <Field label="Comunidad autónoma">
+          {tender.place_ccaa?.name ?? "—"}
+        </Field>
+        <Field label="Municipio">
+          {tender.place_municipality?.name ?? "—"}
+        </Field>
         <Field label="Órgano de contratación">
           {authority ? (
             <span>

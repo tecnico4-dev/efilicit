@@ -4,19 +4,24 @@ import { useEffect, useState } from "react";
 import { useSearchFeedback } from "./search-feedback";
 import { SEARCH_FORM_ID } from "./save-search-button";
 
-const FIELD_NAMES = ["q", "cpv", "min", "max"] as const;
+const FIELD_NAMES = ["q", "cpv", "min", "max", "ccaa"] as const;
 
 function blankFormFields(form: HTMLFormElement) {
   for (const name of FIELD_NAMES) {
     const el = form.elements.namedItem(name);
-    if (el instanceof HTMLInputElement) el.value = "";
+    if (el instanceof HTMLInputElement || el instanceof HTMLSelectElement) {
+      el.value = "";
+    }
   }
 }
 
 function formHasValues(form: HTMLFormElement): boolean {
   return FIELD_NAMES.some((name) => {
     const el = form.elements.namedItem(name);
-    return el instanceof HTMLInputElement && el.value.trim() !== "";
+    return (
+      (el instanceof HTMLInputElement || el instanceof HTMLSelectElement) &&
+      el.value.trim() !== ""
+    );
   });
 }
 

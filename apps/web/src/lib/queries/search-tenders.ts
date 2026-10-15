@@ -57,6 +57,7 @@ function buildRpcArgs(input: SearchTendersInput): SearchTendersArgs {
     p_authority_name_contains: name || undefined,
     p_municipalities: emptyToUndef(c.geography?.municipalities),
     p_countries: emptyToUndef(c.geography?.countries),
+    p_ccaa_codes: emptyToUndef(c.geography?.ccaa_codes),
     p_estimated_value_min: c.estimated_value_min,
     p_estimated_value_max: c.estimated_value_max,
     p_contract_types: emptyToUndef(c.contract_types),
