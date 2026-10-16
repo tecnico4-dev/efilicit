@@ -51,16 +51,8 @@ export default async function FavoriteTendersPage({
 
   const { data: favorites, error } = await listOwnFavorites(supabase);
 
-  const fillForPager = favorites.length > 10;
-
   return (
-    <main
-      className={
-        fillForPager
-          ? "mx-auto flex w-full max-w-6xl flex-1 flex-col px-6 pt-10 pb-24"
-          : "mx-auto flex w-full max-w-6xl flex-1 flex-col px-6 py-10"
-      }
-    >
+    <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-6 py-10">
       <p className="text-sm">
         <Link href={back.href} className="font-medium text-link hover:underline">
           {back.label}

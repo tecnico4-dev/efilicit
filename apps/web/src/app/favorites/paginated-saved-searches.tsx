@@ -17,7 +17,7 @@ type SavedSearchRow = Database["public"]["Tables"]["saved_searches"]["Row"];
 /**
  * Lista paginada de búsquedas guardadas.
  * Controles solo si hay más de 10; tamaño de página 10 / 50 / 100.
- * Con pager: panel con scroll interno + barra de paginación fija al pie del viewport.
+ * Con pager: un solo panel (borde común); scroll solo en la lista; pager pegado abajo.
  */
 export function PaginatedSavedSearches({
   searches,
@@ -70,11 +70,11 @@ export function PaginatedSavedSearches({
   }
 
   return (
-    <>
-      <div
-        className="overflow-y-auto rounded-lg border border-border px-4"
-        style={{ maxHeight: "calc(100dvh - 14rem)" }}
-      >
+    <div
+      className="flex flex-col overflow-hidden rounded-lg border border-border"
+      style={{ height: "calc(100dvh - 11.5rem)" }}
+    >
+      <div className="min-h-0 flex-1 overflow-y-auto px-4">
         <SavedSearchList
           searches={pageItems}
           userId={userId}
@@ -83,22 +83,19 @@ export function PaginatedSavedSearches({
           bordered={false}
         />
       </div>
-
-      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/90">
-        <div className="mx-auto max-w-6xl px-6 py-3">
-          <ListPager
-            page={page}
-            totalPages={totalPages}
-            pageSize={pageSize}
-            showing={pageItems.length}
-            total={total}
-            itemLabel="búsquedas"
-            ariaPageSizeLabel="Búsquedas por página"
-            onPageChange={setPage}
-            onPageSizeChange={onPageSizeChange}
-          />
-        </div>
+      <div className="shrink-0 border-t border-border bg-background px-4 py-3">
+        <ListPager
+          page={page}
+          totalPages={totalPages}
+          pageSize={pageSize}
+          showing={pageItems.length}
+          total={total}
+          itemLabel="búsquedas"
+          ariaPageSizeLabel="Búsquedas por página"
+          onPageChange={setPage}
+          onPageSizeChange={onPageSizeChange}
+        />
       </div>
-    </>
+    </div>
   );
 }
