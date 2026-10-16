@@ -58,15 +58,23 @@ export default async function SavedSearchesPage({
 
   const { data: searches, error } = await listOwnSavedSearches(supabase);
 
+  const fillForPager = searches.length > 10;
+
   return (
-    <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-6 py-10">
-      <p className="text-sm">
+    <main
+      className={
+        fillForPager
+          ? "mx-auto flex w-full max-w-6xl min-h-0 flex-1 flex-col px-6 pt-10 pb-4"
+          : "mx-auto flex w-full max-w-6xl flex-1 flex-col px-6 py-10"
+      }
+    >
+      <p className="shrink-0 text-sm">
         <Link href={back.href} className="font-medium text-link hover:underline">
           {back.label}
         </Link>
       </p>
 
-      <h1 className="mt-4 text-2xl font-semibold tracking-tight text-foreground">
+      <h1 className="mt-4 shrink-0 text-2xl font-semibold tracking-tight text-foreground">
         Búsquedas guardadas
       </h1>
 
@@ -79,7 +87,11 @@ export default async function SavedSearchesPage({
           <EmptySavedSearchesHint />
         </p>
       ) : (
-        <div className="mt-8">
+        <div
+          className={
+            fillForPager ? "mt-8 flex min-h-0 flex-1 flex-col" : "mt-8"
+          }
+        >
           <PaginatedSavedSearches
             searches={searches}
             userId={profile.data.id}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { cn } from "@/lib/cn";
 import type { FavoriteWithTender } from "@/lib/queries";
 import { FavoriteTenderList } from "./favorites-shared";
 import {
@@ -14,6 +15,7 @@ export const FAVORITES_PAGE_SIZE = DEFAULT_PAGE_SIZE;
 /**
  * Lista paginada de licitaciones favoritas.
  * Controles solo si hay más de 10; tamaño de página 10 / 50 / 100.
+ * Con pager: lista con scroll interno y controles fijos al pie del layout.
  */
 export function PaginatedFavoriteTenders({
   favorites,
@@ -48,8 +50,15 @@ export function PaginatedFavoriteTenders({
   }
 
   return (
-    <div>
-      <div className="rounded-lg border border-border px-4">
+    <div
+      className={cn(showPager && "flex min-h-0 flex-1 flex-col")}
+    >
+      <div
+        className={cn(
+          "rounded-lg border border-border px-4",
+          showPager && "min-h-0 flex-1 overflow-y-auto",
+        )}
+      >
         <FavoriteTenderList
           favorites={pageItems}
           from={from}

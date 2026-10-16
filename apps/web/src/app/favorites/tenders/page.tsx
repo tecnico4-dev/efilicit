@@ -51,15 +51,23 @@ export default async function FavoriteTendersPage({
 
   const { data: favorites, error } = await listOwnFavorites(supabase);
 
+  const fillForPager = favorites.length > 10;
+
   return (
-    <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-6 py-10">
-      <p className="text-sm">
+    <main
+      className={
+        fillForPager
+          ? "mx-auto flex w-full max-w-6xl min-h-0 flex-1 flex-col px-6 pt-10 pb-4"
+          : "mx-auto flex w-full max-w-6xl flex-1 flex-col px-6 py-10"
+      }
+    >
+      <p className="shrink-0 text-sm">
         <Link href={back.href} className="font-medium text-link hover:underline">
           {back.label}
         </Link>
       </p>
 
-      <h1 className="mt-4 text-2xl font-semibold tracking-tight text-foreground">
+      <h1 className="mt-4 shrink-0 text-2xl font-semibold tracking-tight text-foreground">
         Licitaciones favoritas
       </h1>
 
@@ -72,7 +80,11 @@ export default async function FavoriteTendersPage({
           <EmptyFavoritesTendersHint />
         </p>
       ) : (
-        <div className="mt-8">
+        <div
+          className={
+            fillForPager ? "mt-8 flex min-h-0 flex-1 flex-col" : "mt-8"
+          }
+        >
           <PaginatedFavoriteTenders
             favorites={favorites}
             from="favorites-tenders"

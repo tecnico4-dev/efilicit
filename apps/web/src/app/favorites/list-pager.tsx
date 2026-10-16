@@ -85,7 +85,7 @@ export function ListPager({
     "inline-flex min-w-14 items-center justify-center rounded-md border border-border bg-background px-2 py-1 text-sm tabular-nums text-foreground";
 
   return (
-    <div className="mt-4 flex flex-wrap items-center gap-x-2 gap-y-2 text-sm text-muted-foreground">
+    <div className="shrink-0 bg-background pt-3 pb-1 flex flex-wrap items-center gap-x-2 gap-y-2 text-sm text-muted-foreground">
       <span>Página</span>
       <div className="inline-flex items-center gap-0.5">
         <button

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { cn } from "@/lib/cn";
 import type { DigestFrequency } from "@/lib/queries";
 import type { Database } from "@efilicit/types";
 import { SavedSearchList } from "./favorites-shared";
@@ -17,6 +18,7 @@ type SavedSearchRow = Database["public"]["Tables"]["saved_searches"]["Row"];
 /**
  * Lista paginada de búsquedas guardadas.
  * Controles solo si hay más de 10; tamaño de página 10 / 50 / 100.
+ * Con pager: lista con scroll interno y controles fijos al pie del layout.
  */
 export function PaginatedSavedSearches({
   searches,
@@ -55,8 +57,15 @@ export function PaginatedSavedSearches({
   }
 
   return (
-    <div>
-      <div className="rounded-lg border border-border px-4">
+    <div
+      className={cn(showPager && "flex min-h-0 flex-1 flex-col")}
+    >
+      <div
+        className={cn(
+          "rounded-lg border border-border px-4",
+          showPager && "min-h-0 flex-1 overflow-y-auto",
+        )}
+      >
         <SavedSearchList
           searches={pageItems}
           userId={userId}

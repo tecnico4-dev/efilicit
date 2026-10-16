@@ -45,13 +45,13 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="relative flex min-h-full flex-col bg-background text-foreground">
+    <div className="relative flex min-h-0 flex-1 flex-col bg-background text-foreground">
       <div
         className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_top,rgba(82,185,216,0.18),transparent_45%)]"
         aria-hidden
       />
       <UndoToastProvider>
-        <div className="relative flex min-h-full flex-1 flex-col">
+        <div className="relative flex min-h-0 flex-1 flex-col">
           {isAuthenticated ? (
             <AppHeader
               isAuthenticated
@@ -60,7 +60,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
               digestFrequency={digestFrequency}
             />
           ) : null}
-          <div className="flex flex-1 flex-col">{children}</div>
+          <div className="flex min-h-0 flex-1 flex-col">{children}</div>
         </div>
       </UndoToastProvider>
     </div>
