@@ -31,7 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Favoritos y búsquedas guardadas: con más de 10 ítems, la lista hace scroll interno y el pager queda fijo al pie del layout; ≤10 sin controles de paginación.
+- Favoritos y búsquedas guardadas: con más de 10 ítems, la lista hace scroll interno (altura acotada al viewport) y el pager queda en barra fija al pie de la pantalla; ≤10 sin controles de paginación.
 - Favoritos: el selector de tamaño de página (10 / 50 / 100) abre hacia arriba; mismo esquema de paginación en búsquedas guardadas («búsquedas totales»).
 
 ### Fixed

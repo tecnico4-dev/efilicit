@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { cn } from "@/lib/cn";
 import type { DigestFrequency } from "@/lib/queries";
 import type { Database } from "@efilicit/types";
 import { SavedSearchList } from "./favorites-shared";
@@ -18,7 +17,7 @@ type SavedSearchRow = Database["public"]["Tables"]["saved_searches"]["Row"];
 /**
  * Lista paginada de búsquedas guardadas.
  * Controles solo si hay más de 10; tamaño de página 10 / 50 / 100.
- * Con pager: lista con scroll interno y controles fijos al pie del layout.
+ * Con pager: panel con scroll interno + barra de paginación fija al pie del viewport.
  */
 export function PaginatedSavedSearches({
   searches,
@@ -56,15 +55,25 @@ export function PaginatedSavedSearches({
     setPage(1);
   }
 
+  if (!showPager) {
+    return (
+      <div className="rounded-lg border border-border px-4">
+        <SavedSearchList
+          searches={pageItems}
+          userId={userId}
+          digestFrequency={digestFrequency}
+          searchFrom={searchFrom}
+          bordered={false}
+        />
+      </div>
+    );
+  }
+
   return (
-    <div
-      className={cn(showPager && "flex min-h-0 flex-1 flex-col")}
-    >
+    <>
       <div
-        className={cn(
-          "rounded-lg border border-border px-4",
-          showPager && "min-h-0 flex-1 overflow-y-auto",
-        )}
+        className="overflow-y-auto rounded-lg border border-border px-4"
+        style={{ maxHeight: "calc(100dvh - 14rem)" }}
       >
         <SavedSearchList
           searches={pageItems}
@@ -75,19 +84,21 @@ export function PaginatedSavedSearches({
         />
       </div>
 
-      {showPager ? (
-        <ListPager
-          page={page}
-          totalPages={totalPages}
-          pageSize={pageSize}
-          showing={pageItems.length}
-          total={total}
-          itemLabel="búsquedas"
-          ariaPageSizeLabel="Búsquedas por página"
-          onPageChange={setPage}
-          onPageSizeChange={onPageSizeChange}
-        />
-      ) : null}
-    </div>
+      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/90">
+        <div className="mx-auto max-w-6xl px-6 py-3">
+          <ListPager
+            page={page}
+            totalPages={totalPages}
+            pageSize={pageSize}
+            showing={pageItems.length}
+            total={total}
+            itemLabel="búsquedas"
+            ariaPageSizeLabel="Búsquedas por página"
+            onPageChange={setPage}
+            onPageSizeChange={onPageSizeChange}
+          />
+        </div>
+      </div>
+    </>
   );
 }
