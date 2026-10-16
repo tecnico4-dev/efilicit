@@ -81,3 +81,19 @@ def test_resolve_identity_medium_with_platform_id_only() -> None:
 
 def test_normalize_name_strips_accents_and_case() -> None:
     assert normalize_name("  Ayuntamiento de Málaga  ") == "ayuntamiento de malaga"
+
+
+def test_normalize_procedure_code_9_is_abierto_simplificado() -> None:
+    record = SourceRecord(
+        source_record_id="proc-9",
+        payload={
+            "title": "Test abierto simplificado",
+            "procedure_type": "9",
+            "authority": {"name": "Org", "tax_id": "B00000000"},
+            "cpv_codes": [],
+            "nuts_codes": [],
+        },
+    )
+    canonical = stages.normalize([record])[0].payload["canonical"]
+    assert canonical["procedure_type"] == "abierto_simplificado"
+    assert canonical["procedure_code"] == "9"

@@ -39,6 +39,8 @@ _CONTRACT_TYPE_MAP = {
     "8": "otro",
 }
 
+# CODICE SyndicationTenderingProcessCode (subset MVP).
+# 9 = Abierto simplificado (lista oficial); el resto 1–6 es el corte ya usado.
 _PROCEDURE_MAP = {
     "1": "abierto",
     "2": "restringido",
@@ -46,6 +48,7 @@ _PROCEDURE_MAP = {
     "4": "dialogo_competitivo",
     "5": "asociacion_innovacion",
     "6": "otro",
+    "9": "abierto_simplificado",
 }
 
 

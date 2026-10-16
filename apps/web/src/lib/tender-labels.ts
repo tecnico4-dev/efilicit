@@ -33,6 +33,7 @@ const CONTRACT_TYPE_LABELS: Record<string, string> = {
 
 const PROCEDURE_TYPE_LABELS: Record<string, string> = {
   abierto: "Abierto",
+  abierto_simplificado: "Abierto simplificado",
   restringido: "Restringido",
   negociado: "Negociado",
   dialogo_competitivo: "Diálogo competitivo",
