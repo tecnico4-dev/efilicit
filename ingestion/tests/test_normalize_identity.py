@@ -83,27 +83,28 @@ def test_normalize_name_strips_accents_and_case() -> None:
     assert normalize_name("  Ayuntamiento de Málaga  ") == "ayuntamiento de malaga"
 
 
-def test_normalize_cpv_strips_punctuation_and_rejects_junk() -> None:
-    good = SourceRecord(
+def test_normalize_cpv_pads_to_8_and_keeps_check_digit() -> None:
+    from efilicit_ingestion.pipeline.canonical import normalize_cpv_code
+
+    assert normalize_cpv_code("31640000") == "31640000"
+    assert normalize_cpv_code("316400") == "31640000"
+    assert normalize_cpv_code("31") == "31000000"
+    assert normalize_cpv_code("31640000-4") == "31640000-4"
+    assert normalize_cpv_code("3019.2700") == "30192700"
+    assert normalize_cpv_code("N/A") is None
+
+    record = SourceRecord(
         source_record_id="cpv-ok",
         payload={
             "title": "Test",
             "authority": {"name": "Org"},
-            "cpv_codes": ["3019.2700"],
+            "cpv_codes": ["316400-4"],
             "nuts_codes": [],
         },
     )
-    bad = SourceRecord(
-        source_record_id="cpv-bad",
-        payload={
-            "title": "Test",
-            "authority": {"name": "Org"},
-            "cpv_codes": ["N/A"],
-            "nuts_codes": [],
-        },
+    assert stages.normalize([record])[0].payload["canonical"]["cpv_code"] == (
+        "31640000-4"
     )
-    assert stages.normalize([good])[0].payload["canonical"]["cpv_code"] == "30192700"
-    assert stages.normalize([bad])[0].payload["canonical"]["cpv_code"] is None
 
 
 def test_normalize_procedure_code_9_is_abierto_simplificado() -> None:

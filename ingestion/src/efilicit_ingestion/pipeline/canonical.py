@@ -228,15 +228,40 @@ def _primary_code(values: Any) -> str | None:
     return text or None
 
 
-def _primary_cpv(values: Any) -> str | None:
-    """CPV principal: solo dígitos (2–8). Descarta basura con puntos/espacios/letras."""
-    text = _primary_code(values)
+def normalize_cpv_code(value: Any) -> str | None:
+    """Normaliza un CPV a 8 dígitos (ceros a la derecha) + control opcional ``-X``.
+
+    Ejemplos: ``316400`` → ``31640000``; ``31`` → ``31000000``;
+    ``31640000-4`` → ``31640000-4``; ``3019.2700`` → ``30192700``.
+    """
+    if value is None:
+        return None
+    text = str(value).strip().replace(" ", "")
     if not text:
         return None
-    digits = re.sub(r"\D", "", text)
-    if len(digits) < 2 or len(digits) > 8:
+
+    check: str | None = None
+    if "-" in text:
+        base, _, suffix = text.partition("-")
+        check_digits = re.sub(r"\D", "", suffix)
+        if check_digits:
+            check = check_digits
+    else:
+        base = text
+
+    digits = re.sub(r"\D", "", base)
+    if not digits:
         return None
-    return digits
+    if len(digits) > 8:
+        digits = digits[:8]
+    digits = digits.ljust(8, "0")
+    return f"{digits}-{check}" if check else digits
+
+
+def _primary_cpv(values: Any) -> str | None:
+    """CPV principal del payload (primer código normalizado)."""
+    text = _primary_code(values)
+    return normalize_cpv_code(text)
 
 
 def _normalize_tax_id(value: Any) -> str | None:

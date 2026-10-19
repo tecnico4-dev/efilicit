@@ -31,7 +31,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Auditoría remota de vocabulario/CPV/NUTS: sin literales CODICE huérfanos; migración de higiene defensiva + CPV solo dígitos en normalize.
+- CPV canónico: 8 dígitos con ceros a la derecha + control opcional `-X` (`316400`→`31640000`, `31640000-4` se conserva); migración alinea filas existentes.
+- Auditoría remota de vocabulario/CPV/NUTS: sin literales CODICE huérfanos; migración de higiene defensiva.
 - Euskadi: `contractType` ampliado a CODICE completo (concesiones `22`/`31`/`32`, etc.); si `id` es código CODICE conocido, se usa antes que el nombre.
 - Catalunya: concesiones en `tipus_contracte` → CODICE `22`/`31`/`32`/`21` (antes se aplanaban a servicios/obras).
 - Catalunya / Euskadi: `procediment` / `contractProcedureType` → código CODICE de procedimiento (antes quedaba `procedure_type` null y solo la etiqueta).
