@@ -2,7 +2,7 @@
 
 > **source_code:** `euskadi`  
 > **Estado en el proyecto:** Semana 3 — CCAA #2 completa (Paso 9; live 9.5)  
-> **Última revisión de esta ficha:** 2026-09-17  
+> **Última revisión de esta ficha:** 2026-10-19  
 > **Scraping:** no (existe API REST oficial)  
 > **Adaptador:** `EuskadiConnector` (familia REST propia; no Socrata)
 
@@ -92,6 +92,8 @@ El parser emite el mismo shape pre-canónico que PLACSP/Catalunya para reutiliza
 | `procedure_type` | `contractProcedureType.name` (etiqueta ES) → códigos CODICE `1`…`13` / `100` / `999` |
 | `contract_type` | `contractType.id` (si es CODICE) o `name` → `1`/`2`/`3`, concesiones `22`/`31`/`32`, etc. |
 | `estimated_value` | `budgetWithoutVAT` |
+| `deadline_at` | `deadlineDate` (plazo de presentación; ausente → null) |
+| `cpv_codes` | *(vacío)* — `/contracting-notices` no trae CPV de la licitación (sí `/contracts`); no usar `contractingAuthority.CPV`. Enriquecimiento → [BACKLOG §3](../plans/BACKLOG.md) |
 | `nuts_codes` | `contractingAuthority.codNUTS` |
 | `publication_url` | `_links.self.href` |
 | `contract_folder_id` | `code` |

@@ -136,6 +136,10 @@ def _map_row(row: dict[str, Any], artifact: RemoteArtifact) -> SourceRecord | No
 
     budget = row.get("budgetWithoutVAT")
     estimated = str(budget) if budget is not None else None
+    # Plazo de presentación: ``deadlineDate`` en /contracting-notices.
+    # CPV de la licitación no viene en este endpoint (sí en /contracts); no mapear
+    # ``contractingAuthority.CPV`` (actividad del órgano, no del objeto).
+    deadline = _text(row.get("deadlineDate"))
 
     payload: dict[str, Any] = {
         "title": title,
@@ -150,7 +154,7 @@ def _map_row(row: dict[str, Any], artifact: RemoteArtifact) -> SourceRecord | No
         "currency": "EUR",
         "cpv_codes": [],
         "nuts_codes": [nuts] if nuts else [],
-        "deadline_at": None,
+        "deadline_at": deadline,
         "updated_at": _text(authority.get("publicationDate")),
         "publication_url": publication_url,
         "contract_folder_id": _text(row.get("code")),
