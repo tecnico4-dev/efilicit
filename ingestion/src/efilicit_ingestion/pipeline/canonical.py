@@ -48,16 +48,24 @@ _CONTRACT_TYPE_MAP = {
     "50": "patrimonial",
 }
 
-# CODICE SyndicationTenderingProcessCode (subset MVP).
-# 9 = Abierto simplificado (lista oficial); el resto 1–6 es el corte ya usado.
+# CODICE SyndicationTenderingProcessCode 2.07 (lista oficial).
+# Desconocido → «otro» (no dejar el número crudo en producto).
 _PROCEDURE_MAP = {
     "1": "abierto",
     "2": "restringido",
-    "3": "negociado",
-    "4": "dialogo_competitivo",
-    "5": "asociacion_innovacion",
-    "6": "otro",
+    "3": "negociado_sin_publicidad",
+    "4": "negociado_con_publicidad",
+    "5": "dialogo_competitivo",
+    "6": "contrato_menor",
+    "7": "derivado_acuerdo_marco",
+    "8": "concurso_proyectos",
     "9": "abierto_simplificado",
+    "10": "asociacion_innovacion",
+    "11": "derivado_asociacion_innovacion",
+    "12": "sistema_dinamico_adquisicion",
+    "13": "licitacion_con_negociacion",
+    "100": "normas_internas",
+    "999": "otro",
 }
 
 
@@ -83,7 +91,11 @@ def normalize_record(record: SourceRecord) -> SourceRecord:
         "description": raw.get("project_name"),
         "status": _map_code(raw.get("status"), _STATUS_MAP),
         "status_code": raw.get("status"),
-        "procedure_type": _map_code(raw.get("procedure_type"), _PROCEDURE_MAP),
+        "procedure_type": _map_code(
+            raw.get("procedure_type"),
+            _PROCEDURE_MAP,
+            unknown="otro",
+        ),
         "procedure_code": raw.get("procedure_type"),
         "contract_type": _map_code(
             raw.get("contract_type"),

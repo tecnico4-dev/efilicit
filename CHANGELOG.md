@@ -31,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- `tenders.procedure_type`: mapa CODICE `SyndicationTenderingProcessCode` 2.07 completo (corrige 4/5/6; añade 7–8, 10–13, 100, 999); desconocidos → `otro`; migración remapea slugs/números; etiquetas UI.
 - `tenders.contract_type`: mapa CODICE `ContractCode` completo (7, 8=`privado`, 21, 22, 31, 32, 40, 50); desconocidos → `otro`; migración remapea literales numéricos ya guardados; etiquetas UI.
 - `procedure_type` CODICE `9` → `abierto_simplificado` (normalize + migración de filas literales `"9"`; etiqueta UI).
 - Favoritos y búsquedas guardadas: con más de 10 ítems, un solo panel con scroll interno en la lista y pager pegado al borde inferior del mismo panel; ≤10 sin controles de paginación.
