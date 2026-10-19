@@ -143,14 +143,14 @@ export function AccountMenu({
             }
           }}
           className={cn(
-            "group inline-flex h-9 max-w-9 items-center overflow-hidden rounded-full bg-primary text-primary-foreground shadow-sm transition-[max-width] duration-200 ease-out hover:max-w-[14rem] hover:bg-primary-dark focus-visible:max-w-[14rem] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+            "group inline-flex h-9 max-w-9 items-center overflow-hidden rounded-full bg-primary text-primary-foreground shadow-sm transition-[max-width] duration-500 ease-out hover:max-w-[14rem] hover:bg-primary-dark focus-visible:max-w-[14rem] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
             open && "max-w-[14rem] bg-primary-dark",
           )}
         >
           <span className="inline-flex size-9 shrink-0 items-center justify-center">
             <UserIcon className="size-4" />
           </span>
-          <span className="truncate whitespace-nowrap pr-3 text-sm font-medium opacity-0 transition-opacity duration-200 group-hover:opacity-100 group-focus-visible:opacity-100 [[aria-expanded=true]_&]:opacity-100">
+          <span className="truncate whitespace-nowrap pr-3 text-sm font-medium opacity-0 transition-opacity duration-500 ease-out group-hover:opacity-100 group-focus-visible:opacity-100 [[aria-expanded=true]_&]:opacity-100">
             {label}
           </span>
         </button>
