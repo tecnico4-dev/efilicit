@@ -44,6 +44,10 @@ export function searchHrefFromCriteria(
   if (criteria.estimated_value_max != null) {
     params.set("max", String(criteria.estimated_value_max));
   }
+  const ccaa = criteria.geography?.ccaa_codes?.[0];
+  if (ccaa) params.set("ccaa", ccaa);
+  const municipality = criteria.geography?.municipality_codes?.[0];
+  if (municipality) params.set("municipality", municipality);
   if (from) params.set("from", from);
   const qs = params.toString();
   return qs ? `/search?${qs}` : "/search";

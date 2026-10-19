@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { criteriaEqual, parseCriteria } from "@/lib/criteria-display";
+import { SEARCH_CCAA_OPTIONS } from "@/lib/geo-ccaa";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { createOwnSavedSearch, listOwnSavedSearches } from "@/lib/queries";
 import type { SearchCriteria } from "@efilicit/types";
@@ -64,10 +65,12 @@ function buildCriteria(form: HTMLFormElement): {
         : undefined,
   };
 
+  const ccaaName =
+    SEARCH_CCAA_OPTIONS.find((o) => o.code === ccaa)?.name ?? ccaa;
   const name =
     q ||
     (municipality ? `Municipio ${municipality}` : null) ||
-    (ccaa ? `CCAA ${ccaa}` : null) ||
+    (ccaa ? ccaaName : null) ||
     (cpv ? `CPV ${cpv}` : null) ||
     "Búsqueda guardada";
 

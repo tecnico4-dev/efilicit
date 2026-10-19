@@ -48,6 +48,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Búsquedas guardadas: CCAA/municipio se reflejan en el resumen, en la detección de duplicados y al reabrir desde Favoritos (query `ccaa` / `municipality`).
 - PLACSP / agregadas / menores: `ContractFolderStatusCode` se lee desde `cbc-place-ext` (Atom real); antes se buscaba solo en `cbc` → `tenders.status` siempre null. Fallback `cbc` + local-name + `Estado:` en `atom:title`.
 - Euskadi: `deadlineDate` de `/contracting-notices` → `deadline_at` (antes siempre `None`). CPV de licitación sigue vacío en este endpoint (no mapear CPV del órgano).
 - Cola de digests: tras un fallo de envío los ítems quedan en `failed` y el job los reintenta; umbral por clase de error (temporal `< 3`, gordo `< 2` intentos) y luego `cancelled`. Antes un único fallo dejaba la fila fuera del drain. Sin ADR (refinamiento operativo MVP).

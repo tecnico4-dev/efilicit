@@ -1,4 +1,5 @@
 import type { SearchCriteria } from "@efilicit/types";
+import { SEARCH_CCAA_OPTIONS } from "@/lib/geo-ccaa";
 
 /** Interpreta jsonb de alertas / búsquedas como Criteria v1. */
 export function parseCriteria(raw: unknown): SearchCriteria {
@@ -10,7 +11,11 @@ export function parseCriteria(raw: unknown): SearchCriteria {
   return o as SearchCriteria;
 }
 
-/** Resumen legible de criteria v1 (MVP: keywords, CPV, importes). */
+function ccaaLabel(code: string): string {
+  return SEARCH_CCAA_OPTIONS.find((o) => o.code === code)?.name ?? code;
+}
+
+/** Resumen legible de criteria v1 (keywords, CPV, importes, geografía). */
 export function formatCriteriaSummary(criteria: SearchCriteria): string {
   const parts: string[] = [];
 
@@ -33,6 +38,15 @@ export function formatCriteriaSummary(criteria: SearchCriteria): string {
         ? String(criteria.estimated_value_max)
         : "—";
     parts.push(`importe ${min}–${max}`);
+  }
+  const ccaaCodes = criteria.geography?.ccaa_codes?.filter(Boolean) ?? [];
+  if (ccaaCodes.length) {
+    parts.push(`CCAA ${ccaaCodes.map(ccaaLabel).join(", ")}`);
+  }
+  const munCodes =
+    criteria.geography?.municipality_codes?.filter(Boolean) ?? [];
+  if (munCodes.length) {
+    parts.push(`Municipio ${munCodes.join(", ")}`);
   }
 
   return parts.length ? parts.join(" · ") : "Sin criterios";
@@ -97,7 +111,7 @@ export function criteriaHasFilters(criteria: SearchCriteria): boolean {
 }
 
 /**
- * Firma estable de criteria (MVP: keywords, CPV, importes) para detectar
+ * Firma estable de criteria (keywords, CPV, importes, geografía) para detectar
  * búsquedas/alertas duplicadas sin depender del orden de arrays.
  */
 export function criteriaSignature(criteria: SearchCriteria): string {
@@ -107,12 +121,20 @@ export function criteriaSignature(criteria: SearchCriteria): string {
   const cpv = criteria.cpv_codes?.length
     ? [...criteria.cpv_codes].sort()
     : undefined;
+  const ccaa = criteria.geography?.ccaa_codes?.length
+    ? [...criteria.geography.ccaa_codes].sort()
+    : undefined;
+  const municipalities = criteria.geography?.municipality_codes?.length
+    ? [...criteria.geography.municipality_codes].sort()
+    : undefined;
   return JSON.stringify({
     v: 1,
     keywords: keywords ?? null,
     cpv: cpv ?? null,
     min: criteria.estimated_value_min ?? null,
     max: criteria.estimated_value_max ?? null,
+    ccaa: ccaa ?? null,
+    municipalities: municipalities ?? null,
   });
 }
 
