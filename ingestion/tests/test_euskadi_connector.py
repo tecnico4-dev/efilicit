@@ -9,7 +9,11 @@ import pytest
 
 from efilicit_ingestion.connectors import EuskadiConnector, SourceConnector
 from efilicit_ingestion.connectors.euskadi import EUSKADI, EuskadiHttpError, EuskadiParseError
-from efilicit_ingestion.connectors.euskadi.parser import parse_euskadi_artifact
+from efilicit_ingestion.connectors.euskadi.parser import (
+    _CONTRACT_TYPE,
+    _fold,
+    parse_euskadi_artifact,
+)
 from efilicit_ingestion.models import RemoteArtifact, SyncContext
 from efilicit_ingestion.pipeline import stages
 
@@ -87,6 +91,29 @@ def test_euskadi_parse_maps_and_skips_without_id() -> None:
     assert records[1].source_record_id == "900002"
     assert records[1].payload["status"] == "ADJ"
     assert records[1].payload["authority"]["tax_id"] is None
+
+
+def test_euskadi_concession_labels_and_codice_ids() -> None:
+    assert _CONTRACT_TYPE[_fold("Concesión de servicios")] == "22"
+    assert _CONTRACT_TYPE[_fold("Concesión de obras")] == "32"
+    assert _CONTRACT_TYPE[_fold("Gestión de servicios públicos")] == "21"
+
+    raw = b"""{
+      "totalItems": 1,
+      "items": [{
+        "id": 900099,
+        "code": "EXP/CONC",
+        "object": "Concesion fixture",
+        "contractingAuthority": {"name": "Org Fixture"},
+        "contractType": {"id": 22, "name": "Concesion de servicios"},
+        "contractProcedureStatus": {"name": "Publicacion"}
+      }]
+    }"""
+    records = list(parse_euskadi_artifact(raw, _artifact()))
+    assert len(records) == 1
+    assert records[0].payload["contract_type"] == "22"
+    canonical = stages.normalize(records)[0].payload["canonical"]
+    assert canonical["contract_type"] == "concesion_servicios"
 
 
 def test_euskadi_parse_malformed_raises() -> None:

@@ -31,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Euskadi: `contractType` ampliado a CODICE completo (concesiones `22`/`31`/`32`, etc.); si `id` es código CODICE conocido, se usa antes que el nombre.
 - Catalunya: concesiones en `tipus_contracte` → CODICE `22`/`31`/`32`/`21` (antes se aplanaban a servicios/obras).
 - Catalunya / Euskadi: `procediment` / `contractProcedureType` → código CODICE de procedimiento (antes quedaba `procedure_type` null y solo la etiqueta).
 - `tenders.status`: mapa CODICE `ContractFolderStatus` (`ANUL` oficial + alias `ANU`; `DES`→`desierta`); desconocidos → `null`; migración remapea literales en `tenders` y `tender_events.event_status`.

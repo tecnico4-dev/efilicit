@@ -32,6 +32,7 @@ _STATUS = {
     "cancelada": "ANU",
 }
 
+# contractType.name (ES, plegado) → CODICE ContractCode 2.08.
 _CONTRACT_TYPE = {
     "suministros": "1",
     "suministro": "1",
@@ -39,7 +40,24 @@ _CONTRACT_TYPE = {
     "servicio": "2",
     "obras": "3",
     "obra": "3",
+    "concesion de servicios": "22",
+    "concesion servicios": "22",
+    "concesion de obras": "32",
+    "concesion obras": "32",
+    "concesion de obras publicas": "31",
+    "concesion obras publicas": "31",
+    "gestion de servicios publicos": "21",
+    "gestion servicios publicos": "21",
+    "colaboracion publico privada": "40",
+    "colaboracion publico-privada": "40",
+    "colaboracion entre el sector publico y sector privado": "40",
+    "administrativo especial": "7",
+    "privado": "8",
+    "patrimonial": "50",
 }
+
+# Si la API trae id CODICE en contractType.id, preferirlo al nombre.
+_CONTRACT_TYPE_IDS = frozenset(_CONTRACT_TYPE.values())
 
 # Etiquetas de contractProcedureType (ES, plegadas) → SyndicationTenderingProcessCode.
 _PROCEDURE_TYPE = {
@@ -110,6 +128,7 @@ def _map_row(row: dict[str, Any], artifact: RemoteArtifact) -> SourceRecord | No
     type_name = _nested_name(row.get("contractType"))
     procedure_name = _nested_name(row.get("contractProcedureType"))
     procedure_type = _PROCEDURE_TYPE.get(_fold(procedure_name or ""), None)
+    contract_type = _contract_type_code(row.get("contractType"), type_name)
 
     links = row.get("_links") if isinstance(row.get("_links"), dict) else {}
     self_link = links.get("self") if isinstance(links.get("self"), dict) else {}
@@ -125,7 +144,7 @@ def _map_row(row: dict[str, Any], artifact: RemoteArtifact) -> SourceRecord | No
         "status_label": status_name,
         "procedure_type": procedure_type,
         "procedure_label": procedure_name,
-        "contract_type": _CONTRACT_TYPE.get(_fold(type_name or ""), None),
+        "contract_type": contract_type,
         "contract_type_label": type_name,
         "estimated_value": estimated,
         "currency": "EUR",
@@ -148,6 +167,17 @@ def _map_row(row: dict[str, Any], artifact: RemoteArtifact) -> SourceRecord | No
         },
     }
     return SourceRecord(source_record_id=record_id, payload=payload)
+
+
+def _contract_type_code(raw: Any, type_name: str | None) -> str | None:
+    """Prefiere ``contractType.id`` si es un código CODICE conocido; si no, el nombre."""
+    if isinstance(raw, dict) and raw.get("id") is not None:
+        code = str(raw["id"]).strip()
+        if code in _CONTRACT_TYPE_IDS:
+            return code
+    if type_name:
+        return _CONTRACT_TYPE.get(_fold(type_name), None)
+    return None
 
 
 def _nested_name(value: Any) -> str | None:

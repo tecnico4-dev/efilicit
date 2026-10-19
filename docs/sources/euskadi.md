@@ -90,7 +90,7 @@ El parser emite el mismo shape pre-canónico que PLACSP/Catalunya para reutiliza
 | `title` | `object` (fallback `code` / `id`) |
 | `status` | `contractProcedureStatus.name` → `PUB` / `ADJ` / … |
 | `procedure_type` | `contractProcedureType.name` (etiqueta ES) → códigos CODICE `1`…`13` / `100` / `999` |
-| `contract_type` | `contractType.name` → `1`/`2`/`3` |
+| `contract_type` | `contractType.id` (si es CODICE) o `name` → `1`/`2`/`3`, concesiones `22`/`31`/`32`, etc. |
 | `estimated_value` | `budgetWithoutVAT` |
 | `nuts_codes` | `contractingAuthority.codNUTS` |
 | `publication_url` | `_links.self.href` |
