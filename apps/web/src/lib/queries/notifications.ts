@@ -1,6 +1,10 @@
 /**
  * Avisos in-app: cambios de estado en licitaciones favoritas.
  * Fuente: tender_events (lectura pública) ∩ favorites (RLS owner-only).
+ *
+ * Elegibilidad / no leído: `tender_events.created_at` (cuándo lo vimos en BD),
+ * no `occurred_at` (fecha de negocio en origen). Así un cambio oficial anterior
+ * al favorito pero ingerido después sí notifica.
  */
 import type { Database } from "@efilicit/types";
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -11,7 +15,10 @@ export type FavoriteStatusNotification = {
   title: string;
   previousStatus: string | null;
   newStatus: string;
+  /** Fecha de negocio en origen (para mostrar). */
   occurredAt: string;
+  /** Cuándo se insertó el evento en nuestra BD (elegibilidad / unread). */
+  detectedAt: string;
   sourceCode: string | null;
   unread: boolean;
 };
@@ -28,14 +35,16 @@ type EventRow = {
   event_type: string;
   event_status: string | null;
   occurred_at: string;
+  created_at: string;
   source_code: string | null;
 };
 
 const DEFAULT_LIMIT = 50;
 
 /**
- * Lista cambios de estado en favoritos (solo tras marcar como favorito).
- * `unread` usa `users.notifications_read_at` (null → todo no leído).
+ * Lista cambios de estado en favoritos detectados tras marcar como favorito
+ * (`event.created_at` > `favorite.created_at`).
+ * `unread` usa `users.notifications_read_at` vs `event.created_at`.
  */
 export async function listFavoriteStatusNotifications(
   client: SupabaseClient<Database>,
@@ -69,7 +78,9 @@ export async function listFavoriteStatusNotifications(
 
   const { data: events, error: evError } = await client
     .from("tender_events")
-    .select("id, tender_id, event_type, event_status, occurred_at, source_code")
+    .select(
+      "id, tender_id, event_type, event_status, occurred_at, created_at, source_code",
+    )
     .in("tender_id", tenderIds)
     .in("event_type", ["ingerida", "actualizada"])
     .not("event_status", "is", null)
@@ -85,7 +96,8 @@ export async function listFavoriteStatusNotifications(
     input.notificationsReadAt,
   );
 
-  changes.sort((a, b) => (a.occurredAt < b.occurredAt ? 1 : -1));
+  // Más reciente detectado primero (ingesta), no por fecha de origen.
+  changes.sort((a, b) => (a.detectedAt < b.detectedAt ? 1 : -1));
   return { data: changes.slice(0, limit), error: null };
 }
 
@@ -118,7 +130,10 @@ export async function markOwnNotificationsRead(
   return { error: null };
 }
 
-/** Filtra transiciones reales de estado tras el favorito (baseline previa incluida). */
+/**
+ * Filtra transiciones reales de estado detectadas tras el favorito.
+ * Recorre por `occurred_at` (secuencia de negocio); el corte es `created_at`.
+ */
 export function statusChangeNotifications(
   events: EventRow[],
   favCreated: Map<string, string>,
@@ -137,10 +152,19 @@ export function statusChangeNotifications(
     const since = favCreated.get(tenderId);
     if (!since) continue;
 
+    // Orden de negocio; desempate por cuándo lo vimos.
+    const ordered = [...list].sort((a, b) => {
+      if (a.occurred_at !== b.occurred_at) {
+        return a.occurred_at < b.occurred_at ? -1 : 1;
+      }
+      return a.created_at < b.created_at ? -1 : 1;
+    });
+
     let prevStatus: string | null = null;
-    for (const e of list) {
+    for (const e of ordered) {
       if (!e.event_status) continue;
-      if (e.occurred_at < since) {
+      // Aún no lo habíamos ingerido cuando se marcó el favorito → baseline.
+      if (e.created_at < since) {
         prevStatus = e.event_status;
         continue;
       }
@@ -156,10 +180,11 @@ export function statusChangeNotifications(
           previousStatus: prevStatus,
           newStatus: e.event_status,
           occurredAt: e.occurred_at,
+          detectedAt: e.created_at,
           sourceCode: e.source_code,
           unread:
             notificationsReadAt == null ||
-            e.occurred_at > notificationsReadAt,
+            e.created_at > notificationsReadAt,
         });
       }
       prevStatus = e.event_status;
