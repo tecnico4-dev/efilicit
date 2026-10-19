@@ -1,5 +1,8 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import type { DigestFrequency } from "@/lib/queries";
+import {
+  hasUnreadFavoriteStatusNotifications,
+  type DigestFrequency,
+} from "@/lib/queries";
 import { UndoToastProvider } from "@/components/undo-toast";
 import { AppHeader } from "./app-header";
 
@@ -19,6 +22,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
   let displayName = "Usuario";
   let userId = "";
   let digestFrequency: DigestFrequency = "diaria";
+  let hasUnreadNotifications = false;
   try {
     const supabase = await createSupabaseServerClient();
     const {
@@ -28,7 +32,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
     if (user) {
       const { data: profile } = await supabase
         .from("users")
-        .select("id, display_name, digest_frequency")
+        .select("id, display_name, digest_frequency, notifications_read_at")
         .eq("auth_user_id", user.id)
         .maybeSingle();
       displayName = displayNameFrom(
@@ -39,6 +43,13 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
       userId = profile?.id ?? "";
       digestFrequency =
         profile?.digest_frequency === "semanal" ? "semanal" : "diaria";
+      if (profile?.id) {
+        const unread = await hasUnreadFavoriteStatusNotifications(supabase, {
+          userId: profile.id,
+          notificationsReadAt: profile.notifications_read_at,
+        });
+        hasUnreadNotifications = unread.data;
+      }
     }
   } catch {
     isAuthenticated = false;
@@ -47,7 +58,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="relative flex min-h-full flex-1 flex-col bg-background text-foreground">
       <div
-        className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_top,rgba(82,185,216,0.18),transparent_45%)]"
+        className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_top,rgb(82,185,216,0.18),transparent_45%)]"
         aria-hidden
       />
       <UndoToastProvider>
@@ -58,6 +69,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
               displayName={displayName}
               userId={userId}
               digestFrequency={digestFrequency}
+              hasUnreadNotifications={hasUnreadNotifications}
             />
           ) : null}
           <div className="flex flex-1 flex-col">{children}</div>

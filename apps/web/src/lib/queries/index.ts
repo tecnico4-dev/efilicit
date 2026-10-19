@@ -33,3 +33,9 @@ export {
   removeOwnFavorite,
   type FavoriteWithTender,
 } from "./favorites";
+export {
+  hasUnreadFavoriteStatusNotifications,
+  listFavoriteStatusNotifications,
+  markOwnNotificationsRead,
+  type FavoriteStatusNotification,
+} from "./notifications";

@@ -14,6 +14,7 @@ Los pasos globales (0–11) se mantienen. El estado se marca **aquí**, no con �
 | 3. Ficha de licitación | Hecho | `/tenders/[id]` + enlace desde `/search`; campos MVP canónicos |
 | 4. Multi-fuente en ficha | Hecho | Lista `tender_sources` en `/tenders/[id]` + badge canónica |
 | 5. Favoritos / seguimiento | Hecho | Tabla `favorites` + RLS; toggle en ficha (solo sesión); `/favorites`; `verify:rls:favorites` |
+| 5b. Notificaciones favoritos | Hecho | Buzón `/notifications`: cambios de estado (`tender_events` ∩ favoritos); puntito vía `users.notifications_read_at` |
 | 6. Alertas — gestión de producto | Hecho | `/alerts` crear/editar/activar; criteria v1; crear desde `/search` |
 | 7. Dashboard básico | Hecho | `/` autenticada: resumen alertas/favoritos/búsquedas + CTAs |
 | 8. Estados + responsive global | Pendiente | carga / vacío / error |

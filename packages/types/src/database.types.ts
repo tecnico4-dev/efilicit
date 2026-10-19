@@ -752,6 +752,7 @@ export type Database = {
           digest_frequency: string
           display_name: string | null
           id: string
+          notifications_read_at: string | null
           updated_at: string
         }
         Insert: {
@@ -760,6 +761,7 @@ export type Database = {
           digest_frequency?: string
           display_name?: string | null
           id?: string
+          notifications_read_at?: string | null
           updated_at?: string
         }
         Update: {
@@ -768,6 +770,7 @@ export type Database = {
           digest_frequency?: string
           display_name?: string | null
           id?: string
+          notifications_read_at?: string | null
           updated_at?: string
         }
         Relationships: []

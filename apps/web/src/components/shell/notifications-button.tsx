@@ -27,10 +27,10 @@ function MailboxIcon({ className }: { className?: string }) {
 
 /**
  * Acceso a Notificaciones (buzón).
- * `hasUnread` controla el puntito azul (placeholder visual por ahora).
+ * `hasUnread`: cambios de estado en favoritos aún no vistos en /notifications.
  */
 export function NotificationsButton({
-  hasUnread = true,
+  hasUnread = false,
 }: {
   hasUnread?: boolean;
 }) {

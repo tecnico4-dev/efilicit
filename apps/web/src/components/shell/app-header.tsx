@@ -23,11 +23,13 @@ export function AppHeader({
   displayName,
   userId,
   digestFrequency,
+  hasUnreadNotifications = false,
 }: {
   isAuthenticated: boolean;
   displayName: string;
   userId: string;
   digestFrequency: DigestFrequency;
+  hasUnreadNotifications?: boolean;
 }) {
   const pathname = usePathname() || "/";
 
@@ -63,7 +65,7 @@ export function AppHeader({
         </nav>
 
         <div className="flex items-center gap-2">
-          <NotificationsButton hasUnread />
+          <NotificationsButton hasUnread={hasUnreadNotifications} />
           {userId ? (
             <AccountMenu
               displayName={displayName}

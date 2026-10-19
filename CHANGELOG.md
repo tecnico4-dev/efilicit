@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Notificaciones in-app: cambios de estado en licitaciones favoritas (`tender_events` ∩ `favorites`); buzón `/notifications` y puntito de no leídas (`users.notifications_read_at`).
 - Login: fondo animado a pantalla completa (hojas/carpetas/`.zip` que caen y se amontonan; cielo en gradiente marca; reacción suave al ratón); card con entrada suave, sombra/glow y tagline; toggle sol/luna discreto.
 - Login como entrada: `/` sin sesión y cierre de sesión van a `/login` (sin landing intermedia; eliminado `HomeLanding`); [ADR 016](docs/adr/016-auth-invite-only-sin-registro-publico.md) actualizado.
 - Geografía de lugar de ejecución: catálogos `geo_ccaa` / `geo_municipio`, columnas `tenders.place_nuts_code` / `place_ccaa_code` / `place_municipality_code`; NUTS→CCAA en normalize ([ADR 018](docs/adr/018-geografia-lugar-ejecucion-ccaa-municipio.md)).
