@@ -110,7 +110,7 @@ def normalize_record(record: SourceRecord) -> SourceRecord:
         "contract_type_code": raw.get("contract_type"),
         "estimated_value": _parse_amount(raw.get("estimated_value")),
         "currency": (raw.get("currency") or "EUR").strip().upper() or "EUR",
-        "cpv_code": _primary_code(raw.get("cpv_codes")),
+        "cpv_code": _primary_cpv(raw.get("cpv_codes")),
         "publication_date": _publication_date(raw.get("updated_at"), record),
         "deadline_at": _parse_deadline(raw.get("deadline_at")),
         "nuts_code": _primary_code(raw.get("nuts_codes")),
@@ -226,6 +226,17 @@ def _primary_code(values: Any) -> str | None:
         return None
     text = str(first).strip()
     return text or None
+
+
+def _primary_cpv(values: Any) -> str | None:
+    """CPV principal: solo dígitos (2–8). Descarta basura con puntos/espacios/letras."""
+    text = _primary_code(values)
+    if not text:
+        return None
+    digits = re.sub(r"\D", "", text)
+    if len(digits) < 2 or len(digits) > 8:
+        return None
+    return digits
 
 
 def _normalize_tax_id(value: Any) -> str | None:

@@ -83,6 +83,29 @@ def test_normalize_name_strips_accents_and_case() -> None:
     assert normalize_name("  Ayuntamiento de Málaga  ") == "ayuntamiento de malaga"
 
 
+def test_normalize_cpv_strips_punctuation_and_rejects_junk() -> None:
+    good = SourceRecord(
+        source_record_id="cpv-ok",
+        payload={
+            "title": "Test",
+            "authority": {"name": "Org"},
+            "cpv_codes": ["3019.2700"],
+            "nuts_codes": [],
+        },
+    )
+    bad = SourceRecord(
+        source_record_id="cpv-bad",
+        payload={
+            "title": "Test",
+            "authority": {"name": "Org"},
+            "cpv_codes": ["N/A"],
+            "nuts_codes": [],
+        },
+    )
+    assert stages.normalize([good])[0].payload["canonical"]["cpv_code"] == "30192700"
+    assert stages.normalize([bad])[0].payload["canonical"]["cpv_code"] is None
+
+
 def test_normalize_procedure_code_9_is_abierto_simplificado() -> None:
     record = SourceRecord(
         source_record_id="proc-9",
