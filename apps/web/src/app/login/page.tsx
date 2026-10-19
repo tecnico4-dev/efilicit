@@ -35,7 +35,7 @@ export default async function LoginPage({
             "dark:border-border/50 dark:shadow-[0_0_48px_-10px_rgba(82,185,216,0.35),0_24px_48px_-20px_rgba(0,0,0,0.65)]",
           ].join(" ")}
         >
-          <p className="text-center text-lg font-bold tracking-tight text-foreground">
+          <p className="text-center text-3xl font-bold tracking-tight text-foreground">
             Efi<span className="text-primary-dark">Licit</span>
           </p>
           <p className="mt-1.5 text-center text-xs text-muted-foreground">

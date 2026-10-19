@@ -176,6 +176,7 @@ export function PreviewSection({
   totalCount,
   moreHref,
   children,
+  className,
 }: {
   title: string;
   emptyMessage: ReactNode;
@@ -183,11 +184,12 @@ export function PreviewSection({
   totalCount: number;
   moreHref: string;
   children: ReactNode;
+  className?: string;
 }) {
   const showMore = totalCount > FAVORITES_PREVIEW_LIMIT;
 
   return (
-    <section className="mt-16 first:mt-10">
+    <section className={className ?? "mt-16 first:mt-10"}>
       <h2 className="text-xl font-semibold tracking-tight text-foreground">
         {title}
       </h2>

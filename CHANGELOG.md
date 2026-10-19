@@ -32,6 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Home autenticada: panel de vista rápida (saludo, métricas clicables, plazos de favoritos, últimos cambios de estado) con animaciones CSS; sin hero de marca ni listas plegables.
 - CPV canónico: 8 dígitos con ceros a la derecha + control opcional `-X` (`316400`→`31640000`, `31640000-4` se conserva); migración alinea filas existentes.
 - Auditoría remota de vocabulario/CPV/NUTS: sin literales CODICE huérfanos; migración de higiene defensiva.
 - Euskadi: `contractType` ampliado a CODICE completo (concesiones `22`/`31`/`32`, etc.); si `id` es código CODICE conocido, se usa antes que el nombre.

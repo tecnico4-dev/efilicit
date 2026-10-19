@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import {
   getOwnProfile,
+  listFavoriteStatusNotifications,
   listOwnAlerts,
   listOwnFavorites,
   listOwnSavedSearches,
@@ -34,18 +35,31 @@ export default async function Home() {
   const digestFrequency =
     profile.data.digest_frequency === "semanal" ? "semanal" : "diaria";
 
-  const [alertsResult, favoritesResult, searchesResult] = await Promise.all([
-    listOwnAlerts(supabase),
-    listOwnFavorites(supabase),
-    listOwnSavedSearches(supabase),
-  ]);
+  const [alertsResult, favoritesResult, searchesResult, notificationsResult] =
+    await Promise.all([
+      listOwnAlerts(supabase),
+      listOwnFavorites(supabase),
+      listOwnSavedSearches(supabase),
+      listFavoriteStatusNotifications(supabase, {
+        userId: profile.data.id,
+        notificationsReadAt: profile.data.notifications_read_at,
+        limit: 50,
+      }),
+    ]);
+
+  const notifications = notificationsResult.data;
+  const unreadCount = notifications.filter((n) => n.unread).length;
+  const recentNotifications = notifications.slice(0, 3);
 
   return (
     <HomeDashboard
+      displayName={profile.data.display_name?.trim() || ""}
       alerts={alertsResult.data}
       favorites={favoritesResult.data}
       searches={searchesResult.data}
       digestFrequency={digestFrequency}
+      unreadCount={unreadCount}
+      recentNotifications={recentNotifications}
     />
   );
 }

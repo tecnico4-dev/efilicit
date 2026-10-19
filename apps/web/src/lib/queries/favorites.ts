@@ -16,6 +16,7 @@ export type FavoriteWithTender = FavoriteRow & {
     currency: string;
     cpv_code: string | null;
     publication_date: string | null;
+    deadline_at: string | null;
   } | null;
 };
 
@@ -74,7 +75,8 @@ export async function listOwnFavorites(
         estimated_value,
         currency,
         cpv_code,
-        publication_date
+        publication_date,
+        deadline_at
       )
     `,
     )

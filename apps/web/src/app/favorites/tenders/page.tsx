@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { PAGE_TITLE_RULE } from "@/components/shell/page-width";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getOwnProfile, listOwnFavorites } from "@/lib/queries";
 import { EmptyFavoritesTendersHint } from "../empty-hints";
@@ -63,22 +64,22 @@ export default async function FavoriteTendersPage({
         Licitaciones favoritas
       </h1>
 
-      {error ? (
-        <p className="mt-6 text-sm text-destructive" role="alert">
-          {error.message}
-        </p>
-      ) : favorites.length === 0 ? (
-        <p className="mt-6 text-sm text-muted-foreground">
-          <EmptyFavoritesTendersHint />
-        </p>
-      ) : (
-        <div className="mt-8">
+      <div className={PAGE_TITLE_RULE}>
+        {error ? (
+          <p className="text-sm text-destructive" role="alert">
+            {error.message}
+          </p>
+        ) : favorites.length === 0 ? (
+          <p className="text-sm text-muted-foreground">
+            <EmptyFavoritesTendersHint />
+          </p>
+        ) : (
           <PaginatedFavoriteTenders
             favorites={favorites}
             from="favorites-tenders"
           />
-        </div>
-      )}
+        )}
+      </div>
     </main>
   );
 }

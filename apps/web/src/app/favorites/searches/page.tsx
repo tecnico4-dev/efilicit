@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { PAGE_TITLE_RULE } from "@/components/shell/page-width";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import {
   getOwnProfile,
@@ -70,24 +71,24 @@ export default async function SavedSearchesPage({
         Búsquedas guardadas
       </h1>
 
-      {error ? (
-        <p className="mt-6 text-sm text-destructive" role="alert">
-          {error.message}
-        </p>
-      ) : searches.length === 0 ? (
-        <p className="mt-6 text-sm text-muted-foreground">
-          <EmptySavedSearchesHint />
-        </p>
-      ) : (
-        <div className="mt-8">
+      <div className={PAGE_TITLE_RULE}>
+        {error ? (
+          <p className="text-sm text-destructive" role="alert">
+            {error.message}
+          </p>
+        ) : searches.length === 0 ? (
+          <p className="text-sm text-muted-foreground">
+            <EmptySavedSearchesHint />
+          </p>
+        ) : (
           <PaginatedSavedSearches
             searches={searches}
             userId={profile.data.id}
             digestFrequency={digestFrequency}
             searchFrom="favorites-searches"
           />
-        </div>
-      )}
+        )}
+      </div>
     </main>
   );
 }

@@ -8,3 +8,6 @@ export const PAGE_MAIN_CLASS =
 
 export const PAGE_MAIN_NARROW_CLASS =
   "mx-auto max-w-6xl px-6 py-10";
+
+/** Separador bajo el H1 de página (mismo patrón que Alertas / AlertsPanel). */
+export const PAGE_TITLE_RULE = "mt-8 border-t border-border pt-8";

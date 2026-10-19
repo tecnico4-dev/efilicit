@@ -10,6 +10,7 @@ import {
   EmptyFavoritesTendersHint,
   EmptySavedSearchesHint,
 } from "./empty-hints";
+import { PAGE_TITLE_RULE } from "@/components/shell/page-width";
 import {
   FAVORITES_PREVIEW_LIMIT,
   FavoriteTenderList,
@@ -58,32 +59,35 @@ export default async function FavoritesPage() {
         Favoritos
       </h1>
 
-      <PreviewSection
-        title="Licitaciones favoritas"
-        emptyMessage={<EmptyFavoritesTendersHint />}
-        error={favoritesResult.error?.message ?? null}
-        totalCount={favorites.length}
-        moreHref="/favorites/tenders"
-      >
-        <FavoriteTenderList
-          favorites={favorites.slice(0, FAVORITES_PREVIEW_LIMIT)}
-        />
-      </PreviewSection>
+      <div className={PAGE_TITLE_RULE}>
+        <PreviewSection
+          title="Licitaciones favoritas"
+          emptyMessage={<EmptyFavoritesTendersHint />}
+          error={favoritesResult.error?.message ?? null}
+          totalCount={favorites.length}
+          moreHref="/favorites/tenders"
+          className="mt-0"
+        >
+          <FavoriteTenderList
+            favorites={favorites.slice(0, FAVORITES_PREVIEW_LIMIT)}
+          />
+        </PreviewSection>
 
-      <PreviewSection
-        title="Búsquedas guardadas"
-        emptyMessage={<EmptySavedSearchesHint />}
-        error={searchesResult.error?.message ?? null}
-        totalCount={searches.length}
-        moreHref="/favorites/searches"
-      >
-        <SavedSearchList
-          searches={searches.slice(0, FAVORITES_PREVIEW_LIMIT)}
-          userId={profile.data.id}
-          digestFrequency={digestFrequency}
-          searchFrom="favorites"
-        />
-      </PreviewSection>
+        <PreviewSection
+          title="Búsquedas guardadas"
+          emptyMessage={<EmptySavedSearchesHint />}
+          error={searchesResult.error?.message ?? null}
+          totalCount={searches.length}
+          moreHref="/favorites/searches"
+        >
+          <SavedSearchList
+            searches={searches.slice(0, FAVORITES_PREVIEW_LIMIT)}
+            userId={profile.data.id}
+            digestFrequency={digestFrequency}
+            searchFrom="favorites"
+          />
+        </PreviewSection>
+      </div>
     </main>
   );
 }

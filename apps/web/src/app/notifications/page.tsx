@@ -1,7 +1,10 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { PAGE_MAIN_CLASS } from "@/components/shell/page-width";
+import {
+  PAGE_MAIN_CLASS,
+  PAGE_TITLE_RULE,
+} from "@/components/shell/page-width";
 import {
   listFavoriteStatusNotifications,
   markOwnNotificationsRead,
@@ -57,50 +60,47 @@ export default async function NotificationsPage() {
       <h1 className="text-2xl font-semibold tracking-tight text-foreground">
         Notificaciones
       </h1>
-      <p className="mt-2 text-sm text-muted-foreground">
-        Cambios de estado en tus licitaciones favoritas.
-      </p>
 
-      {error ? (
-        <p className="mt-6 rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
-          No se pudieron cargar las notificaciones: {error.message}
-        </p>
-      ) : notifications.length === 0 ? (
-        <p className="mt-8 rounded-lg border border-dashed border-border bg-surface/50 px-4 py-8 text-center text-sm text-muted-foreground">
-          Todavía no hay cambios de estado en tus favoritos. Cuando una
-          licitación seguida pase de, por ejemplo, adjudicada a resuelta,
-          aparecerá aquí.
-        </p>
-      ) : (
-        <ul className="mt-8 divide-y divide-border rounded-lg border border-border bg-surface/40">
-          {notifications.map((n) => (
-            <li key={n.eventId}>
-              <Link
-                href={`/tenders/${n.tenderId}`}
-                className="block px-4 py-3 transition-colors hover:bg-muted/60"
-              >
-                <p className="text-sm font-medium text-foreground">
-                  {n.title}
-                </p>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Estado:{" "}
-                  <span className="text-foreground">
-                    {formatTenderStatus(n.previousStatus)}
-                  </span>
-                  {" → "}
-                  <span className="font-medium text-foreground">
-                    {formatTenderStatus(n.newStatus)}
-                  </span>
-                </p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  {formatWhen(n.occurredAt)}
-                  {n.sourceCode ? ` · ${n.sourceCode}` : null}
-                </p>
-              </Link>
-            </li>
-          ))}
-        </ul>
-      )}
+      <div className={PAGE_TITLE_RULE}>
+        {error ? (
+          <p className="rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+            No se pudieron cargar las notificaciones: {error.message}
+          </p>
+        ) : notifications.length === 0 ? (
+          <p className="rounded-lg border border-dashed border-border bg-surface/50 px-4 py-8 text-center text-sm text-muted-foreground">
+            Aún no tienes notificaciones.
+          </p>
+        ) : (
+          <ul className="divide-y divide-border rounded-lg border border-border bg-surface/40">
+            {notifications.map((n) => (
+              <li key={n.eventId}>
+                <Link
+                  href={`/tenders/${n.tenderId}`}
+                  className="block px-4 py-3 transition-colors hover:bg-muted/60"
+                >
+                  <p className="text-sm font-medium text-foreground">
+                    {n.title}
+                  </p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Estado:{" "}
+                    <span className="text-foreground">
+                      {formatTenderStatus(n.previousStatus)}
+                    </span>
+                    {" → "}
+                    <span className="font-medium text-foreground">
+                      {formatTenderStatus(n.newStatus)}
+                    </span>
+                  </p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {formatWhen(n.occurredAt)}
+                    {n.sourceCode ? ` · ${n.sourceCode}` : null}
+                  </p>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
     </main>
   );
 }

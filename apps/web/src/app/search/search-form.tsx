@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { PAGE_TITLE_RULE } from "@/components/shell/page-width";
 import { ClearSearchFieldsButton } from "./clear-search-fields";
 import {
   SearchFeedbackProvider,
@@ -57,7 +58,7 @@ function SearchFormInner({
     <form
       id={SEARCH_FORM_ID}
       method="get"
-      className="mt-8 space-y-4"
+      className={`space-y-4 ${PAGE_TITLE_RULE}`}
       role="search"
       onSubmit={(e) => {
         if (!hasAnyCriterion(e.currentTarget)) {

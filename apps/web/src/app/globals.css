@@ -117,8 +117,56 @@ body {
   animation: login-card-in 280ms ease-out both;
 }
 
+@keyframes home-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.home-dashboard {
+  background:
+    radial-gradient(
+      120% 80% at 50% -10%,
+      color-mix(in srgb, var(--primary-light) 55%, transparent),
+      transparent 55%
+    ),
+    var(--background);
+}
+
+.home-anim {
+  animation: home-fade-up 420ms ease-out both;
+}
+
+.home-anim-delay-1 {
+  animation-delay: 50ms;
+}
+.home-anim-delay-2 {
+  animation-delay: 100ms;
+}
+.home-anim-delay-3 {
+  animation-delay: 150ms;
+}
+.home-anim-delay-4 {
+  animation-delay: 200ms;
+}
+.home-anim-delay-5 {
+  animation-delay: 260ms;
+}
+.home-anim-delay-6 {
+  animation-delay: 320ms;
+}
+.home-anim-delay-7 {
+  animation-delay: 380ms;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .login-card {
+  .login-card,
+  .home-anim {
     animation: none;
   }
 }
