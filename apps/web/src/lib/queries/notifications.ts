@@ -1,10 +1,9 @@
 /**
  * Avisos in-app: cambios de estado en licitaciones favoritas.
- * Fuente: tender_events (lectura pública) ∩ favorites (RLS owner-only).
+ * Fuente: tender_events ∩ favorites; lectura por aviso en notification_reads.
  *
- * Elegibilidad / no leído: `tender_events.created_at` (cuándo lo vimos en BD),
- * no `occurred_at` (fecha de negocio en origen). Así un cambio oficial anterior
- * al favorito pero ingerido después sí notifica.
+ * Elegibilidad: `tender_events.created_at` > `favorites.created_at`.
+ * No leído: no hay fila en `notification_reads` para ese event_id.
  */
 import type { Database } from "@efilicit/types";
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -17,7 +16,7 @@ export type FavoriteStatusNotification = {
   newStatus: string;
   /** Fecha de negocio en origen (para mostrar). */
   occurredAt: string;
-  /** Cuándo se insertó el evento en nuestra BD (elegibilidad / unread). */
+  /** Cuándo se insertó el evento en nuestra BD. */
   detectedAt: string;
   sourceCode: string | null;
   unread: boolean;
@@ -42,15 +41,12 @@ type EventRow = {
 const DEFAULT_LIMIT = 50;
 
 /**
- * Lista cambios de estado en favoritos detectados tras marcar como favorito
- * (`event.created_at` > `favorite.created_at`).
- * `unread` usa `users.notifications_read_at` vs `event.created_at`.
+ * Lista cambios de estado en favoritos detectados tras marcar como favorito.
  */
 export async function listFavoriteStatusNotifications(
   client: SupabaseClient<Database>,
   input: {
     userId: string;
-    notificationsReadAt: string | null;
     limit?: number;
   },
 ): Promise<{ data: FavoriteStatusNotification[]; error: Error | null }> {
@@ -93,38 +89,68 @@ export async function listFavoriteStatusNotifications(
     (events as EventRow[] | null) ?? [],
     favCreated,
     titles,
-    input.notificationsReadAt,
   );
 
-  // Más reciente detectado primero (ingesta), no por fecha de origen.
+  const eventIds = changes.map((c) => c.eventId);
+  const readIds = await listReadEventIds(client, {
+    userId: input.userId,
+    eventIds,
+  });
+  if (readIds.error) return { data: [], error: readIds.error };
+
+  for (const c of changes) {
+    c.unread = !readIds.data.has(c.eventId);
+  }
+
   changes.sort((a, b) => (a.detectedAt < b.detectedAt ? 1 : -1));
   return { data: changes.slice(0, limit), error: null };
 }
 
-/** ¿Hay algún cambio de estado en favoritos más reciente que notifications_read_at? */
+async function listReadEventIds(
+  client: SupabaseClient<Database>,
+  input: { userId: string; eventIds: string[] },
+): Promise<{ data: Set<string>; error: Error | null }> {
+  if (input.eventIds.length === 0) return { data: new Set(), error: null };
+
+  const { data, error } = await client
+    .from("notification_reads")
+    .select("event_id")
+    .eq("user_id", input.userId)
+    .in("event_id", input.eventIds);
+
+  if (error) return { data: new Set(), error: new Error(error.message) };
+  return {
+    data: new Set((data ?? []).map((r) => r.event_id)),
+    error: null,
+  };
+}
+
+/** ¿Hay algún aviso de favoritos aún sin leer? */
 export async function hasUnreadFavoriteStatusNotifications(
   client: SupabaseClient<Database>,
-  input: { userId: string; notificationsReadAt: string | null },
+  input: { userId: string },
 ): Promise<{ data: boolean; error: Error | null }> {
   const { data, error } = await listFavoriteStatusNotifications(client, {
-    ...input,
-    limit: 1,
+    userId: input.userId,
+    limit: 50,
   });
   if (error) return { data: false, error };
   return { data: data.some((n) => n.unread), error: null };
 }
 
-export async function markOwnNotificationsRead(
+/** Marca un aviso concreto como leído (al abrir la ficha desde el buzón). */
+export async function markOwnNotificationRead(
   client: SupabaseClient<Database>,
-  input: { userId: string },
+  input: { userId: string; eventId: string },
 ): Promise<{ error: Error | null }> {
-  const { error } = await client
-    .from("users")
-    .update({
-      notifications_read_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", input.userId);
+  const { error } = await client.from("notification_reads").upsert(
+    {
+      user_id: input.userId,
+      event_id: input.eventId,
+      read_at: new Date().toISOString(),
+    },
+    { onConflict: "user_id,event_id" },
+  );
 
   if (error) return { error: new Error(error.message) };
   return { error: null };
@@ -132,13 +158,12 @@ export async function markOwnNotificationsRead(
 
 /**
  * Filtra transiciones reales de estado detectadas tras el favorito.
- * Recorre por `occurred_at` (secuencia de negocio); el corte es `created_at`.
+ * `unread` se rellena después con notification_reads.
  */
 export function statusChangeNotifications(
   events: EventRow[],
   favCreated: Map<string, string>,
   titles: Map<string, string>,
-  notificationsReadAt: string | null,
 ): FavoriteStatusNotification[] {
   const byTender = new Map<string, EventRow[]>();
   for (const e of events) {
@@ -152,7 +177,6 @@ export function statusChangeNotifications(
     const since = favCreated.get(tenderId);
     if (!since) continue;
 
-    // Orden de negocio; desempate por cuándo lo vimos.
     const ordered = [...list].sort((a, b) => {
       if (a.occurred_at !== b.occurred_at) {
         return a.occurred_at < b.occurred_at ? -1 : 1;
@@ -163,7 +187,6 @@ export function statusChangeNotifications(
     let prevStatus: string | null = null;
     for (const e of ordered) {
       if (!e.event_status) continue;
-      // Aún no lo habíamos ingerido cuando se marcó el favorito → baseline.
       if (e.created_at < since) {
         prevStatus = e.event_status;
         continue;
@@ -182,9 +205,7 @@ export function statusChangeNotifications(
           occurredAt: e.occurred_at,
           detectedAt: e.created_at,
           sourceCode: e.source_code,
-          unread:
-            notificationsReadAt == null ||
-            e.created_at > notificationsReadAt,
+          unread: true,
         });
       }
       prevStatus = e.event_status;

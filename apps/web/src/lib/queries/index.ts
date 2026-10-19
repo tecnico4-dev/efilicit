@@ -36,6 +36,6 @@ export {
 export {
   hasUnreadFavoriteStatusNotifications,
   listFavoriteStatusNotifications,
-  markOwnNotificationsRead,
+  markOwnNotificationRead,
   type FavoriteStatusNotification,
 } from "./notifications";

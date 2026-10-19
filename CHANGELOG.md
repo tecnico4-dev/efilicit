@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Notificaciones in-app: lectura por aviso (`notification_reads`); pestañas Todas / No leídas estilo carpeta; puntito azul en cada aviso no leído y en el buzón del nav.
 - Notificaciones in-app: cambios de estado en licitaciones favoritas (`tender_events` ∩ `favorites`); buzón `/notifications` y puntito de no leídas (`users.notifications_read_at`).
 - Login: fondo animado a pantalla completa (hojas/carpetas/`.zip` que caen y se amontonan; cielo en gradiente marca; reacción suave al ratón); card con entrada suave, sombra/glow y tagline; toggle sol/luna discreto.
 - Login como entrada: `/` sin sesión y cierre de sesión van a `/login` (sin landing intermedia; eliminado `HomeLanding`); [ADR 016](docs/adr/016-auth-invite-only-sin-registro-publico.md) actualizado.
@@ -32,6 +33,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Notificaciones: no leído por aviso (`notification_reads`) al abrir la ficha; abrir el buzón ya no marca todas como leídas. Elegibilidad sigue con `tender_events.created_at`.
 - Notificaciones de favoritos: elegibilidad y no leído usan `tender_events.created_at` (cuándo lo vimos en BD), no `occurred_at` de origen; se sigue mostrando la fecha de negocio.
 - Home autenticada: panel de vista rápida (saludo, métricas clicables, plazos de favoritos, últimos cambios de estado) con animaciones CSS; sin hero de marca ni listas plegables.
 - CPV canónico: 8 dígitos con ceros a la derecha + control opcional `-X` (`316400`→`31640000`, `31640000-4` se conserva); migración alinea filas existentes.

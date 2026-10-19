@@ -42,7 +42,6 @@ export default async function Home() {
       listOwnSavedSearches(supabase),
       listFavoriteStatusNotifications(supabase, {
         userId: profile.data.id,
-        notificationsReadAt: profile.data.notifications_read_at,
         limit: 50,
       }),
     ]);

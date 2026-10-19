@@ -27,7 +27,7 @@ function MailboxIcon({ className }: { className?: string }) {
 
 /**
  * Acceso a Notificaciones (buzón).
- * `hasUnread`: cambios de estado en favoritos aún no vistos en /notifications.
+ * `hasUnread`: hay avisos de favoritos sin abrir (notification_reads).
  */
 export function NotificationsButton({
   hasUnread = false,

@@ -306,6 +306,39 @@ export type Database = {
           },
         ]
       }
+      notification_reads: {
+        Row: {
+          event_id: string
+          read_at: string
+          user_id: string
+        }
+        Insert: {
+          event_id: string
+          read_at?: string
+          user_id: string
+        }
+        Update: {
+          event_id?: string
+          read_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_reads_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "tender_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_reads_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       saved_searches: {
         Row: {
           created_at: string

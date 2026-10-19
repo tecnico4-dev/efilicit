@@ -32,7 +32,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
     if (user) {
       const { data: profile } = await supabase
         .from("users")
-        .select("id, display_name, digest_frequency, notifications_read_at")
+        .select("id, display_name, digest_frequency")
         .eq("auth_user_id", user.id)
         .maybeSingle();
       displayName = displayNameFrom(
@@ -46,7 +46,6 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
       if (profile?.id) {
         const unread = await hasUnreadFavoriteStatusNotifications(supabase, {
           userId: profile.id,
-          notificationsReadAt: profile.notifications_read_at,
         });
         hasUnreadNotifications = unread.data;
       }
