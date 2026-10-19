@@ -97,13 +97,13 @@
   </entry>
   <entry>
     <id>https://contrataciondelsectorpublico.gob.es/wps/fixture?idExpediente=NOTIF-TEST-003</id>
-    <title>NOTIF Gamma equipos informaticos (adjudicada)</title>
+    <title>NOTIF Gamma equipos informaticos (resuelta)</title>
     <updated>2026-10-19T13:00:03+02:00</updated>
     <link href="https://contrataciondelsectorpublico.gob.es/wps/fixture?idE=NOTIF-TEST-003" rel="alternate"/>
     <content type="application/xml">
       <cac-ext:ContractFolderStatus>
         <cbc:ContractFolderID>NOTIF/2026/003</cbc:ContractFolderID>
-        <cbc-place-ext:ContractFolderStatusCode listURI="https://contrataciondelestado.es/codice/cl/2.04/SyndicationContractFolderStatusCode-2.04.gc">ADJ</cbc-place-ext:ContractFolderStatusCode>
+        <cbc-place-ext:ContractFolderStatusCode listURI="https://contrataciondelestado.es/codice/cl/2.04/SyndicationContractFolderStatusCode-2.04.gc">RES</cbc-place-ext:ContractFolderStatusCode>
         <cac-ext:LocatedContractingParty>
           <cac:Party>
             <cac:PartyIdentification>
@@ -115,7 +115,7 @@
           </cac:Party>
         </cac-ext:LocatedContractingParty>
         <cac:ProcurementProject>
-          <cbc:Name>NOTIF Gamma equipos informaticos (adjudicada)</cbc:Name>
+          <cbc:Name>NOTIF Gamma equipos informaticos (resuelta)</cbc:Name>
           <cbc:TypeCode listURI="http://contrataciondelestado.es/codice/cl/2.08/ContractCode-2.08.gc">1</cbc:TypeCode>
           <cac:BudgetAmount>
             <cbc:TotalAmount currencyID="EUR">33000.00</cbc:TotalAmount>

@@ -7,9 +7,10 @@ OUT = Path(__file__).parent
 
 # id, title_base, amounts, cpv, type_code, deadline, status per version
 TENDERS = [
+    # v1 → v2 → v3 (misma licitación puede cambiar más de una vez: p. ej. Gamma).
     ("001", "NOTIF Alfa suministro oficina", "11000.00", "9090.91", "30192000", "1", "2026-11-15", ["PUB", "PUB", "PUB"]),
     ("002", "NOTIF Beta servicios limpieza", "22000.00", "18181.82", "90910000", "2", "2026-11-20", ["PRE", "PRE", "ADJ"]),
-    ("003", "NOTIF Gamma equipos informaticos", "33000.00", "27272.73", "30200000", "1", "2026-11-25", ["EV", "ADJ", "ADJ"]),
+    ("003", "NOTIF Gamma equipos informaticos", "33000.00", "27272.73", "30200000", "1", "2026-11-25", ["EV", "ADJ", "RES"]),
     ("004", "NOTIF Delta obras mantenimiento", "44000.00", "36363.64", "45210000", "3", "2026-11-30", ["ADJ", "RES", "RES"]),
     ("005", "NOTIF Epsilon consultoria", "55000.00", "45454.55", "79400000", "2", "2026-12-05", ["RES", "RES", "RES"]),
 ]
