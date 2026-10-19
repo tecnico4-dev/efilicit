@@ -32,11 +32,20 @@ _STATUS_MAP = {
     "EV": "evaluacion",
 }
 
+# CODICE ContractCode (lista oficial ContractCode-2.08).
+# Desconocido → «otro» (no dejar el número crudo en producto).
 _CONTRACT_TYPE_MAP = {
     "1": "suministros",
     "2": "servicios",
     "3": "obras",
-    "8": "otro",
+    "7": "administrativo_especial",
+    "8": "privado",
+    "21": "gestion_servicios_publicos",
+    "22": "concesion_servicios",
+    "31": "concesion_obras_publicas",
+    "32": "concesion_obras",
+    "40": "colaboracion_publico_privada",
+    "50": "patrimonial",
 }
 
 # CODICE SyndicationTenderingProcessCode (subset MVP).
@@ -76,7 +85,11 @@ def normalize_record(record: SourceRecord) -> SourceRecord:
         "status_code": raw.get("status"),
         "procedure_type": _map_code(raw.get("procedure_type"), _PROCEDURE_MAP),
         "procedure_code": raw.get("procedure_type"),
-        "contract_type": _map_code(raw.get("contract_type"), _CONTRACT_TYPE_MAP),
+        "contract_type": _map_code(
+            raw.get("contract_type"),
+            _CONTRACT_TYPE_MAP,
+            unknown="otro",
+        ),
         "contract_type_code": raw.get("contract_type"),
         "estimated_value": _parse_amount(raw.get("estimated_value")),
         "currency": (raw.get("currency") or "EUR").strip().upper() or "EUR",
@@ -157,14 +170,22 @@ def normalize_name(value: str) -> str:
     return collapsed
 
 
-def _map_code(value: Any, mapping: dict[str, str]) -> str | None:
+def _map_code(
+    value: Any,
+    mapping: dict[str, str],
+    *,
+    unknown: str | None = None,
+) -> str | None:
     if value is None:
         return None
     code = str(value).strip()
     if not code:
         return None
-    # Código desconocido: conservar el literal (mejor que perder la señal).
-    return mapping.get(code, code)
+    if code in mapping:
+        return mapping[code]
+    # Por defecto conservar el literal; con ``unknown`` (p. ej. contract_type)
+    # no dejamos códigos CODICE huérfanos como número en producto.
+    return unknown if unknown is not None else code
 
 
 def _parse_amount(value: Any) -> Decimal | None:
