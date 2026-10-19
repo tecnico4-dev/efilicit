@@ -89,6 +89,7 @@ El parser emite el mismo shape pre-canónico que PLACSP/Catalunya para reutiliza
 |---|---|
 | `title` | `object` (fallback `code` / `id`) |
 | `status` | `contractProcedureStatus.name` → `PUB` / `ADJ` / … |
+| `procedure_type` | `contractProcedureType.name` (etiqueta ES) → códigos CODICE `1`…`13` / `100` / `999` |
 | `contract_type` | `contractType.name` → `1`/`2`/`3` |
 | `estimated_value` | `budgetWithoutVAT` |
 | `nuts_codes` | `contractingAuthority.codNUTS` |
@@ -98,7 +99,7 @@ El parser emite el mismo shape pre-canónico que PLACSP/Catalunya para reutiliza
 | `authority.tax_id` | `contractingAuthority.identificationNumber` |
 | `authority.platform_id` | `contractingAuthority.id` |
 
-Estados/tipos no mapeados → `status` / `contract_type` nulos (el resto puede persistirse).
+Estados/tipos/procedimientos no mapeados → `status` / `contract_type` / `procedure_type` nulos (el resto puede persistirse).
 
 ---
 

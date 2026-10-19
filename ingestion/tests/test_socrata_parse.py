@@ -34,6 +34,8 @@ def test_catalunya_parse_maps_rows_and_skips_without_id() -> None:
     assert records[0].payload["title"].startswith("Suministro")
     assert records[0].payload["status"] == "PUB"
     assert records[0].payload["contract_type"] == "1"
+    assert records[0].payload["procedure_type"] == "1"
+    assert records[0].payload["procedure_label"] == "Obert"
     assert records[0].payload["estimated_value"] == "12500.50"
     assert records[0].payload["cpv_codes"] == ["30192700"]
     assert records[0].payload["municipality_ine_code"] == "0807710007"
@@ -59,6 +61,7 @@ def test_catalunya_connector_parse_normalize_identity() -> None:
     assert first["title"].startswith("Suministro")
     assert first["status"] == "publicada"
     assert first["contract_type"] == "suministros"
+    assert first["procedure_type"] == "abierto"
     assert first["estimated_value"] == Decimal("12500.50")
     assert first["cpv_code"] == "30192700"
     assert first["nuts_code"] == "ES511"

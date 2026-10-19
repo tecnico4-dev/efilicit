@@ -81,6 +81,8 @@ def test_euskadi_parse_maps_and_skips_without_id() -> None:
     assert records[0].source_record_id == "900001"
     assert records[0].payload["status"] == "PUB"
     assert records[0].payload["contract_type"] == "1"
+    assert records[0].payload["procedure_type"] == "1"
+    assert records[0].payload["procedure_label"] == "Abierto"
     assert records[0].payload["authority"]["tax_id"] == "S4833001C"
     assert records[1].source_record_id == "900002"
     assert records[1].payload["status"] == "ADJ"
@@ -100,6 +102,7 @@ def test_euskadi_parse_normalize_identity() -> None:
     assert first["title"].startswith("Suministro")
     assert first["status"] == "publicada"
     assert first["contract_type"] == "suministros"
+    assert first["procedure_type"] == "abierto"
     assert first["estimated_value"] == Decimal("12500.5")
     assert first["authority"]["tax_id"] == "S4833001C"
     assert first["authority"]["identity_confidence"] == "HIGH"

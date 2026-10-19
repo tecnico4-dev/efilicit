@@ -42,6 +42,47 @@ _CONTRACT_TYPE = {
     "concessio de serveis": "2",
 }
 
+# Etiquetas de procediment (CA/ES, plegadas) → SyndicationTenderingProcessCode.
+_PROCEDURE_TYPE = {
+    "obert": "1",
+    "abierto": "1",
+    "restringit": "2",
+    "restringido": "2",
+    "negociat sense publicitat": "3",
+    "negociado sin publicidad": "3",
+    "negociat amb publicitat": "4",
+    "negociado con publicidad": "4",
+    "negociat": "3",
+    "negociado": "3",
+    "dialeg competitiu": "5",
+    "dialogo competitivo": "5",
+    "contracte menor": "6",
+    "contrato menor": "6",
+    "menor": "6",
+    "derivat dacord marc": "7",
+    "derivat d acord marc": "7",
+    "derivado de acuerdo marco": "7",
+    "acord marc": "7",
+    "acuerdo marco": "7",
+    "concurs de projectes": "8",
+    "concurso de proyectos": "8",
+    "obert simplificat": "9",
+    "abierto simplificado": "9",
+    "associacio per a la innovacio": "10",
+    "asociacion para la innovacion": "10",
+    "derivat dassociacio per a la innovacio": "11",
+    "derivado de asociacion para la innovacion": "11",
+    "sistema dinamic dadquisicio": "12",
+    "sistema dinamico de adquisicion": "12",
+    "licitacio amb negociacio": "13",
+    "licitacion con negociacion": "13",
+    "normes internes": "100",
+    "normas internas": "100",
+    "altres": "999",
+    "otros": "999",
+    "autre": "999",
+}
+
 
 def parse_socrata_artifact(raw: bytes, artifact: RemoteArtifact) -> Iterable[SourceRecord]:
     """Parsea una página SODA (array JSON) en registros de fuente.
@@ -96,6 +137,8 @@ def _map_catalunya_row(
     # codi_ine10: entidad INE 10 dígitos; municipio = 5 primeros (provincia 01–52).
     municipality_ine = _text(row.get("codi_ine10"))
     contract_type = _CONTRACT_TYPE.get(_fold(_text(row.get("tipus_contracte")) or ""), None)
+    procedure_label = _text(row.get("procediment"))
+    procedure_type = _PROCEDURE_TYPE.get(_fold(procedure_label or ""), None)
 
     pub_url = _link_url(row.get("enllac_publicacio"))
     updated_at = (
@@ -113,8 +156,8 @@ def _map_catalunya_row(
         "project_name": description,
         "status": status,
         "fase_publicacio": phase,
-        "procedure_type": None,
-        "procedure_label": _text(row.get("procediment")),
+        "procedure_type": procedure_type,
+        "procedure_label": procedure_label,
         "contract_type": contract_type,
         "contract_type_label": _text(row.get("tipus_contracte")),
         "estimated_value": estimated,

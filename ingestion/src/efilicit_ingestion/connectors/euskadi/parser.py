@@ -41,6 +41,29 @@ _CONTRACT_TYPE = {
     "obra": "3",
 }
 
+# Etiquetas de contractProcedureType (ES, plegadas) → SyndicationTenderingProcessCode.
+_PROCEDURE_TYPE = {
+    "abierto": "1",
+    "restringido": "2",
+    "negociado sin publicidad": "3",
+    "negociado con publicidad": "4",
+    "negociado": "3",
+    "dialogo competitivo": "5",
+    "contrato menor": "6",
+    "menor": "6",
+    "derivado de acuerdo marco": "7",
+    "acuerdo marco": "7",
+    "concurso de proyectos": "8",
+    "abierto simplificado": "9",
+    "asociacion para la innovacion": "10",
+    "derivado de asociacion para la innovacion": "11",
+    "sistema dinamico de adquisicion": "12",
+    "licitacion con negociacion": "13",
+    "normas internas": "100",
+    "otros": "999",
+    "otro": "999",
+}
+
 
 def parse_euskadi_artifact(raw: bytes, artifact: RemoteArtifact) -> Iterable[SourceRecord]:
     """Parsea una página KontratazioA (``{items:[...]}``) en registros de fuente.
@@ -86,6 +109,7 @@ def _map_row(row: dict[str, Any], artifact: RemoteArtifact) -> SourceRecord | No
     status_name = _nested_name(row.get("contractProcedureStatus"))
     type_name = _nested_name(row.get("contractType"))
     procedure_name = _nested_name(row.get("contractProcedureType"))
+    procedure_type = _PROCEDURE_TYPE.get(_fold(procedure_name or ""), None)
 
     links = row.get("_links") if isinstance(row.get("_links"), dict) else {}
     self_link = links.get("self") if isinstance(links.get("self"), dict) else {}
@@ -99,7 +123,7 @@ def _map_row(row: dict[str, Any], artifact: RemoteArtifact) -> SourceRecord | No
         "project_name": title,
         "status": _STATUS.get(_fold(status_name or ""), None),
         "status_label": status_name,
-        "procedure_type": None,
+        "procedure_type": procedure_type,
         "procedure_label": procedure_name,
         "contract_type": _CONTRACT_TYPE.get(_fold(type_name or ""), None),
         "contract_type_label": type_name,
@@ -142,8 +166,8 @@ def _text(value: Any) -> str | None:
 
 
 def _fold(value: str) -> str:
-    """Quita acentos para matchear claves de mapas de estado/tipo."""
-    lowered = value.lower()
+    """Quita acentos / puntuación ligera para matchear claves de mapas."""
+    lowered = value.lower().replace("·", "").replace("'", "")
     return lowered.translate(
         str.maketrans(
             {
