@@ -8,7 +8,11 @@ from pathlib import Path
 import pytest
 
 from efilicit_ingestion.connectors.socrata import SocrataConnector, SocrataParseError
-from efilicit_ingestion.connectors.socrata.parser import parse_socrata_artifact
+from efilicit_ingestion.connectors.socrata.parser import (
+    _CONTRACT_TYPE,
+    _fold,
+    parse_socrata_artifact,
+)
 from efilicit_ingestion.models import RemoteArtifact
 from efilicit_ingestion.pipeline import stages
 
@@ -43,6 +47,26 @@ def test_catalunya_parse_maps_rows_and_skips_without_id() -> None:
     assert records[1].source_record_id == "aaaaaaaa-bbbb-cccc-dddd-000000000002"
     assert records[1].payload["status"] == "ADJ"
     assert records[1].payload["contract_type"] == "2"
+
+
+def test_catalunya_concession_labels_map_to_codice_not_obres_serveis() -> None:
+    """Concesiones no deben aplanarse a obras(3)/servicios(2)."""
+    assert _CONTRACT_TYPE[_fold("Concessió d'obres")] == "32"
+    assert _CONTRACT_TYPE[_fold("Concessió de serveis")] == "22"
+    assert _CONTRACT_TYPE[_fold("Concessió d'obres públiques")] == "31"
+    assert _CONTRACT_TYPE[_fold("Gestió de serveis públics")] == "21"
+
+    raw = (
+        b'[{"id_intern":"cccccccc-dddd-eeee-ffff-000000000099",'
+        b'"nom_organ":"Ajuntament Fixture",'
+        b'"tipus_contracte":"Concessi\\u00f3 de serveis",'
+        b'"denominacio":"Concessio fixture"}]'
+    )
+    records = list(parse_socrata_artifact(raw, _artifact()))
+    assert len(records) == 1
+    assert records[0].payload["contract_type"] == "22"
+    canonical = stages.normalize(records)[0].payload["canonical"]
+    assert canonical["contract_type"] == "concesion_servicios"
 
 
 def test_catalunya_parse_malformed_raises() -> None:

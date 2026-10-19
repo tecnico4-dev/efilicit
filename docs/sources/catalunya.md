@@ -90,7 +90,7 @@ El parser emite el mismo shape pre-canónico que PLACSP para reutilizar `stages.
 | `title` | `denominacio` / `objecte_contracte` |
 | `status` | `fase_publicacio` → códigos tipo `PUB` / `ADJ` / … |
 | `procedure_type` | `procediment` (etiqueta CA/ES) → códigos CODICE `1`…`13` / `100` / `999` |
-| `contract_type` | `tipus_contracte` → `1`/`2`/`3` |
+| `contract_type` | `tipus_contracte` → CODICE (`1`/`2`/`3`, concesiones `22`/`31`/`32`, etc.) |
 | `estimated_value` | `valor_estimat_contracte` / `pressupost_licitacio_sense` |
 | `cpv_codes` | `codi_cpv` |
 | `nuts_codes` | `codi_nuts` |

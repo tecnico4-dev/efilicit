@@ -30,7 +30,8 @@ _PHASE_STATUS = {
     "anulacio": "ANU",
 }
 
-# Etiquetas de tipus_contracte → códigos numéricos alineados con CODICE.
+# Etiquetas de tipus_contracte → códigos CODICE ContractCode 2.08.
+# Tras _fold, "concessió d'obres" → "concessio dobres" (apóstrofo eliminado).
 _CONTRACT_TYPE = {
     "obres": "3",
     "obras": "3",
@@ -38,8 +39,26 @@ _CONTRACT_TYPE = {
     "servicios": "2",
     "subministraments": "1",
     "suministros": "1",
-    "concessio dobres": "3",
-    "concessio de serveis": "2",
+    # Concesiones / gestión (antes mal aplanadas a 2/3).
+    "concessio de serveis": "22",
+    "concesion de servicios": "22",
+    "concessio dobres": "32",
+    "concesion de obras": "32",
+    "concessio dobres publiques": "31",
+    "concesion de obras publicas": "31",
+    "gestio de serveis publics": "21",
+    "gestion de servicios publicos": "21",
+    "collaboracio public privada": "40",
+    "collaboracio public-privada": "40",
+    "colaboracion publico privada": "40",
+    "colaboracion publico-privada": "40",
+    "colaboracion entre el sector publico y sector privado": "40",
+
+    "administratiu especial": "7",
+    "administrativo especial": "7",
+    "privat": "8",
+    "privado": "8",
+    "patrimonial": "50",
 }
 
 # Etiquetas de procediment (CA/ES, plegadas) → SyndicationTenderingProcessCode.
