@@ -31,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- `tenders.status`: mapa CODICE `ContractFolderStatus` (`ANUL` oficial + alias `ANU`; `DES`→`desierta`); desconocidos → `null`; migración remapea literales en `tenders` y `tender_events.event_status`.
 - `tenders.procedure_type`: mapa CODICE `SyndicationTenderingProcessCode` 2.07 completo (corrige 4/5/6; añade 7–8, 10–13, 100, 999); desconocidos → `otro`; migración remapea slugs/números; etiquetas UI.
 - `tenders.contract_type`: mapa CODICE `ContractCode` completo (7, 8=`privado`, 21, 22, 31, 32, 40, 50); desconocidos → `otro`; migración remapea literales numéricos ya guardados; etiquetas UI.
 - `procedure_type` CODICE `9` → `abierto_simplificado` (normalize + migración de filas literales `"9"`; etiqueta UI).

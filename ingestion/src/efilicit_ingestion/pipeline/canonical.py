@@ -21,16 +21,21 @@ from efilicit_ingestion.pipeline.geography import (
     place_from_canonical_raw,
 )
 
-# Códigos CODICE / sindicación → vocabulario canónico ES (producto).
+# CODICE SyndicationContractFolderStatusCode 2.04 (+ DES producto / ANU alias conectores).
+# Desconocido → None (no dejar el código crudo en producto).
 _STATUS_MAP = {
     "PUB": "publicada",
     "PRE": "preparada",
     "ADJ": "adjudicada",
     "RES": "resuelta",
-    "ANU": "anulada",
-    "DES": "desierta",
+    "ANUL": "anulada",
+    "ANU": "anulada",  # alias interno Catalunya/Euskadi
+    "DES": "desierta",  # extensión producto (resultado); no está en la lista 2.04 de expediente
     "EV": "evaluacion",
 }
+
+# Sentinel: conservar literal si el código no está en el mapa.
+_PRESERVE_UNKNOWN = object()
 
 # CODICE ContractCode (lista oficial ContractCode-2.08).
 # Desconocido → «otro» (no dejar el número crudo en producto).
@@ -89,7 +94,7 @@ def normalize_record(record: SourceRecord) -> SourceRecord:
     canonical: dict[str, Any] = {
         "title": title,
         "description": raw.get("project_name"),
-        "status": _map_code(raw.get("status"), _STATUS_MAP),
+        "status": _map_code(raw.get("status"), _STATUS_MAP, unknown=None),
         "status_code": raw.get("status"),
         "procedure_type": _map_code(
             raw.get("procedure_type"),
@@ -186,18 +191,21 @@ def _map_code(
     value: Any,
     mapping: dict[str, str],
     *,
-    unknown: str | None = None,
+    unknown: Any = _PRESERVE_UNKNOWN,
 ) -> str | None:
     if value is None:
         return None
     code = str(value).strip()
     if not code:
         return None
-    if code in mapping:
-        return mapping[code]
-    # Por defecto conservar el literal; con ``unknown`` (p. ej. contract_type)
-    # no dejamos códigos CODICE huérfanos como número en producto.
-    return unknown if unknown is not None else code
+    # CODICE status es mayúsculas; contratos/procedimientos son dígitos (upper no cambia).
+    mapped = mapping.get(code) or mapping.get(code.upper())
+    if mapped is not None:
+        return mapped
+    # Por defecto conservar el literal; ``unknown=None`` / ``"otro"`` evita códigos crudos.
+    if unknown is _PRESERVE_UNKNOWN:
+        return code
+    return unknown  # type: ignore[no-any-return]
 
 
 def _parse_amount(value: Any) -> Decimal | None:
