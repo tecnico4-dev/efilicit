@@ -242,7 +242,7 @@ Definición de cobertura del MVP del proyecto: ver `docs/04-roadmap-mvp.md` y [c
 ### Campos canónicos prioritarios a mapear (MVP)
 
 - título / objeto;
-- estado;
+- estado (`cbc-place-ext:ContractFolderStatusCode`; fallback `cbc:` / local-name / `Estado:` en `atom:title`);
 - fechas (publicación, plazo oferta cuando exista);
 - importes + moneda;
 - CPV principal;

@@ -15,6 +15,7 @@ se conserva solo la entry con ``atom:updated`` más reciente.
 
 from __future__ import annotations
 
+import re
 import zipfile
 from datetime import datetime, timezone
 from io import BytesIO
@@ -31,13 +32,24 @@ CAC_NS = "urn:dgpe:names:draft:codice:schema:xsd:CommonAggregateComponents-2"
 CAC_EXT_NS = (
     "urn:dgpe:names:draft:codice-place-ext:schema:xsd:CommonAggregateComponents-2"
 )
+# Estado del expediente: cbc-place-ext:ContractFolderStatusCode (XSD PLACE-EXT 1.4).
+CBC_PLACE_EXT_NS = (
+    "urn:dgpe:names:draft:codice-place-ext:schema:xsd:CommonBasicComponents-2"
+)
 
 NS = {
     "atom": ATOM_NS,
     "cbc": CBC_NS,
     "cac": CAC_NS,
     "cac_ext": CAC_EXT_NS,
+    "cbc_place_ext": CBC_PLACE_EXT_NS,
 }
+
+# Resumen Atom: «…; Estado: PUB» cuando el bloque CODICE no trae el código.
+_TITLE_STATUS_RE = re.compile(
+    r"Estado:\s*(PUB|PRE|EV|ADJ|RES|ANUL)\b",
+    re.IGNORECASE,
+)
 
 
 class PlacspParseError(Exception):
@@ -205,9 +217,12 @@ def _entry_to_source_record(
     }
 
     if status_node is not None:
-        payload["status"] = _text(status_node.find("cbc:ContractFolderStatusCode", NS))
+        payload["status"] = _extract_folder_status_code(status_node, title=title)
         payload["authority"] = _extract_authority(status_node)
         payload.update(_extract_project_fields(status_node))
+    elif title:
+        # Sin bloque CODICE: último recurso el resumen Atom («Estado: PUB»).
+        payload["status"] = _status_from_atom_title(title)
 
     recorded_at = _parse_atom_datetime(updated)
     return SourceRecord(
@@ -215,6 +230,33 @@ def _entry_to_source_record(
         payload=payload,
         recorded_at=recorded_at,
     )
+
+
+def _extract_folder_status_code(
+    status_node: etree._Element,
+    *,
+    title: str | None,
+) -> str | None:
+    """Lee ContractFolderStatusCode (place-ext real; cbc en fixtures; local-name)."""
+    node = status_node.find("cbc_place_ext:ContractFolderStatusCode", NS)
+    if node is None:
+        node = status_node.find("cbc:ContractFolderStatusCode", NS)
+    if node is None:
+        # Prefijo/URI distintos entre paquetes: local-name (ignora comentarios XML).
+        for child in status_node.xpath("./*[local-name()='ContractFolderStatusCode']"):
+            node = child
+            break
+    code = _text(node)
+    if code:
+        return code.upper()
+    return _status_from_atom_title(title)
+
+
+def _status_from_atom_title(title: str | None) -> str | None:
+    if not title:
+        return None
+    match = _TITLE_STATUS_RE.search(title)
+    return match.group(1).upper() if match else None
 
 
 def _stable_source_record_id(
