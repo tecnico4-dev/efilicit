@@ -30,6 +30,11 @@ function buildCriteria(form: HTMLFormElement): {
   const maxRaw = readField(form, "max");
   const ccaa = readField(form, "ccaa");
   const municipality = readField(form, "municipality");
+  const status = readField(form, "status");
+  const procedure = readField(form, "procedure");
+  const contractType = readField(form, "contract_type");
+  const pubFrom = readField(form, "pub_from");
+  const pubTo = readField(form, "pub_to");
   const min = minRaw === "" ? undefined : Number(minRaw);
   const max = maxRaw === "" ? undefined : Number(maxRaw);
 
@@ -46,7 +51,12 @@ function buildCriteria(form: HTMLFormElement): {
     (min != null && !Number.isNaN(min)) ||
     (max != null && !Number.isNaN(max)) ||
     ccaa !== "" ||
-    municipality !== "";
+    municipality !== "" ||
+    status !== "" ||
+    procedure !== "" ||
+    contractType !== "" ||
+    pubFrom !== "" ||
+    pubTo !== "";
 
   if (!hasSomething) return null;
 
@@ -56,6 +66,11 @@ function buildCriteria(form: HTMLFormElement): {
     cpv_codes: cpv ? [cpv] : undefined,
     estimated_value_min: min != null && !Number.isNaN(min) ? min : undefined,
     estimated_value_max: max != null && !Number.isNaN(max) ? max : undefined,
+    statuses: status ? [status] : undefined,
+    procedure_types: procedure ? [procedure] : undefined,
+    contract_types: contractType ? [contractType] : undefined,
+    publication_date_from: pubFrom || undefined,
+    publication_date_to: pubTo || undefined,
     geography:
       ccaa || municipality
         ? {
@@ -71,6 +86,9 @@ function buildCriteria(form: HTMLFormElement): {
     q ||
     (municipality ? `Municipio ${municipality}` : null) ||
     (ccaa ? ccaaName : null) ||
+    (status ? `Estado ${status}` : null) ||
+    (procedure ? `Procedimiento ${procedure}` : null) ||
+    (contractType ? `Tipo ${contractType}` : null) ||
     (cpv ? `CPV ${cpv}` : null) ||
     "Búsqueda guardada";
 
@@ -116,6 +134,16 @@ export function SaveSearchButton({ userId }: { userId: string }) {
     ) {
       setFeedback({
         text: "Importe solicitado inválido.",
+        isError: true,
+      });
+      return;
+    }
+
+    const pubFrom = built.criteria.publication_date_from;
+    const pubTo = built.criteria.publication_date_to;
+    if (pubFrom && pubTo && pubFrom > pubTo) {
+      setFeedback({
+        text: "Rango de fechas de publicación inválido.",
         isError: true,
       });
       return;

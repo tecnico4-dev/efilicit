@@ -865,6 +865,13 @@ export type Database = {
           name: string
         }[]
       }
+      list_tender_filter_options: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          kind: string
+          value: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never

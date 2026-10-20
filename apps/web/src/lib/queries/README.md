@@ -6,6 +6,7 @@ Los Server Components / Actions importan helpers tipados; la UI no arma SQL.
 ## Búsqueda (Semana 5 / Paso 3 / ADR 011)
 
 - `searchTenders(client, { query, criteria, limit, offset })` → RPC `public.search_tenders`
+- `listSearchFilterOptions(client)` → RPC `list_tender_filter_options` (status / procedimiento / tipo / CCAA con datos)
 - FTS (`search_vector`, config `spanish`) + fallback `pg_trgm` en `title`
   (`similarity` / `%` y `strict_word_similarity` / `<<%` para erratas por palabra)
 - Filtros alineados con Criteria v1 (`@efilicit/types`)

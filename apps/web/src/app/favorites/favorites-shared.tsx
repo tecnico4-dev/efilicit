@@ -44,6 +44,19 @@ export function searchHrefFromCriteria(
   if (criteria.estimated_value_max != null) {
     params.set("max", String(criteria.estimated_value_max));
   }
+  if (criteria.statuses?.[0]) params.set("status", criteria.statuses[0]);
+  if (criteria.procedure_types?.[0]) {
+    params.set("procedure", criteria.procedure_types[0]);
+  }
+  if (criteria.contract_types?.[0]) {
+    params.set("contract_type", criteria.contract_types[0]);
+  }
+  if (criteria.publication_date_from) {
+    params.set("pub_from", criteria.publication_date_from);
+  }
+  if (criteria.publication_date_to) {
+    params.set("pub_to", criteria.publication_date_to);
+  }
   const ccaa = criteria.geography?.ccaa_codes?.[0];
   if (ccaa) params.set("ccaa", ccaa);
   const municipality = criteria.geography?.municipality_codes?.[0];

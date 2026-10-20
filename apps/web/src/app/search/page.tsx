@@ -5,7 +5,9 @@ import {
   getOwnProfile,
   listOwnFavoriteTenderIds,
   listPlaceMunicipalities,
+  listSearchFilterOptions,
   searchTenders,
+  type SearchFilterOption,
   type SearchTenderRow,
 } from "@/lib/queries";
 import { SEARCH_CCAA_OPTIONS } from "@/lib/geo-ccaa";
@@ -62,17 +64,21 @@ function MatchKindBadge({ kind }: { kind: string }) {
   );
 }
 
-function tenderHrefFromSearch(
-  tenderId: string,
-  filters: {
-    q: string;
-    cpv: string;
-    minRaw: string;
-    maxRaw: string;
-    ccaa: string;
-    municipality: string;
-  },
-): string {
+type SearchFilters = {
+  q: string;
+  cpv: string;
+  minRaw: string;
+  maxRaw: string;
+  ccaa: string;
+  municipality: string;
+  status: string;
+  procedure: string;
+  contractType: string;
+  pubFrom: string;
+  pubTo: string;
+};
+
+function tenderHrefFromSearch(tenderId: string, filters: SearchFilters): string {
   const params = new URLSearchParams({ from: "search" });
   if (filters.q) params.set("q", filters.q);
   if (filters.cpv) params.set("cpv", filters.cpv);
@@ -80,7 +86,19 @@ function tenderHrefFromSearch(
   if (filters.maxRaw) params.set("max", filters.maxRaw);
   if (filters.ccaa) params.set("ccaa", filters.ccaa);
   if (filters.municipality) params.set("municipality", filters.municipality);
+  if (filters.status) params.set("status", filters.status);
+  if (filters.procedure) params.set("procedure", filters.procedure);
+  if (filters.contractType) params.set("contract_type", filters.contractType);
+  if (filters.pubFrom) params.set("pub_from", filters.pubFrom);
+  if (filters.pubTo) params.set("pub_to", filters.pubTo);
   return `/tenders/${tenderId}?${params.toString()}`;
+}
+
+function optionAllowed(
+  value: string,
+  options: SearchFilterOption[],
+): string {
+  return options.some((o) => o.value === value) ? value : "";
 }
 
 function ResultsList({
@@ -94,14 +112,7 @@ function ResultsList({
   rows: SearchTenderRow[];
   error: string | null;
   searched: boolean;
-  filters: {
-    q: string;
-    cpv: string;
-    minRaw: string;
-    maxRaw: string;
-    ccaa: string;
-    municipality: string;
-  };
+  filters: SearchFilters;
   profileUserId: string | null;
   favoritedIds: Set<string>;
 }) {
@@ -183,13 +194,47 @@ export default async function SearchPage({
   const maxRaw = first(params.max).trim();
   const ccaa = first(params.ccaa).trim();
   const municipalityRaw = first(params.municipality).trim();
+  const statusRaw = first(params.status).trim();
+  const procedureRaw = first(params.procedure).trim();
+  const contractTypeRaw = first(params.contract_type).trim();
+  const pubFromRaw = first(params.pub_from).trim();
+  const pubToRaw = first(params.pub_to).trim();
   const from = first(params.from).trim();
   const back = backFromSavedSearch(from);
   const min = minRaw === "" ? undefined : Number(minRaw);
   const max = maxRaw === "" ? undefined : Number(maxRaw);
-  const ccaaValid = SEARCH_CCAA_OPTIONS.some((o) => o.code === ccaa)
-    ? ccaa
-    : "";
+
+  let filterOptions = {
+    statuses: [] as SearchFilterOption[],
+    procedureTypes: [] as SearchFilterOption[],
+    contractTypes: [] as SearchFilterOption[],
+    ccaaCodesWithTenders: new Set<string>(),
+  };
+
+  try {
+    const client = await createSupabaseServerClient();
+    const listed = await listSearchFilterOptions(client);
+    if (!listed.error) filterOptions = listed.data;
+  } catch {
+    /* desplegables vacíos salvo CCAA fijas */
+  }
+
+  const ccaaInCatalog = SEARCH_CCAA_OPTIONS.some((o) => o.code === ccaa);
+  const ccaaHasData = filterOptions.ccaaCodesWithTenders.has(ccaa);
+  const ccaaValid =
+    ccaaInCatalog && ccaaHasData ? ccaa : "";
+
+  const statusValid = optionAllowed(statusRaw, filterOptions.statuses);
+  const procedureValid = optionAllowed(
+    procedureRaw,
+    filterOptions.procedureTypes,
+  );
+  const contractTypeValid = optionAllowed(
+    contractTypeRaw,
+    filterOptions.contractTypes,
+  );
+  const pubFromValid = /^\d{4}-\d{2}-\d{2}$/.test(pubFromRaw) ? pubFromRaw : "";
+  const pubToValid = /^\d{4}-\d{2}-\d{2}$/.test(pubToRaw) ? pubToRaw : "";
 
   let municipalityValid = "";
   let municipalityName = "";
@@ -213,15 +258,25 @@ export default async function SearchPage({
     (min != null && !Number.isNaN(min)) ||
     (max != null && !Number.isNaN(max)) ||
     ccaaValid !== "" ||
-    municipalityValid !== "";
+    municipalityValid !== "" ||
+    statusValid !== "" ||
+    procedureValid !== "" ||
+    contractTypeValid !== "" ||
+    pubFromValid !== "" ||
+    pubToValid !== "";
 
-  const filters = {
+  const filters: SearchFilters = {
     q,
     cpv,
     minRaw,
     maxRaw,
     ccaa: ccaaValid,
     municipality: municipalityValid,
+    status: statusValid,
+    procedure: procedureValid,
+    contractType: contractTypeValid,
+    pubFrom: pubFromValid,
+    pubTo: pubToValid,
   };
 
   let rows: SearchTenderRow[] = [];
@@ -249,6 +304,11 @@ export default async function SearchPage({
             min != null && !Number.isNaN(min) ? min : undefined,
           estimated_value_max:
             max != null && !Number.isNaN(max) ? max : undefined,
+          statuses: statusValid ? [statusValid] : undefined,
+          procedure_types: procedureValid ? [procedureValid] : undefined,
+          contract_types: contractTypeValid ? [contractTypeValid] : undefined,
+          publication_date_from: pubFromValid || undefined,
+          publication_date_to: pubToValid || undefined,
           geography:
             ccaaValid || municipalityValid
               ? {
@@ -298,7 +358,7 @@ export default async function SearchPage({
       </h1>
 
       <SearchForm
-        formKey={`${q}|${cpv}|${minRaw}|${maxRaw}|${ccaaValid}|${municipalityValid}|${from}`}
+        formKey={`${q}|${cpv}|${minRaw}|${maxRaw}|${ccaaValid}|${municipalityValid}|${statusValid}|${procedureValid}|${contractTypeValid}|${pubFromValid}|${pubToValid}|${from}`}
         actions={
           <>
             <button
@@ -339,12 +399,25 @@ export default async function SearchPage({
               defaultValue={ccaaValid}
               className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
             >
-              <option value="">Cualquiera</option>
-              {SEARCH_CCAA_OPTIONS.map((opt) => (
-                <option key={opt.code} value={opt.code}>
-                  {opt.name}
-                </option>
-              ))}
+              <option value="">Todas</option>
+              {SEARCH_CCAA_OPTIONS.map((opt) => {
+                const hasTenders =
+                  filterOptions.ccaaCodesWithTenders.has(opt.code);
+                return (
+                  <option
+                    key={opt.code}
+                    value={opt.code}
+                    disabled={!hasTenders}
+                    className={
+                      hasTenders
+                        ? undefined
+                        : "text-muted-foreground/50"
+                    }
+                  >
+                    {opt.name}
+                  </option>
+                );
+              })}
             </select>
           </div>
           <MunicipalityFilter
@@ -352,6 +425,71 @@ export default async function SearchPage({
             initialMunicipalityCode={municipalityValid}
             initialMunicipalityName={municipalityName}
           />
+        </div>
+        <div className="grid gap-4 sm:grid-cols-3">
+          <div>
+            <label
+              htmlFor="status"
+              className="block text-sm font-medium text-foreground"
+            >
+              Estado
+            </label>
+            <select
+              id="status"
+              name="status"
+              defaultValue={statusValid}
+              className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
+            >
+              <option value="">Todos</option>
+              {filterOptions.statuses.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label
+              htmlFor="procedure"
+              className="block text-sm font-medium text-foreground"
+            >
+              Procedimiento
+            </label>
+            <select
+              id="procedure"
+              name="procedure"
+              defaultValue={procedureValid}
+              className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
+            >
+              <option value="">Todos</option>
+              {filterOptions.procedureTypes.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label
+              htmlFor="contract_type"
+              className="block text-sm font-medium text-foreground"
+            >
+              Tipo de contrato
+            </label>
+            <select
+              id="contract_type"
+              name="contract_type"
+              defaultValue={contractTypeValid}
+              className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
+            >
+              <option value="">Todos</option>
+              {filterOptions.contractTypes.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
         <div className="grid gap-4 sm:grid-cols-3">
           <div>
@@ -393,6 +531,38 @@ export default async function SearchPage({
               step={1}
               defaultValue={maxRaw}
               className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+            />
+          </div>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label
+              htmlFor="pub_from"
+              className="block text-sm font-medium text-foreground"
+            >
+              Publicación desde
+            </label>
+            <input
+              id="pub_from"
+              name="pub_from"
+              type="date"
+              defaultValue={pubFromValid}
+              className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
+            />
+          </div>
+          <div>
+            <label
+              htmlFor="pub_to"
+              className="block text-sm font-medium text-foreground"
+            >
+              Publicación hasta
+            </label>
+            <input
+              id="pub_to"
+              name="pub_to"
+              type="date"
+              defaultValue={pubToValid}
+              className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
             />
           </div>
         </div>

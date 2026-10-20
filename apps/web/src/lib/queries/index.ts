@@ -8,6 +8,11 @@ export {
   type PlaceMunicipalityOption,
 } from "./list-place-municipalities";
 export {
+  listSearchFilterOptions,
+  type SearchFilterOption,
+  type SearchFilterOptions,
+} from "./list-search-filter-options";
+export {
   getTenderById,
   type TenderDetail,
   type TenderSourceSummary,

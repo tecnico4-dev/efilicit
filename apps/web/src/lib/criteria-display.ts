@@ -1,5 +1,10 @@
 import type { SearchCriteria } from "@efilicit/types";
 import { SEARCH_CCAA_OPTIONS } from "@/lib/geo-ccaa";
+import {
+  formatContractType,
+  formatProcedureType,
+  formatTenderStatus,
+} from "@/lib/tender-labels";
 
 /** Interpreta jsonb de alertas / búsquedas como Criteria v1. */
 export function parseCriteria(raw: unknown): SearchCriteria {
@@ -47,6 +52,26 @@ export function formatCriteriaSummary(criteria: SearchCriteria): string {
     criteria.geography?.municipality_codes?.filter(Boolean) ?? [];
   if (munCodes.length) {
     parts.push(`Municipio ${munCodes.join(", ")}`);
+  }
+  if (criteria.statuses?.length) {
+    parts.push(
+      `Estado ${criteria.statuses.map(formatTenderStatus).join(", ")}`,
+    );
+  }
+  if (criteria.procedure_types?.length) {
+    parts.push(
+      `Procedimiento ${criteria.procedure_types.map(formatProcedureType).join(", ")}`,
+    );
+  }
+  if (criteria.contract_types?.length) {
+    parts.push(
+      `Tipo ${criteria.contract_types.map(formatContractType).join(", ")}`,
+    );
+  }
+  if (criteria.publication_date_from || criteria.publication_date_to) {
+    parts.push(
+      `Publicación ${criteria.publication_date_from ?? "—"}–${criteria.publication_date_to ?? "—"}`,
+    );
   }
 
   return parts.length ? parts.join(" · ") : "Sin criterios";
@@ -106,7 +131,10 @@ export function criteriaHasFilters(criteria: SearchCriteria): boolean {
       criteria.authority ||
       criteria.geography ||
       criteria.contract_types?.length ||
-      criteria.statuses?.length,
+      criteria.procedure_types?.length ||
+      criteria.statuses?.length ||
+      criteria.publication_date_from ||
+      criteria.publication_date_to,
   );
 }
 

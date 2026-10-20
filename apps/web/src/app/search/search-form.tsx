@@ -18,20 +18,28 @@ function readField(form: HTMLFormElement, name: string): string {
 }
 
 function hasAnyCriterion(form: HTMLFormElement): boolean {
-  const q = readField(form, "q");
-  const cpv = readField(form, "cpv");
-  const min = readField(form, "min");
-  const max = readField(form, "max");
-  const ccaa = readField(form, "ccaa");
-  const municipality = readField(form, "municipality");
-  return (
-    q !== "" ||
-    cpv !== "" ||
-    min !== "" ||
-    max !== "" ||
-    ccaa !== "" ||
-    municipality !== ""
-  );
+  const names = [
+    "q",
+    "cpv",
+    "min",
+    "max",
+    "ccaa",
+    "municipality",
+    "status",
+    "procedure",
+    "contract_type",
+    "pub_from",
+    "pub_to",
+  ] as const;
+  return names.some((name) => readField(form, name) !== "");
+}
+
+/** Fechas de publicación: ambas rellenadas y desde > hasta. */
+function hasInvalidPublicationRange(form: HTMLFormElement): boolean {
+  const from = readField(form, "pub_from");
+  const to = readField(form, "pub_to");
+  if (from === "" || to === "") return false;
+  return from > to;
 }
 
 /** Mínimo y máximo rellenados, y mínimo > máximo. */
@@ -73,6 +81,14 @@ function SearchFormInner({
           e.preventDefault();
           setFeedback({
             text: "Importe solicitado inválido.",
+            isError: true,
+          });
+          return;
+        }
+        if (hasInvalidPublicationRange(e.currentTarget)) {
+          e.preventDefault();
+          setFeedback({
+            text: "Rango de fechas de publicación inválido.",
             isError: true,
           });
           return;

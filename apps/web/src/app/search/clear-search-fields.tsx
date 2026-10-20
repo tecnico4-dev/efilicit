@@ -4,7 +4,19 @@ import { useEffect, useState } from "react";
 import { useSearchFeedback } from "./search-feedback";
 import { SEARCH_FORM_ID } from "./save-search-button";
 
-const FIELD_NAMES = ["q", "cpv", "min", "max", "ccaa", "municipality"] as const;
+const FIELD_NAMES = [
+  "q",
+  "cpv",
+  "min",
+  "max",
+  "ccaa",
+  "municipality",
+  "status",
+  "procedure",
+  "contract_type",
+  "pub_from",
+  "pub_to",
+] as const;
 
 function blankFormFields(form: HTMLFormElement) {
   for (const name of FIELD_NAMES) {
