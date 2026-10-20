@@ -1,10 +1,35 @@
 /**
- * Diccionario CPV 2008 (ES) + normalización a 8 dígitos (ceros a la derecha).
- * Fuente: vocabulario oficial DOUE; lookup para el buscador estilo PLACSP.
+ * Diccionario CPV 2008 (ES) estructurado + normalización a 8 dígitos.
+ *
+ * Fuente: TED/SIMAP `cpv_2008_ver_2013.xlsx` (columna ES).
+ * https://ted.europa.eu/documents/d/ted/cpv_2008_xls
  */
 import cpvEs from "@/lib/data/cpv-es.json";
 
-const CPV_LABELS = cpvEs as Record<string, string>;
+export type CpvNode = {
+  label: string;
+  check?: string;
+  parent: string | null;
+  children: string[];
+};
+
+type CpvDictionary = {
+  meta: {
+    vocabulary: string;
+    version: string;
+    language: string;
+    source: string;
+    source_url: string;
+    generated_at: string;
+    code_count: number;
+  };
+  codes: Record<string, CpvNode>;
+};
+
+const DICT = cpvEs as CpvDictionary;
+const CPV_CODES = DICT.codes;
+
+export const CPV_META = DICT.meta;
 
 /** Extrae dígitos y rellena a 8 con ceros a la derecha (ignora dígito de control). */
 export function normalizeCpvCode(raw: string): string | null {
@@ -34,9 +59,23 @@ export function cpvCodesForSearch(
   return out.length ? out : undefined;
 }
 
+export function getCpvNode(code8: string): CpvNode | null {
+  return CPV_CODES[code8] ?? null;
+}
+
 export function lookupCpvLabel(code8: string): string | null {
-  const label = CPV_LABELS[code8];
-  return label ?? null;
+  return CPV_CODES[code8]?.label ?? null;
+}
+
+/** Raíces del árbol (divisiones, sin padre). */
+export function listCpvRoots(): string[] {
+  return Object.keys(CPV_CODES)
+    .filter((code) => CPV_CODES[code].parent == null)
+    .sort();
+}
+
+export function listCpvChildren(code8: string): string[] {
+  return CPV_CODES[code8]?.children ?? [];
 }
 
 /** Formato PLACSP: `33600000-Productos farmacéuticos`. */
