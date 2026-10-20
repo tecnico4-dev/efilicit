@@ -7,6 +7,7 @@
  */
 import type { Database, SearchCriteria } from "@efilicit/types";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { cpvCodesForSearch } from "@/lib/cpv";
 
 export type SearchTenderRow = {
   id: string;
@@ -51,7 +52,7 @@ function buildRpcArgs(input: SearchTendersInput): SearchTendersArgs {
   return {
     p_query: input.query?.trim() || undefined,
     p_keywords: emptyToUndef(c.keywords),
-    p_cpv_codes: emptyToUndef(c.cpv_codes),
+    p_cpv_codes: emptyToUndef(cpvCodesForSearch(c.cpv_codes)),
     p_authority_tax_ids: emptyToUndef(c.authority?.tax_ids),
     p_authority_ids: emptyToUndef(c.authority?.ids),
     p_authority_name_contains: name || undefined,

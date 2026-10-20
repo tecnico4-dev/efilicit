@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useSearchFeedback } from "./search-feedback";
+import { CLEAR_SEARCH_EVENT, useSearchFeedback } from "./search-feedback";
 import { SEARCH_FORM_ID } from "./save-search-button";
 
 const FIELD_NAMES = [
   "q",
   "cpv",
+  "cpv_draft",
   "min",
   "max",
   "ccaa",
@@ -18,30 +19,49 @@ const FIELD_NAMES = [
   "pub_to",
 ] as const;
 
+function blankNamedFields(form: HTMLFormElement, name: string) {
+  const el = form.elements.namedItem(name);
+  if (el instanceof RadioNodeList) {
+    for (const node of el) {
+      if (node instanceof HTMLInputElement) node.value = "";
+    }
+    return;
+  }
+  if (el instanceof HTMLInputElement || el instanceof HTMLSelectElement) {
+    el.value = "";
+    if (el instanceof HTMLSelectElement) {
+      el.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+  }
+}
+
 function blankFormFields(form: HTMLFormElement) {
   for (const name of FIELD_NAMES) {
-    const el = form.elements.namedItem(name);
-    if (el instanceof HTMLInputElement || el instanceof HTMLSelectElement) {
-      el.value = "";
-      if (el instanceof HTMLSelectElement) {
-        el.dispatchEvent(new Event("change", { bubbles: true }));
-      }
-    }
+    blankNamedFields(form, name);
   }
   const munText = form.querySelector(
     "#municipality-text",
   ) as HTMLInputElement | null;
   if (munText) munText.value = "";
+  window.dispatchEvent(new Event(CLEAR_SEARCH_EVENT));
+}
+
+function fieldHasValue(form: HTMLFormElement, name: string): boolean {
+  const el = form.elements.namedItem(name);
+  if (el instanceof RadioNodeList) {
+    return [...el].some(
+      (node) =>
+        node instanceof HTMLInputElement && node.value.trim() !== "",
+    );
+  }
+  return (
+    (el instanceof HTMLInputElement || el instanceof HTMLSelectElement) &&
+    el.value.trim() !== ""
+  );
 }
 
 function formHasValues(form: HTMLFormElement): boolean {
-  return FIELD_NAMES.some((name) => {
-    const el = form.elements.namedItem(name);
-    return (
-      (el instanceof HTMLInputElement || el instanceof HTMLSelectElement) &&
-      el.value.trim() !== ""
-    );
-  });
+  return FIELD_NAMES.some((name) => fieldHasValue(form, name));
 }
 
 /**

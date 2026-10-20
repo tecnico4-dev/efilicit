@@ -11,6 +11,14 @@ import { SEARCH_FORM_ID } from "./save-search-button";
 
 function readField(form: HTMLFormElement, name: string): string {
   const el = form.elements.namedItem(name);
+  if (el instanceof RadioNodeList) {
+    for (const node of el) {
+      if (node instanceof HTMLInputElement && node.value.trim() !== "") {
+        return node.value.trim();
+      }
+    }
+    return "";
+  }
   if (el instanceof HTMLInputElement || el instanceof HTMLSelectElement) {
     return el.value.trim();
   }

@@ -35,8 +35,8 @@ export function searchHrefFromCriteria(
   if (criteria.keywords?.length) {
     params.set("q", criteria.keywords.join(" "));
   }
-  if (criteria.cpv_codes?.[0]) {
-    params.set("cpv", criteria.cpv_codes[0]);
+  if (criteria.cpv_codes?.length) {
+    for (const code of criteria.cpv_codes) params.append("cpv", code);
   }
   if (criteria.estimated_value_min != null) {
     params.set("min", String(criteria.estimated_value_min));

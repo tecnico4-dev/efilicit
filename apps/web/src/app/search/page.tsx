@@ -12,6 +12,8 @@ import {
 } from "@/lib/queries";
 import { SEARCH_CCAA_OPTIONS } from "@/lib/geo-ccaa";
 import { formatTenderStatus } from "@/lib/tender-labels";
+import { normalizeCpvCode } from "@/lib/cpv";
+import { CpvPicker } from "./cpv-picker";
 import { MunicipalityFilter } from "./municipality-filter";
 import { SaveSearchButton } from "./save-search-button";
 import { SearchForm } from "./search-form";
@@ -41,6 +43,19 @@ function first(value: string | string[] | undefined): string {
   return value ?? "";
 }
 
+function allParam(value: string | string[] | undefined): string[] {
+  if (value == null) return [];
+  const raw = Array.isArray(value) ? value : [value];
+  const out: string[] = [];
+  for (const item of raw) {
+    for (const part of item.split(",")) {
+      const code = normalizeCpvCode(part);
+      if (code && !out.includes(code)) out.push(code);
+    }
+  }
+  return out;
+}
+
 function formatMoney(value: number | null, currency: string): string {
   if (value == null) return "—";
   try {
@@ -66,7 +81,7 @@ function MatchKindBadge({ kind }: { kind: string }) {
 
 type SearchFilters = {
   q: string;
-  cpv: string;
+  cpvCodes: string[];
   minRaw: string;
   maxRaw: string;
   ccaa: string;
@@ -81,7 +96,7 @@ type SearchFilters = {
 function tenderHrefFromSearch(tenderId: string, filters: SearchFilters): string {
   const params = new URLSearchParams({ from: "search" });
   if (filters.q) params.set("q", filters.q);
-  if (filters.cpv) params.set("cpv", filters.cpv);
+  for (const code of filters.cpvCodes) params.append("cpv", code);
   if (filters.minRaw) params.set("min", filters.minRaw);
   if (filters.maxRaw) params.set("max", filters.maxRaw);
   if (filters.ccaa) params.set("ccaa", filters.ccaa);
@@ -189,7 +204,7 @@ export default async function SearchPage({
 }) {
   const params = await searchParams;
   const q = first(params.q).trim();
-  const cpv = first(params.cpv).trim();
+  const cpvCodes = allParam(params.cpv);
   const minRaw = first(params.min).trim();
   const maxRaw = first(params.max).trim();
   const ccaa = first(params.ccaa).trim();
@@ -254,7 +269,7 @@ export default async function SearchPage({
 
   const hasParams =
     q !== "" ||
-    cpv !== "" ||
+    cpvCodes.length > 0 ||
     (min != null && !Number.isNaN(min)) ||
     (max != null && !Number.isNaN(max)) ||
     ccaaValid !== "" ||
@@ -267,7 +282,7 @@ export default async function SearchPage({
 
   const filters: SearchFilters = {
     q,
-    cpv,
+    cpvCodes,
     minRaw,
     maxRaw,
     ccaa: ccaaValid,
@@ -299,7 +314,7 @@ export default async function SearchPage({
         query: q || undefined,
         criteria: {
           version: 1,
-          cpv_codes: cpv ? [cpv] : undefined,
+          cpv_codes: cpvCodes.length ? cpvCodes : undefined,
           estimated_value_min:
             min != null && !Number.isNaN(min) ? min : undefined,
           estimated_value_max:
@@ -358,7 +373,7 @@ export default async function SearchPage({
       </h1>
 
       <SearchForm
-        formKey={`${q}|${cpv}|${minRaw}|${maxRaw}|${ccaaValid}|${municipalityValid}|${statusValid}|${procedureValid}|${contractTypeValid}|${pubFromValid}|${pubToValid}|${from}`}
+        formKey={`${q}|${cpvCodes.join(",")}|${minRaw}|${maxRaw}|${ccaaValid}|${municipalityValid}|${statusValid}|${procedureValid}|${contractTypeValid}|${pubFromValid}|${pubToValid}|${from}`}
         actions={
           <>
             <button
@@ -491,20 +506,7 @@ export default async function SearchPage({
             </select>
           </div>
         </div>
-        <div className="grid gap-4 sm:grid-cols-3">
-          <div>
-            <label htmlFor="cpv" className="block text-sm font-medium text-foreground">
-              CPV (prefijo)
-            </label>
-            <input
-              id="cpv"
-              name="cpv"
-              type="text"
-              inputMode="numeric"
-              defaultValue={cpv}
-              className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 font-mono text-sm outline-none focus:ring-2 focus:ring-ring"
-            />
-          </div>
+        <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <label htmlFor="min" className="block text-sm font-medium text-foreground">
               Importe mín.
@@ -566,6 +568,7 @@ export default async function SearchPage({
             />
           </div>
         </div>
+        <CpvPicker initialCodes={cpvCodes} />
       </SearchForm>
 
       <ResultsList

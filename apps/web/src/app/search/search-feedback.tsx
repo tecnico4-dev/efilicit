@@ -8,6 +8,9 @@ import {
   type ReactNode,
 } from "react";
 
+/** Disparado por «Limpiar campos» para resetear widgets controlados (p. ej. CPV). */
+export const CLEAR_SEARCH_EVENT = "efilicit:clear-search";
+
 type Feedback = {
   text: string;
   isError: boolean;

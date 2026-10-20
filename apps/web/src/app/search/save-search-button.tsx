@@ -20,12 +20,27 @@ function readField(form: HTMLFormElement, name: string): string {
   return "";
 }
 
+function readAllFields(form: HTMLFormElement, name: string): string[] {
+  const el = form.elements.namedItem(name);
+  if (el instanceof RadioNodeList) {
+    return [...el]
+      .filter((node): node is HTMLInputElement => node instanceof HTMLInputElement)
+      .map((node) => node.value.trim())
+      .filter(Boolean);
+  }
+  if (el instanceof HTMLInputElement || el instanceof HTMLSelectElement) {
+    const v = el.value.trim();
+    return v ? [v] : [];
+  }
+  return [];
+}
+
 function buildCriteria(form: HTMLFormElement): {
   criteria: SearchCriteria;
   name: string;
 } | null {
   const q = readField(form, "q");
-  const cpv = readField(form, "cpv");
+  const cpvCodes = readAllFields(form, "cpv");
   const minRaw = readField(form, "min");
   const maxRaw = readField(form, "max");
   const ccaa = readField(form, "ccaa");
@@ -47,7 +62,7 @@ function buildCriteria(form: HTMLFormElement): {
 
   const hasSomething =
     (keywords && keywords.length > 0) ||
-    cpv !== "" ||
+    cpvCodes.length > 0 ||
     (min != null && !Number.isNaN(min)) ||
     (max != null && !Number.isNaN(max)) ||
     ccaa !== "" ||
@@ -63,7 +78,7 @@ function buildCriteria(form: HTMLFormElement): {
   const criteria: SearchCriteria = {
     version: 1,
     keywords: keywords?.length ? keywords : undefined,
-    cpv_codes: cpv ? [cpv] : undefined,
+    cpv_codes: cpvCodes.length ? cpvCodes : undefined,
     estimated_value_min: min != null && !Number.isNaN(min) ? min : undefined,
     estimated_value_max: max != null && !Number.isNaN(max) ? max : undefined,
     statuses: status ? [status] : undefined,
@@ -89,7 +104,7 @@ function buildCriteria(form: HTMLFormElement): {
     (status ? `Estado ${status}` : null) ||
     (procedure ? `Procedimiento ${procedure}` : null) ||
     (contractType ? `Tipo ${contractType}` : null) ||
-    (cpv ? `CPV ${cpv}` : null) ||
+    (cpvCodes.length ? `CPV ${cpvCodes.join(", ")}` : null) ||
     "Búsqueda guardada";
 
   return { criteria, name };

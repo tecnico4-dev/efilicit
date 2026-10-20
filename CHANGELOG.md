@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Buscador: diccionario CPV (vocabulario 2008 ES); campo «Código CPV (prefijo)» + Añadir → «CPV seleccionados» (`código-descripción`, prefijo rellenado a 8 dígitos); varios CPV por búsqueda.
 - Buscador: filtros Estado / Procedimiento / Tipo de contrato (desplegables «Todos» + valores presentes en BD, etiquetas legibles) y fechas de publicación desde/hasta; CCAA sin licitaciones visibles en gris y no seleccionables. RPC `list_tender_filter_options`.
 - Notificaciones in-app: lectura por aviso (`notification_reads`); pestañas Todas / No leídas estilo carpeta; puntito azul en cada aviso no leído y en el buzón del nav.
 - Notificaciones in-app: cambios de estado en licitaciones favoritas (`tender_events` ∩ `favorites`); buzón `/notifications` y puntito de no leídas (`users.notifications_read_at`).
