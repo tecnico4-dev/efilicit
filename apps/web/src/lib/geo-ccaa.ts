@@ -10,7 +10,7 @@ export const SEARCH_CCAA_OPTIONS: ReadonlyArray<{ code: string; name: string }> 
   { code: "05", name: "Canarias" },
   { code: "06", name: "Cantabria" },
   { code: "07", name: "Castilla y León" },
-  { code: "08", name: "Castilla-La Mancha" },
+  { code: "08", name: "Castilla La Mancha" },
   { code: "09", name: "Cataluña" },
   { code: "10", name: "Comunidad Valenciana" },
   { code: "11", name: "Extremadura" },
