@@ -58,6 +58,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Documentation
 
+- BACKLOG §2: al activar cron de ingestas, endurecer subida de ZIPs grandes a Storage (multipart/un paquete por job; no trocear RAW oficial).
 - [ADR 018](docs/adr/018-geografia-lugar-ejecucion-ccaa-municipio.md): CCAA + municipio por códigos; sin provincia a corto plazo; geografía ≠ `source_code`.
 - [ADR 017](docs/adr/017-tender-events-tipo-pipeline-y-status.md): `tender_events` separa `event_type` (`ingerida`\|`actualizada`) de `event_status` (snapshot de negocio); sin evento si la re-ingesta no cambia contenido.
 - Checklist al añadir `source_code` nuevo: actualizar `SOURCE_PRIORITY` + [ADR 015](docs/adr/015-fuente-ganadora-canonica.md) (`docs/sources/README.md`, BACKLOG §4, `cobertura-ccaa.md`).

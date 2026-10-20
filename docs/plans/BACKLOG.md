@@ -26,6 +26,7 @@ No son bugs olvidados ni el trabajo de la siguiente semana del roadmap. Son huec
 
 - **Dominio `eficen.com` en Resend.** Verificación de dominio / envío desde correo corporativo (IT). Pruebas Semana 5 OK con correo personal.
 - **Cron de producción — ingestas.** Workflows `ingest-placsp`, `ingest-catalunya`, `ingest-euskadi`: `schedule` off; manual-first hasta OK explícito ([ADR 005](../adr/005-ingesta-actions-manual-first-cron-off.md)).
+- **ZIPs grandes al activar cron (PLACSP / Storage).** Hoy descarga + upload a Storage van enteros en memoria (timeout corto en upload). Paquetes ~decenas–centenas de MB pueden fallar en Actions/Storage. Al programar cron: endurecer subida (multipart/resumable o equivalente), timeouts, y **un artefacto/paquete por corrida**. **No** trocear el ZIP oficial en varios RAW inventados (rompe RAW inmutable + checksum). Parse por entries del ZIP ya existe; el foco es transporte/Storage, no falsificar la fuente.
 - **Cron de producción — alertas.** `alerts-digest.yml`: mismo patrón; cron off.
 - **Scheduling como DoD del MVP.** Criterio de cierre del roadmap: fuentes “programadamente”; activar cuando entorno + secretos + OK.
 - **Environments / secrets de deploy.** Preview/production, Vercel, tokens — cablear cuando haya despliegue real (ver `.github/README.md`).
