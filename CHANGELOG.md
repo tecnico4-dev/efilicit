@@ -34,6 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Nombres de CCAA en castellano homogéneo (`Islas Baleares`, `Comunidad Valenciana`, …) en filtro de búsqueda y catálogo `geo_ccaa`.
 - Notificaciones: no leído por aviso (`notification_reads`) al abrir la ficha; abrir el buzón ya no marca todas como leídas. Elegibilidad sigue con `tender_events.created_at`.
 - Notificaciones de favoritos: elegibilidad y no leído usan `tender_events.created_at` (cuándo lo vimos en BD), no `occurred_at` de origen; se sigue mostrando la fecha de negocio.
 - Home autenticada: panel de vista rápida (saludo, métricas clicables, plazos de favoritos, últimos cambios de estado) con animaciones CSS; sin hero de marca ni listas plegables.
