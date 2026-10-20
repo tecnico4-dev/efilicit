@@ -114,7 +114,7 @@ def main() -> None:
 
     OUT_PATH.parent.mkdir(parents=True, exist_ok=True)
     OUT_PATH.write_text(
-        json.dumps(data, ensure_ascii=False, separators=(",", ":")),
+        json.dumps(data, ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8",
     )
     sample = data["codes"]["33600000"]
