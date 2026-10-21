@@ -1,12 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useId, useState } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { criteriaEqual, parseCriteria } from "@/lib/criteria-display";
-import { SEARCH_CCAA_OPTIONS } from "@/lib/geo-ccaa";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
-import { createOwnSavedSearch, listOwnSavedSearches } from "@/lib/queries";
+import {
+  createOwnSavedSearch,
+  listOwnSavedSearches,
+  ownSavedSearchNameTaken,
+} from "@/lib/queries";
 import type { SearchCriteria } from "@efilicit/types";
 import { useSearchFeedback } from "./search-feedback";
 
@@ -42,10 +47,7 @@ function readAllFields(form: HTMLFormElement, name: string): string[] {
   return [];
 }
 
-function buildCriteria(form: HTMLFormElement): {
-  criteria: SearchCriteria;
-  name: string;
-} | null {
+function buildCriteria(form: HTMLFormElement): SearchCriteria | null {
   const q = readField(form, "q");
   const cpvCodes = readAllFields(form, "cpv");
   const cpvMatchRaw = readField(form, "cpv_match").toLowerCase();
@@ -87,7 +89,7 @@ function buildCriteria(form: HTMLFormElement): {
 
   if (!hasSomething) return null;
 
-  const criteria: SearchCriteria = {
+  return {
     version: 1,
     keywords: keywords?.length ? keywords : undefined,
     cpv_codes: cpvCodes.length ? cpvCodes : undefined,
@@ -108,33 +110,36 @@ function buildCriteria(form: HTMLFormElement): {
           }
         : undefined,
   };
-
-  const ccaaName =
-    SEARCH_CCAA_OPTIONS.find((o) => o.code === ccaa)?.name ?? ccaa;
-  const name =
-    q ||
-    (municipality ? `Municipio ${municipality}` : null) ||
-    (ccaa ? ccaaName : null) ||
-    (status ? `Estado ${status}` : null) ||
-    (procedure ? `Procedimiento ${procedure}` : null) ||
-    (contractType ? `Tipo ${contractType}` : null) ||
-    (cpvCodes.length ? `CPV ${cpvCodes.join(", ")}` : null) ||
-    (openForSubmission ? "Solo en plazo" : null) ||
-    "Búsqueda guardada";
-
-  return { criteria, name };
 }
 
 /**
- * Guarda los criterios del formulario de búsqueda.
- * El mensaje usa el feedback compartido del SearchForm (sustituye al de Buscar).
+ * Guarda los criterios del formulario: pide nombre en modal.
  */
 export function SaveSearchButton({ userId }: { userId: string }) {
   const router = useRouter();
   const { setFeedback } = useSearchFeedback();
+  const titleId = useId();
   const [pending, setPending] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const [name, setName] = useState("");
+  const [criteria, setCriteria] = useState<SearchCriteria | null>(null);
+  const [dialogError, setDialogError] = useState<string | null>(null);
 
-  async function onSave() {
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!dialogOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [dialogOpen]);
+
+  function openDialog() {
     const form = document.getElementById(FORM_ID) as HTMLFormElement | null;
     if (!form) {
       setFeedback({
@@ -153,8 +158,8 @@ export function SaveSearchButton({ userId }: { userId: string }) {
       return;
     }
 
-    const minVal = built.criteria.estimated_value_min;
-    const maxVal = built.criteria.estimated_value_max;
+    const minVal = built.estimated_value_min;
+    const maxVal = built.estimated_value_max;
     if (
       minVal != null &&
       maxVal != null &&
@@ -169,8 +174,8 @@ export function SaveSearchButton({ userId }: { userId: string }) {
       return;
     }
 
-    const pubFrom = built.criteria.publication_date_from;
-    const pubTo = built.criteria.publication_date_to;
+    const pubFrom = built.publication_date_from;
+    const pubTo = built.publication_date_to;
     if (pubFrom && pubTo && pubFrom > pubTo) {
       setFeedback({
         text: "Rango de fechas de publicación inválido.",
@@ -179,38 +184,66 @@ export function SaveSearchButton({ userId }: { userId: string }) {
       return;
     }
 
+    setCriteria(built);
+    setName("");
+    setDialogError(null);
+    setDialogOpen(true);
+  }
+
+  async function onConfirmSave() {
+    if (!criteria) return;
+    const trimmed = name.trim();
+    if (!trimmed) {
+      setDialogError("Indica un nombre para la búsqueda.");
+      return;
+    }
+
     setPending(true);
+    setDialogError(null);
     const client = createSupabaseBrowserClient();
+
+    const nameCheck = await ownSavedSearchNameTaken(client, { name: trimmed });
+    if (nameCheck.error) {
+      setPending(false);
+      setDialogError(nameCheck.error.message);
+      return;
+    }
+    if (nameCheck.taken) {
+      setPending(false);
+      setDialogError("Ya existe una búsqueda guardada con este nombre.");
+      return;
+    }
+
     const existing = await listOwnSavedSearches(client);
     if (existing.error) {
       setPending(false);
-      setFeedback({ text: existing.error.message, isError: true });
+      setDialogError(existing.error.message);
       return;
     }
     const duplicate = existing.data.some((s) =>
-      criteriaEqual(built.criteria, parseCriteria(s.criteria)),
+      criteriaEqual(criteria, parseCriteria(s.criteria)),
     );
     if (duplicate) {
       setPending(false);
-      setFeedback({
-        text: "Ya tienes una búsqueda guardada con esos mismos parámetros.",
-        isError: true,
-      });
+      setDialogError(
+        "Ya tienes una búsqueda guardada con esos mismos parámetros.",
+      );
       return;
     }
 
     const { error } = await createOwnSavedSearch(client, {
       userId,
-      name: built.name,
-      criteria: built.criteria,
+      name: trimmed,
+      criteria,
     });
     setPending(false);
 
     if (error) {
-      setFeedback({ text: error.message, isError: true });
+      setDialogError(error.message);
       return;
     }
 
+    setDialogOpen(false);
     setFeedback({
       text: "Búsqueda guardada. Puedes verla en Favoritos.",
       isError: false,
@@ -221,14 +254,79 @@ export function SaveSearchButton({ userId }: { userId: string }) {
   }
 
   return (
-    <Button
-      type="button"
-      variant="outline"
-      disabled={pending}
-      onClick={onSave}
-    >
-      {pending ? "Guardando…" : "Guardar búsqueda"}
-    </Button>
+    <>
+      <Button type="button" variant="outline" onClick={openDialog}>
+        Guardar búsqueda
+      </Button>
+      {dialogOpen && mounted
+        ? createPortal(
+            <div
+              className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 p-4"
+              role="presentation"
+            >
+              <div
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby={titleId}
+                className="w-full max-w-md rounded-xl border border-border bg-surface p-5 shadow-xl"
+              >
+                <h2
+                  id={titleId}
+                  className="text-lg font-semibold tracking-tight text-foreground"
+                >
+                  Guardar búsqueda
+                </h2>
+                <label className="mt-4 block text-sm font-medium text-foreground">
+                  Nombre
+                  <Input
+                    value={name}
+                    onChange={(e) => {
+                      setName(e.target.value);
+                      if (dialogError) setDialogError(null);
+                    }}
+                    className="mt-1"
+                    autoFocus
+                    maxLength={120}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        void onConfirmSave();
+                      }
+                      if (e.key === "Escape") {
+                        e.preventDefault();
+                        setDialogOpen(false);
+                      }
+                    }}
+                  />
+                </label>
+                {dialogError ? (
+                  <p className="mt-2 text-xs text-destructive" role="alert">
+                    {dialogError}
+                  </p>
+                ) : null}
+                <div className="mt-4 flex justify-end gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={pending}
+                    onClick={() => setDialogOpen(false)}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    type="button"
+                    disabled={pending}
+                    onClick={() => void onConfirmSave()}
+                  >
+                    {pending ? "Guardando…" : "Aceptar"}
+                  </Button>
+                </div>
+              </div>
+            </div>,
+            document.body,
+          )
+        : null}
+    </>
   );
 }
 

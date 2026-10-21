@@ -216,3 +216,19 @@ export async function ownAlertNameTaken(
   );
   return { taken, error: null };
 }
+
+/** ¿Ya hay una búsqueda guardada propia con ese nombre? (sin distinguir mayúsculas). */
+export async function ownSavedSearchNameTaken(
+  client: SupabaseClient<Database>,
+  input: { name: string; excludeSearchId?: string },
+): Promise<{ taken: boolean; error: Error | null }> {
+  const { data, error } = await listOwnSavedSearches(client);
+  if (error) return { taken: false, error };
+  const needle = input.name.trim().toLowerCase();
+  const taken = data.some(
+    (s) =>
+      s.name.trim().toLowerCase() === needle &&
+      s.id !== input.excludeSearchId,
+  );
+  return { taken, error: null };
+}

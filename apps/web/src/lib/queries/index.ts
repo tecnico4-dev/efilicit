@@ -26,6 +26,7 @@ export {
   listOwnAlerts,
   listOwnSavedSearches,
   ownAlertNameTaken,
+  ownSavedSearchNameTaken,
   updateOwnAlert,
   updateOwnDigestFrequency,
   type DigestFrequency,

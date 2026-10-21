@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Buscador: filtro «Solo en plazo» (`en_plazo=1` / `open_for_submission`; `deadline_at > now()`, sin plazo = fuera; off por defecto).
+- Buscador: al guardar búsqueda, modal para indicar nombre (Aceptar/Cancelar; aviso si el nombre ya existe).
 - Ficha: CPV con etiqueta del diccionario (`código-descripción`), una fila por código.
 - CPV multivalor: tabla `tender_cpvs` (todos los códigos iguales; sin `tenders.cpv_code`); búsqueda/matching/alertas/UI sobre el conjunto; modo `cpv_match` `any`|`all` ([ADR 019](docs/adr/019-tender-cpvs-multivalor.md)).
 - Buscador: diccionario CPV estructurado (TED/SIMAP CPV 2008 ES oficial: `label` + `parent`/`children`, ~9454 códigos); campo «Código CPV (prefijo)» + Añadir → «CPV seleccionados»; varios CPV por búsqueda. Script `scripts/build_cpv_es_dictionary.py`.
