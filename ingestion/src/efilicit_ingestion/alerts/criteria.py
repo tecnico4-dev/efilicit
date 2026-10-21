@@ -70,6 +70,7 @@ class SearchCriteria(BaseModel):
     publication_date_to: str | None = None
     deadline_from: str | None = None
     deadline_to: str | None = None
+    open_for_submission: bool | None = None
 
     @model_validator(mode="after")
     def _value_range_ok(self) -> SearchCriteria:
@@ -140,6 +141,7 @@ KNOWN_CRITERIA_KEYS: frozenset[str] = frozenset(
         "publication_date_to",
         "deadline_from",
         "deadline_to",
+        "open_for_submission",
     }
 )
 

@@ -38,8 +38,15 @@ function hasAnyCriterion(form: HTMLFormElement): boolean {
     "contract_type",
     "pub_from",
     "pub_to",
+    "en_plazo",
   ] as const;
-  return names.some((name) => readField(form, name) !== "");
+  return names.some((name) => {
+    if (name === "en_plazo") {
+      const el = form.elements.namedItem(name);
+      return el instanceof HTMLInputElement && el.checked;
+    }
+    return readField(form, name) !== "";
+  });
 }
 
 /** Fechas de publicación: ambas rellenadas y desde > hasta. */

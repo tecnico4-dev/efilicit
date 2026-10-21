@@ -73,7 +73,13 @@ Detalle por CCAA: [cobertura-ccaa.md](../sources/cobertura-ccaa.md). Checklist a
 
 ---
 
-## 6. Referencia rápida ADRs (aplazados / N/A)
+## 6. Web / búsqueda
+
+- **Paginación / más de 20 resultados en `/search`.** El buscador MVP limita a **20** resultados a propósito (`search_tenders` / UI). No hay “cargar más” ni páginas. Revisable más adelante si hace falta (paginación o cursor sobre el mismo FTS+trgm, sin cambiar Criteria).
+
+---
+
+## 7. Referencia rápida ADRs (aplazados / N/A)
 
 | ADR | Tema | Lectura en backlog |
 |-----|------|--------------------|

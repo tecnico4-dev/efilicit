@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 
 from efilicit_ingestion.alerts.criteria import SearchCriteria, parse_criteria
@@ -105,6 +105,19 @@ def test_geography_legacy_municipality_text() -> None:
     hit = evaluate_tender(criteria, _tender())
     assert hit is not None
     assert hit.reasons == ("geography",)
+
+
+def test_open_for_submission_requires_future_deadline() -> None:
+    criteria = parse_criteria({"version": 1, "open_for_submission": True})
+    future = datetime.now(timezone.utc) + timedelta(days=7)
+    past = datetime.now(timezone.utc) - timedelta(days=1)
+
+    hit = evaluate_tender(criteria, _tender(deadline_at=future))
+    assert hit is not None
+    assert "deadline" in hit.reasons
+
+    assert evaluate_tender(criteria, _tender(deadline_at=past)) is None
+    assert evaluate_tender(criteria, _tender(deadline_at=None)) is None
 
 
 def test_match_alert_to_tenders_filters_inactive_and_misses() -> None:

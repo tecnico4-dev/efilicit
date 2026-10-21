@@ -17,17 +17,28 @@ const FIELD_NAMES = [
   "contract_type",
   "pub_from",
   "pub_to",
+  "en_plazo",
 ] as const;
 
 function blankNamedFields(form: HTMLFormElement, name: string) {
   const el = form.elements.namedItem(name);
   if (el instanceof RadioNodeList) {
     for (const node of el) {
-      if (node instanceof HTMLInputElement) node.value = "";
+      if (node instanceof HTMLInputElement) {
+        if (node.type === "checkbox" || node.type === "radio") {
+          node.checked = false;
+        } else {
+          node.value = "";
+        }
+      }
     }
     return;
   }
   if (el instanceof HTMLInputElement || el instanceof HTMLSelectElement) {
+    if (el instanceof HTMLInputElement && el.type === "checkbox") {
+      el.checked = false;
+      return;
+    }
     el.value = "";
     if (el instanceof HTMLSelectElement) {
       el.dispatchEvent(new Event("change", { bubbles: true }));
@@ -49,10 +60,14 @@ function blankFormFields(form: HTMLFormElement) {
 function fieldHasValue(form: HTMLFormElement, name: string): boolean {
   const el = form.elements.namedItem(name);
   if (el instanceof RadioNodeList) {
-    return [...el].some(
-      (node) =>
-        node instanceof HTMLInputElement && node.value.trim() !== "",
-    );
+    return [...el].some((node) => {
+      if (!(node instanceof HTMLInputElement)) return false;
+      if (node.type === "checkbox" || node.type === "radio") return node.checked;
+      return node.value.trim() !== "";
+    });
+  }
+  if (el instanceof HTMLInputElement && el.type === "checkbox") {
+    return el.checked;
   }
   return (
     (el instanceof HTMLInputElement || el instanceof HTMLSelectElement) &&

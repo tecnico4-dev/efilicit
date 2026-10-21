@@ -161,6 +161,17 @@ def _date_from_hit(tender: TenderCandidate, criteria: SearchCriteria) -> bool | 
 
 
 def _deadline_hit(tender: TenderCandidate, criteria: SearchCriteria) -> bool | None:
+    if criteria.open_for_submission is True:
+        if tender.deadline_at is None:
+            return False
+        from datetime import datetime, timezone
+
+        now = datetime.now(timezone.utc)
+        deadline = tender.deadline_at
+        if deadline.tzinfo is None:
+            deadline = deadline.replace(tzinfo=timezone.utc)
+        return deadline > now
+
     if criteria.deadline_from is None and criteria.deadline_to is None:
         return None
     if tender.deadline_at is None:

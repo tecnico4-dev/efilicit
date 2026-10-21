@@ -845,6 +845,8 @@ export type Database = {
           p_cpv_match?: string
           p_deadline_from?: string
           p_deadline_to?: string
+          /** true → deadline_at > now() (excluye sin plazo) */
+          p_open_for_submission?: boolean
           p_estimated_value_max?: number
           p_estimated_value_min?: number
           p_keywords?: string[]

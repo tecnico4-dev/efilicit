@@ -60,6 +60,9 @@ export function searchHrefFromCriteria(
   if (criteria.publication_date_to) {
     params.set("pub_to", criteria.publication_date_to);
   }
+  if (criteria.open_for_submission === true) {
+    params.set("en_plazo", "1");
+  }
   const ccaa = criteria.geography?.ccaa_codes?.[0];
   if (ccaa) params.set("ccaa", ccaa);
   const municipality = criteria.geography?.municipality_codes?.[0];

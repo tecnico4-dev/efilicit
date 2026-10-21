@@ -92,6 +92,7 @@ type SearchFilters = {
   contractType: string;
   pubFrom: string;
   pubTo: string;
+  openForSubmission: boolean;
 };
 
 function tenderHrefFromSearch(tenderId: string, filters: SearchFilters): string {
@@ -110,6 +111,7 @@ function tenderHrefFromSearch(tenderId: string, filters: SearchFilters): string 
   if (filters.contractType) params.set("contract_type", filters.contractType);
   if (filters.pubFrom) params.set("pub_from", filters.pubFrom);
   if (filters.pubTo) params.set("pub_to", filters.pubTo);
+  if (filters.openForSubmission) params.set("en_plazo", "1");
   return `/tenders/${tenderId}?${params.toString()}`;
 }
 
@@ -223,6 +225,7 @@ export default async function SearchPage({
   const contractTypeRaw = first(params.contract_type).trim();
   const pubFromRaw = first(params.pub_from).trim();
   const pubToRaw = first(params.pub_to).trim();
+  const openForSubmission = first(params.en_plazo).trim() === "1";
   const from = first(params.from).trim();
   const back = backFromSavedSearch(from);
   const min = minRaw === "" ? undefined : Number(minRaw);
@@ -287,7 +290,8 @@ export default async function SearchPage({
     procedureValid !== "" ||
     contractTypeValid !== "" ||
     pubFromValid !== "" ||
-    pubToValid !== "";
+    pubToValid !== "" ||
+    openForSubmission;
 
   const filters: SearchFilters = {
     q,
@@ -302,6 +306,7 @@ export default async function SearchPage({
     contractType: contractTypeValid,
     pubFrom: pubFromValid,
     pubTo: pubToValid,
+    openForSubmission,
   };
 
   let rows: SearchTenderRow[] = [];
@@ -336,6 +341,7 @@ export default async function SearchPage({
           contract_types: contractTypeValid ? [contractTypeValid] : undefined,
           publication_date_from: pubFromValid || undefined,
           publication_date_to: pubToValid || undefined,
+          open_for_submission: openForSubmission || undefined,
           geography:
             ccaaValid || municipalityValid
               ? {
@@ -385,7 +391,7 @@ export default async function SearchPage({
       </h1>
 
       <SearchForm
-        formKey={`${q}|${cpvCodes.join(",")}|${cpvMatch}|${minRaw}|${maxRaw}|${ccaaValid}|${municipalityValid}|${statusValid}|${procedureValid}|${contractTypeValid}|${pubFromValid}|${pubToValid}|${from}`}
+        formKey={`${q}|${cpvCodes.join(",")}|${cpvMatch}|${minRaw}|${maxRaw}|${ccaaValid}|${municipalityValid}|${statusValid}|${procedureValid}|${contractTypeValid}|${pubFromValid}|${pubToValid}|${openForSubmission}|${from}`}
         actions={
           <>
             <button
@@ -581,6 +587,16 @@ export default async function SearchPage({
           </div>
         </div>
         <CpvPicker initialCodes={cpvCodes} initialMatch={cpvMatch} />
+        <label className="inline-flex items-center gap-2 text-sm text-foreground">
+          <input
+            type="checkbox"
+            name="en_plazo"
+            value="1"
+            defaultChecked={openForSubmission}
+            className="rounded border-border"
+          />
+          Solo en plazo
+        </label>
       </SearchForm>
 
       <ResultsList

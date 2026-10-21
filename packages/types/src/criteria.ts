@@ -93,6 +93,11 @@ export type CriteriaFields = {
   deadline_from?: string;
   /** `tenders.deadline_at` ≤. */
   deadline_to?: string;
+  /**
+   * Solo licitaciones aún en plazo: `deadline_at > now()`.
+   * Sin plazo (`null`) no entran. Independiente de `deadline_from`/`to`.
+   */
+  open_for_submission?: boolean;
 };
 
 export type SearchCriteria = CriteriaFields & {

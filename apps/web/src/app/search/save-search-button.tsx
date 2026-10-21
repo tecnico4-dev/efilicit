@@ -17,7 +17,11 @@ function readField(form: HTMLFormElement, name: string): string {
   if (el instanceof RadioNodeList) {
     return String(el.value ?? "").trim();
   }
-  if (el instanceof HTMLInputElement || el instanceof HTMLSelectElement) {
+  if (el instanceof HTMLInputElement) {
+    if (el.type === "checkbox") return el.checked ? el.value.trim() || "1" : "";
+    return el.value.trim();
+  }
+  if (el instanceof HTMLSelectElement) {
     return el.value.trim();
   }
   return "";
@@ -56,6 +60,7 @@ function buildCriteria(form: HTMLFormElement): {
   const contractType = readField(form, "contract_type");
   const pubFrom = readField(form, "pub_from");
   const pubTo = readField(form, "pub_to");
+  const openForSubmission = readField(form, "en_plazo") === "1";
   const min = minRaw === "" ? undefined : Number(minRaw);
   const max = maxRaw === "" ? undefined : Number(maxRaw);
 
@@ -77,7 +82,8 @@ function buildCriteria(form: HTMLFormElement): {
     procedure !== "" ||
     contractType !== "" ||
     pubFrom !== "" ||
-    pubTo !== "";
+    pubTo !== "" ||
+    openForSubmission;
 
   if (!hasSomething) return null;
 
@@ -93,6 +99,7 @@ function buildCriteria(form: HTMLFormElement): {
     contract_types: contractType ? [contractType] : undefined,
     publication_date_from: pubFrom || undefined,
     publication_date_to: pubTo || undefined,
+    open_for_submission: openForSubmission || undefined,
     geography:
       ccaa || municipality
         ? {
@@ -112,6 +119,7 @@ function buildCriteria(form: HTMLFormElement): {
     (procedure ? `Procedimiento ${procedure}` : null) ||
     (contractType ? `Tipo ${contractType}` : null) ||
     (cpvCodes.length ? `CPV ${cpvCodes.join(", ")}` : null) ||
+    (openForSubmission ? "Solo en plazo" : null) ||
     "Búsqueda guardada";
 
   return { criteria, name };

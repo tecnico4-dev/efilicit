@@ -83,6 +83,9 @@ export function formatCriteriaSummary(criteria: SearchCriteria): string {
       `Publicación ${criteria.publication_date_from ?? "—"}–${criteria.publication_date_to ?? "—"}`,
     );
   }
+  if (criteria.open_for_submission === true) {
+    parts.push("Solo en plazo");
+  }
 
   return parts.length ? parts.join(" · ") : "Sin criterios";
 }
@@ -144,7 +147,8 @@ export function criteriaHasFilters(criteria: SearchCriteria): boolean {
       criteria.procedure_types?.length ||
       criteria.statuses?.length ||
       criteria.publication_date_from ||
-      criteria.publication_date_to,
+      criteria.publication_date_to ||
+      criteria.open_for_submission === true,
   );
 }
 
@@ -175,6 +179,7 @@ export function criteriaSignature(criteria: SearchCriteria): string {
     max: criteria.estimated_value_max ?? null,
     ccaa: ccaa ?? null,
     municipalities: municipalities ?? null,
+    open_for_submission: criteria.open_for_submission === true ? true : null,
   });
 }
 

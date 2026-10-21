@@ -9,6 +9,7 @@ import {
   isOwnFavorite,
   type TenderSourceSummary,
 } from "@/lib/queries";
+import { formatCpvSelection, normalizeCpvCode } from "@/lib/cpv";
 import {
   formatContractType,
   formatProcedureType,
@@ -25,6 +26,12 @@ type PageProps = {
 function first(value: string | string[] | undefined): string {
   if (Array.isArray(value)) return value[0] ?? "";
   return value ?? "";
+}
+
+function allParam(value: string | string[] | undefined): string[] {
+  if (value == null) return [];
+  const raw = Array.isArray(value) ? value : [value];
+  return raw.map((v) => v.trim()).filter(Boolean);
 }
 
 function backLinkFromParams(
@@ -53,17 +60,33 @@ function backLinkFromParams(
   if (from === "search") {
     const qs = new URLSearchParams();
     const q = first(params.q).trim();
-    const cpv = first(params.cpv).trim();
+    const cpvCodes = allParam(params.cpv);
+    const cpvMatch = first(params.cpv_match).trim().toLowerCase();
     const min = first(params.min).trim();
     const max = first(params.max).trim();
     const ccaa = first(params.ccaa).trim();
     const municipality = first(params.municipality).trim();
+    const status = first(params.status).trim();
+    const procedure = first(params.procedure).trim();
+    const contractType = first(params.contract_type).trim();
+    const pubFrom = first(params.pub_from).trim();
+    const pubTo = first(params.pub_to).trim();
+    const enPlazo = first(params.en_plazo).trim() === "1";
     if (q) qs.set("q", q);
-    if (cpv) qs.set("cpv", cpv);
+    for (const code of cpvCodes) qs.append("cpv", code);
+    if (cpvCodes.length >= 2 && cpvMatch === "all") {
+      qs.set("cpv_match", "all");
+    }
     if (min) qs.set("min", min);
     if (max) qs.set("max", max);
     if (ccaa) qs.set("ccaa", ccaa);
     if (municipality) qs.set("municipality", municipality);
+    if (status) qs.set("status", status);
+    if (procedure) qs.set("procedure", procedure);
+    if (contractType) qs.set("contract_type", contractType);
+    if (pubFrom) qs.set("pub_from", pubFrom);
+    if (pubTo) qs.set("pub_to", pubTo);
+    if (enPlazo) qs.set("en_plazo", "1");
     const query = qs.toString();
     return {
       href: query ? `/search?${query}` : "/search",
@@ -274,9 +297,20 @@ export default async function TenderDetailPage({
           {formatMoney(tender.estimated_value, tender.currency)}
         </Field>
         <Field label="CPV">
-          <span className="font-mono">
-            {tender.cpv_codes.length ? tender.cpv_codes.join(", ") : "—"}
-          </span>
+          {tender.cpv_codes.length ? (
+            <ul className="space-y-1">
+              {tender.cpv_codes.map((raw) => {
+                const code = normalizeCpvCode(raw) ?? raw;
+                return (
+                  <li key={raw} className="font-mono text-sm">
+                    {formatCpvSelection(code)}
+                  </li>
+                );
+              })}
+            </ul>
+          ) : (
+            "—"
+          )}
         </Field>
         <Field label="Estado">{formatTenderStatus(tender.status)}</Field>
         <Field label="Tipo de contrato">{formatContractType(tender.contract_type)}</Field>

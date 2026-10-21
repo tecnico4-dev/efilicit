@@ -71,6 +71,7 @@ function buildRpcArgs(input: SearchTendersInput): SearchTendersArgs {
     p_publication_date_to: c.publication_date_to,
     p_deadline_from: c.deadline_from,
     p_deadline_to: c.deadline_to,
+    p_open_for_submission: c.open_for_submission === true ? true : undefined,
     p_limit: input.limit ?? 20,
     p_offset: input.offset ?? 0,
   };

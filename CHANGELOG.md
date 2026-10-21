@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Buscador: filtro «Solo en plazo» (`en_plazo=1` / `open_for_submission`; `deadline_at > now()`, sin plazo = fuera; off por defecto).
+- Ficha: CPV con etiqueta del diccionario (`código-descripción`), una fila por código.
 - CPV multivalor: tabla `tender_cpvs` (todos los códigos iguales; sin `tenders.cpv_code`); búsqueda/matching/alertas/UI sobre el conjunto; modo `cpv_match` `any`|`all` ([ADR 019](docs/adr/019-tender-cpvs-multivalor.md)).
 - Buscador: diccionario CPV estructurado (TED/SIMAP CPV 2008 ES oficial: `label` + `parent`/`children`, ~9454 códigos); campo «Código CPV (prefijo)» + Añadir → «CPV seleccionados»; varios CPV por búsqueda. Script `scripts/build_cpv_es_dictionary.py`.
 - Buscador: filtros Estado / Procedimiento / Tipo de contrato (desplegables «Todos» + valores presentes en BD, etiquetas legibles) y fechas de publicación desde/hasta; CCAA sin licitaciones visibles en gris y no seleccionables. RPC `list_tender_filter_options`.
@@ -62,6 +64,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Documentation
 
+- BACKLOG §6: búsqueda `/search` limitada a 20 resultados a propósito; revisable más adelante.
 - BACKLOG §2: al activar cron de ingestas, endurecer subida de ZIPs grandes a Storage (multipart/un paquete por job; no trocear RAW oficial).
 - [ADR 018](docs/adr/018-geografia-lugar-ejecucion-ccaa-municipio.md): CCAA + municipio por códigos; sin provincia a corto plazo; geografía ≠ `source_code`.
 - [ADR 017](docs/adr/017-tender-events-tipo-pipeline-y-status.md): `tender_events` separa `event_type` (`ingerida`\|`actualizada`) de `event_status` (snapshot de negocio); sin evento si la re-ingesta no cambia contenido.
