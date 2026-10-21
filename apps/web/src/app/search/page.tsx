@@ -185,10 +185,6 @@ function ResultsList({
                   <dt className="inline text-muted-foreground">Estado: </dt>
                   <dd className="inline">{formatTenderStatus(row.status)}</dd>
                 </div>
-                <div>
-                  <dt className="inline text-muted-foreground">rank: </dt>
-                  <dd className="inline font-mono">{row.rank.toFixed(3)}</dd>
-                </div>
               </dl>
             </div>
             {profileUserId ? (

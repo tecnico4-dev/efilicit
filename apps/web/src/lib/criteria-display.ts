@@ -153,8 +153,8 @@ export function criteriaHasFilters(criteria: SearchCriteria): boolean {
 }
 
 /**
- * Firma estable de criteria (keywords, CPV, importes, geografía) para detectar
- * búsquedas/alertas duplicadas sin depender del orden de arrays.
+ * Firma estable de criteria v1 para detectar búsquedas/alertas duplicadas
+ * sin depender del orden de arrays. Incluye las dimensiones del buscador MVP.
  */
 export function criteriaSignature(criteria: SearchCriteria): string {
   const keywords = criteria.keywords?.length
@@ -169,6 +169,15 @@ export function criteriaSignature(criteria: SearchCriteria): string {
   const municipalities = criteria.geography?.municipality_codes?.length
     ? [...criteria.geography.municipality_codes].sort()
     : undefined;
+  const statuses = criteria.statuses?.length
+    ? [...criteria.statuses].sort()
+    : undefined;
+  const procedureTypes = criteria.procedure_types?.length
+    ? [...criteria.procedure_types].sort()
+    : undefined;
+  const contractTypes = criteria.contract_types?.length
+    ? [...criteria.contract_types].sort()
+    : undefined;
   return JSON.stringify({
     v: 1,
     keywords: keywords ?? null,
@@ -179,6 +188,11 @@ export function criteriaSignature(criteria: SearchCriteria): string {
     max: criteria.estimated_value_max ?? null,
     ccaa: ccaa ?? null,
     municipalities: municipalities ?? null,
+    statuses: statuses ?? null,
+    procedure_types: procedureTypes ?? null,
+    contract_types: contractTypes ?? null,
+    publication_date_from: criteria.publication_date_from ?? null,
+    publication_date_to: criteria.publication_date_to ?? null,
     open_for_submission: criteria.open_for_submission === true ? true : null,
   });
 }

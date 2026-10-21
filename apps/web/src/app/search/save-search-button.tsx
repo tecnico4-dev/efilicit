@@ -10,7 +10,6 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import {
   createOwnSavedSearch,
   listOwnSavedSearches,
-  ownSavedSearchNameTaken,
 } from "@/lib/queries";
 import type { SearchCriteria } from "@efilicit/types";
 import { useSearchFeedback } from "./search-feedback";
@@ -202,22 +201,18 @@ export function SaveSearchButton({ userId }: { userId: string }) {
     setDialogError(null);
     const client = createSupabaseBrowserClient();
 
-    const nameCheck = await ownSavedSearchNameTaken(client, { name: trimmed });
-    if (nameCheck.error) {
-      setPending(false);
-      setDialogError(nameCheck.error.message);
-      return;
-    }
-    if (nameCheck.taken) {
-      setPending(false);
-      setDialogError("Ya existe una búsqueda guardada con este nombre.");
-      return;
-    }
-
     const existing = await listOwnSavedSearches(client);
     if (existing.error) {
       setPending(false);
       setDialogError(existing.error.message);
+      return;
+    }
+    const nameTaken = existing.data.some(
+      (s) => s.name.trim().toLowerCase() === trimmed.toLowerCase(),
+    );
+    if (nameTaken) {
+      setPending(false);
+      setDialogError("Ya existe una búsqueda guardada con este nombre.");
       return;
     }
     const duplicate = existing.data.some((s) =>
