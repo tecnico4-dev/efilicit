@@ -14,6 +14,9 @@ const FORM_ID = "search-form";
 
 function readField(form: HTMLFormElement, name: string): string {
   const el = form.elements.namedItem(name);
+  if (el instanceof RadioNodeList) {
+    return String(el.value ?? "").trim();
+  }
   if (el instanceof HTMLInputElement || el instanceof HTMLSelectElement) {
     return el.value.trim();
   }
@@ -41,6 +44,9 @@ function buildCriteria(form: HTMLFormElement): {
 } | null {
   const q = readField(form, "q");
   const cpvCodes = readAllFields(form, "cpv");
+  const cpvMatchRaw = readField(form, "cpv_match").toLowerCase();
+  const cpvMatch =
+    cpvCodes.length >= 2 && cpvMatchRaw === "all" ? ("all" as const) : undefined;
   const minRaw = readField(form, "min");
   const maxRaw = readField(form, "max");
   const ccaa = readField(form, "ccaa");
@@ -79,6 +85,7 @@ function buildCriteria(form: HTMLFormElement): {
     version: 1,
     keywords: keywords?.length ? keywords : undefined,
     cpv_codes: cpvCodes.length ? cpvCodes : undefined,
+    cpv_match: cpvMatch,
     estimated_value_min: min != null && !Number.isNaN(min) ? min : undefined,
     estimated_value_max: max != null && !Number.isNaN(max) ? max : undefined,
     statuses: status ? [status] : undefined,

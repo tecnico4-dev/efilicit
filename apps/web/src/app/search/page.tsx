@@ -82,6 +82,7 @@ function MatchKindBadge({ kind }: { kind: string }) {
 type SearchFilters = {
   q: string;
   cpvCodes: string[];
+  cpvMatch: "any" | "all";
   minRaw: string;
   maxRaw: string;
   ccaa: string;
@@ -97,6 +98,9 @@ function tenderHrefFromSearch(tenderId: string, filters: SearchFilters): string 
   const params = new URLSearchParams({ from: "search" });
   if (filters.q) params.set("q", filters.q);
   for (const code of filters.cpvCodes) params.append("cpv", code);
+  if (filters.cpvCodes.length >= 2 && filters.cpvMatch === "all") {
+    params.set("cpv_match", "all");
+  }
   if (filters.minRaw) params.set("min", filters.minRaw);
   if (filters.maxRaw) params.set("max", filters.maxRaw);
   if (filters.ccaa) params.set("ccaa", filters.ccaa);
@@ -171,7 +175,9 @@ function ResultsList({
                 </div>
                 <div>
                   <dt className="inline text-muted-foreground">CPV: </dt>
-                  <dd className="inline font-mono">{row.cpv_code ?? "—"}</dd>
+                  <dd className="inline font-mono">
+                    {row.cpv_codes?.length ? row.cpv_codes.join(", ") : "—"}
+                  </dd>
                 </div>
                 <div>
                   <dt className="inline text-muted-foreground">Estado: </dt>
@@ -205,6 +211,9 @@ export default async function SearchPage({
   const params = await searchParams;
   const q = first(params.q).trim();
   const cpvCodes = allParam(params.cpv);
+  const cpvMatchRaw = first(params.cpv_match).trim().toLowerCase();
+  const cpvMatch: "any" | "all" =
+    cpvCodes.length >= 2 && cpvMatchRaw === "all" ? "all" : "any";
   const minRaw = first(params.min).trim();
   const maxRaw = first(params.max).trim();
   const ccaa = first(params.ccaa).trim();
@@ -283,6 +292,7 @@ export default async function SearchPage({
   const filters: SearchFilters = {
     q,
     cpvCodes,
+    cpvMatch,
     minRaw,
     maxRaw,
     ccaa: ccaaValid,
@@ -315,6 +325,8 @@ export default async function SearchPage({
         criteria: {
           version: 1,
           cpv_codes: cpvCodes.length ? cpvCodes : undefined,
+          cpv_match:
+            cpvCodes.length >= 2 && cpvMatch === "all" ? "all" : undefined,
           estimated_value_min:
             min != null && !Number.isNaN(min) ? min : undefined,
           estimated_value_max:
@@ -373,7 +385,7 @@ export default async function SearchPage({
       </h1>
 
       <SearchForm
-        formKey={`${q}|${cpvCodes.join(",")}|${minRaw}|${maxRaw}|${ccaaValid}|${municipalityValid}|${statusValid}|${procedureValid}|${contractTypeValid}|${pubFromValid}|${pubToValid}|${from}`}
+        formKey={`${q}|${cpvCodes.join(",")}|${cpvMatch}|${minRaw}|${maxRaw}|${ccaaValid}|${municipalityValid}|${statusValid}|${procedureValid}|${contractTypeValid}|${pubFromValid}|${pubToValid}|${from}`}
         actions={
           <>
             <button
@@ -568,7 +580,7 @@ export default async function SearchPage({
             />
           </div>
         </div>
-        <CpvPicker initialCodes={cpvCodes} />
+        <CpvPicker initialCodes={cpvCodes} initialMatch={cpvMatch} />
       </SearchForm>
 
       <ResultsList

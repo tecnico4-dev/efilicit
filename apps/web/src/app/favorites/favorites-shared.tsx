@@ -37,6 +37,9 @@ export function searchHrefFromCriteria(
   }
   if (criteria.cpv_codes?.length) {
     for (const code of criteria.cpv_codes) params.append("cpv", code);
+    if (criteria.cpv_codes.length >= 2 && criteria.cpv_match === "all") {
+      params.set("cpv_match", "all");
+    }
   }
   if (criteria.estimated_value_min != null) {
     params.set("min", String(criteria.estimated_value_min));
@@ -111,7 +114,9 @@ export function FavoriteTenderList({
               </div>
               <div>
                 <dt className="inline">CPV · </dt>
-                <dd className="inline font-mono">{tender.cpv_code ?? "—"}</dd>
+                <dd className="inline font-mono">
+                  {tender.cpv_codes.length ? tender.cpv_codes.join(", ") : "—"}
+                </dd>
               </div>
               {tender.status ? (
                 <div>

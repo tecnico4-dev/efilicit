@@ -21,7 +21,7 @@ def _tender(tid: str, title: str, cpv: str) -> TenderCandidate:
         status="publicada",
         contract_type="servicios",
         estimated_value=Decimal("50000"),
-        cpv_code=cpv,
+        cpv_codes=(cpv,),
         publication_date=date(2026, 9, 1),
         municipality="Madrid",
         country="ES",

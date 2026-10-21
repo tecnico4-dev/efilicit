@@ -19,7 +19,7 @@ def _tender(**overrides: object) -> TenderCandidate:
         procedure_type="open",
         contract_type="servicios",
         estimated_value=Decimal("50000"),
-        cpv_code="72000000",
+        cpv_codes=("72000000",),
         publication_date=date(2026, 9, 1),
         authority_id="auth-1",
         authority_tax_id="P2807900B",
@@ -66,6 +66,24 @@ def test_no_match_when_cpv_differs() -> None:
     assert evaluate_tender(criteria, _tender()) is None
 
 
+def test_cpv_match_all_requires_every_prefix() -> None:
+    multi = _tender(cpv_codes=("72000000", "30213000"))
+    any_ok = parse_criteria(
+        {"version": 1, "cpv_codes": ["72", "45"], "cpv_match": "any"}
+    )
+    assert evaluate_tender(any_ok, multi) is not None
+
+    all_miss = parse_criteria(
+        {"version": 1, "cpv_codes": ["72", "45"], "cpv_match": "all"}
+    )
+    assert evaluate_tender(all_miss, multi) is None
+
+    all_hit = parse_criteria(
+        {"version": 1, "cpv_codes": ["72", "302"], "cpv_match": "all"}
+    )
+    assert evaluate_tender(all_hit, multi) is not None
+
+
 def test_value_range_and_geography() -> None:
     criteria = parse_criteria(
         {
@@ -95,7 +113,7 @@ def test_match_alert_to_tenders_filters_inactive_and_misses() -> None:
         id="t-works",
         title="Obras de asfaltado",
         description="Calzada",
-        cpv_code="45233140",
+        cpv_codes=("45233140",),
         estimated_value=Decimal("200000"),
     )
     alert = AlertRule(

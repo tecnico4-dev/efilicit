@@ -50,7 +50,7 @@ def test_inmemory_upsert_is_idempotent_on_source_tender_id() -> None:
 
     tender = next(iter(repo.tenders.values()))
     assert tender["title"].startswith("Suministro")
-    assert tender["cpv_code"] == "30192700"
+    assert tender["cpv_codes"] == ["30192700"]
     assert tender["estimated_value"] is not None
 
 
@@ -112,7 +112,10 @@ def test_postgres_upsert_populates_canonical_and_does_not_duplicate() -> None:
 
         row = conn.execute(
             """
-            select t.title, t.status, t.cpv_code, t.estimated_value, a.tax_id, a.identity_confidence
+            select t.title, t.status, (
+              select coalesce(array_agg(c.cpv_code order by c.cpv_code), '{}'::text[])
+              from public.tender_cpvs c where c.tender_id = t.id
+            ), t.estimated_value, a.tax_id, a.identity_confidence
             from public.tenders t
             join public.tender_sources ts on ts.tender_id = t.id
             left join public.contracting_authorities a on a.id = t.contracting_authority_id
@@ -123,7 +126,7 @@ def test_postgres_upsert_populates_canonical_and_does_not_duplicate() -> None:
         assert row is not None
         assert row[0].startswith("Suministro")
         assert row[1] == "publicada"
-        assert row[2] == "30192700"
+        assert list(row[2]) == ["30192700"]
         assert row[3] is not None
         assert row[4] == "B00000000"
         assert row[5] == "HIGH"

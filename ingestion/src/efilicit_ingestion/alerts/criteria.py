@@ -9,6 +9,7 @@ Reglas de producto:
 - Dimensiones omitidas = no filtran.
 - Criteria vacío (solo version) → **sin matches** (anti-spam).
 - Dentro de una dimensión tipo lista: OR; entre dimensiones: AND (en el matcher).
+- CPV: ``cpv_match`` ``any`` (default) | ``all`` (ADR 019).
 """
 
 from __future__ import annotations
@@ -18,6 +19,7 @@ from typing import Any, Literal
 from pydantic import BaseModel, ConfigDict, model_validator
 
 CriteriaVersion = Literal[1]
+CpvMatchMode = Literal["any", "all"]
 
 
 class AuthorityCriteria(BaseModel):
@@ -56,6 +58,7 @@ class SearchCriteria(BaseModel):
     version: CriteriaVersion = 1
     keywords: list[str] | None = None
     cpv_codes: list[str] | None = None
+    cpv_match: CpvMatchMode | None = None
     authority: AuthorityCriteria | None = None
     geography: GeographyCriteria | None = None
     estimated_value_min: float | None = None
@@ -80,7 +83,8 @@ class SearchCriteria(BaseModel):
 
         Usado por el matcher: sin filtros → no encolar (evita alertas “todo”).
         """
-        data = self.model_dump(exclude={"version"}, exclude_none=True)
+        # cpv_match solo no filtra; hace falta cpv_codes.
+        data = self.model_dump(exclude={"version", "cpv_match"}, exclude_none=True)
         for key, value in data.items():
             if value in (None, [], {}, ""):
                 continue
@@ -124,6 +128,7 @@ KNOWN_CRITERIA_KEYS: frozenset[str] = frozenset(
         "version",
         "keywords",
         "cpv_codes",
+        "cpv_match",
         "authority",
         "geography",
         "estimated_value_min",
@@ -142,6 +147,7 @@ __all__ = [
     "AlertCriteria",
     "AuthorityCriteria",
     "CRITERIA_EXAMPLE_V1",
+    "CpvMatchMode",
     "CriteriaVersion",
     "GeographyCriteria",
     "KNOWN_CRITERIA_KEYS",

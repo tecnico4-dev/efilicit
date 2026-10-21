@@ -36,7 +36,7 @@ def _record(
         "canonical": {
             "source_tender_id": source_tender_id,
             "title": title,
-            "cpv_code": cpv_code,
+            "cpv_codes": [cpv_code] if cpv_code else [],
             "estimated_value": (
                 Decimal(str(estimated_value)) if estimated_value is not None else None
             ),

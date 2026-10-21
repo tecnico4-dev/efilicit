@@ -274,7 +274,9 @@ export default async function TenderDetailPage({
           {formatMoney(tender.estimated_value, tender.currency)}
         </Field>
         <Field label="CPV">
-          <span className="font-mono">{tender.cpv_code ?? "—"}</span>
+          <span className="font-mono">
+            {tender.cpv_codes.length ? tender.cpv_codes.join(", ") : "—"}
+          </span>
         </Field>
         <Field label="Estado">{formatTenderStatus(tender.status)}</Field>
         <Field label="Tipo de contrato">{formatContractType(tender.contract_type)}</Field>

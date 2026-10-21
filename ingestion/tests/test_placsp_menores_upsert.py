@@ -208,7 +208,10 @@ def test_menores_postgres_upsert_does_not_duplicate() -> None:
 
         row = conn.execute(
             """
-            select t.title, t.cpv_code, a.tax_id, a.identity_confidence
+            select t.title, (
+              select coalesce(array_agg(c.cpv_code order by c.cpv_code), '{}'::text[])
+              from public.tender_cpvs c where c.tender_id = t.id
+            ), a.tax_id, a.identity_confidence
             from public.tenders t
             join public.tender_sources ts on ts.tender_id = t.id
             left join public.contracting_authorities a on a.id = t.contracting_authority_id
@@ -218,6 +221,6 @@ def test_menores_postgres_upsert_does_not_duplicate() -> None:
         ).fetchone()
         assert row is not None
         assert row[0].startswith("Suministro")
-        assert row[1] == "30192700"
+        assert list(row[1]) == ["30192700"]
         assert row[2] == "B00000000"
         assert row[3] == "HIGH"

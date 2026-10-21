@@ -51,7 +51,7 @@ def test_menores_normalize_valid_fixture_maps_mvp_fields() -> None:
     assert canonical["procedure_type"] == "abierto"
     assert canonical["estimated_value"] == Decimal("12500.50")
     assert canonical["currency"] == "EUR"
-    assert canonical["cpv_code"] == "30192700"
+    assert canonical["cpv_codes"] == ["30192700"]
     assert canonical["nuts_code"] == "ES300"
     assert canonical["publication_date"].isoformat() == "2026-09-10"
     assert canonical["deadline_at"].isoformat().startswith("2026-10-01T14:00:00")
@@ -70,7 +70,7 @@ def test_menores_normalize_incomplete_fixture_identity_is_low() -> None:
 
     assert canonical["status"] is None
     assert canonical["estimated_value"] is None
-    assert canonical["cpv_code"] is None
+    assert canonical["cpv_codes"] == []
     assert canonical["authority"]["tax_id"] is None
     assert canonical["authority"]["identity_confidence"] == "LOW"
     assert "ayuntamiento fixture sin nif" in canonical["authority"]["name_normalized"]

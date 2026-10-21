@@ -690,12 +690,34 @@ export type Database = {
           },
         ]
       }
+      tender_cpvs: {
+        Row: {
+          tender_id: string
+          cpv_code: string
+        }
+        Insert: {
+          tender_id: string
+          cpv_code: string
+        }
+        Update: {
+          tender_id?: string
+          cpv_code?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tender_cpvs_tender_id_fkey"
+            columns: ["tender_id"]
+            isOneToOne: false
+            referencedRelation: "tenders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tenders: {
         Row: {
           canonical_source_code: string
           contract_type: string | null
           contracting_authority_id: string | null
-          cpv_code: string | null
           created_at: string
           currency: string
           deadline_at: string | null
@@ -716,7 +738,6 @@ export type Database = {
           canonical_source_code: string
           contract_type?: string | null
           contracting_authority_id?: string | null
-          cpv_code?: string | null
           created_at?: string
           currency?: string
           deadline_at?: string | null
@@ -737,7 +758,6 @@ export type Database = {
           canonical_source_code?: string
           contract_type?: string | null
           contracting_authority_id?: string | null
-          cpv_code?: string | null
           created_at?: string
           currency?: string
           deadline_at?: string | null
@@ -821,6 +841,8 @@ export type Database = {
           p_contract_types?: string[]
           p_countries?: string[]
           p_cpv_codes?: string[]
+          /** `any` (default) | `all` — ADR 019 */
+          p_cpv_match?: string
           p_deadline_from?: string
           p_deadline_to?: string
           p_estimated_value_max?: number
@@ -840,7 +862,7 @@ export type Database = {
         Returns: {
           contract_type: string
           contracting_authority_id: string
-          cpv_code: string
+          cpv_codes: string[]
           created_at: string
           currency: string
           deadline_at: string

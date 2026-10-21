@@ -7,27 +7,44 @@ import {
   useSearchFeedback,
 } from "./search-feedback";
 
+type CpvMatchMode = "any" | "all";
+
 type CpvPickerProps = {
   /** Códigos CPV de 8 dígitos ya seleccionados (desde la URL). */
   initialCodes?: string[];
+  /** `any` (default) | `all` — ADR 019. */
+  initialMatch?: CpvMatchMode;
 };
 
 /**
  * Código CPV (prefijo) + Añadir → lista «CPV seleccionados» (`code-descripción`).
- * Los hidden `name=cpv` son los que viajan en el GET / se guardan en criteria.
+ * Los hidden `name=cpv` / radio `cpv_match` viajan en el GET / criteria.
  */
-export function CpvPicker({ initialCodes = [] }: CpvPickerProps) {
+export function CpvPicker({
+  initialCodes = [],
+  initialMatch = "any",
+}: CpvPickerProps) {
   const draftId = useId();
   const selectedId = useId();
-  const { setFeedback, clearFeedback } = useSearchFeedback();
+  const matchGroupId = useId();
+  const { clearFeedback } = useSearchFeedback();
   const [draft, setDraft] = useState("");
+  const [fieldMessage, setFieldMessage] = useState<{
+    text: string;
+    tone: "error" | "info";
+  } | null>(null);
   const [codes, setCodes] = useState<string[]>(() =>
     uniqueNormalized(initialCodes),
+  );
+  const [matchMode, setMatchMode] = useState<CpvMatchMode>(
+    initialMatch === "all" ? "all" : "any",
   );
 
   const reset = useCallback(() => {
     setDraft("");
+    setFieldMessage(null);
     setCodes([]);
+    setMatchMode("any");
   }, []);
 
   useEffect(() => {
@@ -39,30 +56,38 @@ export function CpvPicker({ initialCodes = [] }: CpvPickerProps) {
   function addFromDraft() {
     const resolved = resolveCpvFromInput(draft);
     if (!resolved) {
-      setFeedback({
+      setFieldMessage({
         text: "Indica un código o prefijo CPV numérico.",
-        isError: true,
+        tone: "error",
+      });
+      return;
+    }
+    if (!resolved.known) {
+      setFieldMessage({
+        text: `CPV ${resolved.code} no está en el diccionario.`,
+        tone: "error",
       });
       return;
     }
     if (codes.includes(resolved.code)) {
-      setFeedback({
+      setFieldMessage({
         text: `El CPV ${resolved.code} ya está seleccionado.`,
-        isError: true,
+        tone: "error",
       });
       setDraft("");
       return;
     }
-    if (!resolved.known) {
-      setFeedback({
-        text: `CPV ${resolved.code} no está en el diccionario; se añadirá igual.`,
-        isError: false,
-      });
-    } else {
-      clearFeedback();
-    }
+    clearFeedback();
     setCodes((prev) => [...prev, resolved.code]);
     setDraft("");
+    setFieldMessage(
+      resolved.omittedNonDigits
+        ? {
+            text: "CPV añadido omitiendo caracteres no numéricos.",
+            tone: "info",
+          }
+        : null,
+    );
   }
 
   function removeCode(code: string) {
@@ -88,13 +113,20 @@ export function CpvPicker({ initialCodes = [] }: CpvPickerProps) {
             inputMode="numeric"
             autoComplete="off"
             value={draft}
-            onChange={(e) => setDraft(e.target.value)}
+            onChange={(e) => {
+              setDraft(e.target.value);
+              if (fieldMessage) setFieldMessage(null);
+            }}
             onKeyDown={(e) => {
               if (e.key === "Enter") {
                 e.preventDefault();
                 addFromDraft();
               }
             }}
+            aria-invalid={fieldMessage?.tone === "error"}
+            aria-describedby={
+              fieldMessage ? `${draftId}-message` : undefined
+            }
             className="min-w-0 flex-1 rounded-md border border-border bg-background px-3 py-2 font-mono text-sm outline-none focus:ring-2 focus:ring-ring"
           />
           <button
@@ -105,6 +137,19 @@ export function CpvPicker({ initialCodes = [] }: CpvPickerProps) {
             Añadir
           </button>
         </div>
+        {fieldMessage ? (
+          <p
+            id={`${draftId}-message`}
+            className={
+              fieldMessage.tone === "error"
+                ? "mt-1 text-xs text-destructive"
+                : "mt-1 text-xs text-muted-foreground"
+            }
+            role={fieldMessage.tone === "error" ? "alert" : "status"}
+          >
+            {fieldMessage.text}
+          </p>
+        ) : null}
       </div>
       <div>
         <label
@@ -145,6 +190,48 @@ export function CpvPicker({ initialCodes = [] }: CpvPickerProps) {
         {/* Texto oculto solo para accesibilidad / depuración; los hidden son la fuente de verdad del GET */}
         <span className="sr-only">{selectedDisplay}</span>
       </div>
+      {codes.length >= 2 ? (
+        <fieldset className="sm:col-span-2">
+          <legend className="text-sm font-medium text-foreground">
+            Coincidencia CPV
+          </legend>
+          <div
+            className="mt-2 flex flex-wrap gap-4 text-sm text-foreground"
+            role="radiogroup"
+            aria-labelledby={matchGroupId}
+          >
+            <span id={matchGroupId} className="sr-only">
+              Modo de coincidencia CPV
+            </span>
+            <label className="inline-flex items-center gap-2">
+              <input
+                type="radio"
+                name="cpv_match"
+                value="any"
+                checked={matchMode === "any"}
+                onChange={() => setMatchMode("any")}
+              />
+              Cualquiera de ellos
+            </label>
+            <label className="inline-flex items-center gap-2">
+              <input
+                type="radio"
+                name="cpv_match"
+                value="all"
+                checked={matchMode === "all"}
+                onChange={() => setMatchMode("all")}
+              />
+              Todos ellos
+            </label>
+          </div>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Prefijo: la licitación debe cubrir{" "}
+            {matchMode === "all" ? "cada" : "algún"} código seleccionado.
+          </p>
+        </fieldset>
+      ) : (
+        <input type="hidden" name="cpv_match" value="any" />
+      )}
       {codes.map((code) => (
         <input key={code} type="hidden" name="cpv" value={code} />
       ))}
@@ -156,7 +243,9 @@ function uniqueNormalized(codes: string[]): string[] {
   const out: string[] = [];
   for (const raw of codes) {
     const resolved = resolveCpvFromInput(raw);
-    if (resolved && !out.includes(resolved.code)) out.push(resolved.code);
+    if (resolved?.known && !out.includes(resolved.code)) {
+      out.push(resolved.code);
+    }
   }
   return out;
 }

@@ -136,7 +136,7 @@ def test_euskadi_parse_normalize_identity() -> None:
     assert first["estimated_value"] == Decimal("12500.5")
     assert first["deadline_at"] is not None
     assert first["deadline_at"].isoformat().startswith("2026-10-15T12:00:00")
-    assert first["cpv_code"] is None
+    assert first["cpv_codes"] == []
     assert first["authority"]["tax_id"] == "S4833001C"
     assert first["authority"]["identity_confidence"] == "HIGH"
     second = identified[1].payload["canonical"]

@@ -55,12 +55,25 @@ def _keyword_hit(tender: TenderCandidate, keywords: list[str]) -> bool:
     return any(_norm(k) in blob for k in keywords if k.strip())
 
 
-def _cpv_hit(tender: TenderCandidate, codes: list[str]) -> bool:
-    """Prefijo CPV: ``72000000`` casa ``72000000-1`` y códigos hijos."""
-    cpv = (tender.cpv_code or "").strip()
-    if not cpv:
+def _cpv_hit(
+    tender: TenderCandidate,
+    codes: list[str],
+    *,
+    match: str | None = None,
+) -> bool:
+    """Prefijo CPV: ``any`` (OR×OR, default) o ``all`` (cada criterio cubierto)."""
+    tender_codes = [c.strip() for c in tender.cpv_codes if c and str(c).strip()]
+    if not tender_codes:
         return False
-    return any(cpv.startswith(code.strip()) for code in codes if code.strip())
+    needles = [code.strip() for code in codes if code.strip()]
+    if not needles:
+        return False
+    mode = (match or "any").strip().lower()
+    if mode == "all":
+        return all(
+            any(tc.startswith(needle) for tc in tender_codes) for needle in needles
+        )
+    return any(tc.startswith(needle) for tc in tender_codes for needle in needles)
 
 
 def _authority_hit(tender: TenderCandidate, criteria: SearchCriteria) -> bool | None:
@@ -190,7 +203,11 @@ def evaluate_tender(
         ),
         (
             "cpv_codes",
-            _cpv_hit(tender, criteria.cpv_codes) if criteria.cpv_codes else None,
+            (
+                _cpv_hit(tender, criteria.cpv_codes, match=criteria.cpv_match)
+                if criteria.cpv_codes
+                else None
+            ),
         ),
         ("authority", _authority_hit(tender, criteria)),
         ("geography", _geography_hit(tender, criteria)),

@@ -20,6 +20,7 @@ export type TenderSourceSummary = Pick<
 >;
 
 export type TenderDetail = TenderRow & {
+  cpv_codes: string[];
   contracting_authority: {
     id: string;
     name: string;
@@ -37,10 +38,11 @@ type TenderWithJoins = TenderRow & {
   geo_ccaa: TenderDetail["place_ccaa"] | null;
   geo_municipio: TenderDetail["place_municipality"] | null;
   tender_sources: TenderSourceSummary[] | null;
+  tender_cpvs: { cpv_code: string }[] | null;
 };
 
 /**
- * Obtiene una fila de `tenders` (+ organismo y `tender_sources`).
+ * Obtiene una fila de `tenders` (+ organismo, CPV y `tender_sources`).
  * `null` en data = no encontrada o no visible.
  */
 export async function getTenderById(
@@ -66,6 +68,9 @@ export async function getTenderById(
       geo_municipio!tenders_place_municipality_code_fkey (
         code,
         name
+      ),
+      tender_cpvs (
+        cpv_code
       ),
       tender_sources!tender_sources_tender_id_fkey (
         id,
@@ -94,15 +99,18 @@ export async function getTenderById(
     geo_ccaa,
     geo_municipio,
     tender_sources,
+    tender_cpvs,
     ...tender
   } = row;
   const sources = [...(tender_sources ?? [])].sort((a, b) =>
     a.source_code.localeCompare(b.source_code),
   );
+  const cpv_codes = [...(tender_cpvs ?? []).map((r) => r.cpv_code)].sort();
 
   return {
     data: {
       ...tender,
+      cpv_codes,
       contracting_authority: contracting_authorities ?? null,
       place_ccaa: geo_ccaa ?? null,
       place_municipality: geo_municipio ?? null,

@@ -37,7 +37,7 @@ def test_normalize_valid_fixture_maps_mvp_fields() -> None:
     assert canonical["procedure_type"] == "abierto"
     assert canonical["estimated_value"] == Decimal("12500.50")
     assert canonical["currency"] == "EUR"
-    assert canonical["cpv_code"] == "30192700"
+    assert canonical["cpv_codes"] == ["30192700"]
     assert canonical["nuts_code"] == "ES300"
     assert canonical["publication_date"].isoformat() == "2026-09-10"
     assert canonical["deadline_at"].isoformat().startswith("2026-10-01T14:00:00")
@@ -56,7 +56,7 @@ def test_normalize_incomplete_fixture_identity_is_low_without_tax_id() -> None:
 
     assert canonical["status"] is None
     assert canonical["estimated_value"] is None
-    assert canonical["cpv_code"] is None
+    assert canonical["cpv_codes"] == []
     assert canonical["authority"]["tax_id"] is None
     assert canonical["authority"]["identity_confidence"] == "LOW"
     assert "ayuntamiento fixture sin nif" in canonical["authority"]["name_normalized"]
@@ -102,9 +102,9 @@ def test_normalize_cpv_pads_to_8_and_keeps_check_digit() -> None:
             "nuts_codes": [],
         },
     )
-    assert stages.normalize([record])[0].payload["canonical"]["cpv_code"] == (
-        "31640000-4"
-    )
+    assert stages.normalize([record])[0].payload["canonical"]["cpv_codes"] == [
+        "31640000"
+    ]
 
 
 def test_normalize_procedure_code_9_is_abierto_simplificado() -> None:

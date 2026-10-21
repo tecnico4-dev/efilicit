@@ -28,7 +28,17 @@ export function formatCriteriaSummary(criteria: SearchCriteria): string {
     parts.push(criteria.keywords.join(", "));
   }
   if (criteria.cpv_codes?.length) {
-    parts.push(`CPV ${criteria.cpv_codes.join(", ")}`);
+    const mode =
+      criteria.cpv_codes.length >= 2 && criteria.cpv_match === "all"
+        ? "todos"
+        : criteria.cpv_codes.length >= 2
+          ? "cualquiera"
+          : null;
+    parts.push(
+      mode
+        ? `CPV (${mode}) ${criteria.cpv_codes.join(", ")}`
+        : `CPV ${criteria.cpv_codes.join(", ")}`,
+    );
   }
   if (
     criteria.estimated_value_min != null ||
@@ -159,6 +169,8 @@ export function criteriaSignature(criteria: SearchCriteria): string {
     v: 1,
     keywords: keywords ?? null,
     cpv: cpv ?? null,
+    cpv_match:
+      cpv && criteria.cpv_match === "all" ? "all" : cpv ? "any" : null,
     min: criteria.estimated_value_min ?? null,
     max: criteria.estimated_value_max ?? null,
     ccaa: ccaa ?? null,

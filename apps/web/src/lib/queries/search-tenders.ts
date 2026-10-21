@@ -18,7 +18,7 @@ export type SearchTenderRow = {
   contract_type: string | null;
   estimated_value: number | null;
   currency: string;
-  cpv_code: string | null;
+  cpv_codes: string[] | null;
   publication_date: string | null;
   deadline_at: string | null;
   contracting_authority_id: string | null;
@@ -53,6 +53,8 @@ function buildRpcArgs(input: SearchTendersInput): SearchTendersArgs {
     p_query: input.query?.trim() || undefined,
     p_keywords: emptyToUndef(c.keywords),
     p_cpv_codes: emptyToUndef(cpvCodesForSearch(c.cpv_codes)),
+    p_cpv_match:
+      c.cpv_codes?.length && c.cpv_match === "all" ? "all" : undefined,
     p_authority_tax_ids: emptyToUndef(c.authority?.tax_ids),
     p_authority_ids: emptyToUndef(c.authority?.ids),
     p_authority_name_contains: name || undefined,

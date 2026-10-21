@@ -37,7 +37,7 @@ def _record(
                 "contract_type": "1",
                 "estimated_value": "1000.00",
                 "currency": "EUR",
-                "cpv_code": "30192700",
+                "cpv_codes": ["30192700"],
                 "publication_date": "2026-09-01",
                 "deadline_at": deadline_at,
                 "source_tender_id": source_record_id,

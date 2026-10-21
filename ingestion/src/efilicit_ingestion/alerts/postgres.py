@@ -85,7 +85,14 @@ def load_tender_candidates(
               t.procedure_type,
               t.contract_type,
               t.estimated_value,
-              t.cpv_code,
+              coalesce(
+                (
+                  select array_agg(tc.cpv_code order by tc.cpv_code)
+                  from public.tender_cpvs tc
+                  where tc.tender_id = t.id
+                ),
+                '{}'::text[]
+              ) as cpv_codes,
               t.publication_date,
               t.deadline_at,
               t.updated_at,
@@ -122,7 +129,7 @@ def load_tender_candidates(
                 procedure_type=row["procedure_type"],
                 contract_type=row["contract_type"],
                 estimated_value=Decimal(str(value)) if value is not None else None,
-                cpv_code=row["cpv_code"],
+                cpv_codes=tuple(row["cpv_codes"] or ()),
                 publication_date=row["publication_date"],
                 deadline_at=row["deadline_at"],
                 authority_id=_as_str(row["contracting_authority_id"]),

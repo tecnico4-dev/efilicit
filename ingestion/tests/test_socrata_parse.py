@@ -87,7 +87,7 @@ def test_catalunya_connector_parse_normalize_identity() -> None:
     assert first["contract_type"] == "suministros"
     assert first["procedure_type"] == "abierto"
     assert first["estimated_value"] == Decimal("12500.50")
-    assert first["cpv_code"] == "30192700"
+    assert first["cpv_codes"] == ["30192700"]
     assert first["nuts_code"] == "ES511"
     assert first["place_nuts_code"] == "ES511"
     assert first["place_ccaa_code"] == "09"

@@ -14,7 +14,7 @@ export type FavoriteWithTender = FavoriteRow & {
     status: string | null;
     estimated_value: number | null;
     currency: string;
-    cpv_code: string | null;
+    cpv_codes: string[];
     publication_date: string | null;
     deadline_at: string | null;
   } | null;
@@ -74,16 +74,36 @@ export async function listOwnFavorites(
         status,
         estimated_value,
         currency,
-        cpv_code,
         publication_date,
-        deadline_at
+        deadline_at,
+        tender_cpvs (cpv_code)
       )
     `,
     )
     .order("created_at", { ascending: false });
 
   if (error) return { data: [], error: new Error(error.message) };
-  return { data: (data as FavoriteWithTender[]) ?? [], error: null };
+
+  const rows = (data ?? []).map((row) => {
+    const tender = row.tenders as
+      | (Omit<NonNullable<FavoriteWithTender["tenders"]>, "cpv_codes"> & {
+          tender_cpvs?: { cpv_code: string }[] | null;
+        })
+      | null;
+    if (!tender) {
+      return { ...row, tenders: null } as FavoriteWithTender;
+    }
+    const { tender_cpvs, ...rest } = tender;
+    return {
+      ...row,
+      tenders: {
+        ...rest,
+        cpv_codes: [...(tender_cpvs ?? []).map((r) => r.cpv_code)].sort(),
+      },
+    } as FavoriteWithTender;
+  });
+
+  return { data: rows, error: null };
 }
 
 export async function addOwnFavorite(

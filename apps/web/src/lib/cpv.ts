@@ -88,13 +88,24 @@ export function resolveCpvFromInput(raw: string): {
   code: string;
   display: string;
   known: boolean;
+  /** Había letras/símbolos/espacios en la base (antes del `-` de control). */
+  omittedNonDigits: boolean;
 } | null {
-  const code = normalizeCpvCode(raw);
-  if (!code) return null;
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  // Dígito de control oficial `XXXXXXXX-Y`: no cuenta como “basura” a omitir.
+  const base = trimmed.includes("-")
+    ? trimmed.slice(0, trimmed.indexOf("-"))
+    : trimmed;
+  const omittedNonDigits = /\D/.test(base);
+  const digits = base.replace(/\D/g, "");
+  if (!digits) return null;
+  const code = digits.slice(0, 8).padEnd(8, "0");
   const label = lookupCpvLabel(code);
   return {
     code,
     display: label ? `${code}-${label}` : code,
     known: label != null,
+    omittedNonDigits,
   };
 }

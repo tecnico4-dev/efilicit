@@ -197,7 +197,10 @@ def test_catalunya_postgres_upsert_does_not_duplicate() -> None:
 
         row = conn.execute(
             """
-            select t.title, t.status, t.cpv_code, a.name, a.identity_confidence
+            select t.title, t.status, (
+              select coalesce(array_agg(c.cpv_code order by c.cpv_code), '{}'::text[])
+              from public.tender_cpvs c where c.tender_id = t.id
+            ), a.name, a.identity_confidence
             from public.tenders t
             join public.tender_sources ts on ts.tender_id = t.id
             left join public.contracting_authorities a on a.id = t.contracting_authority_id
@@ -208,6 +211,6 @@ def test_catalunya_postgres_upsert_does_not_duplicate() -> None:
         assert row is not None
         assert row[0].startswith("Suministro")
         assert row[1] == "publicada"
-        assert row[2] == "30192700"
+        assert list(row[2]) == ["30192700"]
         assert "Ajuntament Fixture" in (row[3] or "")
         assert row[4] == "MEDIUM"

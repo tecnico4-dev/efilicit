@@ -35,7 +35,7 @@ def _record(
             "canonical": {
                 "source_tender_id": source_tender_id,
                 "title": title,
-                "cpv_code": cpv_code,
+                "cpv_codes": [cpv_code] if cpv_code else [],
                 "estimated_value": Decimal("1000.00"),
                 "publication_date": "2024-06-01",
                 "deadline_at": deadline_at,
@@ -71,7 +71,7 @@ def test_auto_secondary_does_not_overwrite_owner_fields() -> None:
     repo.upsert_records(source_code="placsp", records=[placsp])
     tender_id = next(iter(repo.tenders))
     assert repo.tenders[tender_id]["canonical_source_code"] == "placsp"
-    assert repo.tenders[tender_id]["cpv_code"] == "48000000"
+    assert repo.tenders[tender_id]["cpv_codes"] == ["48000000"]
     assert repo.tenders[tender_id]["title"] == "Titulo PLACSP rico"
 
     euskadi = _record(
@@ -85,7 +85,7 @@ def test_auto_secondary_does_not_overwrite_owner_fields() -> None:
     # source_tender_id for euskadi without matching canonical id style — use same
     # tax:exp so match finds it; override source_record_id path via payload.
     euskadi.payload["canonical"]["source_tender_id"] = "910001"
-    euskadi.payload["canonical"]["cpv_code"] = None
+    euskadi.payload["canonical"]["cpv_codes"] = []
     euskadi.payload["canonical"]["deadline_at"] = None
     annotated = match_records([euskadi], source_code="euskadi", lookup=repo)
     assert annotated[0].payload["match"]["review_status"] == REVIEW_AUTO
@@ -95,7 +95,7 @@ def test_auto_secondary_does_not_overwrite_owner_fields() -> None:
     row = repo.tenders[tender_id]
     assert row["canonical_source_code"] == "placsp"
     assert row["title"] == "Titulo PLACSP rico"
-    assert row["cpv_code"] == "48000000"
+    assert row["cpv_codes"] == ["48000000"]
     assert row["deadline_at"] == "2026-06-01T10:00:00+00:00"
     assert repo.tender_sources[("euskadi", "910001")]["tender_id"] == tender_id
 
@@ -111,7 +111,7 @@ def test_promotion_replaces_entire_tender_when_higher_priority_arrives() -> None
         deadline_at=None,
     )
     euskadi.payload["canonical"]["source_tender_id"] = "920001"
-    euskadi.payload["canonical"]["cpv_code"] = None
+    euskadi.payload["canonical"]["cpv_codes"] = []
     repo.upsert_records(source_code="euskadi", records=[euskadi])
     tender_id = next(iter(repo.tenders))
     assert repo.tenders[tender_id]["canonical_source_code"] == "euskadi"
@@ -131,7 +131,7 @@ def test_promotion_replaces_entire_tender_when_higher_priority_arrives() -> None
     row = repo.tenders[tender_id]
     assert row["canonical_source_code"] == "placsp"
     assert row["title"] == "PLACSP completo"
-    assert row["cpv_code"] == "72000000"
+    assert row["cpv_codes"] == ["72000000"]
     assert len(repo.tender_sources) == 2
 
 
@@ -236,7 +236,7 @@ def test_postgres_secondary_does_not_overwrite_owner() -> None:
             cpv_code=None,
         )
         euskadi.payload["canonical"]["source_tender_id"] = "930001"
-        euskadi.payload["canonical"]["cpv_code"] = None
+        euskadi.payload["canonical"]["cpv_codes"] = []
         annotated = match_records([euskadi], source_code="euskadi", lookup=repo)
         assert annotated[0].payload["match"]["review_status"] == REVIEW_AUTO
         repo.upsert_records(source_code="euskadi", records=annotated)
@@ -244,7 +244,10 @@ def test_postgres_secondary_does_not_overwrite_owner() -> None:
 
         row = conn.execute(
             """
-            select t.title, t.cpv_code, t.canonical_source_code,
+            select t.title, (
+              select coalesce(array_agg(c.cpv_code order by c.cpv_code), '{}'::text[])
+              from public.tender_cpvs c where c.tender_id = t.id
+            ), t.canonical_source_code,
                    (
                      select count(*) from public.tender_sources ts2
                      where ts2.tender_id = t.id
@@ -257,6 +260,6 @@ def test_postgres_secondary_does_not_overwrite_owner() -> None:
         ).fetchone()
         assert row is not None
         assert row[0] == "PG PLACSP"
-        assert row[1] == "48000000"
+        assert list(row[1]) == ["48000000"]
         assert row[2] == "placsp"
         assert row[3] == 2

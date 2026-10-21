@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- CPV multivalor: tabla `tender_cpvs` (todos los códigos iguales; sin `tenders.cpv_code`); búsqueda/matching/alertas/UI sobre el conjunto; modo `cpv_match` `any`|`all` ([ADR 019](docs/adr/019-tender-cpvs-multivalor.md)).
 - Buscador: diccionario CPV estructurado (TED/SIMAP CPV 2008 ES oficial: `label` + `parent`/`children`, ~9454 códigos); campo «Código CPV (prefijo)» + Añadir → «CPV seleccionados»; varios CPV por búsqueda. Script `scripts/build_cpv_es_dictionary.py`.
 - Buscador: filtros Estado / Procedimiento / Tipo de contrato (desplegables «Todos» + valores presentes en BD, etiquetas legibles) y fechas de publicación desde/hasta; CCAA sin licitaciones visibles en gris y no seleccionables. RPC `list_tender_filter_options`.
 - Notificaciones in-app: lectura por aviso (`notification_reads`); pestañas Todas / No leídas estilo carpeta; puntito azul en cada aviso no leído y en el buzón del nav.

@@ -64,7 +64,7 @@ def _enqueue_one(queue: InMemoryNotificationQueue) -> None:
                 status="publicada",
                 contract_type="servicios",
                 estimated_value=Decimal("1"),
-                cpv_code="72000000",
+                cpv_codes=("72000000",),
                 publication_date=date(2026, 9, 1),
             )
         ],

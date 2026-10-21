@@ -110,7 +110,7 @@ def normalize_record(record: SourceRecord) -> SourceRecord:
         "contract_type_code": raw.get("contract_type"),
         "estimated_value": _parse_amount(raw.get("estimated_value")),
         "currency": (raw.get("currency") or "EUR").strip().upper() or "EUR",
-        "cpv_code": _primary_cpv(raw.get("cpv_codes")),
+        "cpv_codes": _normalize_cpv_codes(raw.get("cpv_codes")),
         "publication_date": _publication_date(raw.get("updated_at"), record),
         "deadline_at": _parse_deadline(raw.get("deadline_at")),
         "nuts_code": _primary_code(raw.get("nuts_codes")),
@@ -258,10 +258,21 @@ def normalize_cpv_code(value: Any) -> str | None:
     return f"{digits}-{check}" if check else digits
 
 
-def _primary_cpv(values: Any) -> str | None:
-    """CPV principal del payload (primer código normalizado)."""
-    text = _primary_code(values)
-    return normalize_cpv_code(text)
+def _normalize_cpv_codes(values: Any) -> list[str]:
+    """Lista única de CPV a 8 dígitos (sin dígito de control; ADR 019)."""
+    if not isinstance(values, list) or not values:
+        return []
+    out: list[str] = []
+    seen: set[str] = set()
+    for value in values:
+        normalized = normalize_cpv_code(value)
+        if not normalized:
+            continue
+        code8 = normalized.split("-", 1)[0]
+        if code8 not in seen:
+            seen.add(code8)
+            out.append(code8)
+    return out
 
 
 def _normalize_tax_id(value: Any) -> str | None:

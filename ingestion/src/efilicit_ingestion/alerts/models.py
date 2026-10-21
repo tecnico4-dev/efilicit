@@ -30,7 +30,7 @@ class TenderCandidate:
     procedure_type: str | None = None
     contract_type: str | None = None
     estimated_value: Decimal | float | None = None
-    cpv_code: str | None = None
+    cpv_codes: tuple[str, ...] = ()
     publication_date: date | None = None
     deadline_at: datetime | None = None
     authority_id: str | None = None
