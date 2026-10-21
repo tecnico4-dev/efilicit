@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useId, useState } from "react";
 import { formatCpvSelection, resolveCpvFromInput } from "@/lib/cpv";
+import { CpvDictionaryDialog } from "./cpv-dictionary-dialog";
 import {
   CLEAR_SEARCH_EVENT,
   useSearchFeedback,
@@ -38,12 +39,14 @@ export function CpvPicker({
   const [matchMode, setMatchMode] = useState<CpvMatchMode>(
     initialMatch === "all" ? "all" : "any",
   );
+  const [dictOpen, setDictOpen] = useState(false);
 
   const reset = useCallback(() => {
     setDraft("");
     setFieldMessage(null);
     setCodes([]);
     setMatchMode("any");
+    setDictOpen(false);
   }, []);
 
   useEffect(() => {
@@ -105,33 +108,44 @@ export function CpvPicker({
           Código CPV (prefijo)
         </label>
         <div className="mt-1 flex gap-2">
-          <input
-            id={draftId}
-            name="cpv_draft"
-            type="text"
-            inputMode="numeric"
-            autoComplete="off"
-            value={draft}
-            onChange={(e) => {
-              setDraft(e.target.value);
-              if (fieldMessage) setFieldMessage(null);
-            }}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault();
-                addFromDraft();
+          <div className="relative min-w-0 flex-1">
+            <input
+              id={draftId}
+              name="cpv_draft"
+              type="text"
+              inputMode="numeric"
+              autoComplete="off"
+              value={draft}
+              onChange={(e) => {
+                setDraft(e.target.value);
+                if (fieldMessage) setFieldMessage(null);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  addFromDraft();
+                }
+              }}
+              aria-invalid={fieldMessage?.tone === "error"}
+              aria-describedby={
+                fieldMessage ? `${draftId}-message` : undefined
               }
-            }}
-            aria-invalid={fieldMessage?.tone === "error"}
-            aria-describedby={
-              fieldMessage ? `${draftId}-message` : undefined
-            }
-            className="min-w-0 flex-1 rounded-md border border-border bg-background px-3 py-2 font-mono text-sm outline-none focus:ring-2 focus:ring-ring"
-          />
+              className="w-full rounded-md border border-border bg-background py-2 pl-3 pr-10 font-mono text-sm outline-none focus:ring-2 focus:ring-ring"
+            />
+            <button
+              type="button"
+              onClick={() => setDictOpen(true)}
+              className="absolute top-1/2 right-2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full border border-primary/35 bg-primary-light/70 font-serif text-[0.85rem] leading-none text-primary-dark italic hover:border-primary/55 hover:bg-primary-light"
+              aria-label="Abrir diccionario CPV"
+              title="Diccionario CPV"
+            >
+              i
+            </button>
+          </div>
           <button
             type="button"
             onClick={addFromDraft}
-            className="shrink-0 rounded-md border border-border bg-background px-3 py-2 text-sm font-medium text-foreground hover:bg-muted"
+            className="shrink-0 rounded-md border border-primary/35 bg-primary-light/50 px-3 py-2 text-sm font-medium text-primary-dark hover:border-primary/50 hover:bg-primary-light/80"
           >
             Añadir
           </button>
@@ -224,6 +238,17 @@ export function CpvPicker({
       {codes.map((code) => (
         <input key={code} type="hidden" name="cpv" value={code} />
       ))}
+      <CpvDictionaryDialog
+        open={dictOpen}
+        selectedCodes={codes}
+        onCancel={() => setDictOpen(false)}
+        onSave={(next) => {
+          clearFeedback();
+          setCodes(next);
+          setFieldMessage(null);
+          setDictOpen(false);
+        }}
+      />
     </div>
   );
 }
