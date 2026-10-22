@@ -63,6 +63,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Login: validar `?next=` antes de redirigir (rechaza `//host` y similares; open redirect).
 - Alertas: no crear/editar si importe mín. > máx. (mismo aviso que en búsqueda: «Importe solicitado inválido.»).
 - Inicio: si falla alguna query de resumen, se muestra error en lugar de silenciarlo.
 - Guardar búsqueda: una sola lectura de búsquedas propias para validar nombre y criterios duplicados (antes dos `listOwnSavedSearches`).

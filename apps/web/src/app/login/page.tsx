@@ -1,4 +1,5 @@
 import { ThemeToggle } from "@/components/shell/theme-toggle";
+import { safeRedirectPath } from "@/lib/safe-redirect";
 import { FallingPapersBackground } from "./falling-papers-background";
 import { LoginForm } from "./login-form";
 
@@ -17,7 +18,7 @@ export default async function LoginPage({
   searchParams: SearchParams;
 }) {
   const params = await searchParams;
-  const nextPath = first(params.next) || "/";
+  const nextPath = safeRedirectPath(first(params.next));
 
   return (
     <>
@@ -44,7 +45,7 @@ export default async function LoginPage({
           <h1 className="mt-5 text-2xl font-bold tracking-tight text-foreground">
             Iniciar sesión
           </h1>
-          <LoginForm nextPath={nextPath.startsWith("/") ? nextPath : "/"} />
+          <LoginForm nextPath={nextPath} />
         </div>
       </main>
     </>

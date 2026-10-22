@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { safeRedirectPath } from "@/lib/safe-redirect";
 import {
   ChangePasswordForm,
   markPasswordOfferSeen,
@@ -52,7 +53,7 @@ export function LoginForm({ nextPath }: { nextPath: string }) {
   const [offerPassword, setOfferPassword] = useState(false);
 
   function goNext() {
-    router.replace(nextPath || "/");
+    router.replace(safeRedirectPath(nextPath));
     router.refresh();
   }
 
