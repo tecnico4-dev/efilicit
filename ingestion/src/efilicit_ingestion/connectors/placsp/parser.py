@@ -338,9 +338,10 @@ def _extract_project_fields(status_node: etree._Element) -> dict[str, Any]:
 
     out["contract_type"] = _text(project.find("cbc:TypeCode", NS))
 
-    amount = project.find("cac:BudgetAmount/cbc:TotalAmount", NS)
+    # Canónico = sin IVA (ADR 020): preferir TaxExclusiveAmount; TotalAmount solo si falta.
+    amount = project.find("cac:BudgetAmount/cbc:TaxExclusiveAmount", NS)
     if amount is None:
-        amount = project.find("cac:BudgetAmount/cbc:TaxExclusiveAmount", NS)
+        amount = project.find("cac:BudgetAmount/cbc:TotalAmount", NS)
     if amount is not None:
         out["estimated_value"] = _text(amount)
         out["currency"] = amount.get("currencyID")

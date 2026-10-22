@@ -36,7 +36,7 @@ def test_parse_valid_entry_extracts_mvp_fields() -> None:
     assert payload["title"].startswith("Suministro de material")
     assert payload["status"] == "PUB"
     assert payload["contract_folder_id"] == "EXP/2026/0001"
-    assert payload["estimated_value"] == "12500.50"
+    assert payload["estimated_value"] == "10330.99"
     assert payload["currency"] == "EUR"
     assert payload["cpv_codes"] == ["30192700"]
     assert payload["nuts_codes"] == ["ES300"]
@@ -108,6 +108,8 @@ def test_parse_keeps_newest_atom_updated_for_same_folder() -> None:
     assert "adjudicada" in record.payload["title"].lower()
     assert record.recorded_at is not None
     assert record.recorded_at.day == 28
+    # Fixture solo trae TotalAmount → fallback (mejor esfuerzo; ADR 020).
+    assert record.payload["estimated_value"] == "1000.00"
 
 
 def test_parse_zip_keeps_newest_across_atom_members() -> None:

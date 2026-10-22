@@ -18,7 +18,7 @@
       "contractType": {"id": 1, "name": "Suministros"},
       "contractProcedureStatus": {"id": 1, "name": "Publicación"},
       "contractProcedureType": {"id": 1, "name": "Abierto"},
-      "budgetWithoutVAT": 8400.0,
+      "budgetWithoutVAT": 6942.15,
       "minorContract": false,
       "_links": {
         "self": {

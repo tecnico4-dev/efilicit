@@ -46,7 +46,7 @@ def test_agregadas_normalize_valid_fixture_maps_mvp_fields() -> None:
     assert canonical["status_code"] == "PUB"
     assert canonical["contract_type"] == "suministros"
     assert canonical["procedure_type"] == "abierto"
-    assert canonical["estimated_value"] == Decimal("12500.50")
+    assert canonical["estimated_value"] == Decimal("10330.99")
     assert canonical["currency"] == "EUR"
     assert canonical["cpv_codes"] == ["30192700"]
     assert canonical["nuts_code"] == "ES300"

@@ -144,10 +144,10 @@ def _map_catalunya_row(
     phase = _text(row.get("fase_publicacio"))
     status = _PHASE_STATUS.get(_fold(phase or ""), None)
 
-    # Varias columnas de importe según fase; tomamos la primera no vacía.
+    # Canónico = sin IVA (ADR 020): preferir presupuesto de licitación «sense» (sin impuestos).
     estimated = (
-        _text(row.get("valor_estimat_contracte"))
-        or _text(row.get("pressupost_licitacio_sense"))
+        _text(row.get("pressupost_licitacio_sense"))
+        or _text(row.get("valor_estimat_contracte"))
         or _text(row.get("valor_estimat_expedient"))
     )
 
