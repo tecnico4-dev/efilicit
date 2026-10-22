@@ -53,6 +53,18 @@ export function AlertsPanel({
       setError("Indica al menos un criterio (keywords, CPV o importe).");
       return null;
     }
+    const minVal = criteria.estimated_value_min;
+    const maxVal = criteria.estimated_value_max;
+    if (
+      minVal != null &&
+      maxVal != null &&
+      !Number.isNaN(minVal) &&
+      !Number.isNaN(maxVal) &&
+      minVal > maxVal
+    ) {
+      setError("Importe solicitado inválido.");
+      return null;
+    }
     return { name: name.trim(), criteria };
   }
 

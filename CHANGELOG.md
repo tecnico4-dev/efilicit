@@ -62,6 +62,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Alertas: no crear/editar si importe mín. > máx. (mismo aviso que en búsqueda: «Importe solicitado inválido.»).
 - Inicio: si falla alguna query de resumen, se muestra error en lugar de silenciarlo.
 - Guardar búsqueda: una sola lectura de búsquedas propias para validar nombre y criterios duplicados (antes dos `listOwnSavedSearches`).
 - Detección de búsquedas/alertas duplicadas: `criteriaEqual` ahora distingue también por estado, procedimiento, tipo de contrato y fechas de publicación (antes solo keywords/CPV/importes/geo/`open_for_submission` → falso positivo al guardar).

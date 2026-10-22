@@ -58,6 +58,18 @@ export function AlertRowItem({ alert }: { alert: AlertRow }) {
       setError("Indica al menos un criterio (keywords, CPV o importe).");
       return;
     }
+    const minVal = nextCriteria.estimated_value_min;
+    const maxVal = nextCriteria.estimated_value_max;
+    if (
+      minVal != null &&
+      maxVal != null &&
+      !Number.isNaN(minVal) &&
+      !Number.isNaN(maxVal) &&
+      minVal > maxVal
+    ) {
+      setError("Importe solicitado inválido.");
+      return;
+    }
 
     setPending(true);
     setError(null);
