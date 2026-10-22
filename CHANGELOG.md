@@ -41,6 +41,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Ingesta: títulos canónicos en «grito» (casi todo mayúsculas) se reformatean (capitalización + partículas en minúscula; siglas cortas CPV/SA/UTE… intactas); títulos ya mixtos no se tocan.
 - Ingesta: `estimated_value` canónico = importe **sin IVA** (PLACSP: `TaxExclusiveAmount`; Catalunya: `pressupost_licitacio_sense`; Euskadi: `budgetWithoutVAT`). Filas existentes requieren re-ingesta de la fuente propietaria.
 - Cabecera: nav con scroll horizontal en móvil; Favoritos abre submenú al primer toque en dispositivos sin hover fino.
 - Padding de páginas alineado con cabecera (`px-4 sm:px-6`).

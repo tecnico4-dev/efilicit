@@ -88,6 +88,7 @@ def normalize_record(record: SourceRecord) -> SourceRecord:
     title = (raw.get("title") or raw.get("project_name") or "").strip()
     if not title:
         title = record.source_record_id
+    title = prettify_display_title(title)
 
     authority_raw = raw.get("authority") or {}
     authority_name = (authority_raw.get("name") or "").strip() or "Unknown authority"
@@ -186,6 +187,145 @@ def normalize_name(value: str) -> str:
     without_marks = "".join(ch for ch in decomposed if not unicodedata.combining(ch))
     collapsed = re.sub(r"\s+", " ", without_marks).strip().lower()
     return collapsed
+
+
+# Partículas que en título “arreglados” quedan en minúsculas (salvo al inicio).
+_TITLE_SMALL_WORDS = frozenset(
+    {
+        "a",
+        "al",
+        "con",
+        "de",
+        "del",
+        "e",
+        "el",
+        "en",
+        "la",
+        "las",
+        "los",
+        "o",
+        "para",
+        "por",
+        "sin",
+        "un",
+        "una",
+        "unas",
+        "unos",
+        "y",
+    }
+)
+
+# Siglas habituales en contratación (evitar tratar MADRID/SEVILLA como sigla).
+_KNOWN_TITLE_ACRONYMS = frozenset(
+    {
+        "BOE",
+        "CIF",
+        "CODICE",
+        "CPV",
+        "DIR3",
+        "DOGC",
+        "EU",
+        "INE",
+        "IVA",
+        "NIF",
+        "NUTS",
+        "PLACSP",
+        "SA",
+        "SAL",
+        "SCA",
+        "SL",
+        "SLU",
+        "SRL",
+        "TED",
+        "UE",
+        "UTE",
+    }
+)
+
+
+def _letter_chars(value: str) -> list[str]:
+    return [ch for ch in value if ch.isalpha()]
+
+
+def _is_shouty_title(title: str) -> bool:
+    """Casi todo el texto en mayúsculas (títulos “en grito” de algunas fuentes)."""
+    letters = _letter_chars(title)
+    if len(letters) < 8:
+        return False
+    upper = sum(1 for ch in letters if ch.isupper())
+    return (upper / len(letters)) >= 0.85
+
+
+def _token_core(token: str) -> str:
+    return token.strip(".,;:!?()[]{}«»\"'`")
+
+
+def _looks_like_acronym(token: str) -> bool:
+    """Siglas / códigos cortos en mayúsculas (CPV, SA, SLU, UTE, IVA…)."""
+    core = _token_core(token)
+    if not core:
+        return False
+    # No tratar partículas (DE, EL, PARA…) como siglas.
+    if core.lower() in _TITLE_SMALL_WORDS:
+        return False
+    letters = _letter_chars(core)
+    if len(letters) < 2:
+        return False
+    upper = core.upper()
+    if upper in _KNOWN_TITLE_ACRONYMS:
+        return True
+    if any(ch.isdigit() for ch in core):
+        # p. ej. CPV2008: conservar si la parte alfabética va en mayúsculas.
+        return all(ch.isupper() for ch in letters) and len(letters) <= 6
+    if not core.isalpha():
+        return False
+    # Desconocidas: solo muy cortas (2–4), no topónimos tipo MADRID.
+    return core.isupper() and 2 <= len(core) <= 4
+
+
+def _capitalize_word(word: str) -> str:
+    """Primera letra alfabética en mayúscula; el resto en minúscula."""
+    chars = list(word)
+    for i, ch in enumerate(chars):
+        if ch.isalpha():
+            chars[i] = ch.upper()
+            for j in range(i + 1, len(chars)):
+                if chars[j].isalpha():
+                    chars[j] = chars[j].lower()
+            break
+    return "".join(chars)
+
+
+def _prettify_token(token: str, *, first: bool) -> str:
+    if _looks_like_acronym(token):
+        return token
+    if "-" in _token_core(token):
+        # SOFTWARE-HARDWARE → Software-Hardware (siglas por trozo).
+        head, *rest = token.split("-")
+        bits = [_prettify_token(head, first=first)]
+        bits.extend(_prettify_token(part, first=False) for part in rest)
+        return "-".join(bits)
+    lower = token.lower()
+    core = _token_core(lower)
+    if not first and core in _TITLE_SMALL_WORDS:
+        return lower
+    return _capitalize_word(lower)
+
+
+def prettify_display_title(title: str) -> str:
+    """Arregla títulos en grito; deja intactos los que ya vienen con capitalización mixta.
+
+    - Solo actúa si ≥85% de letras van en mayúsculas (y hay ≥8 letras).
+    - Capitaliza palabras; partículas (de, del, la…) en minúsculas salvo al inicio.
+    - Conserva siglas cortas en mayúsculas (CPV, SA, UTE…).
+    """
+    cleaned = re.sub(r"\s+", " ", title).strip()
+    if not cleaned or not _is_shouty_title(cleaned):
+        return cleaned
+    tokens = cleaned.split(" ")
+    return " ".join(
+        _prettify_token(tok, first=(i == 0)) for i, tok in enumerate(tokens)
+    )
 
 
 def _map_code(
