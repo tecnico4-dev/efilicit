@@ -585,7 +585,7 @@ export default async function SearchPage({
               name="pub_from"
               type="date"
               defaultValue={pubFromValid}
-              className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
+              className="ef-date mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
             />
           </div>
           <div>
@@ -600,7 +600,7 @@ export default async function SearchPage({
               name="pub_to"
               type="date"
               defaultValue={pubToValid}
-              className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
+              className="ef-date mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
             />
           </div>
         </div>
