@@ -8,6 +8,7 @@
 import type { Database, SearchCriteria } from "@efilicit/types";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { cpvCodesForSearch } from "@/lib/cpv";
+import { normalizeSearchQuery, tokenizeKeywords } from "@/lib/keywords";
 
 export type SearchTenderRow = {
   id: string;
@@ -49,9 +50,12 @@ function emptyToUndef<T>(value: T[] | null | undefined): T[] | undefined {
 function buildRpcArgs(input: SearchTendersInput): SearchTendersArgs {
   const c = input.criteria ?? {};
   const name = c.authority?.name_contains?.trim();
+  const keywords = c.keywords?.length
+    ? tokenizeKeywords(c.keywords.join(" "))
+    : undefined;
   return {
-    p_query: input.query?.trim() || undefined,
-    p_keywords: emptyToUndef(c.keywords),
+    p_query: normalizeSearchQuery(input.query ?? "") || undefined,
+    p_keywords: emptyToUndef(keywords),
     p_cpv_codes: emptyToUndef(cpvCodesForSearch(c.cpv_codes)),
     p_cpv_match:
       c.cpv_codes?.length && c.cpv_match === "all" ? "all" : undefined,

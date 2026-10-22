@@ -7,7 +7,8 @@ aunque el ranking de búsqueda (FTS/trgm) no se reutiliza aquí.
 Reglas:
 
 - Dimensiones omitidas = no entran en el AND.
-- Dentro de una dimensión lista (keywords, CPV, …): OR.
+- Dentro de una dimensión lista (CPV, statuses, …): OR (salvo CPV ``all``).
+- ``keywords``: tokens significativos en AND (como la búsqueda FTS); stopwords ignoradas.
 - Criteria vacío (solo ``version``) → sin match (anti-spam).
 - Score = dimensiones que pasan / dimensiones activas; prioridad por umbrales.
 """
@@ -18,6 +19,7 @@ from datetime import date, datetime
 from decimal import Decimal
 
 from efilicit_ingestion.alerts.criteria import SearchCriteria, parse_criteria
+from efilicit_ingestion.alerts.keywords import fold_text, tokenize_keywords
 from efilicit_ingestion.alerts.models import AlertMatch, AlertRule, TenderCandidate
 
 PRIORITY_HIGH = "high"
@@ -49,8 +51,12 @@ def _text_blob(tender: TenderCandidate) -> str:
 
 
 def _keyword_hit(tender: TenderCandidate, keywords: list[str]) -> bool:
-    blob = _norm(_text_blob(tender))
-    return any(_norm(k) in blob for k in keywords if k.strip())
+    """Todas las palabras significativas deben aparecer (AND); stopwords fuera."""
+    tokens = tokenize_keywords(*keywords)
+    if not tokens:
+        return False
+    blob = fold_text(_text_blob(tender))
+    return all(token in blob for token in tokens)
 
 
 def _cpv_hit(
@@ -199,7 +205,8 @@ def evaluate_tender(
 ) -> AlertMatch | None:
     """Devuelve match si todas las dimensiones presentes pasan (AND); None si no.
 
-    Arrays dentro de una dimensión: OR. Criteria vacío → no match (anti-spam).
+    Keywords: AND de tokens significativos. Resto de arrays: OR.
+    Criteria vacío → no match (anti-spam).
     ``alert_id`` / ``user_id`` los rellena el caller (aquí van vacíos).
     """
     if not criteria.has_filters():

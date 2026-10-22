@@ -55,6 +55,24 @@ def test_keywords_and_cpv_match() -> None:
     assert hit.priority == "high"
 
 
+def test_keywords_require_all_significant_tokens() -> None:
+    """AND tras stopwords: 'software de madrid' exige software y madrid."""
+    both = parse_criteria(
+        {"version": 1, "keywords": ["software de madrid"]}
+    )
+    assert evaluate_tender(both, _tender()) is not None
+
+    missing = parse_criteria(
+        {"version": 1, "keywords": ["software", "barcelona"]}
+    )
+    assert evaluate_tender(missing, _tender()) is None
+
+
+def test_keywords_stopwords_alone_do_not_match() -> None:
+    criteria = parse_criteria({"version": 1, "keywords": ["de", "el", "la"]})
+    assert evaluate_tender(criteria, _tender()) is None
+
+
 def test_no_match_when_cpv_differs() -> None:
     criteria = parse_criteria(
         {

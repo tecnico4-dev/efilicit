@@ -12,6 +12,7 @@ import {
   listOwnSavedSearches,
 } from "@/lib/queries";
 import type { SearchCriteria } from "@efilicit/types";
+import { tokenizeKeywords } from "@/lib/keywords";
 import { useSearchFeedback } from "./search-feedback";
 
 const FORM_ID = "search-form";
@@ -65,12 +66,7 @@ function buildCriteria(form: HTMLFormElement): SearchCriteria | null {
   const min = minRaw === "" ? undefined : Number(minRaw);
   const max = maxRaw === "" ? undefined : Number(maxRaw);
 
-  const keywords = q
-    ? q
-        .split(/\s+/)
-        .map((s) => s.trim())
-        .filter(Boolean)
-    : undefined;
+  const keywords = q ? tokenizeKeywords(q) : undefined;
 
   const hasSomething =
     (keywords && keywords.length > 0) ||

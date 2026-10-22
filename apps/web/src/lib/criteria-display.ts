@@ -1,5 +1,6 @@
 import type { SearchCriteria } from "@efilicit/types";
 import { SEARCH_CCAA_OPTIONS } from "@/lib/geo-ccaa";
+import { tokenizeKeywords } from "@/lib/keywords";
 import {
   formatContractType,
   formatProcedureType,
@@ -117,10 +118,7 @@ export function formFieldsToCriteria(input: {
   min?: string;
   max?: string;
 }): SearchCriteria {
-  const kw = input.keywords
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean);
+  const kw = tokenizeKeywords(input.keywords.replace(/,/g, " "));
   const cpv = input.cpv.trim();
   const minRaw = input.min?.trim() ?? "";
   const maxRaw = input.max?.trim() ?? "";

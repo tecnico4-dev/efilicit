@@ -13,6 +13,7 @@ import {
   type SearchTenderRow,
 } from "@/lib/queries";
 import { SEARCH_CCAA_OPTIONS } from "@/lib/geo-ccaa";
+import { normalizeSearchQuery } from "@/lib/keywords";
 import { formatTenderStatus } from "@/lib/tender-labels";
 import { normalizeCpvCode } from "@/lib/cpv";
 import { CpvPicker } from "./cpv-picker";
@@ -211,7 +212,8 @@ export default async function SearchPage({
   searchParams: SearchParams;
 }) {
   const params = await searchParams;
-  const q = first(params.q).trim();
+  const qInput = first(params.q).trim();
+  const q = normalizeSearchQuery(qInput);
   const cpvCodes = allParam(params.cpv);
   const cpvMatchRaw = first(params.cpv_match).trim().toLowerCase();
   const cpvMatch: "any" | "all" =
@@ -294,7 +296,7 @@ export default async function SearchPage({
     openForSubmission;
 
   const filters: SearchFilters = {
-    q,
+    q: qInput,
     cpvCodes,
     cpvMatch,
     minRaw,
@@ -391,7 +393,7 @@ export default async function SearchPage({
       </h1>
 
       <SearchForm
-        formKey={`${q}|${cpvCodes.join(",")}|${cpvMatch}|${minRaw}|${maxRaw}|${ccaaValid}|${municipalityValid}|${statusValid}|${procedureValid}|${contractTypeValid}|${pubFromValid}|${pubToValid}|${openForSubmission}|${from}`}
+        formKey={`${qInput}|${cpvCodes.join(",")}|${cpvMatch}|${minRaw}|${maxRaw}|${ccaaValid}|${municipalityValid}|${statusValid}|${procedureValid}|${contractTypeValid}|${pubFromValid}|${pubToValid}|${openForSubmission}|${from}`}
         actions={
           <>
             <button
@@ -417,7 +419,7 @@ export default async function SearchPage({
             id="q"
             name="q"
             type="search"
-            defaultValue={q}
+            defaultValue={qInput}
             className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
           />
         </div>
