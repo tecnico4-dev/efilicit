@@ -185,6 +185,7 @@ export function CpvPicker({
                   value="any"
                   checked={matchMode === "any"}
                   onChange={() => setMatchMode("any")}
+                  className="size-4 shrink-0 accent-primary"
                 />
                 Cualquiera
               </label>
@@ -195,6 +196,7 @@ export function CpvPicker({
                   value="all"
                   checked={matchMode === "all"}
                   onChange={() => setMatchMode("all")}
+                  className="size-4 shrink-0 accent-primary"
                 />
                 Todos
               </label>
