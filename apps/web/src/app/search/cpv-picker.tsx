@@ -176,27 +176,39 @@ export function CpvPicker({
             <div
               role="radiogroup"
               aria-label="Coincidencia CPV"
-              className="flex shrink-0 gap-3 text-xs text-muted-foreground"
+              className="inline-flex shrink-0 rounded-md border border-border bg-muted/40 p-0.5 text-xs"
             >
-              <label className="inline-flex items-center gap-1.5">
+              <label
+                className={
+                  matchMode === "any"
+                    ? "cursor-pointer rounded-[0.3rem] bg-primary px-2.5 py-1 font-medium text-primary-foreground shadow-sm"
+                    : "cursor-pointer rounded-[0.3rem] px-2.5 py-1 text-muted-foreground hover:text-foreground"
+                }
+              >
                 <input
                   type="radio"
                   name="cpv_match"
                   value="any"
                   checked={matchMode === "any"}
                   onChange={() => setMatchMode("any")}
-                  className="size-4 shrink-0 accent-primary"
+                  className="sr-only"
                 />
                 Cualquiera
               </label>
-              <label className="inline-flex items-center gap-1.5">
+              <label
+                className={
+                  matchMode === "all"
+                    ? "cursor-pointer rounded-[0.3rem] bg-primary px-2.5 py-1 font-medium text-primary-foreground shadow-sm"
+                    : "cursor-pointer rounded-[0.3rem] px-2.5 py-1 text-muted-foreground hover:text-foreground"
+                }
+              >
                 <input
                   type="radio"
                   name="cpv_match"
                   value="all"
                   checked={matchMode === "all"}
                   onChange={() => setMatchMode("all")}
-                  className="size-4 shrink-0 accent-primary"
+                  className="sr-only"
                 />
                 Todos
               </label>
