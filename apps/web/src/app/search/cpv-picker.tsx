@@ -165,10 +165,10 @@ export function CpvPicker({
         ) : null}
       </div>
       <div>
-        <div className="flex items-baseline justify-between gap-2">
+        <div className="flex items-end justify-between gap-2">
           <label
             htmlFor={selectedId}
-            className="text-sm font-medium text-foreground"
+            className="pb-1.5 text-sm font-medium text-foreground"
           >
             CPV seleccionados
           </label>
@@ -176,13 +176,13 @@ export function CpvPicker({
             <div
               role="radiogroup"
               aria-label="Coincidencia CPV"
-              className="inline-flex shrink-0 rounded-md border border-border bg-muted/40 p-0.5 text-xs"
+              className="flex shrink-0 items-end gap-1"
             >
               <label
                 className={
                   matchMode === "any"
-                    ? "cursor-pointer rounded-[0.3rem] bg-primary px-2.5 py-1 font-medium text-primary-foreground shadow-sm"
-                    : "cursor-pointer rounded-[0.3rem] px-2.5 py-1 text-muted-foreground hover:text-foreground"
+                    ? "relative z-10 -mb-px cursor-pointer rounded-t-md border border-border border-b-[color-mix(in_srgb,var(--muted)_30%,transparent)] bg-muted/30 px-2.5 py-1 text-xs font-medium text-primary"
+                    : "relative z-10 -mb-px cursor-pointer rounded-t-md border border-transparent px-2.5 py-1 text-xs text-muted-foreground hover:bg-muted/50 hover:text-foreground"
                 }
               >
                 <input
@@ -198,8 +198,8 @@ export function CpvPicker({
               <label
                 className={
                   matchMode === "all"
-                    ? "cursor-pointer rounded-[0.3rem] bg-primary px-2.5 py-1 font-medium text-primary-foreground shadow-sm"
-                    : "cursor-pointer rounded-[0.3rem] px-2.5 py-1 text-muted-foreground hover:text-foreground"
+                    ? "relative z-10 -mb-px cursor-pointer rounded-t-md border border-border border-b-[color-mix(in_srgb,var(--muted)_30%,transparent)] bg-muted/30 px-2.5 py-1 text-xs font-medium text-primary"
+                    : "relative z-10 -mb-px cursor-pointer rounded-t-md border border-transparent px-2.5 py-1 text-xs text-muted-foreground hover:bg-muted/50 hover:text-foreground"
                 }
               >
                 <input
@@ -219,7 +219,11 @@ export function CpvPicker({
         </div>
         <div
           id={selectedId}
-          className="mt-1 min-h-[2.5rem] rounded-md border border-border bg-muted/30 px-3 py-2 text-sm"
+          className={
+            codes.length >= 2
+              ? "min-h-[2.5rem] rounded-md rounded-tr-none border border-border bg-muted/30 px-3 py-2 text-sm"
+              : "mt-1 min-h-[2.5rem] rounded-md border border-border bg-muted/30 px-3 py-2 text-sm"
+          }
         >
           {codes.length === 0 ? (
             <p className="text-muted-foreground">Ninguno</p>
