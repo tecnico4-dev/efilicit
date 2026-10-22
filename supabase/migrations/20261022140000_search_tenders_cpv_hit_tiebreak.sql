@@ -1,5 +1,8 @@
 -- search_tenders: desempate por nº de prefijos CPV pedidos cubiertos
--- (tras rank + publication_date; antes de created_at). Solo aporta en modo any.
+-- (tras rank + publication_date; antes de created_at). Solo aporta en modo any
+-- (en all todas las filas ya cubren todos los prefijos → empate).
+-- Orden: rank_score → publication_date → cpv_hit_count → created_at.
+-- Documentado en CHANGELOG + apps/web/src/lib/queries/README.md (ADR 011 intacto).
 
 drop function if exists public.search_tenders(
   text, text[], text[], text, text[], uuid[], text, text[], text[], text[], text[],

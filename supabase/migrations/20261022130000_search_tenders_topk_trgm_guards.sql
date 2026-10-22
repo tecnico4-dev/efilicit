@@ -1,5 +1,13 @@
 -- search_tenders: top-K (FTS ∪ trgm) + guardrails trgm + índices filtro ligeros.
 -- Evita rankear/ordenar toda la tabla antes del LIMIT (latencia ~O(K)).
+--
+-- Semántica (ver también CHANGELOG + apps/web/src/lib/queries/README.md; ADR 011 = contrato RPC):
+-- 1) Filtros Criteria = sí/no (CCAA, CPV, estado, fechas, open_for_submission, …).
+-- 2) Con texto: rama FTS (@@ + ts_rank) LIMIT K y rama trgm (<<% / %) LIMIT K; K=300.
+-- 3) Trgm solo si length(query) entre 3 y 120 (evita stopwords cortas tipo «de»).
+-- 4) Merge por id (mejor rank); orden final rank → publication_date → created_at
+--    (desempate CPV: migración 20261022140000). UI suele pedir LIMIT 20.
+-- Stopwords/AND se aplican en cliente/alertas antes de llegar aquí.
 
 create index if not exists tenders_procedure_type_idx
   on public.tenders (procedure_type)

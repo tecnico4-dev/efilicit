@@ -214,7 +214,7 @@ export default async function SearchPage({
   const params = await searchParams;
   const qInput = first(params.q).trim();
   const q = normalizeSearchQuery(qInput);
-  /** Texto solo con stopwords / tokens < 2 chars → no hay query útil. */
+  /** Texto solo con stopwords / tokens < 2 chars → inválido; no se busca. */
   const queryOnlyNoise = qInput !== "" && q === "";
   const cpvCodes = allParam(params.cpv);
   const cpvMatchRaw = first(params.cpv_match).trim().toLowerCase();
@@ -296,6 +296,8 @@ export default async function SearchPage({
     pubFromValid !== "" ||
     pubToValid !== "" ||
     openForSubmission;
+  /** Stopwords solas → aviso y sin RPC (aunque haya otros filtros en la URL). */
+  const shouldSearch = hasParams && !queryOnlyNoise;
 
   const filters: SearchFilters = {
     q: qInput,
@@ -326,7 +328,7 @@ export default async function SearchPage({
     profileUserId = null;
   }
 
-  if (hasParams) {
+  if (shouldSearch) {
     try {
       const client = await createSupabaseServerClient();
       const result = await searchTenders(client, {
@@ -432,9 +434,8 @@ export default async function SearchPage({
               className="mt-1 text-xs text-destructive"
               role="alert"
             >
-              Palabras como «de», «el» o «la» no se usan en la búsqueda. Escribe
-              al menos un término con significado (p. ej. «software» o
-              «suministro»).
+              Escribe al menos un término significativo para realizar la
+              búsqueda. Evita palabras como «de», «el» o «la».
             </p>
           ) : null}
         </div>
@@ -619,7 +620,7 @@ export default async function SearchPage({
       <ResultsList
         rows={rows}
         error={error}
-        searched={hasParams}
+        searched={shouldSearch}
         filters={filters}
         profileUserId={profileUserId}
         favoritedIds={favoritedIds}

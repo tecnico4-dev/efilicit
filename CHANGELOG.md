@@ -41,9 +41,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Buscador / alertas: stopwords (`de`, `el`, …) fuera; palabras significativas en **AND** (misma semántica búsqueda ↔ alerta ↔ guardar). RPC `search_tenders` top-K (FTS ∪ trgm, K=300) + trgm solo si la query tiene 3–120 caracteres (evita «de» → todo errata y rankear 40k filas).
-- Buscador: con filtro CPV, desempate tras rank + fecha de publicación por nº de prefijos CPV pedidos cubiertos (útil en modo `any`); luego `created_at`.
-- Buscador: aviso bajo el campo Texto si la query solo tiene stopwords (`de`, `el`…) y no queda nada que buscar.
+- Buscador / alertas — semántica y ranking (sin ADR nuevo; contrato RPC = [ADR 011](docs/adr/011-busqueda-via-rpc-search-tenders.md)):
+  1. Stopwords (`de`, `el`, `la`…) y tokens de menos de 2 caracteres fuera; resto en **AND** (misma lógica en `/search`, alertas y búsquedas guardadas: `keywords.ts` / `alerts/keywords.py`).
+  2. Si el Texto solo tiene stopwords → aviso en UI y **no** se llama a la RPC.
+  3. Filtros duros (CCAA, estado, CPV, fechas, …) sí/no; luego FTS ∪ trgm con **top-K ≈ 300** por rama (`20261022130000_…`); trgm solo si la query tiene 3–120 caracteres.
+  4. Orden final: nota texto → fecha publicación → nº prefijos CPV cubiertos si hay filtro CPV (`20261022140000_…`, útil en `any`) → `created_at`; UI muestra 20.
+  Detalle operativo: `apps/web/src/lib/queries/README.md`.
 - Ingesta: títulos canónicos en «grito» (casi todo mayúsculas) se reformatean (capitalización + partículas en minúscula; siglas cortas CPV/SA/UTE… intactas); títulos ya mixtos no se tocan.
 - Ingesta: `estimated_value` canónico = importe **sin IVA** (PLACSP: `TaxExclusiveAmount`; Catalunya: `pressupost_licitacio_sense`; Euskadi: `budgetWithoutVAT`). Filas existentes requieren re-ingesta de la fuente propietaria.
 - Cabecera: nav con scroll horizontal en móvil; Favoritos abre submenú al primer toque en dispositivos sin hover fino.

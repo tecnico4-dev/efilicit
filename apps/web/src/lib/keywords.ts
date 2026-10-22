@@ -1,6 +1,7 @@
 /**
  * Tokenización de texto libre para búsqueda / alertas / búsquedas guardadas.
  * Quita stopwords; el motor exige TODAS las palabras significativas (AND).
+ * Alineado con `ingestion/.../alerts/keywords.py`. Ver queries/README + CHANGELOG.
  */
 
 const STOPWORDS = new Set([
