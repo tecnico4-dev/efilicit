@@ -1,10 +1,5 @@
+import { RouteSkeleton } from "@/components/ui/route-skeleton";
+
 export default function SearchLoading() {
-  return (
-    <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-4 py-8 sm:px-6 sm:py-10">
-      <div className="h-8 w-48 animate-pulse rounded-lg bg-muted" />
-      <div className="mt-2 h-4 w-72 max-w-full animate-pulse rounded bg-muted" />
-      <div className="mt-8 h-52 animate-pulse rounded-2xl border border-border bg-surface" />
-      <p className="mt-8 text-sm text-muted-foreground">Buscando…</p>
-    </main>
-  );
+  return <RouteSkeleton label="Buscando…" />;
 }

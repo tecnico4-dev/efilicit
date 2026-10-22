@@ -7,12 +7,19 @@ import { cn } from "@/lib/cn";
 const OPEN_DELAY_MS = 350;
 const CLOSE_DELAY_MS = 60;
 
+function canHoverFine(): boolean {
+  if (typeof window === "undefined") return true;
+  return window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+}
+
 /**
  * Favoritos en nav: hover (con retardo) abre un globo con atajos
  * a licitaciones / búsquedas (`?from=nav` → «Ir a…» en el listado).
+ * En táctil/sin hover fino: primer toque abre el menú; segundo va a /favorites.
  */
 export function FavoritesNavItem({ active }: { active: boolean }) {
   const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement | null>(null);
   const openTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -25,7 +32,19 @@ export function FavoritesNavItem({ active }: { active: boolean }) {
 
   useEffect(() => () => clearTimers(), []);
 
+  useEffect(() => {
+    if (!open) return;
+    function onPointerDown(e: PointerEvent) {
+      if (!rootRef.current?.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => document.removeEventListener("pointerdown", onPointerDown);
+  }, [open]);
+
   function onEnter() {
+    if (!canHoverFine()) return;
     if (closeTimer.current) {
       clearTimeout(closeTimer.current);
       closeTimer.current = null;
@@ -35,6 +54,7 @@ export function FavoritesNavItem({ active }: { active: boolean }) {
   }
 
   function onLeave() {
+    if (!canHoverFine()) return;
     if (openTimer.current) {
       clearTimeout(openTimer.current);
       openTimer.current = null;
@@ -42,8 +62,17 @@ export function FavoritesNavItem({ active }: { active: boolean }) {
     closeTimer.current = setTimeout(() => setOpen(false), CLOSE_DELAY_MS);
   }
 
+  function onPrimaryClick(e: React.MouseEvent<HTMLAnchorElement>) {
+    if (canHoverFine()) return;
+    if (!open) {
+      e.preventDefault();
+      setOpen(true);
+    }
+  }
+
   return (
     <div
+      ref={rootRef}
       className="relative"
       onMouseEnter={onEnter}
       onMouseLeave={onLeave}
@@ -64,6 +93,7 @@ export function FavoritesNavItem({ active }: { active: boolean }) {
         )}
         aria-expanded={open}
         aria-haspopup="menu"
+        onClick={onPrimaryClick}
       >
         Favoritos
       </Link>

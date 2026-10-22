@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { PAGE_MAIN_CLASS } from "@/components/shell/page-width";
+import { ErrorState } from "@/components/ui/state-message";
 import { formatTenderStatus } from "@/lib/tender-labels";
 import type {
   DigestFrequency,
@@ -85,6 +86,7 @@ export function HomeDashboard({
   digestFrequency,
   unreadCount,
   recentNotifications,
+  loadError = null,
 }: {
   displayName: string;
   alerts: AlertRow[];
@@ -93,6 +95,7 @@ export function HomeDashboard({
   digestFrequency: DigestFrequency;
   unreadCount: number;
   recentNotifications: FavoriteStatusNotification[];
+  loadError?: string | null;
 }) {
   const activeAlerts = alerts.filter((a) => a.is_active);
   const digestLabel = digestFrequency === "semanal" ? "semanal" : "diaria";
@@ -145,6 +148,8 @@ export function HomeDashboard({
           Correos: frecuencia {digestLabel}.
         </p>
       </header>
+
+      {loadError ? <ErrorState className="mt-6">{loadError}</ErrorState> : null}
 
       <section
         aria-label="Resumen"

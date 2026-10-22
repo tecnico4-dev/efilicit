@@ -4,6 +4,7 @@ import {
   PAGE_MAIN_CLASS,
   PAGE_TITLE_RULE,
 } from "@/components/shell/page-width";
+import { EmptyState, ErrorState } from "@/components/ui/state-message";
 import { listFavoriteStatusNotifications } from "@/lib/queries";
 import { NotificationsList } from "./notifications-list";
 import type { NotificationsView } from "./notifications-folder-tabs";
@@ -59,13 +60,11 @@ export default async function NotificationsPage({
 
       <div className={PAGE_TITLE_RULE}>
         {error ? (
-          <p className="rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          <ErrorState>
             No se pudieron cargar las notificaciones: {error.message}
-          </p>
+          </ErrorState>
         ) : notifications.length === 0 ? (
-          <p className="rounded-lg border border-dashed border-border bg-surface/50 px-4 py-8 text-center text-sm text-muted-foreground">
-            Aún no tienes notificaciones.
-          </p>
+          <EmptyState>Aún no tienes notificaciones.</EmptyState>
         ) : (
           <NotificationsList notifications={notifications} view={view} />
         )}

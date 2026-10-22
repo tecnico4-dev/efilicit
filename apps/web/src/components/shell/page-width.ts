@@ -4,10 +4,10 @@
  * para reducir huecos laterales (alineado con la cabecera).
  */
 export const PAGE_MAIN_CLASS =
-  "mx-auto flex w-full max-w-6xl flex-1 flex-col px-6 py-10";
+  "mx-auto flex w-full max-w-6xl flex-1 flex-col px-4 py-8 sm:px-6 sm:py-10";
 
 export const PAGE_MAIN_NARROW_CLASS =
-  "mx-auto max-w-6xl px-6 py-10";
+  "mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10";
 
 /** Separador bajo el H1 de página (mismo patrón que Alertas / AlertsPanel). */
 export const PAGE_TITLE_RULE = "mt-8 border-t border-border pt-8";

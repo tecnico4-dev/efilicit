@@ -17,7 +17,7 @@ Los pasos globales (0–11) se mantienen. El estado se marca **aquí**, no con �
 | 5b. Notificaciones favoritos | Hecho | Buzón `/notifications`: cambios de estado (`tender_events` ∩ favoritos); puntito vía `users.notifications_read_at` |
 | 6. Alertas — gestión de producto | Hecho | `/alerts` crear/editar/activar; criteria v1; crear desde `/search` |
 | 7. Dashboard básico | Hecho | `/` autenticada: resumen alertas/favoritos/búsquedas + CTAs |
-| 8. Estados + responsive global | Pendiente | carga / vacío / error |
+| 8. Estados + responsive global | Hecho | `ErrorState`/`EmptyState`/`RouteSkeleton`; `loading.tsx` en rutas MVP; nav Favoritos táctil; padding móvil unificado |
 | 9. Hardening (RLS, healthchecks, runbooks, CI) | Pendiente | |
 | 10. Cron / programación (decisión) | Pendiente | Default: cron **off** hasta OK |
 | 11. Cierre MVP (CHANGELOG / ADR) | Pendiente | |
@@ -29,7 +29,7 @@ Los pasos globales (0–11) se mantienen. El estado se marca **aquí**, no con �
 | Web consume solo modelo canónico | Pendiente | |
 | `service_role` fuera del frontend | Pendiente | |
 | RLS owner-only en datos de usuario (favoritos/alertas) | En curso | Favoritos A≠B script listo; alertas ya tenían verify:rls |
-| Brand corporativo documentado y aplicado | En curso | Documentado + shell/home/login; resto de rutas en Pasos 2–7 |
+| Brand corporativo documentado y aplicado | Hecho | Documentado + shell y rutas MVP; Paso 8 unifica estados |
 | CI verde (lint / typecheck / tests / build) | Pendiente | |
 | Cron prod solo con OK explícito | Pendiente | |
 | ADRs estructurales (si hubo) | Pendiente | Default: N/A |

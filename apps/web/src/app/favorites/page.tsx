@@ -10,7 +10,11 @@ import {
   EmptyFavoritesTendersHint,
   EmptySavedSearchesHint,
 } from "./empty-hints";
-import { PAGE_TITLE_RULE } from "@/components/shell/page-width";
+import {
+  PAGE_MAIN_CLASS,
+  PAGE_TITLE_RULE,
+} from "@/components/shell/page-width";
+import { ErrorState } from "@/components/ui/state-message";
 import {
   FAVORITES_PREVIEW_LIMIT,
   FavoriteTenderList,
@@ -33,11 +37,11 @@ export default async function FavoritesPage() {
   const profile = await getOwnProfile(supabase);
   if (!profile.data) {
     return (
-      <main className="mx-auto max-w-6xl px-6 py-10">
-        <p className="text-sm text-destructive">
+      <main className={PAGE_MAIN_CLASS}>
+        <ErrorState>
           No hay perfil en public.users:{" "}
           {profile.error?.message ?? "desconocido"}
-        </p>
+        </ErrorState>
       </main>
     );
   }
@@ -54,7 +58,7 @@ export default async function FavoritesPage() {
   const searches = searchesResult.data;
 
   return (
-    <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-6 py-10">
+    <main className={PAGE_MAIN_CLASS}>
       <h1 className="text-2xl font-semibold tracking-tight text-foreground">
         Favoritos
       </h1>

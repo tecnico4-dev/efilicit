@@ -1,6 +1,10 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { PAGE_TITLE_RULE } from "@/components/shell/page-width";
+import {
+  PAGE_MAIN_CLASS,
+  PAGE_TITLE_RULE,
+} from "@/components/shell/page-width";
+import { EmptyState, ErrorState } from "@/components/ui/state-message";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import {
   getOwnProfile,
@@ -45,11 +49,11 @@ export default async function SavedSearchesPage({
   const profile = await getOwnProfile(supabase);
   if (!profile.data) {
     return (
-      <main className="mx-auto max-w-6xl px-6 py-10">
-        <p className="text-sm text-destructive">
+      <main className={PAGE_MAIN_CLASS}>
+        <ErrorState>
           No hay perfil en public.users:{" "}
           {profile.error?.message ?? "desconocido"}
-        </p>
+        </ErrorState>
       </main>
     );
   }
@@ -60,7 +64,7 @@ export default async function SavedSearchesPage({
   const { data: searches, error } = await listOwnSavedSearches(supabase);
 
   return (
-    <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-6 py-10">
+    <main className={PAGE_MAIN_CLASS}>
       <p className="text-sm">
         <Link href={back.href} className="font-medium text-link hover:underline">
           {back.label}
@@ -73,13 +77,11 @@ export default async function SavedSearchesPage({
 
       <div className={PAGE_TITLE_RULE}>
         {error ? (
-          <p className="text-sm text-destructive" role="alert">
-            {error.message}
-          </p>
+          <ErrorState>{error.message}</ErrorState>
         ) : searches.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
+          <EmptyState>
             <EmptySavedSearchesHint />
-          </p>
+          </EmptyState>
         ) : (
           <PaginatedSavedSearches
             searches={searches}

@@ -1,6 +1,6 @@
 # Semana 6 — Plan: web integrada + cierre MVP
 
-> **Estado:** en curso (Pasos 0–7 hechos; siguiente: Paso 8 estados + responsive).  
+> **Estado:** en curso (Pasos 0–8 hechos; siguiente: Paso 9 hardening).  
 > **Checklist:** [fase6-checklist.md](fase6-checklist.md)  
 > **Precondición:** Semana 5 cerrada y en `main` ([fase5-checklist.md](fase5-checklist.md)).  
 > **Norma:** `docs/00`–`04` y `.cursor/rules/`. La web sigue consumiendo el **modelo canónico**; sin parsers/RAW. ADR solo ante cambio estructural.  
@@ -166,6 +166,7 @@ CHANGELOG, checklist Fase 6, ADR N/A o ADRs puntuales, handoff. Criterios de sal
 | Tras Paso 7 (UX) | Contenido `max-w-6xl` (cabecera alineada); móvil sigue fluido | Menos hueco lateral en escritorio |
 | Tras Paso 7 (UX) | Búsqueda ampliada (global/título/estado/órgano) revertida; UI = Texto + CPV + importes | Pendiente reintentar filtros cuando haya tiempo; layout `max-w-6xl` se mantiene |
 | Tras Paso 7 (UX) | Auth invite-only: landing sin nav; solo «Iniciar sesión»; sin registro público; búsqueda exige sesión | [ADR 016](../adr/016-auth-invite-only-sin-registro-publico.md); cambio de contraseña opcional al primer login + en Cuenta |
+| Paso 8 | Estados unificados (`ErrorState`/`EmptyState`) + `loading.tsx` en rutas MVP; Favoritos nav con toque; `PAGE_MAIN` `px-4 sm:px-6` | Sin hamburger; sin overbuild de design system |
 
 ---
 

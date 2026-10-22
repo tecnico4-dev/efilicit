@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { EmptyState, ErrorState } from "@/components/ui/state-message";
 import {
   formatCriteriaSummary,
   parseCriteria,
@@ -219,11 +220,9 @@ export function PreviewSection({
         {title}
       </h2>
       {error ? (
-        <p className="mt-4 text-sm text-destructive" role="alert">
-          {error}
-        </p>
+        <ErrorState className="mt-4">{error}</ErrorState>
       ) : totalCount === 0 ? (
-        <p className="mt-4 text-sm text-muted-foreground">{emptyMessage}</p>
+        <EmptyState className="mt-4">{emptyMessage}</EmptyState>
       ) : (
         <div className="mt-4">
           <div className={showMore ? "relative" : undefined}>

@@ -50,6 +50,13 @@ export default async function Home() {
   const unreadCount = notifications.filter((n) => n.unread).length;
   const recentNotifications = notifications.slice(0, 3);
 
+  const loadErrors = [
+    alertsResult.error?.message,
+    favoritesResult.error?.message,
+    searchesResult.error?.message,
+    notificationsResult.error?.message,
+  ].filter((m): m is string => Boolean(m));
+
   return (
     <HomeDashboard
       displayName={profile.data.display_name?.trim() || ""}
@@ -59,6 +66,11 @@ export default async function Home() {
       digestFrequency={digestFrequency}
       unreadCount={unreadCount}
       recentNotifications={recentNotifications}
+      loadError={
+        loadErrors.length
+          ? `No se pudo cargar parte del inicio: ${loadErrors.join(" · ")}`
+          : null
+      }
     />
   );
 }

@@ -1,4 +1,6 @@
 import { redirect } from "next/navigation";
+import { PAGE_MAIN_CLASS } from "@/components/shell/page-width";
+import { EmptyState, ErrorState } from "@/components/ui/state-message";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getOwnProfile, listOwnAlerts } from "@/lib/queries";
 import { AlertRowItem } from "./alert-row";
@@ -20,11 +22,11 @@ export default async function AlertsPage() {
   const profileResult = await getOwnProfile(supabase);
   if (!profileResult.data) {
     return (
-      <main className="mx-auto max-w-6xl px-6 py-10">
-        <p className="text-sm text-destructive">
+      <main className={PAGE_MAIN_CLASS}>
+        <ErrorState>
           No hay perfil en public.users:{" "}
           {profileResult.error?.message ?? "desconocido"}
-        </p>
+        </ErrorState>
       </main>
     );
   }
@@ -35,7 +37,7 @@ export default async function AlertsPage() {
   const alertsResult = await listOwnAlerts(supabase);
 
   return (
-    <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-6 py-10">
+    <main className={PAGE_MAIN_CLASS}>
       <h1 className="text-2xl font-semibold tracking-tight text-foreground">
         Alertas
       </h1>
@@ -52,13 +54,11 @@ export default async function AlertsPage() {
           initialFrequency={digestFrequency}
         />
         {alertsResult.error ? (
-          <p className="mt-2 text-sm text-destructive" role="alert">
-            {alertsResult.error.message}
-          </p>
+          <ErrorState className="mt-2">{alertsResult.error.message}</ErrorState>
         ) : alertsResult.data.length === 0 ? (
-          <p className="mt-2 text-sm text-muted-foreground">
+          <EmptyState className="mt-2">
             Aún no tienes alertas. Crea una arriba.
-          </p>
+          </EmptyState>
         ) : (
           <ul className="mt-3 divide-y divide-border border-t border-border">
             {alertsResult.data.map((a) => (

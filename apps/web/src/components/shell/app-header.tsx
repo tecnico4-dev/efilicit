@@ -47,7 +47,7 @@ export function AppHeader({
 
         <nav
           aria-label="Principal"
-          className="flex flex-1 flex-wrap items-center gap-1.5"
+          className="-mx-1 flex max-w-full flex-1 flex-nowrap items-center gap-1.5 overflow-x-auto px-1 sm:flex-wrap sm:overflow-visible"
         >
           <Link
             href="/search"

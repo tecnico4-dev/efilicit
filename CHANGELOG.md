@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Semana 6 Paso 8: estados carga/vacío/error unificados (`RouteSkeleton`, `ErrorState`, `EmptyState`); `loading.tsx` en inicio, búsqueda, ficha, favoritos, alertas y notificaciones; 404 raíz.
 - Buscador: filtro «Solo en plazo» (`en_plazo=1` / `open_for_submission`; `deadline_at > now()`, sin plazo = fuera; off por defecto).
 - Buscador: al guardar búsqueda, modal para indicar nombre (Aceptar/Cancelar; aviso si el nombre ya existe).
 - Ficha: CPV con etiqueta del diccionario (`código-descripción`), una fila por código.
@@ -39,6 +40,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Cabecera: nav con scroll horizontal en móvil; Favoritos abre submenú al primer toque en dispositivos sin hover fino.
+- Padding de páginas alineado con cabecera (`px-4 sm:px-6`).
 - Nombres de CCAA en castellano homogéneo (`Islas Baleares`, `Comunidad Valenciana`, `Castilla La Mancha`, …) en filtro de búsqueda y catálogo `geo_ccaa`.
 - Notificaciones: no leído por aviso (`notification_reads`) al abrir la ficha; abrir el buzón ya no marca todas como leídas. Elegibilidad sigue con `tender_events.created_at`.
 - Notificaciones de favoritos: elegibilidad y no leído usan `tender_events.created_at` (cuándo lo vimos en BD), no `occurred_at` de origen; se sigue mostrando la fecha de negocio.
@@ -57,6 +60,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Inicio: si falla alguna query de resumen, se muestra error en lugar de silenciarlo.
 - Guardar búsqueda: una sola lectura de búsquedas propias para validar nombre y criterios duplicados (antes dos `listOwnSavedSearches`).
 - Detección de búsquedas/alertas duplicadas: `criteriaEqual` ahora distingue también por estado, procedimiento, tipo de contrato y fechas de publicación (antes solo keywords/CPV/importes/geo/`open_for_submission` → falso positivo al guardar).
 - Búsquedas guardadas: CCAA/municipio se reflejan en el resumen, en la detección de duplicados y al reabrir desde Favoritos (query `ccaa` / `municipality`).

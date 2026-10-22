@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { FavoriteToggle } from "@/components/favorites/favorite-toggle";
 import { PAGE_MAIN_CLASS } from "@/components/shell/page-width";
+import { ErrorState } from "@/components/ui/state-message";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import {
   getOwnProfile,
@@ -230,9 +231,9 @@ export default async function TenderDetailPage({
   if (error) {
     return (
       <main className={PAGE_MAIN_CLASS}>
-        <p className="text-sm text-destructive" role="alert">
+        <ErrorState>
           No se pudo cargar la licitación: {error.message}
-        </p>
+        </ErrorState>
         <p className="mt-4 text-sm">
           <Link href={back.href} className="font-medium text-link hover:underline">
             {back.label.replace(/^←\s*/, "")}

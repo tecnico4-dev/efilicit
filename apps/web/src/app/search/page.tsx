@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { FavoriteHeartButton } from "@/components/favorites/favorite-heart-button";
+import { PAGE_MAIN_CLASS } from "@/components/shell/page-width";
+import { EmptyState, ErrorState } from "@/components/ui/state-message";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import {
   getOwnProfile,
@@ -139,9 +141,7 @@ function ResultsList({
 }) {
   if (error) {
     return (
-      <p className="mt-8 rounded-md bg-surface px-4 py-3 text-sm text-destructive" role="alert">
-        Error al buscar: {error}
-      </p>
+      <ErrorState className="mt-8">Error al buscar: {error}</ErrorState>
     );
   }
 
@@ -150,7 +150,11 @@ function ResultsList({
   }
 
   if (rows.length === 0) {
-    return <p className="mt-8 text-sm text-muted-foreground">Sin resultados para estos criterios.</p>;
+    return (
+      <EmptyState className="mt-8">
+        Sin resultados para estos criterios.
+      </EmptyState>
+    );
   }
 
   return (
@@ -374,7 +378,7 @@ export default async function SearchPage({
   }
 
   return (
-    <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-6 py-10">
+    <main className={PAGE_MAIN_CLASS}>
       {back ? (
         <p className="mb-4 text-sm">
           <Link href={back.href} className="font-medium text-link hover:underline">
