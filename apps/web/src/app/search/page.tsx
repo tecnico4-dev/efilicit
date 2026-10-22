@@ -214,6 +214,8 @@ export default async function SearchPage({
   const params = await searchParams;
   const qInput = first(params.q).trim();
   const q = normalizeSearchQuery(qInput);
+  /** Texto solo con stopwords / tokens < 2 chars → no hay query útil. */
+  const queryOnlyNoise = qInput !== "" && q === "";
   const cpvCodes = allParam(params.cpv);
   const cpvMatchRaw = first(params.cpv_match).trim().toLowerCase();
   const cpvMatch: "any" | "all" =
@@ -420,8 +422,21 @@ export default async function SearchPage({
             name="q"
             type="search"
             defaultValue={qInput}
+            aria-invalid={queryOnlyNoise || undefined}
+            aria-describedby={queryOnlyNoise ? "q-noise-hint" : undefined}
             className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
           />
+          {queryOnlyNoise ? (
+            <p
+              id="q-noise-hint"
+              className="mt-1 text-xs text-destructive"
+              role="alert"
+            >
+              Palabras como «de», «el» o «la» no se usan en la búsqueda. Escribe
+              al menos un término con significado (p. ej. «software» o
+              «suministro»).
+            </p>
+          ) : null}
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
