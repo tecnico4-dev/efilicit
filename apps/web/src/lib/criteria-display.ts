@@ -52,7 +52,7 @@ export function formatCriteriaSummary(criteria: SearchCriteria): string {
       criteria.estimated_value_max != null
         ? String(criteria.estimated_value_max)
         : "—";
-    parts.push(`importe ${min}–${max}`);
+    parts.push(`importe sin IVA ${min}–${max}`);
   }
   const ccaaCodes = criteria.geography?.ccaa_codes?.filter(Boolean) ?? [];
   if (ccaaCodes.length) {

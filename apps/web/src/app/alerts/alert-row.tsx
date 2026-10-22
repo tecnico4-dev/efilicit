@@ -200,7 +200,7 @@ export function AlertRowItem({ alert }: { alert: AlertRow }) {
                 htmlFor={`edit-min-${alert.id}`}
                 className="block text-sm font-medium text-foreground"
               >
-                Importe mín.
+                Importe mín. (sin IVA)
               </label>
               <Input
                 id={`edit-min-${alert.id}`}
@@ -217,7 +217,7 @@ export function AlertRowItem({ alert }: { alert: AlertRow }) {
                 htmlFor={`edit-max-${alert.id}`}
                 className="block text-sm font-medium text-foreground"
               >
-                Importe máx.
+                Importe máx. (sin IVA)
               </label>
               <Input
                 id={`edit-max-${alert.id}`}

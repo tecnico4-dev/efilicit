@@ -134,6 +134,7 @@ def _map_row(row: dict[str, Any], artifact: RemoteArtifact) -> SourceRecord | No
     self_link = links.get("self") if isinstance(links.get("self"), dict) else {}
     publication_url = _text(self_link.get("href"))
 
+    # estimated_value = sin IVA (campo budgetWithoutVAT de la API).
     budget = row.get("budgetWithoutVAT")
     estimated = str(budget) if budget is not None else None
     # Plazo de presentación: ``deadlineDate`` en /contracting-notices.

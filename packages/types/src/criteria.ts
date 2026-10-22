@@ -75,9 +75,9 @@ export type CriteriaFields = {
   cpv_match?: CpvMatchMode;
   authority?: AuthorityCriteria;
   geography?: GeographyCriteria;
-  /** Importe estimado mínimo inclusive (`tenders.estimated_value`). */
+  /** Importe estimado mínimo inclusive sin IVA (`tenders.estimated_value`). */
   estimated_value_min?: number;
-  /** Importe estimado máximo inclusive. */
+  /** Importe estimado máximo inclusive sin IVA. */
   estimated_value_max?: number;
   /** Valores tal cual en `tenders.contract_type` (sin enum cerrado en MVP). */
   contract_types?: string[];

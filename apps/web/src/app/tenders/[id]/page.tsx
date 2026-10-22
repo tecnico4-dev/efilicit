@@ -284,7 +284,7 @@ export default async function TenderDetailPage({
       ) : null}
 
       <dl className="mt-8">
-        <Field label="Importe">
+        <Field label="Importe (sin IVA)">
           {formatMoney(tender.estimated_value, tender.currency)}
         </Field>
         <Field label="CPV">

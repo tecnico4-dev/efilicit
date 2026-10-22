@@ -91,7 +91,7 @@ El parser emite el mismo shape pre-canónico que PLACSP/Catalunya para reutiliza
 | `status` | `contractProcedureStatus.name` → `PUB` / `ADJ` / … |
 | `procedure_type` | `contractProcedureType.name` (etiqueta ES) → códigos CODICE `1`…`13` / `100` / `999` |
 | `contract_type` | `contractType.id` (si es CODICE) o `name` → `1`/`2`/`3`, concesiones `22`/`31`/`32`, etc. |
-| `estimated_value` | `budgetWithoutVAT` (sin IVA; [ADR 020](../adr/020-estimated-value-sin-iva.md)) |
+| `estimated_value` | `budgetWithoutVAT` (importe sin IVA) |
 | `deadline_at` | `deadlineDate` → UTC (sin offset = Europe/Madrid; ausente → null) |
 | `cpv_codes` | *(vacío)* — `/contracting-notices` no trae CPV de la licitación (sí `/contracts`); no usar `contractingAuthority.CPV`. Enriquecimiento → [BACKLOG §3](../plans/BACKLOG.md) |
 | `nuts_codes` | `contractingAuthority.codNUTS` |

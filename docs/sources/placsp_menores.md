@@ -251,7 +251,7 @@ Pedido explícito del corte MVP (`docs/04`): contratos menores cuando estén dis
 
 ### Campos canónicos prioritarios (MVP)
 
-Igual que `placsp`: título/objeto, estado, fechas, importes sin IVA ([ADR 020](../adr/020-estimated-value-sin-iva.md)), CPV (si viene), tipo/procedimiento, organismo (NIF/CIF cuando exista), URL, trazabilidad RAW.
+Igual que `placsp`: título/objeto, estado, fechas, importes sin IVA, CPV (si viene), tipo/procedimiento, organismo (NIF/CIF cuando exista), URL, trazabilidad RAW.
 
 ---
 

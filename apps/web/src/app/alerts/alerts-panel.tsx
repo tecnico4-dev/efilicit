@@ -178,7 +178,7 @@ export function AlertsPanel({
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <label htmlFor="min" className="block text-sm font-medium text-foreground">
-            Importe mín.
+            Importe mín. (sin IVA)
           </label>
           <Input
             id="min"
@@ -192,7 +192,7 @@ export function AlertsPanel({
         </div>
         <div>
           <label htmlFor="max" className="block text-sm font-medium text-foreground">
-            Importe máx.
+            Importe máx. (sin IVA)
           </label>
           <Input
             id="max"

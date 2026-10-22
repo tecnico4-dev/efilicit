@@ -32,4 +32,3 @@ No uses un ADR para el estado de una fuente o un parser: eso va en `docs/sources
 | [017](017-tender-events-tipo-pipeline-y-status.md) | `tender_events`: hecho de pipeline vs estado de negocio | Aceptado |
 | [018](018-geografia-lugar-ejecucion-ccaa-municipio.md) | Geografía lugar de ejecución: CCAA + municipio (sin provincia) | Aceptado |
 | [019](019-tender-cpvs-multivalor.md) | CPV multivalor en `tender_cpvs` (sin columna en `tenders`) | Aceptado |
-| [020](020-estimated-value-sin-iva.md) | `estimated_value` canónico sin IVA | Aceptado |

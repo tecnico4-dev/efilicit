@@ -176,7 +176,7 @@ function ResultsList({
               </div>
               <dl className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
                 <div>
-                  <dt className="inline text-muted-foreground">Importe: </dt>
+                  <dt className="inline text-muted-foreground">Importe (sin IVA): </dt>
                   <dd className="inline">{formatMoney(row.estimated_value, row.currency)}</dd>
                 </div>
                 <div>
@@ -527,7 +527,7 @@ export default async function SearchPage({
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <label htmlFor="min" className="block text-sm font-medium text-foreground">
-              Importe mín.
+              Importe mín. (sin IVA)
             </label>
             <input
               id="min"
@@ -541,7 +541,7 @@ export default async function SearchPage({
           </div>
           <div>
             <label htmlFor="max" className="block text-sm font-medium text-foreground">
-              Importe máx.
+              Importe máx. (sin IVA)
             </label>
             <input
               id="max"

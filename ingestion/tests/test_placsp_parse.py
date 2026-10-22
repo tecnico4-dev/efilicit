@@ -108,7 +108,7 @@ def test_parse_keeps_newest_atom_updated_for_same_folder() -> None:
     assert "adjudicada" in record.payload["title"].lower()
     assert record.recorded_at is not None
     assert record.recorded_at.day == 28
-    # Fixture solo trae TotalAmount → fallback (mejor esfuerzo; ADR 020).
+    # Fixture solo trae TotalAmount → fallback (mejor esfuerzo).
     assert record.payload["estimated_value"] == "1000.00"
 
 

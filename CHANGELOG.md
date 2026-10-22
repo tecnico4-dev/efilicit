@@ -10,7 +10,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Plazos: `deadline_at` canónico en UTC; valores sin offset (p. ej. PLACSP) se interpretan como `Europe/Madrid`. UI muestra hora peninsular. Canarias → BACKLOG.
-- [ADR 020](docs/adr/020-estimated-value-sin-iva.md): `tenders.estimated_value` = importe estimado **sin IVA** (contrato canónico homogéneo entre fuentes).
 - Semana 6 Paso 8: estados carga/vacío/error unificados (`RouteSkeleton`, `ErrorState`, `EmptyState`); `loading.tsx` en inicio, búsqueda, ficha, favoritos, alertas y notificaciones; 404 raíz.
 - Buscador: filtro «Solo en plazo» (`en_plazo=1` / `open_for_submission`; `deadline_at > now()`, sin plazo = fuera; off por defecto).
 - Buscador: al guardar búsqueda, modal para indicar nombre (Aceptar/Cancelar; aviso si el nombre ya existe).
@@ -42,7 +41,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Ingesta: PLACSP prioriza `TaxExclusiveAmount` (sin IVA); Catalunya prioriza `pressupost_licitacio_sense`. Euskadi ya usaba `budgetWithoutVAT`. Filas existentes requieren re-ingesta de la fuente propietaria.
+- Ingesta: `estimated_value` canónico = importe **sin IVA** (PLACSP: `TaxExclusiveAmount`; Catalunya: `pressupost_licitacio_sense`; Euskadi: `budgetWithoutVAT`). Filas existentes requieren re-ingesta de la fuente propietaria.
 - Cabecera: nav con scroll horizontal en móvil; Favoritos abre submenú al primer toque en dispositivos sin hover fino.
 - Padding de páginas alineado con cabecera (`px-4 sm:px-6`).
 - Nombres de CCAA en castellano homogéneo (`Islas Baleares`, `Comunidad Valenciana`, `Castilla La Mancha`, …) en filtro de búsqueda y catálogo `geo_ccaa`.
