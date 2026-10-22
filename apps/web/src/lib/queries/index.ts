@@ -18,6 +18,10 @@ export {
   type TenderSourceSummary,
 } from "./get-tender";
 export {
+  listTenderStatusHistory,
+  type StatusTimelineEntry,
+} from "./tender-status-history";
+export {
   createOwnAlert,
   createOwnSavedSearch,
   deleteOwnAlert,

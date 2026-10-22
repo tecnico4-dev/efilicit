@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Ficha: botón «Histórico registrado» junto al estado (si hay hitos en `tender_events`); popover con fecha → estado (hover preview, click para fijar).
 - Plazos: `deadline_at` canónico en UTC; valores sin offset (p. ej. PLACSP) se interpretan como `Europe/Madrid`. UI muestra hora peninsular. Canarias → BACKLOG.
 - Semana 6 Paso 8: estados carga/vacío/error unificados (`RouteSkeleton`, `ErrorState`, `EmptyState`); `loading.tsx` en inicio, búsqueda, ficha, favoritos, alertas y notificaciones; 404 raíz.
 - Buscador: filtro «Solo en plazo» (`en_plazo=1` / `open_for_submission`; `deadline_at > now()`, sin plazo = fuera; off por defecto).

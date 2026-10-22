@@ -8,6 +8,7 @@ import {
   getOwnProfile,
   getTenderById,
   isOwnFavorite,
+  listTenderStatusHistory,
   type TenderSourceSummary,
 } from "@/lib/queries";
 import { formatCpvSelection, normalizeCpvCode } from "@/lib/cpv";
@@ -17,6 +18,7 @@ import {
   formatProcedureType,
   formatTenderStatus,
 } from "@/lib/tender-labels";
+import { StatusHistoryPopover } from "./status-history-popover";
 
 export const dynamic = "force-dynamic";
 
@@ -239,6 +241,14 @@ export default async function TenderDetailPage({
 
   const authority = tender.contracting_authority;
 
+  let statusHistory: Awaited<
+    ReturnType<typeof listTenderStatusHistory>
+  >["data"] = [];
+  if (tender.status) {
+    const history = await listTenderStatusHistory(supabase, tender.id);
+    if (!history.error) statusHistory = history.data;
+  }
+
   // Favoritos solo con sesión (mismo criterio que Alertas en la nav).
   let favoriteUserId: string | null = null;
   let initiallyFavorited = false;
@@ -303,7 +313,14 @@ export default async function TenderDetailPage({
             "—"
           )}
         </Field>
-        <Field label="Estado">{formatTenderStatus(tender.status)}</Field>
+        <Field label="Estado">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span>{formatTenderStatus(tender.status)}</span>
+            {tender.status && statusHistory.length > 0 ? (
+              <StatusHistoryPopover entries={statusHistory} />
+            ) : null}
+          </div>
+        </Field>
         <Field label="Tipo de contrato">{formatContractType(tender.contract_type)}</Field>
         <Field label="Procedimiento">{formatProcedureType(tender.procedure_type)}</Field>
         <Field label="Publicación">{formatDateMadrid(tender.publication_date)}</Field>
