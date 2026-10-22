@@ -77,6 +77,8 @@ Detalle por CCAA: [cobertura-ccaa.md](../sources/cobertura-ccaa.md). Checklist a
 ## 6. Web / búsqueda
 
 - **Paginación / más de 20 resultados en `/search`.** El buscador MVP limita a **20** resultados a propósito (`search_tenders` / UI). No hay “cargar más” ni páginas. Revisable más adelante si hace falta (paginación o cursor sobre el mismo FTS+trgm, sin cambiar Criteria).
+- **Ordenación de resultados en `/search`.** Hoy el orden lo fija la RPC (rank texto → fecha publicación → cobertura CPV → `created_at`). Con solo 20 filas aporta poco; **tiene sentido junto a paginación / más resultados**: UI para ordenar por campos útiles (p. ej. fecha publicación, importe, plazo, relevancia). Preferible parámetros de orden en `search_tenders` (o sort estable + keyset) antes que reordenar solo en cliente.
+- **Búsqueda FTS vs alertas substring.** Tras alinear stopwords + AND, la búsqueda sigue siendo FTS/`pg_trgm` y el match de alertas es substring en título/descripción. Puede haber divergencias raras. **Alinear solo si en uso real molesta** (no es bug MVP).
 
 ---
 
