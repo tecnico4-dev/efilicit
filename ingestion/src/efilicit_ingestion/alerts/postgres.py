@@ -5,7 +5,7 @@ La web nunca escribe en ``notification_queue`` ni lee emails de Auth.
 
 Lecturas:
 
-- alertas activas + ventana de tenders (join organismo para criteria).
+- alertas activas + ventana de tenders (join organismo; paginada, sin techo duro).
 - emails y ``digest_frequency`` de cuenta para el drenado.
 
 Escrituras: upsert idempotente en ``notification_queue`` (ON CONFLICT DO NOTHING).
@@ -13,6 +13,7 @@ Escrituras: upsert idempotente en ``notification_queue`` (ON CONFLICT DO NOTHING
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 from typing import Any
@@ -57,26 +58,57 @@ def load_active_alerts(conn: psycopg.Connection) -> list[AlertRule]:
     ]
 
 
-def load_tender_candidates(
+def _row_to_tender_candidate(row: dict[str, Any]) -> TenderCandidate:
+    value = row["estimated_value"]
+    return TenderCandidate(
+        id=str(row["id"]),
+        title=row["title"],
+        description=row["description"],
+        status=row["status"],
+        procedure_type=row["procedure_type"],
+        contract_type=row["contract_type"],
+        estimated_value=Decimal(str(value)) if value is not None else None,
+        cpv_codes=tuple(row["cpv_codes"] or ()),
+        publication_date=row["publication_date"],
+        deadline_at=row["deadline_at"],
+        authority_id=_as_str(row["contracting_authority_id"]),
+        authority_tax_id=row["authority_tax_id"],
+        authority_name=row["authority_name"],
+        authority_name_normalized=row["authority_name_normalized"],
+        municipality=row["municipality"],
+        country=row["country"],
+        place_ccaa_code=row["place_ccaa_code"],
+        place_municipality_code=row["place_municipality_code"],
+        updated_at=row["updated_at"],
+    )
+
+
+def _normalize_since(since: date | datetime | None) -> datetime:
+    if since is None:
+        return datetime.now(timezone.utc) - timedelta(days=1)
+    if isinstance(since, date) and not isinstance(since, datetime):
+        return datetime(since.year, since.month, since.day, tzinfo=timezone.utc)
+    return since
+
+
+def load_tender_candidates_page(
     conn: psycopg.Connection,
     *,
     since: date | datetime | None = None,
     limit: int = 5000,
-) -> list[TenderCandidate]:
-    """Ventana de licitaciones para matching (por updated_at / publication_date).
+    before_touch_at: datetime | None = None,
+    before_id: str | None = None,
+) -> list[tuple[TenderCandidate, datetime]]:
+    """Una página de la ventana (más recientes primero).
 
-    Incluye organismo (authority) y place_* de la licitación (geography).
+    ``before_*`` = cursor keyset tras la última fila de la página anterior
+    (``touch_at`` DESC, ``id`` DESC). Devuelve (candidato, touch_at) para paginar.
     """
-    if since is None:
-        since = datetime.now(timezone.utc) - timedelta(days=1)
-    if isinstance(since, date) and not isinstance(since, datetime):
-        since_dt = datetime(since.year, since.month, since.day, tzinfo=timezone.utc)
-    else:
-        since_dt = since
+    since_dt = _normalize_since(since)
+    page_size = max(1, int(limit))
+    use_cursor = before_touch_at is not None and before_id is not None
 
-    with conn.cursor(row_factory=dict_row) as cur:
-        cur.execute(
-            """
+    sql = """
             select
               t.id,
               t.title,
@@ -96,6 +128,7 @@ def load_tender_candidates(
               t.publication_date,
               t.deadline_at,
               t.updated_at,
+              coalesce(t.updated_at, t.created_at) as touch_at,
               t.contracting_authority_id,
               t.place_ccaa_code,
               t.place_municipality_code,
@@ -108,42 +141,103 @@ def load_tender_candidates(
             left join public.contracting_authorities ca
               on ca.id = t.contracting_authority_id
             where
-              coalesce(t.updated_at, t.created_at) >= %s
-              or coalesce(t.publication_date, '-infinity'::date) >= (%s::timestamptz)::date
-            order by coalesce(t.updated_at, t.created_at) desc
+              (
+                coalesce(t.updated_at, t.created_at) >= %s
+                or coalesce(t.publication_date, '-infinity'::date) >= (%s::timestamptz)::date
+              )
+    """
+    params: list[Any] = [since_dt, since_dt]
+    if use_cursor:
+        sql += """
+              and (
+                coalesce(t.updated_at, t.created_at) < %s
+                or (
+                  coalesce(t.updated_at, t.created_at) = %s
+                  and t.id < %s::uuid
+                )
+              )
+        """
+        params.extend([before_touch_at, before_touch_at, before_id])
+    sql += """
+            order by coalesce(t.updated_at, t.created_at) desc, t.id desc
             limit %s
-            """,
-            (since_dt, since_dt, limit),
-        )
+    """
+    params.append(page_size)
+
+    with conn.cursor(row_factory=dict_row) as cur:
+        cur.execute(sql, params)
         rows = cur.fetchall()
 
-    out: list[TenderCandidate] = []
+    out: list[tuple[TenderCandidate, datetime]] = []
     for row in rows:
-        value = row["estimated_value"]
-        out.append(
-            TenderCandidate(
-                id=str(row["id"]),
-                title=row["title"],
-                description=row["description"],
-                status=row["status"],
-                procedure_type=row["procedure_type"],
-                contract_type=row["contract_type"],
-                estimated_value=Decimal(str(value)) if value is not None else None,
-                cpv_codes=tuple(row["cpv_codes"] or ()),
-                publication_date=row["publication_date"],
-                deadline_at=row["deadline_at"],
-                authority_id=_as_str(row["contracting_authority_id"]),
-                authority_tax_id=row["authority_tax_id"],
-                authority_name=row["authority_name"],
-                authority_name_normalized=row["authority_name_normalized"],
-                municipality=row["municipality"],
-                country=row["country"],
-                place_ccaa_code=row["place_ccaa_code"],
-                place_municipality_code=row["place_municipality_code"],
-                updated_at=row["updated_at"],
-            )
-        )
+        touch = row["touch_at"]
+        if touch is not None and touch.tzinfo is None:
+            touch = touch.replace(tzinfo=timezone.utc)
+        out.append((_row_to_tender_candidate(row), touch))
     return out
+
+
+def collect_paginated_candidates(
+    fetch_page: Callable[
+        [datetime | None, str | None],
+        list[tuple[TenderCandidate, datetime]],
+    ],
+    *,
+    page_size: int = 5000,
+) -> list[TenderCandidate]:
+    """Acumula páginas hasta agotar la ventana (helper testeable sin Postgres).
+
+    ``fetch_page(before_touch_at, before_id)`` → lista ``(TenderCandidate, touch_at)``.
+    """
+    page_size = max(1, int(page_size))
+    out: list[TenderCandidate] = []
+    seen: set[str] = set()
+    before_touch_at: datetime | None = None
+    before_id: str | None = None
+
+    while True:
+        page = fetch_page(before_touch_at, before_id)
+        if not page:
+            break
+        for candidate, touch_at in page:
+            if candidate.id in seen:
+                continue
+            seen.add(candidate.id)
+            out.append(candidate)
+        if len(page) < page_size:
+            break
+        last_candidate, last_touch = page[-1]
+        before_touch_at = last_touch
+        before_id = last_candidate.id
+    return out
+
+
+def load_tender_candidates(
+    conn: psycopg.Connection,
+    *,
+    since: date | datetime | None = None,
+    limit: int = 5000,
+) -> list[TenderCandidate]:
+    """Toda la ventana de matching; ``limit`` = tamaño de página (no techo).
+
+    Incluye organismo (authority) y place_* de la licitación (geography).
+    Pagina por keyset hasta agotar filas del «since».
+    """
+    page_size = max(1, int(limit))
+
+    def fetch_page(
+        before_touch_at: datetime | None,
+        before_id: str | None,
+    ) -> list[tuple[TenderCandidate, datetime]]:
+        return load_tender_candidates_page(
+            conn,
+            since=since,
+            limit=page_size,
+            before_touch_at=before_touch_at,
+            before_id=before_id,
+        )
+
+    return collect_paginated_candidates(fetch_page, page_size=page_size)
 
 
 def load_user_emails(

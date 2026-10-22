@@ -42,6 +42,7 @@ class AlertsRunConfig:
     send: bool = False
     digest: date | None = None
     since_days: int = 1
+    # Tamaño de página al leer la ventana; se pagina hasta agotar (no es techo).
     tender_limit: int = 5000
 
 

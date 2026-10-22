@@ -41,6 +41,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Alertas batch: la ventana de licitaciones del job ya no se corta a 5.000; ese valor es **tamaño de página** y se pagina (keyset) hasta agotar el «último día» (`load_tender_candidates`).
 - Buscador / alertas — semántica y ranking (sin ADR nuevo; contrato RPC = [ADR 011](docs/adr/011-busqueda-via-rpc-search-tenders.md)):
   1. Stopwords (`de`, `el`, `la`…) y tokens de menos de 2 caracteres fuera; resto en **AND** (misma lógica en `/search`, alertas y búsquedas guardadas: `keywords.ts` / `alerts/keywords.py`).
   2. Si el Texto solo tiene stopwords → aviso en UI y **no** se llama a la RPC.
