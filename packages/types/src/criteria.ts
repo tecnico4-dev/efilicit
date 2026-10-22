@@ -89,12 +89,12 @@ export type CriteriaFields = {
   publication_date_from?: string;
   /** `tenders.publication_date` ≤. */
   publication_date_to?: string;
-  /** `tenders.deadline_at` ≥ (ISO timestamptz o fecha). */
+  /** `tenders.deadline_at` ≥ (ISO UTC o fecha; fecha = 00:00 Europe/Madrid → UTC). */
   deadline_from?: string;
   /** `tenders.deadline_at` ≤. */
   deadline_to?: string;
   /**
-   * Solo licitaciones aún en plazo: `deadline_at > now()`.
+   * Solo licitaciones aún en plazo: `deadline_at > now()` (UTC).
    * Sin plazo (`null`) no entran. Independiente de `deadline_from`/`to`.
    */
   open_for_submission?: boolean;

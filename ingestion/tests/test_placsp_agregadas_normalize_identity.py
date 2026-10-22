@@ -51,7 +51,7 @@ def test_agregadas_normalize_valid_fixture_maps_mvp_fields() -> None:
     assert canonical["cpv_codes"] == ["30192700"]
     assert canonical["nuts_code"] == "ES300"
     assert canonical["publication_date"].isoformat() == "2026-09-10"
-    assert canonical["deadline_at"].isoformat().startswith("2026-10-01T14:00:00")
+    assert canonical["deadline_at"].isoformat().startswith("2026-10-01T12:00:00")
     assert canonical["source_tender_id"] == "B00000000:EXP/2026/0001"
     assert canonical["authority"]["tax_id"] == "B00000000"
     assert canonical["authority"]["name_normalized"] == (

@@ -9,6 +9,7 @@ import {
 function formatWhen(iso: string): string {
   try {
     return new Date(iso).toLocaleString("es-ES", {
+      timeZone: "Europe/Madrid",
       dateStyle: "medium",
       timeStyle: "short",
     });

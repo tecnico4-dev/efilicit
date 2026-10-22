@@ -11,6 +11,7 @@ import {
   type TenderSourceSummary,
 } from "@/lib/queries";
 import { formatCpvSelection, normalizeCpvCode } from "@/lib/cpv";
+import { formatDateMadrid, formatDateTimeMadrid } from "@/lib/datetime";
 import {
   formatContractType,
   formatProcedureType,
@@ -111,17 +112,6 @@ function formatMoney(value: number | null, currency: string): string {
   }
 }
 
-function formatDate(value: string | null): string {
-  if (!value) return "—";
-  const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return "—";
-  return new Intl.DateTimeFormat("es-ES", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  }).format(d);
-}
-
 function Field({
   label,
   children,
@@ -181,7 +171,7 @@ function SourcesList({
               <div>
                 <dt className="inline">Visto · </dt>
                 <dd className="inline text-foreground">
-                  {formatDate(source.last_seen_at)}
+                  {formatDateMadrid(source.last_seen_at)}
                 </dd>
               </div>
               {source.match_method ? (
@@ -316,8 +306,8 @@ export default async function TenderDetailPage({
         <Field label="Estado">{formatTenderStatus(tender.status)}</Field>
         <Field label="Tipo de contrato">{formatContractType(tender.contract_type)}</Field>
         <Field label="Procedimiento">{formatProcedureType(tender.procedure_type)}</Field>
-        <Field label="Publicación">{formatDate(tender.publication_date)}</Field>
-        <Field label="Plazo">{formatDate(tender.deadline_at)}</Field>
+        <Field label="Publicación">{formatDateMadrid(tender.publication_date)}</Field>
+        <Field label="Plazo">{formatDateTimeMadrid(tender.deadline_at)}</Field>
         <Field label="Comunidad autónoma">
           {tender.place_ccaa?.name ?? "—"}
         </Field>

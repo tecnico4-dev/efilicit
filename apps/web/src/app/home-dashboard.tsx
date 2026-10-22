@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { PAGE_MAIN_CLASS } from "@/components/shell/page-width";
 import { ErrorState } from "@/components/ui/state-message";
+import { calendarDayMadrid, formatDateTimeMadrid } from "@/lib/datetime";
 import { formatTenderStatus } from "@/lib/tender-labels";
 import type {
   DigestFrequency,
@@ -12,44 +13,33 @@ import type { Database } from "@efilicit/types";
 type AlertRow = Database["public"]["Tables"]["alerts"]["Row"];
 type SavedSearchRow = Database["public"]["Tables"]["saved_searches"]["Row"];
 
+function daysUntilDeadlineMadrid(iso: string | null): number | null {
+  if (!iso) return null;
+  const deadlineDay = calendarDayMadrid(iso);
+  const todayDay = calendarDayMadrid(new Date());
+  if (!deadlineDay || !todayDay) return null;
+  const deadline = new Date(`${deadlineDay}T12:00:00Z`);
+  const today = new Date(`${todayDay}T12:00:00Z`);
+  return Math.round(
+    (deadline.getTime() - today.getTime()) / (1000 * 60 * 60 * 24),
+  );
+}
+
 function deadlineLabel(iso: string | null): string {
-  if (!iso) return "Sin plazo";
-  try {
-    const deadline = new Date(iso);
-    if (Number.isNaN(deadline.getTime())) return "Sin plazo";
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const day = new Date(deadline);
-    day.setHours(0, 0, 0, 0);
-    const diff = Math.round(
-      (day.getTime() - today.getTime()) / (1000 * 60 * 60 * 24),
-    );
-    if (diff < 0) return `Venció hace ${Math.abs(diff)} d`;
-    if (diff === 0) return "Hoy";
-    if (diff === 1) return "Mañana";
-    return `${diff} días`;
-  } catch {
-    return "Sin plazo";
-  }
+  const diff = daysUntilDeadlineMadrid(iso);
+  if (diff == null) return "Sin plazo";
+  if (diff < 0) return `Venció hace ${Math.abs(diff)} d`;
+  if (diff === 0) return "Hoy";
+  if (diff === 1) return "Mañana";
+  return `${diff} días`;
 }
 
 function deadlineUrgencyClass(iso: string | null): string {
-  if (!iso) return "text-muted-foreground";
-  try {
-    const deadline = new Date(iso);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const day = new Date(deadline);
-    day.setHours(0, 0, 0, 0);
-    const diff = Math.round(
-      (day.getTime() - today.getTime()) / (1000 * 60 * 60 * 24),
-    );
-    if (diff < 0) return "text-destructive";
-    if (diff <= 7) return "text-primary-dark";
-    return "text-muted-foreground";
-  } catch {
-    return "text-muted-foreground";
-  }
+  const diff = daysUntilDeadlineMadrid(iso);
+  if (diff == null) return "text-muted-foreground";
+  if (diff < 0) return "text-destructive";
+  if (diff <= 7) return "text-primary-dark";
+  return "text-muted-foreground";
 }
 
 /** Favoritos con plazo más cercano primero; sin plazo al final. Máx. 5. */
@@ -69,10 +59,7 @@ function attentionFavorites(favorites: FavoriteWithTender[]): FavoriteWithTender
 
 function formatWhen(iso: string): string {
   try {
-    return new Date(iso).toLocaleString("es-ES", {
-      dateStyle: "medium",
-      timeStyle: "short",
-    });
+    return formatDateTimeMadrid(iso);
   } catch {
     return iso;
   }

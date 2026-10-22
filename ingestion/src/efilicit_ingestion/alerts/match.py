@@ -37,12 +37,10 @@ def _parse_date(value: str | None) -> date | None:
 
 
 def _parse_dt(value: str | None) -> datetime | None:
-    """ISO datetime; si solo hay fecha, ancla a 00:00 UTC."""
-    if not value:
-        return None
-    if len(value) == 10:
-        return datetime.fromisoformat(f"{value}T00:00:00+00:00")
-    return datetime.fromisoformat(value.replace("Z", "+00:00"))
+    """ISO → UTC (naive / solo fecha = Europe/Madrid, igual que canónico)."""
+    from efilicit_ingestion.pipeline.canonical import parse_datetime_to_utc
+
+    return parse_datetime_to_utc(value)
 
 
 def _text_blob(tender: TenderCandidate) -> str:

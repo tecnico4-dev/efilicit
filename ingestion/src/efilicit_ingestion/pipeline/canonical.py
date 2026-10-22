@@ -11,9 +11,10 @@ from __future__ import annotations
 
 import re
 import unicodedata
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from decimal import Decimal, InvalidOperation
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from efilicit_ingestion.models import SourceRecord
 from efilicit_ingestion.pipeline.geography import (
@@ -293,25 +294,38 @@ def _normalize_platform_id(value: Any) -> str | None:
 def _publication_date(updated_at: Any, record: SourceRecord) -> date | None:
     if record.recorded_at is not None:
         return record.recorded_at.date()
-    parsed = _parse_datetime(updated_at)
+    parsed = parse_datetime_to_utc(updated_at)
     return parsed.date() if parsed else None
 
 
+# Plazos/timestamptz canónicos: siempre UTC.
+# Con offset → UTC; sin offset (p. ej. PLACSP EndDate+EndTime) → Europe/Madrid → UTC;
+# solo fecha → 00:00 Europe/Madrid → UTC.
+_MADRID = ZoneInfo("Europe/Madrid")
+
+
 def _parse_deadline(value: Any) -> datetime | None:
-    return _parse_datetime(value)
+    return parse_datetime_to_utc(value)
 
 
-def _parse_datetime(value: Any) -> datetime | None:
+def _as_utc(dt: datetime) -> datetime:
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=_MADRID)
+    return dt.astimezone(timezone.utc)
+
+
+def parse_datetime_to_utc(value: Any) -> datetime | None:
+    """Normaliza ISO/datetime a UTC aware (naive = Europe/Madrid)."""
     if value is None or value == "":
         return None
     if isinstance(value, datetime):
-        return value
+        return _as_utc(value)
     text = str(value).strip().replace("Z", "+00:00")
     try:
-        return datetime.fromisoformat(text)
+        parsed = datetime.fromisoformat(text)
     except ValueError:
-        # Solo fecha (sin hora)
         try:
-            return datetime.fromisoformat(f"{text}T00:00:00")
+            parsed = datetime.fromisoformat(f"{text}T00:00:00")
         except ValueError:
             return None
+    return _as_utc(parsed)

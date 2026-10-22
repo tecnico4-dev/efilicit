@@ -94,7 +94,7 @@ El parser emite el mismo shape pre-canónico que PLACSP para reutilizar `stages.
 | `estimated_value` | Sin IVA ([ADR 020](../adr/020-estimated-value-sin-iva.md)): `pressupost_licitacio_sense` → `valor_estimat_contracte` → `valor_estimat_expedient` |
 | `cpv_codes` | `codi_cpv` |
 | `nuts_codes` | `codi_nuts` |
-| `deadline_at` | `termini_presentacio_ofertes` |
+| `deadline_at` | `termini_presentacio_ofertes` → UTC (sin offset = Europe/Madrid) |
 | `updated_at` | `data_publicacio_anunci` / `data_publicacio_contracte` |
 | `publication_url` | `enllac_publicacio.url` |
 | `authority.name` | `nom_organ` |

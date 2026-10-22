@@ -243,7 +243,7 @@ Definición de cobertura del MVP del proyecto: ver `docs/04-roadmap-mvp.md` y [c
 
 - título / objeto;
 - estado (`cbc-place-ext:ContractFolderStatusCode`; fallback `cbc:` / local-name / `Estado:` en `atom:title`);
-- fechas (publicación, plazo oferta cuando exista);
+- fechas (publicación, plazo oferta cuando exista); `deadline_at` en UTC (hora sin offset = Europe/Madrid);
 - importes + moneda: canónico **sin IVA** (`cbc:TaxExclusiveAmount`; fallback `cbc:TotalAmount` — [ADR 020](../adr/020-estimated-value-sin-iva.md));
 - CPV principal;
 - tipo de contrato / procedimiento (si vienen claros);
