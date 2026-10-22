@@ -42,6 +42,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Buscador / alertas: stopwords (`de`, `el`, …) fuera; palabras significativas en **AND** (misma semántica búsqueda ↔ alerta ↔ guardar). RPC `search_tenders` top-K (FTS ∪ trgm, K=300) + trgm solo si la query tiene 3–120 caracteres (evita «de» → todo errata y rankear 40k filas).
+- Buscador: con filtro CPV, desempate tras rank + fecha de publicación por nº de prefijos CPV pedidos cubiertos (útil en modo `any`); luego `created_at`.
 - Ingesta: títulos canónicos en «grito» (casi todo mayúsculas) se reformatean (capitalización + partículas en minúscula; siglas cortas CPV/SA/UTE… intactas); títulos ya mixtos no se tocan.
 - Ingesta: `estimated_value` canónico = importe **sin IVA** (PLACSP: `TaxExclusiveAmount`; Catalunya: `pressupost_licitacio_sense`; Euskadi: `budgetWithoutVAT`). Filas existentes requieren re-ingesta de la fuente propietaria.
 - Cabecera: nav con scroll horizontal en móvil; Favoritos abre submenú al primer toque en dispositivos sin hover fino.
