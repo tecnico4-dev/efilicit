@@ -165,24 +165,24 @@ export function CpvPicker({
         ) : null}
       </div>
       <div>
-        <div className="flex items-end justify-between gap-2">
-          <label
-            htmlFor={selectedId}
-            className="pb-1.5 text-sm font-medium text-foreground"
-          >
-            CPV seleccionados
-          </label>
+        <label
+          htmlFor={selectedId}
+          className="block text-sm font-medium text-foreground"
+        >
+          CPV seleccionados
+        </label>
+        <div className="relative mt-1">
           {codes.length >= 2 ? (
             <div
               role="radiogroup"
               aria-label="Coincidencia CPV"
-              className="flex shrink-0 items-end gap-1"
+              className="absolute right-0 bottom-full z-10 flex translate-y-px gap-1"
             >
               <label
                 className={
                   matchMode === "any"
-                    ? "relative z-10 -mb-px cursor-pointer rounded-t-md border border-border border-b-[color-mix(in_srgb,var(--muted)_30%,transparent)] bg-muted/30 px-2.5 py-1 text-xs font-medium text-primary"
-                    : "relative z-10 -mb-px cursor-pointer rounded-t-md border border-transparent px-2.5 py-1 text-xs text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                    ? "cursor-pointer rounded-t-md border border-border border-b-[color-mix(in_srgb,var(--muted)_30%,transparent)] bg-muted/30 px-2.5 py-1 text-xs font-medium text-primary"
+                    : "cursor-pointer rounded-t-md border border-transparent px-2.5 py-1 text-xs text-muted-foreground hover:bg-muted/50 hover:text-foreground"
                 }
               >
                 <input
@@ -198,8 +198,8 @@ export function CpvPicker({
               <label
                 className={
                   matchMode === "all"
-                    ? "relative z-10 -mb-px cursor-pointer rounded-t-md border border-border border-b-[color-mix(in_srgb,var(--muted)_30%,transparent)] bg-muted/30 px-2.5 py-1 text-xs font-medium text-primary"
-                    : "relative z-10 -mb-px cursor-pointer rounded-t-md border border-transparent px-2.5 py-1 text-xs text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                    ? "cursor-pointer rounded-t-md border border-border border-b-[color-mix(in_srgb,var(--muted)_30%,transparent)] bg-muted/30 px-2.5 py-1 text-xs font-medium text-primary"
+                    : "cursor-pointer rounded-t-md border border-transparent px-2.5 py-1 text-xs text-muted-foreground hover:bg-muted/50 hover:text-foreground"
                 }
               >
                 <input
@@ -216,15 +216,14 @@ export function CpvPicker({
           ) : (
             <input type="hidden" name="cpv_match" value="any" />
           )}
-        </div>
-        <div
-          id={selectedId}
-          className={
-            codes.length >= 2
-              ? "min-h-[2.5rem] rounded-md rounded-tr-none border border-border bg-muted/30 px-3 py-2 text-sm"
-              : "mt-1 min-h-[2.5rem] rounded-md border border-border bg-muted/30 px-3 py-2 text-sm"
-          }
-        >
+          <div
+            id={selectedId}
+            className={
+              codes.length >= 2
+                ? "min-h-[2.5rem] rounded-md rounded-tr-none border border-border bg-muted/30 px-3 py-2 text-sm"
+                : "min-h-[2.5rem] rounded-md border border-border bg-muted/30 px-3 py-2 text-sm"
+            }
+          >
           {codes.length === 0 ? (
             <p className="text-muted-foreground">Ninguno</p>
           ) : (
@@ -249,6 +248,7 @@ export function CpvPicker({
               ))}
             </ul>
           )}
+          </div>
         </div>
         {/* Texto oculto solo para accesibilidad / depuración; los hidden son la fuente de verdad del GET */}
         <span className="sr-only">{selectedDisplay}</span>
