@@ -47,6 +47,9 @@ export function MunicipalityFilter({
   const wrapRef = useRef<HTMLDivElement>(null);
 
   const enabled = ccaa !== "";
+  /** CCAA elegida pero sin municipios con licitaciones → mismo bloqueo que sin CCAA. */
+  const noMunicipalities = enabled && !loading && options.length === 0;
+  const inputDisabled = !enabled || noMunicipalities;
 
   useEffect(() => {
     const form = document.getElementById(SEARCH_FORM_ID) as HTMLFormElement | null;
@@ -162,21 +165,22 @@ export function MunicipalityFilter({
         id="municipality-text"
         type="text"
         autoComplete="off"
-        disabled={!enabled}
-        value={enabled ? text : ""}
+        disabled={inputDisabled}
+        value={inputDisabled ? "" : text}
         placeholder={
-          enabled
-            ? loading
+          !enabled
+            ? "Selecciona antes una CCAA"
+            : loading
               ? "Cargando…"
               : options.length === 0
                 ? "Sin municipios con licitaciones"
                 : "Escribe para filtrar…"
-            : "Selecciona antes una CCAA"
         }
         onFocus={() => {
-          if (enabled) setOpen(true);
+          if (!inputDisabled) setOpen(true);
         }}
         onChange={(e) => {
+          if (inputDisabled) return;
           const next = e.target.value;
           setText(next);
           setOpen(true);
@@ -184,6 +188,7 @@ export function MunicipalityFilter({
           setSelectedCode(match ? match.code : "");
         }}
         onKeyDown={(e) => {
+          if (inputDisabled) return;
           if (e.key === "Escape") {
             setText("");
             setSelectedCode("");
@@ -207,11 +212,11 @@ export function MunicipalityFilter({
         }}
         className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
         aria-controls={listId}
-        aria-expanded={open}
+        aria-expanded={open && !inputDisabled}
         aria-autocomplete="list"
         role="combobox"
       />
-      {enabled && open && filtered.length > 0 ? (
+      {!inputDisabled && open && filtered.length > 0 ? (
         <ul
           id={listId}
           role="listbox"
@@ -235,7 +240,7 @@ export function MunicipalityFilter({
           ))}
         </ul>
       ) : null}
-      {enabled && open && !loading && text !== "" && filtered.length === 0 ? (
+      {!inputDisabled && open && !loading && text !== "" && filtered.length === 0 ? (
         <p className="absolute z-20 mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-xs text-muted-foreground shadow-md">
           Ningún municipio coincide
         </p>
