@@ -176,13 +176,13 @@ export function CpvPicker({
             <div
               role="radiogroup"
               aria-label="Coincidencia CPV"
-              className="flex shrink-0 items-end gap-1"
+              className="flex shrink-0 items-end"
             >
               <label
                 className={
                   matchMode === "any"
-                    ? "relative z-10 -mb-px cursor-pointer rounded-t-md border border-border border-b-[color-mix(in_srgb,var(--muted)_30%,transparent)] bg-muted/30 px-2.5 py-1 text-xs font-medium text-primary"
-                    : "relative z-10 -mb-px cursor-pointer rounded-t-md border border-transparent px-2.5 py-1 text-xs text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                    ? "relative z-20 -mb-px cursor-pointer rounded-tl-md border border-border border-b-[color-mix(in_srgb,var(--muted)_30%,transparent)] bg-muted/30 px-2.5 py-1 text-xs font-medium text-primary"
+                    : "relative z-10 -mb-px cursor-pointer rounded-tl-md border border-border bg-muted/20 px-2.5 py-1 text-xs text-muted-foreground hover:text-foreground"
                 }
               >
                 <input
@@ -198,8 +198,8 @@ export function CpvPicker({
               <label
                 className={
                   matchMode === "all"
-                    ? "relative z-10 -mb-px cursor-pointer rounded-t-md border border-border border-b-[color-mix(in_srgb,var(--muted)_30%,transparent)] bg-muted/30 px-2.5 py-1 text-xs font-medium text-primary"
-                    : "relative z-10 -mb-px cursor-pointer rounded-t-md border border-transparent px-2.5 py-1 text-xs text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                    ? "relative z-20 -mb-px -ml-px cursor-pointer rounded-tr-md border border-border border-b-[color-mix(in_srgb,var(--muted)_30%,transparent)] bg-muted/30 px-2.5 py-1 text-xs font-medium text-primary"
+                    : "relative z-10 -mb-px -ml-px cursor-pointer rounded-tr-md border border-border bg-muted/20 px-2.5 py-1 text-xs text-muted-foreground hover:text-foreground"
                 }
               >
                 <input

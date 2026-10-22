@@ -224,7 +224,7 @@ function CpvTreeNode({
         <label className="flex min-w-0 flex-1 cursor-pointer items-start gap-2 py-0.5">
           <input
             type="checkbox"
-            className="mt-0.5 size-4 shrink-0 accent-primary"
+            className="ef-checkbox mt-0.5"
             checked={checked}
             onChange={() => onToggleSelect(code)}
           />

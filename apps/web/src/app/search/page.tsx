@@ -611,7 +611,7 @@ export default async function SearchPage({
             name="en_plazo"
             value="1"
             defaultChecked={openForSubmission}
-            className="size-4 shrink-0 rounded border-border accent-primary"
+            className="ef-checkbox"
           />
           Solo en plazo
         </label>
