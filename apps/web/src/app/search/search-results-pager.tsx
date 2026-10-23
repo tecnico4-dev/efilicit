@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useUndoToast } from "@/components/undo-toast";
-import { cn } from "@/lib/cn";
 import { searchHref } from "./search-pagination";
 
 export { SEARCH_PAGE_SIZE, searchHref } from "./search-pagination";
@@ -12,8 +11,7 @@ export { SEARCH_PAGE_SIZE, searchHref } from "./search-pagination";
 type SearchPagerFilters = Parameters<typeof searchHref>[0];
 
 /**
- * Paginación de resultados: 10/página, total, página editable.
- * Móvil: «1–10 / X» y flechas ← →; desktop: texto completo.
+ * Paginación de resultados: 10/página, total, página editable; flechas ← →.
  */
 export function SearchResultsPager({
   page,
@@ -140,67 +138,33 @@ export function SearchResultsPager({
       {totalPages > 1 || page > 1 ? (
         <div className="inline-flex items-center gap-2">
           {atFirst ? (
-            <>
-              <span className={cn(navClass(true), "sm:hidden")} aria-disabled>
-                ←
-              </span>
-              <span
-                className={cn(navClass(true), "hidden sm:inline")}
-                aria-disabled
-              >
-                ← Anterior
-              </span>
-            </>
+            <span className={navClass(true)} aria-disabled aria-label="Página anterior">
+              ←
+            </span>
           ) : (
-            <>
-              <Link
-                href={hrefForPage(page - 1)}
-                className={cn(navClass(false), "sm:hidden")}
-                rel="prev"
-                aria-label="Página anterior"
-              >
-                ←
-              </Link>
-              <Link
-                href={hrefForPage(page - 1)}
-                className={cn(navClass(false), "hidden sm:inline")}
-                rel="prev"
-              >
-                ← Anterior
-              </Link>
-            </>
+            <Link
+              href={hrefForPage(page - 1)}
+              className={navClass(false)}
+              rel="prev"
+              aria-label="Página anterior"
+            >
+              ←
+            </Link>
           )}
           {pageInput}
           {atLast ? (
-            <>
-              <span className={cn(navClass(true), "sm:hidden")} aria-disabled>
-                →
-              </span>
-              <span
-                className={cn(navClass(true), "hidden sm:inline")}
-                aria-disabled
-              >
-                Siguiente →
-              </span>
-            </>
+            <span className={navClass(true)} aria-disabled aria-label="Página siguiente">
+              →
+            </span>
           ) : (
-            <>
-              <Link
-                href={hrefForPage(page + 1)}
-                className={cn(navClass(false), "sm:hidden")}
-                rel="next"
-                aria-label="Página siguiente"
-              >
-                →
-              </Link>
-              <Link
-                href={hrefForPage(page + 1)}
-                className={cn(navClass(false), "hidden sm:inline")}
-                rel="next"
-              >
-                Siguiente →
-              </Link>
-            </>
+            <Link
+              href={hrefForPage(page + 1)}
+              className={navClass(false)}
+              rel="next"
+              aria-label="Página siguiente"
+            >
+              →
+            </Link>
           )}
         </div>
       ) : null}
