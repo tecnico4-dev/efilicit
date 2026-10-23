@@ -41,6 +41,11 @@ export type SearchTendersInput = {
   criteria?: Partial<SearchCriteria>;
   limit?: number;
   offset?: number;
+  /**
+   * Total ya conocido (p. ej. `?tc=` tras la 1.ª página).
+   * La RPC no recuenta el universo; `total_count` = este valor.
+   */
+  knownTotal?: number;
 };
 
 type SearchTendersArgs = Database["public"]["Functions"]["search_tenders"]["Args"];
@@ -82,6 +87,12 @@ function buildRpcArgs(input: SearchTendersInput): SearchTendersArgs {
     p_open_for_submission: c.open_for_submission === true ? true : undefined,
     p_limit: input.limit ?? 10,
     p_offset: input.offset ?? 0,
+    p_known_total:
+      input.knownTotal != null &&
+      Number.isFinite(input.knownTotal) &&
+      input.knownTotal >= 0
+        ? Math.floor(input.knownTotal)
+        : undefined,
   };
 }
 

@@ -888,6 +888,8 @@ export type Database = {
           p_municipalities?: string[]
           p_municipality_codes?: string[]
           p_offset?: number
+          /** Si se pasa, la RPC no recuenta: total_count = este valor (paginación). */
+          p_known_total?: number
           p_procedure_types?: string[]
           p_publication_date_from?: string
           p_publication_date_to?: string

@@ -41,6 +41,7 @@ export function SearchResultsPager({
       from: searchFrom,
       pageSize: nextSize,
       withAnchor: true,
+      totalCount: total > 0 ? total : undefined,
     });
     router.push(href, { scroll: false });
   }

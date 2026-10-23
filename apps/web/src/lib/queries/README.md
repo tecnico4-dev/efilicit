@@ -13,6 +13,7 @@ Contrato: búsqueda = RPC `public.search_tenders` (SECURITY INVOKER). Semántica
 - Pipeline RPC: filtros Criteria v1 (sí/no) → ramas FTS y `pg_trgm` (errata) con **top-K ≈ 300** cada una → merge → orden
   `rank` → `publication_date` → `cpv_hit_count` (si hay `p_cpv_codes`) → `created_at` → `LIMIT`/`OFFSET`.
 - UI `/search`: mismo pager que favoritos (`ListPager`; `?page=` + `?ps=` 10/20/50/100); `total_count` en la RPC; ancla `#resultados` + scroll interno arriba al paginar. Nueva búsqueda (submit) vuelve a página 1 / `ps` por defecto.
+- Paginación: tras la 1.ª respuesta el pager guarda el total en `?tc=`; siguientes páginas pasan `p_known_total` y la RPC no vuelve a hacer `count` del universo. Submit del formulario no envía `tc` → se recalcula.
 - Trgm solo si `char_length(query)` ∈ [3, 120]. FTS: `search_vector` / `spanish`. Trgm: `similarity`/`%` y `strict_word_similarity`/`<<%` sobre `title`.
 - Badge: `fts` solo si los tokens aparecen **literalmente** en el título; stemming-only o trgm → `trgm` (UI “errata”); sin texto → `filter`.
 - Cliente publishable + sesión; nunca `service_role`

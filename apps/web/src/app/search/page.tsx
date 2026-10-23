@@ -310,6 +310,10 @@ export default async function SearchPage({
   const page =
     Number.isInteger(pageRaw) && pageRaw >= 1 ? pageRaw : 1;
   const pageSize = parseSearchPageSize(first(params.ps));
+  const tcRaw = Number.parseInt(first(params.tc).trim(), 10);
+  /** Total cacheado en URL tras la 1.ª página; la RPC no recuenta. */
+  const knownTotal =
+    Number.isInteger(tcRaw) && tcRaw >= 0 ? tcRaw : undefined;
   const min = minRaw === "" ? undefined : Number(minRaw);
   const max = maxRaw === "" ? undefined : Number(maxRaw);
 
@@ -319,13 +323,31 @@ export default async function SearchPage({
     contractTypes: [] as SearchFilterOption[],
     ccaaCodesWithTenders: new Set<string>(),
   };
+  let rows: SearchTenderRow[] = [];
+  let totalCount = 0;
+  let error: string | null = null;
+  let profileUserId: string | null = null;
+  let favoritedIds = new Set<string>();
+  let municipalityValid = "";
+  let municipalityName = "";
 
+  let client;
   try {
-    const client = await createSupabaseServerClient();
-    const listed = await listSearchFilterOptions(client);
-    if (!listed.error) filterOptions = listed.data;
+    client = await createSupabaseServerClient();
   } catch {
-    /* desplegables vacíos salvo CCAA fijas */
+    client = null;
+  }
+
+  if (client) {
+    const [listedFilters, profile] = await Promise.all([
+      listSearchFilterOptions(client),
+      getOwnProfile(client).catch(() => ({
+        data: null as { id: string } | null,
+        error: null,
+      })),
+    ]);
+    if (!listedFilters.error) filterOptions = listedFilters.data;
+    profileUserId = profile.data?.id ?? null;
   }
 
   const ccaaInCatalog = SEARCH_CCAA_OPTIONS.some((o) => o.code === ccaa);
@@ -345,11 +367,8 @@ export default async function SearchPage({
   const pubFromValid = /^\d{4}-\d{2}-\d{2}$/.test(pubFromRaw) ? pubFromRaw : "";
   const pubToValid = /^\d{4}-\d{2}-\d{2}$/.test(pubToRaw) ? pubToRaw : "";
 
-  let municipalityValid = "";
-  let municipalityName = "";
-  if (ccaaValid && municipalityRaw) {
+  if (client && ccaaValid && municipalityRaw) {
     try {
-      const client = await createSupabaseServerClient();
       const listed = await listPlaceMunicipalities(client, ccaaValid);
       const hit = listed.data.find((m) => m.code === municipalityRaw);
       if (hit) {
@@ -393,21 +412,7 @@ export default async function SearchPage({
     openForSubmission,
   };
 
-  let rows: SearchTenderRow[] = [];
-  let totalCount = 0;
-  let error: string | null = null;
-  let profileUserId: string | null = null;
-  let favoritedIds = new Set<string>();
-
-  try {
-    const authClient = await createSupabaseServerClient();
-    const profile = await getOwnProfile(authClient);
-    profileUserId = profile.data?.id ?? null;
-  } catch {
-    profileUserId = null;
-  }
-
-  if (shouldSearch) {
+  if (client && shouldSearch) {
     const searchInput = {
       query: q || undefined,
       criteria: {
@@ -437,10 +442,10 @@ export default async function SearchPage({
               }
             : undefined,
       },
+      knownTotal,
     };
 
     try {
-      const client = await createSupabaseServerClient();
       const result = await searchTenders(client, {
         ...searchInput,
         limit: pageSize,
@@ -451,32 +456,33 @@ export default async function SearchPage({
       } else {
         // Defensa: nunca mostrar más de una página aunque la RPC devuelva de más.
         rows = (result.data ?? []).slice(0, pageSize);
-        totalCount = result.totalCount;
-        // Página vacía (p. ej. ?page=99): total_count no viene en filas → sondeo.
-        if (rows.length === 0 && page > 1 && totalCount === 0) {
+        totalCount = knownTotal ?? result.totalCount;
+        // Página vacía sin ?tc= (p. ej. ?page=99): total_count no viene en filas → sondeo.
+        if (
+          rows.length === 0 &&
+          page > 1 &&
+          totalCount === 0 &&
+          knownTotal == null
+        ) {
           const probe = await searchTenders(client, {
             ...searchInput,
+            knownTotal: undefined,
             limit: 1,
             offset: 0,
           });
           if (!probe.error) totalCount = probe.totalCount;
         }
       }
+
+      if (profileUserId && rows.length > 0) {
+        const fav = await listOwnFavoriteTenderIds(
+          client,
+          rows.map((r) => r.id),
+        );
+        favoritedIds = fav.data;
+      }
     } catch (err) {
       error = err instanceof Error ? err.message : String(err);
-    }
-  }
-
-  if (profileUserId && rows.length > 0) {
-    try {
-      const client = await createSupabaseServerClient();
-      const fav = await listOwnFavoriteTenderIds(
-        client,
-        rows.map((r) => r.id),
-      );
-      favoritedIds = fav.data;
-    } catch {
-      favoritedIds = new Set();
     }
   }
 

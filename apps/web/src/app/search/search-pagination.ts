@@ -41,6 +41,11 @@ export function searchHref(
     pageSize?: SearchPageSize;
     /** Incluir `#resultados` (paginación). */
     withAnchor?: boolean;
+    /**
+     * Total de la 1.ª búsqueda (`?tc=`). Evita recount en la RPC al paginar.
+     * El submit del formulario no lo envía → se recalcula al buscar de nuevo.
+     */
+    totalCount?: number;
   },
 ): string {
   const params = new URLSearchParams();
@@ -68,6 +73,10 @@ export function searchHref(
     params.set("ps", String(pageSize));
   }
   if (page > 1) params.set("page", String(page));
+  const tc = options?.totalCount;
+  if (tc != null && Number.isFinite(tc) && tc >= 0) {
+    params.set("tc", String(Math.floor(tc)));
+  }
   const qs = params.toString();
   const path = qs ? `/search?${qs}` : "/search";
   if (options?.withAnchor) {
