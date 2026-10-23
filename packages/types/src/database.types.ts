@@ -931,6 +931,12 @@ export type Database = {
           value: string
         }[]
       }
+      has_unread_favorite_status_notifications: {
+        Args: {
+          p_user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never

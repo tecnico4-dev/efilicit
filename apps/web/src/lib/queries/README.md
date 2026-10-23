@@ -54,3 +54,8 @@ Comprobación SQL directa: ver plan Semana 5 / checklist Paso 3.
 - `getOwnProfile` / `updateOwnDigestFrequency` (daily|weekly; ADR 013)
 - UI: `/alerts` (crear/editar/activar), crear alerta desde `/search` (sesión), `/account`
 - Prueba RLS Alice≠Bob: `pnpm --filter @efilicit/web verify:rls`
+
+## Notificaciones in-app
+
+- `listFavoriteStatusNotifications` → favoritos ∩ cambios de estado (`tender_events`) + `notification_reads` / `notification_trash` (página `/notifications` y home)
+- `hasUnreadFavoriteStatusNotifications` → RPC `has_unread_favorite_status_notifications` (EXISTS); solo para el badge del `AppShell` (no montar la lista en cada nav)

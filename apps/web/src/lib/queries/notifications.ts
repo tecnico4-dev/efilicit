@@ -191,20 +191,20 @@ async function listTrashByEventId(
   };
 }
 
-/** ¿Hay algún aviso de favoritos aún sin leer (fuera de papelera)? */
+/**
+ * ¿Hay algún aviso de favoritos aún sin leer (fuera de papelera)?
+ * Un solo RPC EXISTS — pensado para el badge del layout (no montar la lista).
+ */
 export async function hasUnreadFavoriteStatusNotifications(
   client: SupabaseClient<Database>,
   input: { userId: string },
 ): Promise<{ data: boolean; error: Error | null }> {
-  const { data, error } = await listFavoriteStatusNotifications(client, {
-    userId: input.userId,
-    limit: 50,
-  });
-  if (error) return { data: false, error };
-  return {
-    data: data.some((n) => n.unread && n.trashedAt == null),
-    error: null,
-  };
+  const { data, error } = await client.rpc(
+    "has_unread_favorite_status_notifications",
+    { p_user_id: input.userId },
+  );
+  if (error) return { data: false, error: new Error(error.message) };
+  return { data: Boolean(data), error: null };
 }
 
 /** Marca un aviso concreto como leído (al abrir la ficha desde el buzón). */
