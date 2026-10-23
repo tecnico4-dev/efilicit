@@ -5,6 +5,7 @@ import {
   formatCriteriaSummary,
   parseCriteria,
 } from "@/lib/criteria-display";
+import { formatCpvListPreview } from "@/lib/cpv";
 import { formatRelativeDayMadrid } from "@/lib/datetime";
 import type { DigestFrequency, FavoriteWithTender } from "@/lib/queries";
 import { formatTenderStatus } from "@/lib/tender-labels";
@@ -130,7 +131,7 @@ export function FavoriteTenderList({
               <div>
                 <dt className="inline text-muted-foreground">CPV: </dt>
                 <dd className="inline font-mono">
-                  {tender.cpv_codes.length ? tender.cpv_codes.join(", ") : "—"}
+                  {formatCpvListPreview(tender.cpv_codes)}
                 </dd>
               </div>
               <div>

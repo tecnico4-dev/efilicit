@@ -20,10 +20,9 @@ import { CpvPicker } from "./cpv-picker";
 import { MunicipalityFilter } from "./municipality-filter";
 import { SaveSearchButton } from "./save-search-button";
 import { SearchForm } from "./search-form";
-import {
-  SEARCH_PAGE_SIZE,
-  SearchResultsPager,
-} from "./search-results-pager";
+import { SEARCH_PAGE_SIZE } from "./search-pagination";
+import { SearchResultsPager } from "./search-results-pager";
+import { formatCpvListPreview } from "@/lib/cpv";
 
 function backFromSavedSearch(from: string): { href: string; label: string } | null {
   if (from === "favorites-searches") {
@@ -214,7 +213,7 @@ function ResultsList({
                   <div>
                     <dt className="inline text-muted-foreground">CPV: </dt>
                     <dd className="inline font-mono">
-                      {row.cpv_codes?.length ? row.cpv_codes.join(", ") : "—"}
+                      {formatCpvListPreview(row.cpv_codes)}
                     </dd>
                   </div>
                   <div>
@@ -407,7 +406,8 @@ export default async function SearchPage({
       if (result.error) {
         error = result.error.message;
       } else {
-        rows = result.data ?? [];
+        // Defensa: nunca mostrar más de una página aunque la RPC devuelva de más.
+        rows = (result.data ?? []).slice(0, SEARCH_PAGE_SIZE);
         totalCount = result.totalCount;
         // Página vacía (p. ej. ?page=99): total_count no viene en filas → sondeo.
         if (rows.length === 0 && page > 1 && totalCount === 0) {

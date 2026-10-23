@@ -80,7 +80,7 @@ function buildRpcArgs(input: SearchTendersInput): SearchTendersArgs {
     p_deadline_from: c.deadline_from,
     p_deadline_to: c.deadline_to,
     p_open_for_submission: c.open_for_submission === true ? true : undefined,
-    p_limit: input.limit ?? 20,
+    p_limit: input.limit ?? 10,
     p_offset: input.offset ?? 0,
   };
 }

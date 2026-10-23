@@ -86,6 +86,19 @@ export function formatCpvSelection(code8: string): string {
   return label ? `${code8}-${label}` : code8;
 }
 
+/**
+ * Resumen de CPV en listas: como máximo 2 códigos; si hay más, «…».
+ * Ej. `72000000, 72600000…`
+ */
+export function formatCpvListPreview(
+  codes: string[] | null | undefined,
+  maxVisible = 2,
+): string {
+  if (!codes?.length) return "—";
+  if (codes.length <= maxVisible) return codes.join(", ");
+  return `${codes.slice(0, maxVisible).join(", ")}…`;
+}
+
 export function resolveCpvFromInput(raw: string): {
   code: string;
   display: string;
