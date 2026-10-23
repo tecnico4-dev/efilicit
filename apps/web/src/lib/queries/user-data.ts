@@ -21,26 +21,17 @@ function asJson(criteria: SearchCriteria): Json {
   return criteria as unknown as Json;
 }
 
-/** Perfil de aplicación ligado al `auth.users` de la sesión actual. */
+/**
+ * Perfil de aplicación ligado al `auth.users` de la sesión actual.
+ * Delega en `getSessionProfile` (React `cache`) para no repetir getUser/select
+ * cuando AppShell y la página lo piden en la misma request.
+ * El argumento `client` se conserva por compatibilidad; no se usa en RSC.
+ */
 export async function getOwnProfile(
-  client: SupabaseClient<Database>,
+  _client?: SupabaseClient<Database>,
 ): Promise<{ data: ProfileRow | null; error: Error | null }> {
-  const {
-    data: { user },
-    error: authError,
-  } = await client.auth.getUser();
-  if (authError || !user) {
-    return { data: null, error: new Error(authError?.message ?? "No hay sesión") };
-  }
-
-  const { data, error } = await client
-    .from("users")
-    .select("*")
-    .eq("auth_user_id", user.id)
-    .maybeSingle();
-
-  if (error) return { data: null, error: new Error(error.message) };
-  return { data, error: null };
+  const { getSessionProfile } = await import("@/lib/auth/session");
+  return getSessionProfile();
 }
 
 /**

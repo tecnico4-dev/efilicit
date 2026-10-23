@@ -1,4 +1,8 @@
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import {
+  getSessionProfile,
+  getSessionUser,
+  getSupabaseServerClient,
+} from "@/lib/auth/session";
 import {
   hasUnreadFavoriteStatusNotifications,
   type DigestFrequency,
@@ -24,17 +28,10 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
   let digestFrequency: DigestFrequency = "diaria";
   let hasUnreadNotifications = false;
   try {
-    const supabase = await createSupabaseServerClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const user = await getSessionUser();
     isAuthenticated = Boolean(user);
     if (user) {
-      const { data: profile } = await supabase
-        .from("users")
-        .select("id, display_name, digest_frequency")
-        .eq("auth_user_id", user.id)
-        .maybeSingle();
+      const { data: profile } = await getSessionProfile();
       displayName = displayNameFrom(
         profile?.display_name,
         user.user_metadata?.display_name,
@@ -44,6 +41,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
       digestFrequency =
         profile?.digest_frequency === "semanal" ? "semanal" : "diaria";
       if (profile?.id) {
+        const supabase = await getSupabaseServerClient();
         const unread = await hasUnreadFavoriteStatusNotifications(supabase, {
           userId: profile.id,
         });

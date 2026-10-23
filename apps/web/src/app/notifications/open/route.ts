@@ -1,5 +1,9 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import {
+  getSessionProfile,
+  getSessionUser,
+  getSupabaseServerClient,
+} from "@/lib/auth/session";
 import { markOwnNotificationRead } from "@/lib/queries";
 
 /**
@@ -15,10 +19,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(fallback);
   }
 
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const supabase = await getSupabaseServerClient();
+  const user = await getSessionUser();
 
   if (!user) {
     const login = new URL("/login", request.url);
@@ -29,11 +31,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(login);
   }
 
-  const { data: profile } = await supabase
-    .from("users")
-    .select("id")
-    .eq("auth_user_id", user.id)
-    .maybeSingle();
+  const { data: profile } = await getSessionProfile();
 
   if (profile?.id) {
     await markOwnNotificationRead(supabase, {

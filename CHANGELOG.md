@@ -51,6 +51,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Notificaciones: pestañas Todas / No leídas / Papelera filtran en cliente (sin recargar el buzón); la URL `?view=` se actualiza con `replaceState`.
 - Buscador: un solo client Supabase + `Promise.all` (filtros + perfil); al paginar se reutiliza `?tc=` / `p_known_total` para no recountar el universo en cada página.
 - Pager (`ListPager`): el número de página solo aplica al Enter o al salir del campo (no en cada tecla).
+- Auth RSC: `getSessionUser` / `getSessionProfile` (+ client) memoizados con React `cache` por request — AppShell y páginas no repiten `getUser`/perfil.
 - Buscador: pager igual que favoritos (`ListPager`, 10/20/50/100); ancla `#resultados` + scroll interno arriba al paginar; `total_count` en RPC.
 - Favoritos (licitaciones y búsquedas): al cambiar de página el scroll interno del panel vuelve arriba.
 - Favoritos: «Datos actualizados» (Hoy / Ayer / fecha) = `max(tender_sources.last_seen_at)`, a la derecha del título.

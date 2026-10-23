@@ -1,8 +1,12 @@
 import { redirect } from "next/navigation";
 import { PAGE_MAIN_CLASS } from "@/components/shell/page-width";
 import { EmptyState, ErrorState } from "@/components/ui/state-message";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { getOwnProfile, listOwnAlerts } from "@/lib/queries";
+import {
+  getSessionProfile,
+  getSessionUser,
+  getSupabaseServerClient,
+} from "@/lib/auth/session";
+import { listOwnAlerts } from "@/lib/queries";
 import { AlertRowItem } from "./alert-row";
 import { AlertsPanel } from "./alerts-panel";
 import { DigestFrequencyControl } from "./digest-frequency-control";
@@ -10,16 +14,14 @@ import { DigestFrequencyControl } from "./digest-frequency-control";
 export const dynamic = "force-dynamic";
 
 export default async function AlertsPage() {
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const supabase = await getSupabaseServerClient();
+  const user = await getSessionUser();
 
   if (!user) {
     redirect("/login?next=/alerts");
   }
 
-  const profileResult = await getOwnProfile(supabase);
+  const profileResult = await getSessionProfile();
   if (!profileResult.data) {
     return (
       <main className={PAGE_MAIN_CLASS}>

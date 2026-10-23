@@ -1,7 +1,10 @@
 import { redirect } from "next/navigation";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
 import {
-  getOwnProfile,
+  getSessionProfile,
+  getSessionUser,
+  getSupabaseServerClient,
+} from "@/lib/auth/session";
+import {
   listFavoriteStatusNotifications,
   listOwnAlerts,
   listOwnFavorites,
@@ -14,20 +17,17 @@ export const dynamic = "force-dynamic";
 export default async function Home() {
   let supabase;
   try {
-    supabase = await createSupabaseServerClient();
+    supabase = await getSupabaseServerClient();
   } catch {
     redirect("/login");
   }
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
+  const user = await getSessionUser();
   if (!user) {
     redirect("/login");
   }
 
-  const profile = await getOwnProfile(supabase);
+  const profile = await getSessionProfile();
   if (!profile.data) {
     redirect("/login");
   }

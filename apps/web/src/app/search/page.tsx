@@ -2,9 +2,8 @@ import Link from "next/link";
 import { FavoriteHeartButton } from "@/components/favorites/favorite-heart-button";
 import { PAGE_MAIN_CLASS } from "@/components/shell/page-width";
 import { EmptyState, ErrorState } from "@/components/ui/state-message";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getSessionProfile, getSupabaseServerClient } from "@/lib/auth/session";
 import {
-  getOwnProfile,
   listOwnFavoriteTenderIds,
   listPlaceMunicipalities,
   listSearchFilterOptions,
@@ -333,7 +332,7 @@ export default async function SearchPage({
 
   let client;
   try {
-    client = await createSupabaseServerClient();
+    client = await getSupabaseServerClient();
   } catch {
     client = null;
   }
@@ -341,10 +340,7 @@ export default async function SearchPage({
   if (client) {
     const [listedFilters, profile] = await Promise.all([
       listSearchFilterOptions(client),
-      getOwnProfile(client).catch(() => ({
-        data: null as { id: string } | null,
-        error: null,
-      })),
+      getSessionProfile(),
     ]);
     if (!listedFilters.error) filterOptions = listedFilters.data;
     profileUserId = profile.data?.id ?? null;

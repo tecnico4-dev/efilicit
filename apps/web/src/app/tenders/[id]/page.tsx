@@ -3,9 +3,8 @@ import { notFound } from "next/navigation";
 import { FavoriteToggle } from "@/components/favorites/favorite-toggle";
 import { PAGE_MAIN_CLASS } from "@/components/shell/page-width";
 import { ErrorState } from "@/components/ui/state-message";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getSessionProfile, getSupabaseServerClient } from "@/lib/auth/session";
 import {
-  getOwnProfile,
   getTenderById,
   isOwnFavorite,
   listTenderStatusHistory,
@@ -225,7 +224,7 @@ export default async function TenderDetailPage({
   const { id } = await params;
   const query = await searchParams;
   const back = backLinkFromParams(query);
-  const supabase = await createSupabaseServerClient();
+  const supabase = await getSupabaseServerClient();
   const { data: tender, error } = await getTenderById(supabase, id);
 
   if (error) {
@@ -261,7 +260,7 @@ export default async function TenderDetailPage({
   let favoriteUserId: string | null = null;
   let initiallyFavorited = false;
   try {
-    const profile = await getOwnProfile(supabase);
+    const profile = await getSessionProfile();
     if (profile.data) {
       favoriteUserId = profile.data.id;
       const fav = await isOwnFavorite(supabase, {

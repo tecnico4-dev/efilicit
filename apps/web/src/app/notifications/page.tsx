@@ -1,5 +1,9 @@
 import { redirect } from "next/navigation";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import {
+  getSessionProfile,
+  getSessionUser,
+  getSupabaseServerClient,
+} from "@/lib/auth/session";
 import {
   PAGE_MAIN_CLASS,
   PAGE_TITLE_RULE,
@@ -35,20 +39,14 @@ export default async function NotificationsPage({
         ? "trash"
         : "all";
 
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const supabase = await getSupabaseServerClient();
+  const user = await getSessionUser();
 
   if (!user) {
     redirect("/login?next=/notifications");
   }
 
-  const { data: profile } = await supabase
-    .from("users")
-    .select("id")
-    .eq("auth_user_id", user.id)
-    .maybeSingle();
+  const { data: profile } = await getSessionProfile();
 
   if (!profile?.id) {
     redirect("/login?next=/notifications");

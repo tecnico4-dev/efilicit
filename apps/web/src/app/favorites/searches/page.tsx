@@ -5,9 +5,12 @@ import {
   PAGE_TITLE_RULE,
 } from "@/components/shell/page-width";
 import { EmptyState, ErrorState } from "@/components/ui/state-message";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
 import {
-  getOwnProfile,
+  getSessionProfile,
+  getSessionUser,
+  getSupabaseServerClient,
+} from "@/lib/auth/session";
+import {
   listOwnSavedSearches,
   type DigestFrequency,
 } from "@/lib/queries";
@@ -37,16 +40,14 @@ export default async function SavedSearchesPage({
         ? { href: "/favorites", label: "← Ir a la lista de favoritos" }
         : { href: "/favorites", label: "← Volver a la lista de favoritos" };
 
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const supabase = await getSupabaseServerClient();
+  const user = await getSessionUser();
 
   if (!user) {
     redirect("/login?next=/favorites/searches");
   }
 
-  const profile = await getOwnProfile(supabase);
+  const profile = await getSessionProfile();
   if (!profile.data) {
     return (
       <main className={PAGE_MAIN_CLASS}>
