@@ -78,14 +78,33 @@ export async function listOwnFavorites(
         currency,
         publication_date,
         deadline_at,
-        tender_cpvs (cpv_code),
-        tender_sources!tender_sources_tender_id_fkey (last_seen_at)
+        tender_cpvs (cpv_code)
       )
     `,
     )
     .order("created_at", { ascending: false });
 
   if (error) return { data: [], error: new Error(error.message) };
+
+  const tenderIds = (data ?? [])
+    .map((row) => row.tender_id)
+    .filter(Boolean);
+
+  const lastSeenByTender = new Map<string, string>();
+  if (tenderIds.length > 0) {
+    const { data: seen, error: seenError } = await client.rpc(
+      "tender_max_last_seen",
+      { p_tender_ids: tenderIds },
+    );
+    if (seenError) {
+      return { data: [], error: new Error(seenError.message) };
+    }
+    for (const row of seen ?? []) {
+      if (row.tender_id && row.last_seen_at) {
+        lastSeenByTender.set(row.tender_id, row.last_seen_at);
+      }
+    }
+  }
 
   const rows = (data ?? []).map((row) => {
     const tender = row.tenders as
@@ -94,35 +113,23 @@ export async function listOwnFavorites(
           "cpv_codes" | "last_seen_at"
         > & {
           tender_cpvs?: { cpv_code: string }[] | null;
-          tender_sources?: { last_seen_at: string }[] | null;
         })
       | null;
     if (!tender) {
       return { ...row, tenders: null } as FavoriteWithTender;
     }
-    const { tender_cpvs, tender_sources, ...rest } = tender;
+    const { tender_cpvs, ...rest } = tender;
     return {
       ...row,
       tenders: {
         ...rest,
         cpv_codes: [...(tender_cpvs ?? []).map((r) => r.cpv_code)].sort(),
-        last_seen_at: maxIsoTimestamp(
-          (tender_sources ?? []).map((s) => s.last_seen_at),
-        ),
+        last_seen_at: lastSeenByTender.get(row.tender_id) ?? null,
       },
     } as FavoriteWithTender;
   });
 
   return { data: rows, error: null };
-}
-
-function maxIsoTimestamp(values: string[]): string | null {
-  let best: string | null = null;
-  for (const raw of values) {
-    if (!raw) continue;
-    if (best == null || raw > best) best = raw;
-  }
-  return best;
 }
 
 export async function addOwnFavorite(

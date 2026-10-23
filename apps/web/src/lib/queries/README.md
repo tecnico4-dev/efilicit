@@ -44,7 +44,7 @@ Comprobación SQL directa: ver plan Semana 5 / checklist Paso 3.
 ## Favoritos (Semana 6 / Paso 5)
 
 - `addOwnFavorite` / `removeOwnFavorite` / `isOwnFavorite` / `listOwnFavorites`
-- `listOwnFavorites` incluye `last_seen_at` = `max(tender_sources.last_seen_at)` (UI «Datos actualizados»)
+- `listOwnFavorites` incluye `last_seen_at` vía RPC `tender_max_last_seen` (sin embeber todas las sources)
 - Tabla `favorites` (RLS owner-only); UI: toggle en ficha (solo sesión) + `/favorites`
 - Prueba A≠B: `pnpm --filter @efilicit/web verify:rls:favorites`
 
@@ -59,5 +59,6 @@ Comprobación SQL directa: ver plan Semana 5 / checklist Paso 3.
 
 ## Notificaciones in-app
 
-- `listFavoriteStatusNotifications` → favoritos ∩ cambios de estado (`tender_events`) + `notification_reads` / `notification_trash` (página `/notifications` y home)
-- `hasUnreadFavoriteStatusNotifications` → RPC `has_unread_favorite_status_notifications` (EXISTS); solo para el badge del `AppShell` (no montar la lista en cada nav)
+- `listFavoriteStatusNotifications` → favoritos ∩ cambios de estado (`tender_events`) + `notification_reads` / `notification_trash` (buzón `/notifications`)
+- `listRecentFavoriteStatusNotifications` / `countUnreadFavoriteStatusNotifications` → preview home (RPC; no montar el buzón)
+- `hasUnreadFavoriteStatusNotifications` → RPC `has_unread_favorite_status_notifications` (EXISTS); badge del nav

@@ -49,6 +49,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Nav: el puntito de no leídas usa RPC `has_unread_favorite_status_notifications` (EXISTS) en lugar de montar la lista completa de avisos en cada navegación.
 - Layout: cabecera y badge de no leídas en `Suspense` — `AppShell` ya no espera auth/unread antes de pintar `{children}` (navegación más reactiva).
+- Inicio: métrica «Sin leer» + 3 avisos recientes vía RPC (`count_unread_*` / `list_recent_*`) en lugar de montar el buzón completo.
+- Favoritos: `last_seen_at` con RPC `tender_max_last_seen` (agregado) sin embeber todas las `tender_sources`.
 - Notificaciones: pestañas Todas / No leídas / Papelera filtran en cliente (sin recargar el buzón); la URL `?view=` se actualiza con `replaceState`.
 - Buscador: un solo client Supabase + `Promise.all` (filtros + perfil); al paginar se reutiliza `?tc=` / `p_known_total` para no recountar el universo en cada página.
 - Pager (`ListPager`): el número de página solo aplica al Enter o al salir del campo (no en cada tecla).

@@ -939,6 +939,38 @@ export type Database = {
         }
         Returns: boolean
       }
+      count_unread_favorite_status_notifications: {
+        Args: {
+          p_user_id: string
+        }
+        Returns: number
+      }
+      list_recent_favorite_status_notifications: {
+        Args: {
+          p_user_id: string
+          p_limit?: number
+        }
+        Returns: {
+          detected_at: string
+          event_id: string
+          new_status: string
+          occurred_at: string
+          previous_status: string
+          source_code: string
+          tender_id: string
+          title: string
+          unread: boolean
+        }[]
+      }
+      tender_max_last_seen: {
+        Args: {
+          p_tender_ids: string[]
+        }
+        Returns: {
+          last_seen_at: string
+          tender_id: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never

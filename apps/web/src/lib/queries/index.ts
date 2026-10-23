@@ -44,11 +44,13 @@ export {
   type FavoriteWithTender,
 } from "./favorites";
 export {
+  countUnreadFavoriteStatusNotifications,
   daysUntilNotificationTrashPurge,
   formatNotificationTrashExpiry,
   hasUnreadFavoriteStatusNotifications,
   isNotificationInTrashWindow,
   listFavoriteStatusNotifications,
+  listRecentFavoriteStatusNotifications,
   markOwnNotificationRead,
   NOTIFICATION_TRASH_RETENTION_DAYS,
   restoreOwnNotificationFromTrash,

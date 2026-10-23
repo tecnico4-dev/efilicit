@@ -207,6 +207,49 @@ export async function hasUnreadFavoriteStatusNotifications(
   return { data: Boolean(data), error: null };
 }
 
+/** Conteo de no leídas (métrica del home; sin montar el buzón). */
+export async function countUnreadFavoriteStatusNotifications(
+  client: SupabaseClient<Database>,
+  input: { userId: string },
+): Promise<{ data: number; error: Error | null }> {
+  const { data, error } = await client.rpc(
+    "count_unread_favorite_status_notifications",
+    { p_user_id: input.userId },
+  );
+  if (error) return { data: 0, error: new Error(error.message) };
+  return { data: Number(data ?? 0), error: null };
+}
+
+/**
+ * Últimos avisos fuera de papelera (home preview).
+ * No sustituye `listFavoriteStatusNotifications` del buzón.
+ */
+export async function listRecentFavoriteStatusNotifications(
+  client: SupabaseClient<Database>,
+  input: { userId: string; limit?: number },
+): Promise<{ data: FavoriteStatusNotification[]; error: Error | null }> {
+  const limit = input.limit ?? 3;
+  const { data, error } = await client.rpc(
+    "list_recent_favorite_status_notifications",
+    { p_user_id: input.userId, p_limit: limit },
+  );
+  if (error) return { data: [], error: new Error(error.message) };
+
+  const rows: FavoriteStatusNotification[] = (data ?? []).map((r) => ({
+    eventId: r.event_id,
+    tenderId: r.tender_id,
+    title: r.title?.trim() || "Licitación",
+    previousStatus: r.previous_status,
+    newStatus: r.new_status,
+    occurredAt: r.occurred_at,
+    detectedAt: r.detected_at,
+    sourceCode: r.source_code,
+    unread: Boolean(r.unread),
+    trashedAt: null,
+  }));
+  return { data: rows, error: null };
+}
+
 /** Marca un aviso concreto como leído (al abrir la ficha desde el buzón). */
 export async function markOwnNotificationRead(
   client: SupabaseClient<Database>,

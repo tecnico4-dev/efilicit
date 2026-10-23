@@ -5,10 +5,11 @@ import {
   getSupabaseServerClient,
 } from "@/lib/auth/session";
 import {
-  listFavoriteStatusNotifications,
+  countUnreadFavoriteStatusNotifications,
   listOwnAlerts,
   listOwnFavorites,
   listOwnSavedSearches,
+  listRecentFavoriteStatusNotifications,
 } from "@/lib/queries";
 import { HomeDashboard } from "./home-dashboard";
 
@@ -35,28 +36,30 @@ export default async function Home() {
   const digestFrequency =
     profile.data.digest_frequency === "semanal" ? "semanal" : "diaria";
 
-  const [alertsResult, favoritesResult, searchesResult, notificationsResult] =
-    await Promise.all([
-      listOwnAlerts(supabase),
-      listOwnFavorites(supabase),
-      listOwnSavedSearches(supabase),
-      listFavoriteStatusNotifications(supabase, {
-        userId: profile.data.id,
-        limit: 50,
-      }),
-    ]);
-
-  const notifications = notificationsResult.data.filter(
-    (n) => n.trashedAt == null,
-  );
-  const unreadCount = notifications.filter((n) => n.unread).length;
-  const recentNotifications = notifications.slice(0, 3);
+  const userId = profile.data.id;
+  const [
+    alertsResult,
+    favoritesResult,
+    searchesResult,
+    unreadResult,
+    recentResult,
+  ] = await Promise.all([
+    listOwnAlerts(supabase),
+    listOwnFavorites(supabase),
+    listOwnSavedSearches(supabase),
+    countUnreadFavoriteStatusNotifications(supabase, { userId }),
+    listRecentFavoriteStatusNotifications(supabase, {
+      userId,
+      limit: 3,
+    }),
+  ]);
 
   const loadErrors = [
     alertsResult.error?.message,
     favoritesResult.error?.message,
     searchesResult.error?.message,
-    notificationsResult.error?.message,
+    unreadResult.error?.message,
+    recentResult.error?.message,
   ].filter((m): m is string => Boolean(m));
 
   return (
@@ -66,8 +69,8 @@ export default async function Home() {
       favorites={favoritesResult.data}
       searches={searchesResult.data}
       digestFrequency={digestFrequency}
-      unreadCount={unreadCount}
-      recentNotifications={recentNotifications}
+      unreadCount={unreadResult.data}
+      recentNotifications={recentResult.data}
       loadError={
         loadErrors.length
           ? `No se pudo cargar parte del inicio: ${loadErrors.join(" · ")}`
