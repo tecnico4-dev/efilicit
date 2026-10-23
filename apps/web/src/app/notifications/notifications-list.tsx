@@ -71,10 +71,10 @@ export function NotificationsList({
             {visible.map((n) => (
               <li key={n.eventId}>
                 {view === "trash" && n.trashedAt ? (
-                  <div className="px-4 py-3">
+                  <div className="flex items-center gap-3 px-4 py-3">
                     <Link
                       href={`/notifications/open?eventId=${encodeURIComponent(n.eventId)}&tenderId=${encodeURIComponent(n.tenderId)}`}
-                      className="block transition-colors hover:opacity-90"
+                      className="min-w-0 flex-1 transition-colors hover:opacity-90"
                     >
                       <p className="text-sm font-medium text-foreground">
                         {n.title}
@@ -94,10 +94,10 @@ export function NotificationsList({
                         {n.sourceCode ? ` · ${n.sourceCode}` : null}
                       </p>
                     </Link>
-                    <p className="mt-2 text-xs text-muted-foreground">
-                      {formatNotificationTrashExpiry(n.trashedAt)}
-                    </p>
-                    <div className="mt-1">
+                    <div className="flex shrink-0 flex-col items-end gap-1 self-center">
+                      <p className="max-w-[11rem] text-right text-xs text-muted-foreground sm:max-w-[14rem]">
+                        {formatNotificationTrashExpiry(n.trashedAt)}
+                      </p>
                       <RestoreNotificationButton
                         userId={userId}
                         eventId={n.eventId}
