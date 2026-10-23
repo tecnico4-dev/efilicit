@@ -20,6 +20,11 @@ import { CpvPicker } from "./cpv-picker";
 import { MunicipalityFilter } from "./municipality-filter";
 import { SaveSearchButton } from "./save-search-button";
 import { SearchForm } from "./search-form";
+import {
+  SEARCH_PAGE_SIZE,
+  SearchResultsPager,
+  searchHref,
+} from "./search-results-pager";
 
 function backFromSavedSearch(from: string): { href: string; label: string } | null {
   if (from === "favorites-searches") {
@@ -98,7 +103,11 @@ type SearchFilters = {
   openForSubmission: boolean;
 };
 
-function tenderHrefFromSearch(tenderId: string, filters: SearchFilters): string {
+function tenderHrefFromSearch(
+  tenderId: string,
+  filters: SearchFilters,
+  page: number,
+): string {
   const params = new URLSearchParams({ from: "search" });
   if (filters.q) params.set("q", filters.q);
   for (const code of filters.cpvCodes) params.append("cpv", code);
@@ -115,6 +124,7 @@ function tenderHrefFromSearch(tenderId: string, filters: SearchFilters): string 
   if (filters.pubFrom) params.set("pub_from", filters.pubFrom);
   if (filters.pubTo) params.set("pub_to", filters.pubTo);
   if (filters.openForSubmission) params.set("en_plazo", "1");
+  if (page > 1) params.set("page", String(page));
   return `/tenders/${tenderId}?${params.toString()}`;
 }
 
@@ -130,6 +140,9 @@ function ResultsList({
   error,
   searched,
   filters,
+  page,
+  hasNext,
+  from,
   profileUserId,
   favoritedIds,
 }: {
@@ -137,6 +150,9 @@ function ResultsList({
   error: string | null;
   searched: boolean;
   filters: SearchFilters;
+  page: number;
+  hasNext: boolean;
+  from: string;
   profileUserId: string | null;
   favoritedIds: Set<string>;
 }) {
@@ -150,7 +166,7 @@ function ResultsList({
     return null;
   }
 
-  if (rows.length === 0) {
+  if (rows.length === 0 && page <= 1) {
     return (
       <EmptyState className="mt-8">
         Sin resultados para estos criterios.
@@ -158,51 +174,68 @@ function ResultsList({
     );
   }
 
+  const pager = (
+    <SearchResultsPager
+      page={page}
+      pageSize={SEARCH_PAGE_SIZE}
+      showing={rows.length}
+      hasNext={hasNext}
+      hrefForPage={(p) => searchHref(filters, p, from)}
+    />
+  );
+
+  if (rows.length === 0) {
+    return <div className="mt-8">{pager}</div>;
+  }
+
   return (
-    <ul className="mt-8 divide-y divide-border border-t border-border">
-      {rows.map((row) => (
-        <li key={row.id} className="py-4">
-          <div className="flex items-start gap-3">
-            <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap items-baseline gap-2">
-                <h2 className="text-base font-medium text-foreground">
-                  <Link
-                    href={tenderHrefFromSearch(row.id, filters)}
-                    className="text-foreground hover:text-link hover:underline"
-                  >
-                    {row.title}
-                  </Link>
-                </h2>
-                <MatchKindBadge kind={row.match_kind} />
+    <div className="mt-8">
+      <ul className="divide-y divide-border border-t border-border">
+        {rows.map((row) => (
+          <li key={row.id} className="py-4">
+            <div className="flex items-start gap-3">
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-baseline gap-2">
+                  <h2 className="text-base font-medium text-foreground">
+                    <Link
+                      href={tenderHrefFromSearch(row.id, filters, page)}
+                      className="text-foreground hover:text-link hover:underline"
+                    >
+                      {row.title}
+                    </Link>
+                  </h2>
+                  <MatchKindBadge kind={row.match_kind} />
+                </div>
+                <dl className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
+                  <div>
+                    <dt className="inline text-muted-foreground">Importe (sin IVA): </dt>
+                    <dd className="inline">{formatMoney(row.estimated_value, row.currency)}</dd>
+                  </div>
+                  <div>
+                    <dt className="inline text-muted-foreground">CPV: </dt>
+                    <dd className="inline font-mono">
+                      {row.cpv_codes?.length ? row.cpv_codes.join(", ") : "—"}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="inline text-muted-foreground">Estado: </dt>
+                    <dd className="inline">{formatTenderStatus(row.status)}</dd>
+                  </div>
+                </dl>
               </div>
-              <dl className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
-                <div>
-                  <dt className="inline text-muted-foreground">Importe (sin IVA): </dt>
-                  <dd className="inline">{formatMoney(row.estimated_value, row.currency)}</dd>
-                </div>
-                <div>
-                  <dt className="inline text-muted-foreground">CPV: </dt>
-                  <dd className="inline font-mono">
-                    {row.cpv_codes?.length ? row.cpv_codes.join(", ") : "—"}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="inline text-muted-foreground">Estado: </dt>
-                  <dd className="inline">{formatTenderStatus(row.status)}</dd>
-                </div>
-              </dl>
+              {profileUserId ? (
+                <FavoriteHeartButton
+                  userId={profileUserId}
+                  tenderId={row.id}
+                  initiallyFavorited={favoritedIds.has(row.id)}
+                />
+              ) : null}
             </div>
-            {profileUserId ? (
-              <FavoriteHeartButton
-                userId={profileUserId}
-                tenderId={row.id}
-                initiallyFavorited={favoritedIds.has(row.id)}
-              />
-            ) : null}
-          </div>
-        </li>
-      ))}
-    </ul>
+          </li>
+        ))}
+      </ul>
+      {pager}
+    </div>
   );
 }
 
@@ -232,6 +265,9 @@ export default async function SearchPage({
   const openForSubmission = first(params.en_plazo).trim() === "1";
   const from = first(params.from).trim();
   const back = backFromSavedSearch(from);
+  const pageRaw = Number.parseInt(first(params.page).trim(), 10);
+  const page =
+    Number.isInteger(pageRaw) && pageRaw >= 1 ? pageRaw : 1;
   const min = minRaw === "" ? undefined : Number(minRaw);
   const max = maxRaw === "" ? undefined : Number(maxRaw);
 
@@ -316,6 +352,7 @@ export default async function SearchPage({
   };
 
   let rows: SearchTenderRow[] = [];
+  let hasNext = false;
   let error: string | null = null;
   let profileUserId: string | null = null;
   let favoritedIds = new Set<string>();
@@ -358,12 +395,16 @@ export default async function SearchPage({
                 }
               : undefined,
         },
-        limit: 20,
+        // +1 para saber si hay página siguiente sin total_count en la RPC.
+        limit: SEARCH_PAGE_SIZE + 1,
+        offset: (page - 1) * SEARCH_PAGE_SIZE,
       });
       if (result.error) {
         error = result.error.message;
       } else {
-        rows = result.data ?? [];
+        const fetched = result.data ?? [];
+        hasNext = fetched.length > SEARCH_PAGE_SIZE;
+        rows = fetched.slice(0, SEARCH_PAGE_SIZE);
       }
     } catch (err) {
       error = err instanceof Error ? err.message : String(err);
@@ -622,6 +663,9 @@ export default async function SearchPage({
         error={error}
         searched={shouldSearch}
         filters={filters}
+        page={page}
+        hasNext={hasNext}
+        from={from}
         profileUserId={profileUserId}
         favoritedIds={favoritedIds}
       />

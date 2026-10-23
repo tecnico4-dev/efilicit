@@ -91,6 +91,10 @@ function backLinkFromParams(
     if (pubFrom) qs.set("pub_from", pubFrom);
     if (pubTo) qs.set("pub_to", pubTo);
     if (enPlazo) qs.set("en_plazo", "1");
+    const pageRaw = Number.parseInt(first(params.page).trim(), 10);
+    if (Number.isInteger(pageRaw) && pageRaw > 1) {
+      qs.set("page", String(pageRaw));
+    }
     const query = qs.toString();
     return {
       href: query ? `/search?${query}` : "/search",
