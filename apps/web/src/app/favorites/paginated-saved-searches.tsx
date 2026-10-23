@@ -50,8 +50,8 @@ export function PaginatedSavedSearches({
     }
   }, [page, totalPages]);
 
-  function onPageSizeChange(next: PageSize) {
-    setPageSize(next);
+  function onPageSizeChange(next: number) {
+    setPageSize(next as PageSize);
     setPage(1);
   }
 
