@@ -43,7 +43,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Notificaciones: papelera por aviso (icono); pestaña «Papelera» (30 días visibles; luego ocultas en todas partes vía `notification_trash`).
+- Notificaciones: papelera por aviso (icono); pestaña «Papelera» (30 días; aviso de caducidad + recuperar a Todas; luego ocultas vía `notification_trash`).
 
 ### Changed
 

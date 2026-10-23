@@ -1,5 +1,6 @@
 import Link from "next/link";
 import {
+  formatNotificationTrashExpiry,
   isNotificationInTrashWindow,
   type FavoriteStatusNotification,
 } from "@/lib/queries";
@@ -8,6 +9,7 @@ import {
   NotificationsFolderTabs,
   type NotificationsView,
 } from "./notifications-folder-tabs";
+import { RestoreNotificationButton } from "./restore-notification-button";
 import { TrashNotificationButton } from "./trash-notification-button";
 
 function formatWhen(iso: string): string {
@@ -68,45 +70,79 @@ export function NotificationsList({
           <ul className="divide-y divide-border">
             {visible.map((n) => (
               <li key={n.eventId}>
-                <div className="flex items-stretch gap-1">
-                  <Link
-                    href={`/notifications/open?eventId=${encodeURIComponent(n.eventId)}&tenderId=${encodeURIComponent(n.tenderId)}`}
-                    className="relative min-w-0 flex-1 px-4 py-3 transition-colors hover:bg-muted/60"
-                  >
-                    {n.unread && view !== "trash" ? (
-                      <span
-                        className="absolute right-2 top-1/2 size-2 -translate-y-1/2 rounded-full bg-primary shadow-sm ring-2 ring-background"
-                        title="No leída"
-                        aria-label="No leída"
+                {view === "trash" && n.trashedAt ? (
+                  <div className="px-4 py-3">
+                    <Link
+                      href={`/notifications/open?eventId=${encodeURIComponent(n.eventId)}&tenderId=${encodeURIComponent(n.tenderId)}`}
+                      className="block transition-colors hover:opacity-90"
+                    >
+                      <p className="text-sm font-medium text-foreground">
+                        {n.title}
+                      </p>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        Estado:{" "}
+                        <span className="text-foreground">
+                          {formatTenderStatus(n.previousStatus)}
+                        </span>
+                        {" → "}
+                        <span className="font-medium text-foreground">
+                          {formatTenderStatus(n.newStatus)}
+                        </span>
+                      </p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {formatWhen(n.occurredAt)}
+                        {n.sourceCode ? ` · ${n.sourceCode}` : null}
+                      </p>
+                    </Link>
+                    <p className="mt-2 text-xs text-muted-foreground">
+                      {formatNotificationTrashExpiry(n.trashedAt)}
+                    </p>
+                    <div className="mt-1">
+                      <RestoreNotificationButton
+                        userId={userId}
+                        eventId={n.eventId}
                       />
-                    ) : null}
-                    <p className="pr-4 text-sm font-medium text-foreground">
-                      {n.title}
-                    </p>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      Estado:{" "}
-                      <span className="text-foreground">
-                        {formatTenderStatus(n.previousStatus)}
-                      </span>
-                      {" → "}
-                      <span className="font-medium text-foreground">
-                        {formatTenderStatus(n.newStatus)}
-                      </span>
-                    </p>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      {formatWhen(n.occurredAt)}
-                      {n.sourceCode ? ` · ${n.sourceCode}` : null}
-                    </p>
-                  </Link>
-                  {view !== "trash" ? (
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-stretch gap-1">
+                    <Link
+                      href={`/notifications/open?eventId=${encodeURIComponent(n.eventId)}&tenderId=${encodeURIComponent(n.tenderId)}`}
+                      className="relative min-w-0 flex-1 px-4 py-3 transition-colors hover:bg-muted/60"
+                    >
+                      {n.unread ? (
+                        <span
+                          className="absolute right-2 top-1/2 size-2 -translate-y-1/2 rounded-full bg-primary shadow-sm ring-2 ring-background"
+                          title="No leída"
+                          aria-label="No leída"
+                        />
+                      ) : null}
+                      <p className="pr-4 text-sm font-medium text-foreground">
+                        {n.title}
+                      </p>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        Estado:{" "}
+                        <span className="text-foreground">
+                          {formatTenderStatus(n.previousStatus)}
+                        </span>
+                        {" → "}
+                        <span className="font-medium text-foreground">
+                          {formatTenderStatus(n.newStatus)}
+                        </span>
+                      </p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {formatWhen(n.occurredAt)}
+                        {n.sourceCode ? ` · ${n.sourceCode}` : null}
+                      </p>
+                    </Link>
                     <div className="flex items-center pr-2">
                       <TrashNotificationButton
                         userId={userId}
                         eventId={n.eventId}
                       />
                     </div>
-                  ) : null}
-                </div>
+                  </div>
+                )}
               </li>
             ))}
           </ul>

@@ -58,6 +58,30 @@ export function isNotificationInTrashWindow(
 }
 
 /**
+ * Días enteros restantes en papelera (1…30).
+ * El último día parcial cuenta como 1; caducado → 0.
+ */
+export function daysUntilNotificationTrashPurge(
+  trashedAt: string,
+  now: Date = new Date(),
+): number {
+  const t = new Date(trashedAt).getTime();
+  if (Number.isNaN(t)) return 0;
+  const ms = NOTIFICATION_TRASH_RETENTION_DAYS * 24 * 60 * 60 * 1000;
+  const remaining = t + ms - now.getTime();
+  if (remaining <= 0) return 0;
+  return Math.max(1, Math.ceil(remaining / (24 * 60 * 60 * 1000)));
+}
+
+/** Copy UI: «Se eliminará definitivamente en X día(s).» */
+export function formatNotificationTrashExpiry(trashedAt: string): string {
+  const days = daysUntilNotificationTrashPurge(trashedAt);
+  if (days <= 0) return "Se eliminará definitivamente muy pronto.";
+  if (days === 1) return "Se eliminará definitivamente en 1 día.";
+  return `Se eliminará definitivamente en ${days} días.`;
+}
+
+/**
  * Lista cambios de estado en favoritos detectados tras marcar como favorito.
  * Incluye avisos en papelera (filtrar por pestaña en UI).
  */

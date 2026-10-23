@@ -44,6 +44,8 @@ export {
   type FavoriteWithTender,
 } from "./favorites";
 export {
+  daysUntilNotificationTrashPurge,
+  formatNotificationTrashExpiry,
   hasUnreadFavoriteStatusNotifications,
   isNotificationInTrashWindow,
   listFavoriteStatusNotifications,
