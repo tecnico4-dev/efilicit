@@ -5,7 +5,10 @@ import {
   PAGE_TITLE_RULE,
 } from "@/components/shell/page-width";
 import { EmptyState, ErrorState } from "@/components/ui/state-message";
-import { listFavoriteStatusNotifications } from "@/lib/queries";
+import {
+  isNotificationInTrashWindow,
+  listFavoriteStatusNotifications,
+} from "@/lib/queries";
 import { NotificationsList } from "./notifications-list";
 import type { NotificationsView } from "./notifications-folder-tabs";
 
@@ -26,7 +29,11 @@ export default async function NotificationsPage({
   const params = await searchParams;
   const viewParam = first(params.view);
   const view: NotificationsView =
-    viewParam === "unread" ? "unread" : "all";
+    viewParam === "unread"
+      ? "unread"
+      : viewParam === "trash"
+        ? "trash"
+        : "all";
 
   const supabase = await createSupabaseServerClient();
   const {
@@ -52,6 +59,12 @@ export default async function NotificationsPage({
     { userId: profile.id },
   );
 
+  const hasActive = notifications.some((n) => n.trashedAt == null);
+  const hasTrash = notifications.some(
+    (n) => n.trashedAt != null && isNotificationInTrashWindow(n.trashedAt),
+  );
+  const showList = hasActive || hasTrash || view === "trash";
+
   return (
     <main className={PAGE_MAIN_CLASS}>
       <h1 className="text-2xl font-semibold tracking-tight text-foreground">
@@ -63,10 +76,14 @@ export default async function NotificationsPage({
           <ErrorState>
             No se pudieron cargar las notificaciones: {error.message}
           </ErrorState>
-        ) : notifications.length === 0 ? (
+        ) : !showList ? (
           <EmptyState>Aún no tienes notificaciones.</EmptyState>
         ) : (
-          <NotificationsList notifications={notifications} view={view} />
+          <NotificationsList
+            notifications={notifications}
+            view={view}
+            userId={profile.id}
+          />
         )}
       </div>
     </main>

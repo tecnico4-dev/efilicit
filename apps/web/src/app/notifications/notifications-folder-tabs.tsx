@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { cn } from "@/lib/cn";
 
-export type NotificationsView = "all" | "unread";
+export type NotificationsView = "all" | "unread" | "trash";
 
 /**
  * Pestañas tipo separador de ficheros encima de la lista del buzón.
@@ -10,13 +10,19 @@ export function NotificationsFolderTabs({
   view,
   allCount,
   unreadCount,
+  trashCount,
 }: {
   view: NotificationsView;
   allCount: number;
   unreadCount: number;
+  trashCount: number;
 }) {
   return (
-    <div className="flex items-end gap-1 px-1" role="tablist" aria-label="Filtro">
+    <div
+      className="flex flex-wrap items-end gap-1 px-1"
+      role="tablist"
+      aria-label="Filtro"
+    >
       <FolderTab
         href="/notifications?view=all"
         active={view === "all"}
@@ -28,6 +34,12 @@ export function NotificationsFolderTabs({
         active={view === "unread"}
         label="No leídas"
         count={unreadCount}
+      />
+      <FolderTab
+        href="/notifications?view=trash"
+        active={view === "trash"}
+        label="Papelera"
+        count={trashCount}
       />
     </div>
   );

@@ -45,7 +45,11 @@ export {
 } from "./favorites";
 export {
   hasUnreadFavoriteStatusNotifications,
+  isNotificationInTrashWindow,
   listFavoriteStatusNotifications,
   markOwnNotificationRead,
+  NOTIFICATION_TRASH_RETENTION_DAYS,
+  restoreOwnNotificationFromTrash,
+  trashOwnNotification,
   type FavoriteStatusNotification,
 } from "./notifications";

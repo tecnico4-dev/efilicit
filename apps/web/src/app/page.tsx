@@ -46,7 +46,9 @@ export default async function Home() {
       }),
     ]);
 
-  const notifications = notificationsResult.data;
+  const notifications = notificationsResult.data.filter(
+    (n) => n.trashedAt == null,
+  );
   const unreadCount = notifications.filter((n) => n.unread).length;
   const recentNotifications = notifications.slice(0, 3);
 

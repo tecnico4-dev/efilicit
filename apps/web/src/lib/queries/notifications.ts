@@ -1,12 +1,16 @@
 /**
  * Avisos in-app: cambios de estado en licitaciones favoritas.
- * Fuente: tender_events ∩ favorites; lectura por aviso en notification_reads.
+ * Fuente: tender_events ∩ favorites; lectura por aviso en notification_reads;
+ * papelera en notification_trash (UI 30 días; luego ocultos en todas partes).
  *
  * Elegibilidad: `tender_events.created_at` > `favorites.created_at`.
- * No leído: no hay fila en `notification_reads` para ese event_id.
+ * No leído: no hay fila en `notification_reads` y no está en papelera.
  */
 import type { Database } from "@efilicit/types";
 import type { SupabaseClient } from "@supabase/supabase-js";
+
+/** Días visibles en la pestaña Papelera. */
+export const NOTIFICATION_TRASH_RETENTION_DAYS = 30;
 
 export type FavoriteStatusNotification = {
   eventId: string;
@@ -20,6 +24,8 @@ export type FavoriteStatusNotification = {
   detectedAt: string;
   sourceCode: string | null;
   unread: boolean;
+  /** ISO si está en papelera (cualquier antigüedad). */
+  trashedAt: string | null;
 };
 
 type FavRow = {
@@ -40,8 +46,20 @@ type EventRow = {
 
 const DEFAULT_LIMIT = 50;
 
+/** ¿Sigue visible en la pestaña Papelera? */
+export function isNotificationInTrashWindow(
+  trashedAt: string,
+  now: Date = new Date(),
+): boolean {
+  const t = new Date(trashedAt).getTime();
+  if (Number.isNaN(t)) return false;
+  const ms = NOTIFICATION_TRASH_RETENTION_DAYS * 24 * 60 * 60 * 1000;
+  return now.getTime() - t < ms;
+}
+
 /**
  * Lista cambios de estado en favoritos detectados tras marcar como favorito.
+ * Incluye avisos en papelera (filtrar por pestaña en UI).
  */
 export async function listFavoriteStatusNotifications(
   client: SupabaseClient<Database>,
@@ -92,14 +110,17 @@ export async function listFavoriteStatusNotifications(
   );
 
   const eventIds = changes.map((c) => c.eventId);
-  const readIds = await listReadEventIds(client, {
-    userId: input.userId,
-    eventIds,
-  });
+  const [readIds, trashMap] = await Promise.all([
+    listReadEventIds(client, { userId: input.userId, eventIds }),
+    listTrashByEventId(client, { userId: input.userId, eventIds }),
+  ]);
   if (readIds.error) return { data: [], error: readIds.error };
+  if (trashMap.error) return { data: [], error: trashMap.error };
 
   for (const c of changes) {
-    c.unread = !readIds.data.has(c.eventId);
+    const trashedAt = trashMap.data.get(c.eventId) ?? null;
+    c.trashedAt = trashedAt;
+    c.unread = trashedAt == null && !readIds.data.has(c.eventId);
   }
 
   changes.sort((a, b) => (a.detectedAt < b.detectedAt ? 1 : -1));
@@ -125,7 +146,28 @@ async function listReadEventIds(
   };
 }
 
-/** ¿Hay algún aviso de favoritos aún sin leer? */
+async function listTrashByEventId(
+  client: SupabaseClient<Database>,
+  input: { userId: string; eventIds: string[] },
+): Promise<{ data: Map<string, string>; error: Error | null }> {
+  if (input.eventIds.length === 0) {
+    return { data: new Map(), error: null };
+  }
+
+  const { data, error } = await client
+    .from("notification_trash")
+    .select("event_id, trashed_at")
+    .eq("user_id", input.userId)
+    .in("event_id", input.eventIds);
+
+  if (error) return { data: new Map(), error: new Error(error.message) };
+  return {
+    data: new Map((data ?? []).map((r) => [r.event_id, r.trashed_at])),
+    error: null,
+  };
+}
+
+/** ¿Hay algún aviso de favoritos aún sin leer (fuera de papelera)? */
 export async function hasUnreadFavoriteStatusNotifications(
   client: SupabaseClient<Database>,
   input: { userId: string },
@@ -135,7 +177,10 @@ export async function hasUnreadFavoriteStatusNotifications(
     limit: 50,
   });
   if (error) return { data: false, error };
-  return { data: data.some((n) => n.unread), error: null };
+  return {
+    data: data.some((n) => n.unread && n.trashedAt == null),
+    error: null,
+  };
 }
 
 /** Marca un aviso concreto como leído (al abrir la ficha desde el buzón). */
@@ -156,9 +201,42 @@ export async function markOwnNotificationRead(
   return { error: null };
 }
 
+/** Mueve un aviso a la papelera. */
+export async function trashOwnNotification(
+  client: SupabaseClient<Database>,
+  input: { userId: string; eventId: string },
+): Promise<{ error: Error | null }> {
+  const { error } = await client.from("notification_trash").upsert(
+    {
+      user_id: input.userId,
+      event_id: input.eventId,
+      trashed_at: new Date().toISOString(),
+    },
+    { onConflict: "user_id,event_id" },
+  );
+
+  if (error) return { error: new Error(error.message) };
+  return { error: null };
+}
+
+/** Saca un aviso de la papelera (p. ej. deshacer). */
+export async function restoreOwnNotificationFromTrash(
+  client: SupabaseClient<Database>,
+  input: { userId: string; eventId: string },
+): Promise<{ error: Error | null }> {
+  const { error } = await client
+    .from("notification_trash")
+    .delete()
+    .eq("user_id", input.userId)
+    .eq("event_id", input.eventId);
+
+  if (error) return { error: new Error(error.message) };
+  return { error: null };
+}
+
 /**
  * Filtra transiciones reales de estado detectadas tras el favorito.
- * `unread` se rellena después con notification_reads.
+ * `unread` / `trashedAt` se rellenan después.
  */
 export function statusChangeNotifications(
   events: EventRow[],
@@ -206,6 +284,7 @@ export function statusChangeNotifications(
           detectedAt: e.created_at,
           sourceCode: e.source_code,
           unread: true,
+          trashedAt: null,
         });
       }
       prevStatus = e.event_status;
