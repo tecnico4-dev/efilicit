@@ -76,6 +76,10 @@ export function ListPager({
       showStatus("Número de página inválido.");
       return;
     }
+    if (n === page) {
+      setDraft(String(page));
+      return;
+    }
     applyPage(n);
   }
 
@@ -110,14 +114,7 @@ export function ListPager({
           inputMode="numeric"
           value={draft}
           aria-label="Número de página"
-          onChange={(e) => {
-            const value = e.target.value;
-            setDraft(value);
-            const n = Number.parseInt(value, 10);
-            if (Number.isInteger(n) && n >= 1 && n <= totalPages) {
-              onPageChange(n);
-            }
-          }}
+          onChange={(e) => setDraft(e.target.value)}
           onBlur={commitDraft}
           onKeyDown={(e) => {
             if (e.key === "Enter") {
