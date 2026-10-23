@@ -6,6 +6,8 @@ import type { Database } from "@efilicit/types";
  * Refresca cookies de sesión Auth en cada request.
  *
  * Invite-only (ADR 016): sin registro público; `/` anónimo → `/login`.
+ * Gate de producto: rutas protegidas abajo — las páginas RSC no deben
+ * repetir getUser+redirect; solo leen perfil (`getSessionProfile`) si lo necesitan.
  * Solo publishable/anon — nunca service_role.
  */
 export async function updateSession(request: NextRequest) {

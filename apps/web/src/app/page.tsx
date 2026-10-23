@@ -1,9 +1,9 @@
-import { redirect } from "next/navigation";
 import {
   getSessionProfile,
-  getSessionUser,
   getSupabaseServerClient,
 } from "@/lib/auth/session";
+import { PAGE_MAIN_CLASS } from "@/components/shell/page-width";
+import { ErrorState } from "@/components/ui/state-message";
 import {
   countUnreadFavoriteStatusNotifications,
   listOwnAlerts,
@@ -20,17 +20,24 @@ export default async function Home() {
   try {
     supabase = await getSupabaseServerClient();
   } catch {
-    redirect("/login");
+    return (
+      <main className={PAGE_MAIN_CLASS}>
+        <ErrorState>No se pudo conectar con la base de datos.</ErrorState>
+      </main>
+    );
   }
 
-  const user = await getSessionUser();
-  if (!user) {
-    redirect("/login");
-  }
-
+  // Auth: middleware. Aquí solo hace falta el perfil de aplicación.
   const profile = await getSessionProfile();
   if (!profile.data) {
-    redirect("/login");
+    return (
+      <main className={PAGE_MAIN_CLASS}>
+        <ErrorState>
+          No hay perfil en public.users:{" "}
+          {profile.error?.message ?? "desconocido"}
+        </ErrorState>
+      </main>
+    );
   }
 
   const digestFrequency =

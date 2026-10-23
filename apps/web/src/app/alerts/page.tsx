@@ -1,9 +1,7 @@
-import { redirect } from "next/navigation";
 import { PAGE_MAIN_CLASS } from "@/components/shell/page-width";
 import { EmptyState, ErrorState } from "@/components/ui/state-message";
 import {
   getSessionProfile,
-  getSessionUser,
   getSupabaseServerClient,
 } from "@/lib/auth/session";
 import { listOwnAlerts } from "@/lib/queries";
@@ -15,12 +13,6 @@ export const dynamic = "force-dynamic";
 
 export default async function AlertsPage() {
   const supabase = await getSupabaseServerClient();
-  const user = await getSessionUser();
-
-  if (!user) {
-    redirect("/login?next=/alerts");
-  }
-
   const profileResult = await getSessionProfile();
   if (!profileResult.data) {
     return (

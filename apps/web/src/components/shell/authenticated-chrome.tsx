@@ -22,6 +22,7 @@ function displayNameFrom(
 /**
  * Cabecera autenticada (async). El badge de no leídas va en Suspense anidado
  * para no retrasar ni el chrome ni `{children}` del layout.
+ * Sin sesión (p. ej. `/login`): no pinta nav — el gate de rutas es el middleware.
  */
 export async function AuthenticatedChrome() {
   const user = await getSessionUser();

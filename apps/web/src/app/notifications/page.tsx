@@ -1,7 +1,5 @@
-import { redirect } from "next/navigation";
 import {
   getSessionProfile,
-  getSessionUser,
   getSupabaseServerClient,
 } from "@/lib/auth/session";
 import {
@@ -40,16 +38,17 @@ export default async function NotificationsPage({
         : "all";
 
   const supabase = await getSupabaseServerClient();
-  const user = await getSessionUser();
-
-  if (!user) {
-    redirect("/login?next=/notifications");
-  }
-
-  const { data: profile } = await getSessionProfile();
+  const { data: profile, error: profileError } = await getSessionProfile();
 
   if (!profile?.id) {
-    redirect("/login?next=/notifications");
+    return (
+      <main className={PAGE_MAIN_CLASS}>
+        <ErrorState>
+          No hay perfil en public.users:{" "}
+          {profileError?.message ?? "desconocido"}
+        </ErrorState>
+      </main>
+    );
   }
 
   const { data: notifications, error } = await listFavoriteStatusNotifications(

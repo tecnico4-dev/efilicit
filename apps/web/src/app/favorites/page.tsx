@@ -1,7 +1,5 @@
-import { redirect } from "next/navigation";
 import {
   getSessionProfile,
-  getSessionUser,
   getSupabaseServerClient,
 } from "@/lib/auth/session";
 import {
@@ -29,12 +27,6 @@ export const dynamic = "force-dynamic";
 
 export default async function FavoritesPage() {
   const supabase = await getSupabaseServerClient();
-  const user = await getSessionUser();
-
-  if (!user) {
-    redirect("/login?next=/favorites");
-  }
-
   const profile = await getSessionProfile();
   if (!profile.data) {
     return (

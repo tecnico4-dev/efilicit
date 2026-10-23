@@ -1,6 +1,9 @@
 /**
  * Sesión Auth + perfil `public.users` memoizados por request (React `cache`).
- * AppShell y las páginas comparten la misma resolución: un getUser + un select.
+ *
+ * Gate de acceso: el middleware (`updateSession`) ya redirige anónimos a `/login`
+ * en rutas de producto. Las páginas no deben repetir `getUser` + redirect;
+ * solo necesitan el perfil de aplicación (`public.users`) cuando usen `userId`.
  */
 import { cache } from "react";
 import type { User } from "@supabase/supabase-js";

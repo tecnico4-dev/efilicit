@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import {
   PAGE_MAIN_CLASS,
   PAGE_TITLE_RULE,
@@ -7,7 +6,6 @@ import {
 import { EmptyState, ErrorState } from "@/components/ui/state-message";
 import {
   getSessionProfile,
-  getSessionUser,
   getSupabaseServerClient,
 } from "@/lib/auth/session";
 import {
@@ -41,12 +39,6 @@ export default async function SavedSearchesPage({
         : { href: "/favorites", label: "← Volver a la lista de favoritos" };
 
   const supabase = await getSupabaseServerClient();
-  const user = await getSessionUser();
-
-  if (!user) {
-    redirect("/login?next=/favorites/searches");
-  }
-
   const profile = await getSessionProfile();
   if (!profile.data) {
     return (

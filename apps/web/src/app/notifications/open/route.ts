@@ -1,7 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import {
   getSessionProfile,
-  getSessionUser,
   getSupabaseServerClient,
 } from "@/lib/auth/session";
 import { markOwnNotificationRead } from "@/lib/queries";
@@ -9,6 +8,7 @@ import { markOwnNotificationRead } from "@/lib/queries";
 /**
  * Marca un aviso como leído y redirige a la ficha.
  * Uso: /notifications/open?eventId=…&tenderId=…
+ * Auth: middleware (ruta bajo /notifications).
  */
 export async function GET(request: NextRequest) {
   const eventId = request.nextUrl.searchParams.get("eventId")?.trim() ?? "";
@@ -20,17 +20,6 @@ export async function GET(request: NextRequest) {
   }
 
   const supabase = await getSupabaseServerClient();
-  const user = await getSessionUser();
-
-  if (!user) {
-    const login = new URL("/login", request.url);
-    login.searchParams.set(
-      "next",
-      `/notifications/open?eventId=${encodeURIComponent(eventId)}&tenderId=${encodeURIComponent(tenderId)}`,
-    );
-    return NextResponse.redirect(login);
-  }
-
   const { data: profile } = await getSessionProfile();
 
   if (profile?.id) {
