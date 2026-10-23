@@ -96,7 +96,7 @@ function backLinkFromParams(
       qs.set("page", String(pageRaw));
     }
     const psRaw = first(params.ps).trim();
-    if (psRaw === "50" || psRaw === "100") {
+    if (psRaw === "20" || psRaw === "50" || psRaw === "100") {
       qs.set("ps", psRaw);
     }
     const query = qs.toString();

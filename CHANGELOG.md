@@ -47,7 +47,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Buscador: pager igual que favoritos (`ListPager`, 10/50/100); ancla `#resultados` al paginar; `total_count` en RPC.
+- Buscador: pager igual que favoritos (`ListPager`, 10/20/50/100); ancla `#resultados` + scroll interno arriba al paginar; `total_count` en RPC.
+- Favoritos (licitaciones y búsquedas): al cambiar de página el scroll interno del panel vuelve arriba.
 - Favoritos: «Datos actualizados» (Hoy / Ayer / fecha) = `max(tender_sources.last_seen_at)`, a la derecha del título.
 - Buscador CPV: al escribir el prefijo se sugieren continuaciones del diccionario (typeahead; flechas/Enter/clic).
 - Alertas batch: la ventana de licitaciones del job ya no se corta a 5.000; ese valor es **tamaño de página** y se pagina (keyset) hasta agotar el «último día» (`load_tender_candidates`).

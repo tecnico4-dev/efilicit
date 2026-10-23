@@ -1,8 +1,8 @@
 /** Ancla al inicio del listado (mantener scroll al cambiar de página). */
 export const SEARCH_RESULTS_ANCHOR = "resultados";
 
-/** Tamaños de página alineados con favoritos (`ListPager`). */
-export const SEARCH_PAGE_SIZE_OPTIONS = [10, 50, 100] as const;
+/** Tamaños de página del buscador. */
+export const SEARCH_PAGE_SIZE_OPTIONS = [10, 20, 50, 100] as const;
 export type SearchPageSize = (typeof SEARCH_PAGE_SIZE_OPTIONS)[number];
 
 /** Tamaño de página por defecto del buscador. */

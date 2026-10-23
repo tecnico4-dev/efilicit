@@ -1,11 +1,9 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { ListPager } from "@/app/favorites/list-pager";
 import {
-  ListPager,
-  type PageSize,
-} from "@/app/favorites/list-pager";
-import {
+  SEARCH_PAGE_SIZE_OPTIONS,
   searchHref,
   type SearchHrefFilters,
   type SearchPageSize,
@@ -51,13 +49,14 @@ export function SearchResultsPager({
     <ListPager
       page={Math.min(Math.max(page, 1), totalPages)}
       totalPages={totalPages}
-      pageSize={pageSize as PageSize}
+      pageSize={pageSize}
       showing={showing}
       total={total}
       itemLabel="licitaciones"
       ariaPageSizeLabel="Licitaciones por página"
+      pageSizeOptions={SEARCH_PAGE_SIZE_OPTIONS}
       onPageChange={(p) => go(p)}
-      onPageSizeChange={(size) => go(1, size)}
+      onPageSizeChange={(size) => go(1, size as SearchPageSize)}
     />
   );
 }

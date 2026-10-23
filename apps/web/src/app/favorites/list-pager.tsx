@@ -22,17 +22,20 @@ export function ListPager({
   ariaPageSizeLabel,
   onPageChange,
   onPageSizeChange,
+  pageSizeOptions = PAGE_SIZE_OPTIONS,
 }: {
   page: number;
   totalPages: number;
-  pageSize: PageSize;
+  pageSize: number;
   showing: number;
   total: number;
   /** Ej. «licitaciones» o «búsquedas». */
   itemLabel: string;
   ariaPageSizeLabel: string;
   onPageChange: (page: number) => void;
-  onPageSizeChange: (size: PageSize) => void;
+  onPageSizeChange: (size: number) => void;
+  /** Opciones del menú «Mostrando»; por defecto 10 / 50 / 100. */
+  pageSizeOptions?: readonly number[];
 }) {
   const { showStatus } = useUndoToast();
   const [draft, setDraft] = useState(String(page));
@@ -76,7 +79,7 @@ export function ListPager({
     applyPage(n);
   }
 
-  function onSelectPageSize(next: PageSize) {
+  function onSelectPageSize(next: number) {
     onPageSizeChange(next);
     setSizeOpen(false);
   }
@@ -169,7 +172,7 @@ export function ListPager({
               role="listbox"
               className="absolute bottom-full left-0 z-20 mb-1 min-w-full overflow-hidden rounded-md border border-border bg-surface py-1 shadow-lg"
             >
-              {PAGE_SIZE_OPTIONS.map((opt) => (
+              {pageSizeOptions.map((opt) => (
                 <li key={opt} role="option" aria-selected={pageSize === opt}>
                   <button
                     type="button"
