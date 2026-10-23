@@ -81,7 +81,7 @@ export default async function NotificationsPage({
         ) : (
           <NotificationsList
             notifications={notifications}
-            view={view}
+            initialView={view}
             userId={profile.id}
           />
         )}

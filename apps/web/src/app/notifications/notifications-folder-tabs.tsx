@@ -1,21 +1,23 @@
-import Link from "next/link";
 import { cn } from "@/lib/cn";
 
 export type NotificationsView = "all" | "unread" | "trash";
 
 /**
  * Pestañas tipo separador de ficheros encima de la lista del buzón.
+ * Filtro en cliente (sin navegación RSC).
  */
 export function NotificationsFolderTabs({
   view,
   allCount,
   unreadCount,
   trashCount,
+  onViewChange,
 }: {
   view: NotificationsView;
   allCount: number;
   unreadCount: number;
   trashCount: number;
+  onViewChange: (next: NotificationsView) => void;
 }) {
   return (
     <div
@@ -24,43 +26,44 @@ export function NotificationsFolderTabs({
       aria-label="Filtro"
     >
       <FolderTab
-        href="/notifications?view=all"
         active={view === "all"}
         label="Todas"
         count={allCount}
+        onSelect={() => onViewChange("all")}
       />
       <FolderTab
-        href="/notifications?view=unread"
         active={view === "unread"}
         label="No leídas"
         count={unreadCount}
+        onSelect={() => onViewChange("unread")}
       />
       <FolderTab
-        href="/notifications?view=trash"
         active={view === "trash"}
         label="Papelera"
         count={trashCount}
+        onSelect={() => onViewChange("trash")}
       />
     </div>
   );
 }
 
 function FolderTab({
-  href,
   active,
   label,
   count,
+  onSelect,
 }: {
-  href: string;
   active: boolean;
   label: string;
   count: number;
+  onSelect: () => void;
 }) {
   return (
-    <Link
-      href={href}
+    <button
+      type="button"
       role="tab"
       aria-selected={active}
+      onClick={onSelect}
       className={cn(
         "relative z-10 -mb-px inline-flex items-center gap-1.5 rounded-t-lg border px-3.5 py-2 text-sm font-medium transition-colors",
         active
@@ -79,6 +82,6 @@ function FolderTab({
       >
         {count}
       </span>
-    </Link>
+    </button>
   );
 }

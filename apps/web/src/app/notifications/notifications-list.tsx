@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { useState } from "react";
 import {
   formatNotificationTrashExpiry,
   isNotificationInTrashWindow,
@@ -24,15 +27,33 @@ function formatWhen(iso: string): string {
   }
 }
 
+function syncViewInUrl(next: NotificationsView) {
+  if (typeof window === "undefined") return;
+  const url = new URL(window.location.href);
+  if (next === "all") {
+    url.searchParams.delete("view");
+  } else {
+    url.searchParams.set("view", next);
+  }
+  window.history.replaceState(window.history.state, "", url.pathname + url.search);
+}
+
 export function NotificationsList({
   notifications,
-  view,
+  initialView,
   userId,
 }: {
   notifications: FavoriteStatusNotification[];
-  view: NotificationsView;
+  initialView: NotificationsView;
   userId: string;
 }) {
+  const [view, setView] = useState<NotificationsView>(initialView);
+
+  function onViewChange(next: NotificationsView) {
+    setView(next);
+    syncViewInUrl(next);
+  }
+
   const active = notifications.filter((n) => n.trashedAt == null);
   const inTrashWindow = notifications.filter(
     (n) => n.trashedAt != null && isNotificationInTrashWindow(n.trashedAt),
@@ -60,6 +81,7 @@ export function NotificationsList({
         allCount={active.length}
         unreadCount={unreadCount}
         trashCount={inTrashWindow.length}
+        onViewChange={onViewChange}
       />
       <div className="relative z-0 overflow-hidden rounded-lg rounded-tl-none border border-border bg-surface/40">
         {visible.length === 0 ? (
