@@ -17,6 +17,8 @@ export type FavoriteWithTender = FavoriteRow & {
     cpv_codes: string[];
     publication_date: string | null;
     deadline_at: string | null;
+    /** max(`tender_sources.last_seen_at`): última vez que una fuente la vio. */
+    last_seen_at: string | null;
   } | null;
 };
 
@@ -76,7 +78,8 @@ export async function listOwnFavorites(
         currency,
         publication_date,
         deadline_at,
-        tender_cpvs (cpv_code)
+        tender_cpvs (cpv_code),
+        tender_sources!tender_sources_tender_id_fkey (last_seen_at)
       )
     `,
     )
@@ -86,24 +89,40 @@ export async function listOwnFavorites(
 
   const rows = (data ?? []).map((row) => {
     const tender = row.tenders as
-      | (Omit<NonNullable<FavoriteWithTender["tenders"]>, "cpv_codes"> & {
+      | (Omit<
+          NonNullable<FavoriteWithTender["tenders"]>,
+          "cpv_codes" | "last_seen_at"
+        > & {
           tender_cpvs?: { cpv_code: string }[] | null;
+          tender_sources?: { last_seen_at: string }[] | null;
         })
       | null;
     if (!tender) {
       return { ...row, tenders: null } as FavoriteWithTender;
     }
-    const { tender_cpvs, ...rest } = tender;
+    const { tender_cpvs, tender_sources, ...rest } = tender;
     return {
       ...row,
       tenders: {
         ...rest,
         cpv_codes: [...(tender_cpvs ?? []).map((r) => r.cpv_code)].sort(),
+        last_seen_at: maxIsoTimestamp(
+          (tender_sources ?? []).map((s) => s.last_seen_at),
+        ),
       },
     } as FavoriteWithTender;
   });
 
   return { data: rows, error: null };
+}
+
+function maxIsoTimestamp(values: string[]): string | null {
+  let best: string | null = null;
+  for (const raw of values) {
+    if (!raw) continue;
+    if (best == null || raw > best) best = raw;
+  }
+  return best;
 }
 
 export async function addOwnFavorite(

@@ -76,9 +76,9 @@ Detalle por CCAA: [cobertura-ccaa.md](../sources/cobertura-ccaa.md). Checklist a
 
 ## 6. Web / búsqueda
 
-- **Paginación / más de 20 resultados en `/search`.** El buscador MVP limita a **20** resultados a propósito (`search_tenders` / UI). No hay “cargar más” ni páginas. Revisable más adelante si hace falta (paginación o cursor sobre el mismo FTS+trgm, sin cambiar Criteria).
-- **Ordenación de resultados en `/search`.** Hoy el orden lo fija la RPC (rank texto → fecha publicación → cobertura CPV → `created_at`). Con solo 20 filas aporta poco; **tiene sentido junto a paginación / más resultados**: UI para ordenar por campos útiles (p. ej. fecha publicación, importe, plazo, relevancia). Preferible parámetros de orden en `search_tenders` (o sort estable + keyset) antes que reordenar solo en cliente.
+- **Ordenación de resultados en `/search`.** Hoy el orden lo fija la RPC (rank texto → fecha publicación → cobertura CPV → `created_at`). Con paginación ya tiene más sentido: UI para ordenar por campos útiles (p. ej. fecha publicación, importe, plazo, relevancia). Preferible parámetros de orden en `search_tenders` (o sort estable + keyset) antes que reordenar solo en cliente.
 - **Búsqueda FTS vs alertas substring.** Tras alinear stopwords + AND, la búsqueda sigue siendo FTS/`pg_trgm` y el match de alertas es substring en título/descripción. Puede haber divergencias raras. **Alinear solo si en uso real molesta** (no es bug MVP).
+- **Títulos / textos en castellano (fuentes cooficiales).** Catalunya (y en menor medida Euskadi/Galicia si aplica) publican título/objeto en catalán u otra lengua cooficial; el canónico conserva el texto oficial de la fuente. Mejora de producto: ofrecer castellano en UI (y/o campo canónico derivado) sin inventar el RAW — p. ej. preferir campo ES si la fuente lo trae; si no, traducción asistida (MT/LLM) con trazabilidad. **No** es el mismo patrón que `prettify_display_title` (solo mayúsculas). Requiere decisión de producto + ADR si implica proveedor/persistencia nueva.
 
 ---
 
@@ -112,3 +112,4 @@ Detalle por CCAA: [cobertura-ccaa.md](../sources/cobertura-ccaa.md). Checklist a
 - Matching: si ambas fuentes traen expediente y difiere → nunca `auto` (como mucho `pending`); NIF + señales blandas sigue válido si falta expediente en un lado.
 - Re-ingesta: `tender_events` / `tenders.updated_at` solo si cambian campos canónicos; `tender_sources.last_seen_at` marca que la fuente la ha vuelto a ver.
 - Bitácora `source_sync` `failed` persistida tras rollback del upsert (refuerzo [ADR 003](../adr/003-acceso-canonico-publico-etl-privado.md)).
+- Paginación de resultados en `/search` (20 por página, `?page=`; Anterior / Siguiente).

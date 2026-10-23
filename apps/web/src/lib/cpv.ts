@@ -28,6 +28,8 @@ type CpvDictionary = {
 
 const DICT = cpvEs as CpvDictionary;
 const CPV_CODES = DICT.codes;
+/** Códigos ordenados (autocomplete por prefijo). */
+const CPV_CODE_LIST = Object.keys(CPV_CODES).sort();
 
 export const CPV_META = DICT.meta;
 
@@ -108,4 +110,46 @@ export function resolveCpvFromInput(raw: string): {
     known: label != null,
     omittedNonDigits,
   };
+}
+
+/** Longitud del prefijo significativo (sin ceros finales; mín. 2). */
+function cpvSignificantLength(code8: string): number {
+  const trimmed = code8.replace(/0+$/, "");
+  return Math.max(trimmed.length, 2);
+}
+
+export type CpvSuggestion = { code: string; label: string };
+
+/**
+ * Sugerencias CPV por prefijo numérico (typeahead).
+ * Primero categorías más amplias (menos dígitos significativos), luego código.
+ */
+export function suggestCpvByPrefix(
+  raw: string,
+  options?: { limit?: number; exclude?: readonly string[] },
+): CpvSuggestion[] {
+  const digits = raw.replace(/\D/g, "").slice(0, 8);
+  if (!digits) return [];
+  const limit = options?.limit ?? 10;
+  const exclude = options?.exclude?.length
+    ? new Set(options.exclude)
+    : null;
+
+  const hits: CpvSuggestion[] = [];
+  for (const code of CPV_CODE_LIST) {
+    if (!code.startsWith(digits)) continue;
+    if (exclude?.has(code)) continue;
+    const label = CPV_CODES[code]?.label;
+    if (!label) continue;
+    hits.push({ code, label });
+  }
+
+  hits.sort((a, b) => {
+    const la = cpvSignificantLength(a.code);
+    const lb = cpvSignificantLength(b.code);
+    if (la !== lb) return la - lb;
+    return a.code.localeCompare(b.code);
+  });
+
+  return hits.slice(0, limit);
 }

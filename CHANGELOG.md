@@ -43,13 +43,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Buscador: resultados paginados de 20 en 20 (`?page=`; Anterior / Siguiente). Ya no se quedan solo en los 20 primeros.
+- Buscador: paginación de 10 en 10; «Mostrando a–b de X licitaciones» (`total_count` en RPC); página editable; en móvil flechas ← → y «a–b / X».
+- Favoritos: «Datos actualizados» (Hoy / Ayer / fecha) = `max(tender_sources.last_seen_at)`, a la derecha del título.
+- Buscador CPV: al escribir el prefijo se sugieren continuaciones del diccionario (typeahead; flechas/Enter/clic).
 - Alertas batch: la ventana de licitaciones del job ya no se corta a 5.000; ese valor es **tamaño de página** y se pagina (keyset) hasta agotar el «último día» (`load_tender_candidates`).
 - Buscador / alertas — semántica y ranking (sin ADR nuevo; contrato RPC = [ADR 011](docs/adr/011-busqueda-via-rpc-search-tenders.md)):
   1. Stopwords (`de`, `el`, `la`…) y tokens de menos de 2 caracteres fuera; resto en **AND** (misma lógica en `/search`, alertas y búsquedas guardadas: `keywords.ts` / `alerts/keywords.py`).
   2. Si el Texto solo tiene stopwords → aviso en UI y **no** se llama a la RPC.
   3. Filtros duros (CCAA, estado, CPV, fechas, …) sí/no; luego FTS ∪ trgm con **top-K ≈ 300** por rama (`20261022130000_…`); trgm solo si la query tiene 3–120 caracteres.
-  4. Orden final: nota texto → fecha publicación → nº prefijos CPV cubiertos si hay filtro CPV (`20261022140000_…`, útil en `any`) → `created_at`; UI muestra 20.
+  4. Orden final: nota texto → fecha publicación → nº prefijos CPV cubiertos si hay filtro CPV (`20261022140000_…`, útil en `any`) → `created_at`; UI pagina de 10 (`total_count`).
   Detalle operativo: `apps/web/src/lib/queries/README.md`.
 - Ingesta: títulos canónicos en «grito» (casi todo mayúsculas) se reformatean (capitalización + partículas en minúscula; siglas cortas CPV/SA/UTE… intactas); títulos ya mixtos no se tocan.
 - Ingesta: `estimated_value` canónico = importe **sin IVA** (PLACSP: `TaxExclusiveAmount`; Catalunya: `pressupost_licitacio_sense`; Euskadi: `budgetWithoutVAT`). Filas existentes requieren re-ingesta de la fuente propietaria.

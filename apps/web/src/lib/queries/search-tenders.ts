@@ -30,6 +30,10 @@ export type SearchTenderRow = {
   match_kind: "fts" | "trgm" | "filter" | string;
 };
 
+type SearchTenderRpcRow = SearchTenderRow & {
+  total_count?: number | null;
+};
+
 export type SearchTendersInput = {
   /** Texto libre de la caja de búsqueda (FTS + fallback trigram). */
   query?: string;
@@ -84,16 +88,27 @@ function buildRpcArgs(input: SearchTendersInput): SearchTendersArgs {
 /**
  * Búsqueda canónica sobre `tenders` (FTS + pg_trgm + filtros Criteria v1).
  * Usa la RPC `public.search_tenders`. No usa service_role.
+ * `totalCount` = universo de la búsqueda (filtro completo; con texto, tras top-K).
  */
 export async function searchTenders(
   client: SupabaseClient<Database>,
   input: SearchTendersInput = {},
-): Promise<{ data: SearchTenderRow[] | null; error: Error | null }> {
+): Promise<{
+  data: SearchTenderRow[] | null;
+  totalCount: number;
+  error: Error | null;
+}> {
   const { data, error } = await client.rpc("search_tenders", buildRpcArgs(input));
 
   if (error) {
-    return { data: null, error: new Error(error.message) };
+    return { data: null, totalCount: 0, error: new Error(error.message) };
   }
 
-  return { data: (data ?? []) as SearchTenderRow[], error: null };
+  const rows = (data ?? []) as SearchTenderRpcRow[];
+  const totalCount = Number(rows[0]?.total_count ?? 0);
+  const cleaned: SearchTenderRow[] = rows.map(
+    ({ total_count: _total, ...rest }) => rest,
+  );
+
+  return { data: cleaned, totalCount, error: null };
 }

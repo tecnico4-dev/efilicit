@@ -5,6 +5,7 @@ import {
   formatCriteriaSummary,
   parseCriteria,
 } from "@/lib/criteria-display";
+import { formatRelativeDayMadrid } from "@/lib/datetime";
 import type { DigestFrequency, FavoriteWithTender } from "@/lib/queries";
 import { formatTenderStatus } from "@/lib/tender-labels";
 import type { Database } from "@efilicit/types";
@@ -103,31 +104,39 @@ export function FavoriteTenderList({
         }
         return (
           <li key={fav.id} className="py-4">
-            <Link
-              href={`/tenders/${tender.id}?from=${from}`}
-              className="text-base font-medium text-foreground hover:text-link hover:underline"
-            >
-              {tender.title}
-            </Link>
+            <div className="flex items-baseline justify-between gap-3">
+              <Link
+                href={`/tenders/${tender.id}?from=${from}`}
+                className="min-w-0 text-base font-medium text-foreground hover:text-link hover:underline"
+              >
+                {tender.title}
+              </Link>
+              {tender.last_seen_at ? (
+                <p className="shrink-0 text-xs text-muted-foreground sm:text-sm">
+                  Datos actualizados:{" "}
+                  <span className="tabular-nums">
+                    {formatRelativeDayMadrid(tender.last_seen_at)}
+                  </span>
+                </p>
+              ) : null}
+            </div>
             <dl className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
               <div>
-                <dt className="inline">Importe · </dt>
+                <dt className="inline text-muted-foreground">Importe: </dt>
                 <dd className="inline">
                   {formatMoney(tender.estimated_value, tender.currency)}
                 </dd>
               </div>
               <div>
-                <dt className="inline">CPV · </dt>
+                <dt className="inline text-muted-foreground">CPV: </dt>
                 <dd className="inline font-mono">
                   {tender.cpv_codes.length ? tender.cpv_codes.join(", ") : "—"}
                 </dd>
               </div>
-              {tender.status ? (
-                <div>
-                  <dt className="inline">Estado · </dt>
-                  <dd className="inline">{formatTenderStatus(tender.status)}</dd>
-                </div>
-              ) : null}
+              <div>
+                <dt className="inline text-muted-foreground">Estado: </dt>
+                <dd className="inline">{formatTenderStatus(tender.status)}</dd>
+              </div>
             </dl>
           </li>
         );

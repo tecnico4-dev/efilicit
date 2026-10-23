@@ -877,6 +877,8 @@ export type Database = {
           rank: number
           status: string
           title: string
+          /** Universo de la búsqueda (sin texto: filtros; con texto: tras top-K). */
+          total_count: number
           updated_at: string
         }[]
       }

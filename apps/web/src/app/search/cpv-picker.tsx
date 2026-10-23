@@ -1,7 +1,19 @@
 "use client";
 
-import { useCallback, useEffect, useId, useState } from "react";
-import { formatCpvSelection, resolveCpvFromInput } from "@/lib/cpv";
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import {
+  formatCpvSelection,
+  lookupCpvLabel,
+  resolveCpvFromInput,
+  suggestCpvByPrefix,
+} from "@/lib/cpv";
 import { CpvDictionaryDialog } from "./cpv-dictionary-dialog";
 import {
   CLEAR_SEARCH_EVENT,
@@ -17,16 +29,21 @@ type CpvPickerProps = {
   initialMatch?: CpvMatchMode;
 };
 
+const SUGGEST_LIMIT = 10;
+
 /**
  * Código CPV (prefijo) + Añadir → lista «CPV seleccionados» (`code-descripción`).
- * Los hidden `name=cpv` / radio `cpv_match` viajan en el GET / criteria.
+ * Typeahead por prefijo numérico (estilo sugerencias). Los hidden `name=cpv` /
+ * radio `cpv_match` viajan en el GET / criteria.
  */
 export function CpvPicker({
   initialCodes = [],
   initialMatch = "any",
 }: CpvPickerProps) {
   const draftId = useId();
+  const listId = useId();
   const selectedId = useId();
+  const wrapRef = useRef<HTMLDivElement>(null);
   const { clearFeedback } = useSearchFeedback();
   const [draft, setDraft] = useState("");
   const [fieldMessage, setFieldMessage] = useState<{
@@ -40,6 +57,20 @@ export function CpvPicker({
     initialMatch === "all" ? "all" : "any",
   );
   const [dictOpen, setDictOpen] = useState(false);
+  const [suggestOpen, setSuggestOpen] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(-1);
+
+  const suggestions = useMemo(
+    () =>
+      suggestCpvByPrefix(draft, {
+        limit: SUGGEST_LIMIT,
+        exclude: codes,
+      }),
+    [draft, codes],
+  );
+
+  const showSuggestions =
+    suggestOpen && draft.replace(/\D/g, "").length > 0 && suggestions.length > 0;
 
   const reset = useCallback(() => {
     setDraft("");
@@ -47,6 +78,8 @@ export function CpvPicker({
     setCodes([]);
     setMatchMode("any");
     setDictOpen(false);
+    setSuggestOpen(false);
+    setActiveIndex(-1);
   }, []);
 
   useEffect(() => {
@@ -54,6 +87,54 @@ export function CpvPicker({
     window.addEventListener(CLEAR_SEARCH_EVENT, onClear);
     return () => window.removeEventListener(CLEAR_SEARCH_EVENT, onClear);
   }, [reset]);
+
+  useEffect(() => {
+    function onDocMouseDown(e: MouseEvent) {
+      if (!wrapRef.current?.contains(e.target as Node)) {
+        setSuggestOpen(false);
+        setActiveIndex(-1);
+      }
+    }
+    document.addEventListener("mousedown", onDocMouseDown);
+    return () => document.removeEventListener("mousedown", onDocMouseDown);
+  }, []);
+
+  useEffect(() => {
+    setActiveIndex(-1);
+  }, [draft, codes]);
+
+  function addCode(code: string, omittedNonDigits = false): boolean {
+    if (codes.includes(code)) {
+      setFieldMessage({
+        text: `El CPV ${code} ya está seleccionado.`,
+        tone: "error",
+      });
+      setDraft("");
+      setSuggestOpen(false);
+      return false;
+    }
+    if (!lookupCpvLabel(code)) {
+      setFieldMessage({
+        text: `CPV ${code} no está en el diccionario.`,
+        tone: "error",
+      });
+      return false;
+    }
+    clearFeedback();
+    setCodes((prev) => [...prev, code]);
+    setDraft("");
+    setSuggestOpen(false);
+    setActiveIndex(-1);
+    setFieldMessage(
+      omittedNonDigits
+        ? {
+            text: "CPV añadido omitiendo caracteres no numéricos.",
+            tone: "info",
+          }
+        : null,
+    );
+    return true;
+  }
 
   function addFromDraft() {
     const resolved = resolveCpvFromInput(draft);
@@ -71,25 +152,11 @@ export function CpvPicker({
       });
       return;
     }
-    if (codes.includes(resolved.code)) {
-      setFieldMessage({
-        text: `El CPV ${resolved.code} ya está seleccionado.`,
-        tone: "error",
-      });
-      setDraft("");
-      return;
-    }
-    clearFeedback();
-    setCodes((prev) => [...prev, resolved.code]);
-    setDraft("");
-    setFieldMessage(
-      resolved.omittedNonDigits
-        ? {
-            text: "CPV añadido omitiendo caracteres no numéricos.",
-            tone: "info",
-          }
-        : null,
-    );
+    addCode(resolved.code, resolved.omittedNonDigits);
+  }
+
+  function pickSuggestion(code: string) {
+    addCode(code);
   }
 
   function removeCode(code: string) {
@@ -108,21 +175,59 @@ export function CpvPicker({
           Código CPV (prefijo)
         </label>
         <div className="mt-1 flex gap-2">
-          <div className="relative min-w-0 flex-1">
+          <div ref={wrapRef} className="relative min-w-0 flex-1">
             <input
               id={draftId}
               name="cpv_draft"
               type="text"
               inputMode="numeric"
               autoComplete="off"
+              role="combobox"
+              aria-expanded={showSuggestions}
+              aria-controls={listId}
+              aria-autocomplete="list"
+              aria-activedescendant={
+                showSuggestions && activeIndex >= 0
+                  ? `${listId}-opt-${activeIndex}`
+                  : undefined
+              }
               value={draft}
               onChange={(e) => {
                 setDraft(e.target.value);
+                setSuggestOpen(true);
                 if (fieldMessage) setFieldMessage(null);
               }}
+              onFocus={() => setSuggestOpen(true)}
               onKeyDown={(e) => {
+                if (e.key === "Escape") {
+                  setSuggestOpen(false);
+                  setActiveIndex(-1);
+                  return;
+                }
+                if (showSuggestions && e.key === "ArrowDown") {
+                  e.preventDefault();
+                  setActiveIndex((i) =>
+                    i < suggestions.length - 1 ? i + 1 : 0,
+                  );
+                  return;
+                }
+                if (showSuggestions && e.key === "ArrowUp") {
+                  e.preventDefault();
+                  setActiveIndex((i) =>
+                    i <= 0 ? suggestions.length - 1 : i - 1,
+                  );
+                  return;
+                }
                 if (e.key === "Enter") {
                   e.preventDefault();
+                  if (showSuggestions && activeIndex >= 0) {
+                    pickSuggestion(suggestions[activeIndex].code);
+                    return;
+                  }
+                  if (showSuggestions && suggestions.length === 1) {
+                    pickSuggestion(suggestions[0].code);
+                    return;
+                  }
                   addFromDraft();
                 }
               }}
@@ -135,12 +240,48 @@ export function CpvPicker({
             <button
               type="button"
               onClick={() => setDictOpen(true)}
-              className="absolute top-1/2 right-2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full border border-primary/35 bg-primary-light/70 font-serif text-[0.85rem] leading-none text-primary-dark italic hover:border-primary/55 hover:bg-primary-light"
+              className="absolute top-1/2 right-2 z-10 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full border border-primary/35 bg-primary-light/70 font-serif text-[0.85rem] leading-none text-primary-dark italic hover:border-primary/55 hover:bg-primary-light"
               aria-label="Abrir diccionario CPV"
               title="Diccionario CPV"
             >
               i
             </button>
+            {showSuggestions ? (
+              <ul
+                id={listId}
+                role="listbox"
+                className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-md border border-border bg-background py-1 shadow-md"
+              >
+                {suggestions.map((opt, index) => {
+                  const active = index === activeIndex;
+                  return (
+                    <li
+                      key={opt.code}
+                      id={`${listId}-opt-${index}`}
+                      role="option"
+                      aria-selected={active}
+                    >
+                      <button
+                        type="button"
+                        className={
+                          active
+                            ? "w-full bg-muted px-3 py-1.5 text-left text-sm text-foreground"
+                            : "w-full px-3 py-1.5 text-left text-sm text-foreground hover:bg-muted"
+                        }
+                        onMouseDown={(e) => e.preventDefault()}
+                        onMouseEnter={() => setActiveIndex(index)}
+                        onClick={() => pickSuggestion(opt.code)}
+                      >
+                        <span className="font-mono tabular-nums">{opt.code}</span>
+                        <span className="mt-0.5 block text-xs text-muted-foreground normal-case">
+                          {opt.label}
+                        </span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : null}
           </div>
           <button
             type="button"
@@ -224,30 +365,30 @@ export function CpvPicker({
                 : "min-h-[2.5rem] rounded-md border border-border bg-muted/30 px-3 py-2 text-sm"
             }
           >
-          {codes.length === 0 ? (
-            <p className="text-muted-foreground">Ninguno</p>
-          ) : (
-            <ul className="space-y-1">
-              {codes.map((code) => (
-                <li
-                  key={code}
-                  className="flex items-start justify-between gap-2 font-mono text-xs sm:text-sm"
-                >
-                  <span className="min-w-0 break-words text-foreground">
-                    {formatCpvSelection(code)}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => removeCode(code)}
-                    className="shrink-0 text-muted-foreground hover:text-destructive hover:underline"
-                    aria-label={`Quitar CPV ${code}`}
+            {codes.length === 0 ? (
+              <p className="text-muted-foreground">Ninguno</p>
+            ) : (
+              <ul className="space-y-1">
+                {codes.map((code) => (
+                  <li
+                    key={code}
+                    className="flex items-start justify-between gap-2 font-mono text-xs sm:text-sm"
                   >
-                    Quitar
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
+                    <span className="min-w-0 break-words text-foreground">
+                      {formatCpvSelection(code)}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => removeCode(code)}
+                      className="shrink-0 text-muted-foreground hover:text-destructive hover:underline"
+                      aria-label={`Quitar CPV ${code}`}
+                    >
+                      Quitar
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         </div>
         {/* Texto oculto solo para accesibilidad / depuración; los hidden son la fuente de verdad del GET */}

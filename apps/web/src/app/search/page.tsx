@@ -23,7 +23,6 @@ import { SearchForm } from "./search-form";
 import {
   SEARCH_PAGE_SIZE,
   SearchResultsPager,
-  searchHref,
 } from "./search-results-pager";
 
 function backFromSavedSearch(from: string): { href: string; label: string } | null {
@@ -141,7 +140,7 @@ function ResultsList({
   searched,
   filters,
   page,
-  hasNext,
+  totalCount,
   from,
   profileUserId,
   favoritedIds,
@@ -151,7 +150,7 @@ function ResultsList({
   searched: boolean;
   filters: SearchFilters;
   page: number;
-  hasNext: boolean;
+  totalCount: number;
   from: string;
   profileUserId: string | null;
   favoritedIds: Set<string>;
@@ -179,8 +178,9 @@ function ResultsList({
       page={page}
       pageSize={SEARCH_PAGE_SIZE}
       showing={rows.length}
-      hasNext={hasNext}
-      hrefForPage={(p) => searchHref(filters, p, from)}
+      total={totalCount}
+      filters={filters}
+      from={from}
     />
   );
 
@@ -208,7 +208,7 @@ function ResultsList({
                 </div>
                 <dl className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
                   <div>
-                    <dt className="inline text-muted-foreground">Importe (sin IVA): </dt>
+                    <dt className="inline text-muted-foreground">Importe: </dt>
                     <dd className="inline">{formatMoney(row.estimated_value, row.currency)}</dd>
                   </div>
                   <div>
@@ -352,7 +352,7 @@ export default async function SearchPage({
   };
 
   let rows: SearchTenderRow[] = [];
-  let hasNext = false;
+  let totalCount = 0;
   let error: string | null = null;
   let profileUserId: string | null = null;
   let favoritedIds = new Set<string>();
@@ -366,45 +366,58 @@ export default async function SearchPage({
   }
 
   if (shouldSearch) {
+    const searchInput = {
+      query: q || undefined,
+      criteria: {
+        version: 1 as const,
+        cpv_codes: cpvCodes.length ? cpvCodes : undefined,
+        cpv_match:
+          cpvCodes.length >= 2 && cpvMatch === "all"
+            ? ("all" as const)
+            : undefined,
+        estimated_value_min:
+          min != null && !Number.isNaN(min) ? min : undefined,
+        estimated_value_max:
+          max != null && !Number.isNaN(max) ? max : undefined,
+        statuses: statusValid ? [statusValid] : undefined,
+        procedure_types: procedureValid ? [procedureValid] : undefined,
+        contract_types: contractTypeValid ? [contractTypeValid] : undefined,
+        publication_date_from: pubFromValid || undefined,
+        publication_date_to: pubToValid || undefined,
+        open_for_submission: openForSubmission || undefined,
+        geography:
+          ccaaValid || municipalityValid
+            ? {
+                ccaa_codes: ccaaValid ? [ccaaValid] : undefined,
+                municipality_codes: municipalityValid
+                  ? [municipalityValid]
+                  : undefined,
+              }
+            : undefined,
+      },
+    };
+
     try {
       const client = await createSupabaseServerClient();
       const result = await searchTenders(client, {
-        query: q || undefined,
-        criteria: {
-          version: 1,
-          cpv_codes: cpvCodes.length ? cpvCodes : undefined,
-          cpv_match:
-            cpvCodes.length >= 2 && cpvMatch === "all" ? "all" : undefined,
-          estimated_value_min:
-            min != null && !Number.isNaN(min) ? min : undefined,
-          estimated_value_max:
-            max != null && !Number.isNaN(max) ? max : undefined,
-          statuses: statusValid ? [statusValid] : undefined,
-          procedure_types: procedureValid ? [procedureValid] : undefined,
-          contract_types: contractTypeValid ? [contractTypeValid] : undefined,
-          publication_date_from: pubFromValid || undefined,
-          publication_date_to: pubToValid || undefined,
-          open_for_submission: openForSubmission || undefined,
-          geography:
-            ccaaValid || municipalityValid
-              ? {
-                  ccaa_codes: ccaaValid ? [ccaaValid] : undefined,
-                  municipality_codes: municipalityValid
-                    ? [municipalityValid]
-                    : undefined,
-                }
-              : undefined,
-        },
-        // +1 para saber si hay página siguiente sin total_count en la RPC.
-        limit: SEARCH_PAGE_SIZE + 1,
+        ...searchInput,
+        limit: SEARCH_PAGE_SIZE,
         offset: (page - 1) * SEARCH_PAGE_SIZE,
       });
       if (result.error) {
         error = result.error.message;
       } else {
-        const fetched = result.data ?? [];
-        hasNext = fetched.length > SEARCH_PAGE_SIZE;
-        rows = fetched.slice(0, SEARCH_PAGE_SIZE);
+        rows = result.data ?? [];
+        totalCount = result.totalCount;
+        // Página vacía (p. ej. ?page=99): total_count no viene en filas → sondeo.
+        if (rows.length === 0 && page > 1 && totalCount === 0) {
+          const probe = await searchTenders(client, {
+            ...searchInput,
+            limit: 1,
+            offset: 0,
+          });
+          if (!probe.error) totalCount = probe.totalCount;
+        }
       }
     } catch (err) {
       error = err instanceof Error ? err.message : String(err);
@@ -664,7 +677,7 @@ export default async function SearchPage({
         searched={shouldSearch}
         filters={filters}
         page={page}
-        hasNext={hasNext}
+        totalCount={totalCount}
         from={from}
         profileUserId={profileUserId}
         favoritedIds={favoritedIds}
