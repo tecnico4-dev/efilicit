@@ -8,7 +8,7 @@ import {
   listCpvChildren,
   listCpvRoots,
   lookupCpvLabel,
-} from "@/lib/cpv";
+} from "@/lib/cpv-dictionary";
 
 type CpvDictionaryDialogProps = {
   open: boolean;

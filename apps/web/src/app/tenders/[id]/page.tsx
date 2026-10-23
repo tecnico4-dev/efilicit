@@ -10,7 +10,8 @@ import {
   listTenderStatusHistory,
   type TenderSourceSummary,
 } from "@/lib/queries";
-import { formatCpvSelection, normalizeCpvCode } from "@/lib/cpv";
+import { normalizeCpvCode } from "@/lib/cpv";
+import { formatCpvSelection } from "@/lib/cpv-dictionary";
 import { formatDateMadrid, formatDateTimeMadrid } from "@/lib/datetime";
 import {
   formatContractType,

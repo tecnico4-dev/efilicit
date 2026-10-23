@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import {
   useCallback,
   useEffect,
@@ -8,19 +9,23 @@ import {
   useRef,
   useState,
 } from "react";
-import {
-  formatCpvSelection,
-  lookupCpvLabel,
-  resolveCpvFromInput,
-  suggestCpvByPrefix,
-} from "@/lib/cpv";
-import { CpvDictionaryDialog } from "./cpv-dictionary-dialog";
+import { normalizeCpvCode } from "@/lib/cpv";
+import { preloadCpvDictionary } from "@/lib/cpv-load";
+import type { CpvSuggestion } from "@/lib/cpv-dictionary";
 import {
   CLEAR_SEARCH_EVENT,
   useSearchFeedback,
 } from "./search-feedback";
 
+const CpvDictionaryDialog = dynamic(
+  () =>
+    import("./cpv-dictionary-dialog").then((m) => m.CpvDictionaryDialog),
+  { ssr: false },
+);
+
 type CpvMatchMode = "any" | "all";
+
+type CpvDictApi = Awaited<ReturnType<typeof preloadCpvDictionary>>;
 
 type CpvPickerProps = {
   /** Códigos CPV de 8 dígitos ya seleccionados (desde la URL). */
@@ -32,9 +37,8 @@ type CpvPickerProps = {
 const SUGGEST_LIMIT = 10;
 
 /**
- * Código CPV (prefijo) + Añadir → lista «CPV seleccionados» (`code-descripción`).
- * Typeahead por prefijo numérico (estilo sugerencias). Los hidden `name=cpv` /
- * radio `cpv_match` viajan en el GET / criteria.
+ * Código CPV (prefijo) + Añadir → lista «CPV seleccionados».
+ * El diccionario (~9k) se precarga en idle tras montar; no bloquea `/search`.
  */
 export function CpvPicker({
   initialCodes = [],
@@ -59,18 +63,60 @@ export function CpvPicker({
   const [dictOpen, setDictOpen] = useState(false);
   const [suggestOpen, setSuggestOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
+  const [dict, setDict] = useState<CpvDictApi | null>(null);
+  const [dictReady, setDictReady] = useState(false);
 
-  const suggestions = useMemo(
-    () =>
-      suggestCpvByPrefix(draft, {
-        limit: SUGGEST_LIMIT,
-        exclude: codes,
-      }),
-    [draft, codes],
-  );
+  useEffect(() => {
+    let cancelled = false;
+    const load = () => {
+      void preloadCpvDictionary().then((mod) => {
+        if (cancelled) return;
+        setDict(mod);
+        setDictReady(true);
+      });
+    };
+
+    let idleId: number | undefined;
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
+    if (typeof window !== "undefined" && "requestIdleCallback" in window) {
+      idleId = window.requestIdleCallback(load, { timeout: 2000 });
+    } else {
+      timeoutId = setTimeout(load, 50);
+    }
+
+    return () => {
+      cancelled = true;
+      if (
+        idleId !== undefined &&
+        typeof window !== "undefined" &&
+        "cancelIdleCallback" in window
+      ) {
+        window.cancelIdleCallback(idleId);
+      }
+      if (timeoutId !== undefined) clearTimeout(timeoutId);
+    };
+  }, []);
+
+  async function ensureDict(): Promise<CpvDictApi> {
+    if (dict) return dict;
+    const mod = await preloadCpvDictionary();
+    setDict(mod);
+    setDictReady(true);
+    return mod;
+  }
+
+  const suggestions: CpvSuggestion[] = useMemo(() => {
+    if (!dict) return [];
+    return dict.suggestCpvByPrefix(draft, {
+      limit: SUGGEST_LIMIT,
+      exclude: codes,
+    });
+  }, [dict, draft, codes]);
 
   const showSuggestions =
-    suggestOpen && draft.replace(/\D/g, "").length > 0 && suggestions.length > 0;
+    suggestOpen &&
+    draft.replace(/\D/g, "").length > 0 &&
+    (suggestions.length > 0 || !dictReady);
 
   const reset = useCallback(() => {
     setDraft("");
@@ -103,7 +149,11 @@ export function CpvPicker({
     setActiveIndex(-1);
   }, [draft, codes]);
 
-  function addCode(code: string, omittedNonDigits = false): boolean {
+  function addCode(
+    api: CpvDictApi,
+    code: string,
+    omittedNonDigits = false,
+  ): boolean {
     if (codes.includes(code)) {
       setFieldMessage({
         text: `El CPV ${code} ya está seleccionado.`,
@@ -113,7 +163,7 @@ export function CpvPicker({
       setSuggestOpen(false);
       return false;
     }
-    if (!lookupCpvLabel(code)) {
+    if (!api.lookupCpvLabel(code)) {
       setFieldMessage({
         text: `CPV ${code} no está en el diccionario.`,
         tone: "error",
@@ -136,8 +186,9 @@ export function CpvPicker({
     return true;
   }
 
-  function addFromDraft() {
-    const resolved = resolveCpvFromInput(draft);
+  async function addFromDraft() {
+    const api = await ensureDict();
+    const resolved = api.resolveCpvFromInput(draft);
     if (!resolved) {
       setFieldMessage({
         text: "Indica un código o prefijo CPV numérico.",
@@ -152,18 +203,29 @@ export function CpvPicker({
       });
       return;
     }
-    addCode(resolved.code, resolved.omittedNonDigits);
+    addCode(api, resolved.code, resolved.omittedNonDigits);
   }
 
-  function pickSuggestion(code: string) {
-    addCode(code);
+  async function pickSuggestion(code: string) {
+    const api = await ensureDict();
+    addCode(api, code);
+  }
+
+  async function openDictionary() {
+    await ensureDict();
+    setDictOpen(true);
   }
 
   function removeCode(code: string) {
     setCodes((prev) => prev.filter((c) => c !== code));
   }
 
-  const selectedDisplay = codes.map(formatCpvSelection).join("\n");
+  function labelFor(code: string): string {
+    if (!dict) return code;
+    return dict.formatCpvSelection(code);
+  }
+
+  const selectedDisplay = codes.map(labelFor).join("\n");
 
   return (
     <div className="grid gap-4 sm:grid-cols-2">
@@ -197,21 +259,24 @@ export function CpvPicker({
                 setSuggestOpen(true);
                 if (fieldMessage) setFieldMessage(null);
               }}
-              onFocus={() => setSuggestOpen(true)}
+              onFocus={() => {
+                setSuggestOpen(true);
+                void ensureDict();
+              }}
               onKeyDown={(e) => {
                 if (e.key === "Escape") {
                   setSuggestOpen(false);
                   setActiveIndex(-1);
                   return;
                 }
-                if (showSuggestions && e.key === "ArrowDown") {
+                if (showSuggestions && suggestions.length > 0 && e.key === "ArrowDown") {
                   e.preventDefault();
                   setActiveIndex((i) =>
                     i < suggestions.length - 1 ? i + 1 : 0,
                   );
                   return;
                 }
-                if (showSuggestions && e.key === "ArrowUp") {
+                if (showSuggestions && suggestions.length > 0 && e.key === "ArrowUp") {
                   e.preventDefault();
                   setActiveIndex((i) =>
                     i <= 0 ? suggestions.length - 1 : i - 1,
@@ -221,14 +286,14 @@ export function CpvPicker({
                 if (e.key === "Enter") {
                   e.preventDefault();
                   if (showSuggestions && activeIndex >= 0) {
-                    pickSuggestion(suggestions[activeIndex].code);
+                    void pickSuggestion(suggestions[activeIndex].code);
                     return;
                   }
                   if (showSuggestions && suggestions.length === 1) {
-                    pickSuggestion(suggestions[0].code);
+                    void pickSuggestion(suggestions[0].code);
                     return;
                   }
-                  addFromDraft();
+                  void addFromDraft();
                 }
               }}
               aria-invalid={fieldMessage?.tone === "error"}
@@ -239,7 +304,7 @@ export function CpvPicker({
             />
             <button
               type="button"
-              onClick={() => setDictOpen(true)}
+              onClick={() => void openDictionary()}
               className="absolute top-1/2 right-2 z-10 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full border border-primary/35 bg-primary-light/70 font-serif text-[0.85rem] leading-none text-primary-dark italic hover:border-primary/55 hover:bg-primary-light"
               aria-label="Abrir diccionario CPV"
               title="Diccionario CPV"
@@ -252,40 +317,48 @@ export function CpvPicker({
                 role="listbox"
                 className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-md border border-border bg-background py-1 shadow-md"
               >
-                {suggestions.map((opt, index) => {
-                  const active = index === activeIndex;
-                  return (
-                    <li
-                      key={opt.code}
-                      id={`${listId}-opt-${index}`}
-                      role="option"
-                      aria-selected={active}
-                    >
-                      <button
-                        type="button"
-                        className={
-                          active
-                            ? "w-full bg-muted px-3 py-1.5 text-left text-sm text-foreground"
-                            : "w-full px-3 py-1.5 text-left text-sm text-foreground hover:bg-muted"
-                        }
-                        onMouseDown={(e) => e.preventDefault()}
-                        onMouseEnter={() => setActiveIndex(index)}
-                        onClick={() => pickSuggestion(opt.code)}
+                {!dictReady ? (
+                  <li className="px-3 py-2 text-sm text-muted-foreground">
+                    Cargando diccionario CPV…
+                  </li>
+                ) : (
+                  suggestions.map((opt, index) => {
+                    const active = index === activeIndex;
+                    return (
+                      <li
+                        key={opt.code}
+                        id={`${listId}-opt-${index}`}
+                        role="option"
+                        aria-selected={active}
                       >
-                        <span className="font-mono tabular-nums">{opt.code}</span>
-                        <span className="mt-0.5 block text-xs text-muted-foreground normal-case">
-                          {opt.label}
-                        </span>
-                      </button>
-                    </li>
-                  );
-                })}
+                        <button
+                          type="button"
+                          className={
+                            active
+                              ? "w-full bg-muted px-3 py-1.5 text-left text-sm text-foreground"
+                              : "w-full px-3 py-1.5 text-left text-sm text-foreground hover:bg-muted"
+                          }
+                          onMouseDown={(e) => e.preventDefault()}
+                          onMouseEnter={() => setActiveIndex(index)}
+                          onClick={() => void pickSuggestion(opt.code)}
+                        >
+                          <span className="font-mono tabular-nums">
+                            {opt.code}
+                          </span>
+                          <span className="mt-0.5 block text-xs text-muted-foreground normal-case">
+                            {opt.label}
+                          </span>
+                        </button>
+                      </li>
+                    );
+                  })
+                )}
               </ul>
             ) : null}
           </div>
           <button
             type="button"
-            onClick={addFromDraft}
+            onClick={() => void addFromDraft()}
             className="shrink-0 rounded-md border border-primary/35 bg-primary-light/50 px-3 py-2 text-sm font-medium text-primary-dark hover:border-primary/50 hover:bg-primary-light/80"
           >
             Añadir
@@ -375,7 +448,7 @@ export function CpvPicker({
                     className="flex items-start justify-between gap-2 font-mono text-xs sm:text-sm"
                   >
                     <span className="min-w-0 break-words text-foreground">
-                      {formatCpvSelection(code)}
+                      {labelFor(code)}
                     </span>
                     <button
                       type="button"
@@ -391,23 +464,24 @@ export function CpvPicker({
             )}
           </div>
         </div>
-        {/* Texto oculto solo para accesibilidad / depuración; los hidden son la fuente de verdad del GET */}
         <span className="sr-only">{selectedDisplay}</span>
       </div>
       {codes.map((code) => (
         <input key={code} type="hidden" name="cpv" value={code} />
       ))}
-      <CpvDictionaryDialog
-        open={dictOpen}
-        selectedCodes={codes}
-        onCancel={() => setDictOpen(false)}
-        onSave={(next) => {
-          clearFeedback();
-          setCodes(next);
-          setFieldMessage(null);
-          setDictOpen(false);
-        }}
-      />
+      {dictReady ? (
+        <CpvDictionaryDialog
+          open={dictOpen}
+          selectedCodes={codes}
+          onCancel={() => setDictOpen(false)}
+          onSave={(next) => {
+            clearFeedback();
+            setCodes(next);
+            setFieldMessage(null);
+            setDictOpen(false);
+          }}
+        />
+      ) : null}
     </div>
   );
 }
@@ -415,10 +489,8 @@ export function CpvPicker({
 function uniqueNormalized(codes: string[]): string[] {
   const out: string[] = [];
   for (const raw of codes) {
-    const resolved = resolveCpvFromInput(raw);
-    if (resolved?.known && !out.includes(resolved.code)) {
-      out.push(resolved.code);
-    }
+    const code = normalizeCpvCode(raw);
+    if (code && !out.includes(code)) out.push(code);
   }
   return out;
 }

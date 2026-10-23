@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import { FavoriteHeartButton } from "@/components/favorites/favorite-heart-button";
 import { PAGE_MAIN_CLASS } from "@/components/shell/page-width";
 import { EmptyState, ErrorState } from "@/components/ui/state-message";
@@ -6,20 +7,20 @@ import { getSessionProfile, getSupabaseServerClient } from "@/lib/auth/session";
 import {
   listOwnFavoriteTenderIds,
   listPlaceMunicipalities,
-  listSearchFilterOptions,
   searchTenders,
-  type SearchFilterOption,
   type SearchTenderRow,
 } from "@/lib/queries";
 import { SEARCH_CCAA_OPTIONS } from "@/lib/geo-ccaa";
 import { normalizeSearchQuery } from "@/lib/keywords";
 import { formatTenderStatus } from "@/lib/tender-labels";
-import { normalizeCpvCode } from "@/lib/cpv";
+import { formatCpvListPreview, normalizeCpvCode } from "@/lib/cpv";
 import { CpvPicker } from "./cpv-picker";
-import { MunicipalityFilter } from "./municipality-filter";
-import { SaveSearchButton } from "./save-search-button";
+import { SaveSearchSlot } from "./save-search-slot";
+import {
+  SearchFilterFields,
+  SearchFilterFieldsFallback,
+} from "./search-filter-fields";
 import { SearchForm } from "./search-form";
-import { formatCpvListPreview } from "@/lib/cpv";
 import {
   parseSearchPageSize,
   SEARCH_PAGE_SIZE,
@@ -131,13 +132,6 @@ function tenderHrefFromSearch(
   if (page > 1) params.set("page", String(page));
   if (pageSize !== SEARCH_PAGE_SIZE) params.set("ps", String(pageSize));
   return `/tenders/${tenderId}?${params.toString()}`;
-}
-
-function optionAllowed(
-  value: string,
-  options: SearchFilterOption[],
-): string {
-  return options.some((o) => o.value === value) ? value : "";
 }
 
 function ResultsList({
@@ -316,19 +310,22 @@ export default async function SearchPage({
   const min = minRaw === "" ? undefined : Number(minRaw);
   const max = maxRaw === "" ? undefined : Number(maxRaw);
 
-  let filterOptions = {
-    statuses: [] as SearchFilterOption[],
-    procedureTypes: [] as SearchFilterOption[],
-    contractTypes: [] as SearchFilterOption[],
-    ccaaCodesWithTenders: new Set<string>(),
-  };
+  // Criterios de URL sin esperar DISTINCT de filtros (UI se rellena en Suspense).
+  const ccaaValid = SEARCH_CCAA_OPTIONS.some((o) => o.code === ccaa)
+    ? ccaa
+    : "";
+  const statusValid = statusRaw;
+  const procedureValid = procedureRaw;
+  const contractTypeValid = contractTypeRaw;
+  const pubFromValid = /^\d{4}-\d{2}-\d{2}$/.test(pubFromRaw) ? pubFromRaw : "";
+  const pubToValid = /^\d{4}-\d{2}-\d{2}$/.test(pubToRaw) ? pubToRaw : "";
+
   let rows: SearchTenderRow[] = [];
   let totalCount = 0;
   let error: string | null = null;
   let profileUserId: string | null = null;
   let favoritedIds = new Set<string>();
   let municipalityValid = "";
-  let municipalityName = "";
 
   let client;
   try {
@@ -337,52 +334,13 @@ export default async function SearchPage({
     client = null;
   }
 
-  if (client) {
-    const [listedFilters, profile] = await Promise.all([
-      listSearchFilterOptions(client),
-      getSessionProfile(),
-    ]);
-    if (!listedFilters.error) filterOptions = listedFilters.data;
-    profileUserId = profile.data?.id ?? null;
-  }
-
-  const ccaaInCatalog = SEARCH_CCAA_OPTIONS.some((o) => o.code === ccaa);
-  const ccaaHasData = filterOptions.ccaaCodesWithTenders.has(ccaa);
-  const ccaaValid =
-    ccaaInCatalog && ccaaHasData ? ccaa : "";
-
-  const statusValid = optionAllowed(statusRaw, filterOptions.statuses);
-  const procedureValid = optionAllowed(
-    procedureRaw,
-    filterOptions.procedureTypes,
-  );
-  const contractTypeValid = optionAllowed(
-    contractTypeRaw,
-    filterOptions.contractTypes,
-  );
-  const pubFromValid = /^\d{4}-\d{2}-\d{2}$/.test(pubFromRaw) ? pubFromRaw : "";
-  const pubToValid = /^\d{4}-\d{2}-\d{2}$/.test(pubToRaw) ? pubToRaw : "";
-
-  if (client && ccaaValid && municipalityRaw) {
-    try {
-      const listed = await listPlaceMunicipalities(client, ccaaValid);
-      const hit = listed.data.find((m) => m.code === municipalityRaw);
-      if (hit) {
-        municipalityValid = hit.code;
-        municipalityName = hit.name;
-      }
-    } catch {
-      municipalityValid = "";
-    }
-  }
-
   const hasParams =
     q !== "" ||
     cpvCodes.length > 0 ||
     (min != null && !Number.isNaN(min)) ||
     (max != null && !Number.isNaN(max)) ||
     ccaaValid !== "" ||
-    municipalityValid !== "" ||
+    municipalityRaw !== "" ||
     statusValid !== "" ||
     procedureValid !== "" ||
     contractTypeValid !== "" ||
@@ -391,6 +349,18 @@ export default async function SearchPage({
     openForSubmission;
   /** Stopwords solas → aviso y sin RPC (aunque haya otros filtros en la URL). */
   const shouldSearch = hasParams && !queryOnlyNoise;
+
+  if (client && shouldSearch && ccaaValid && municipalityRaw) {
+    try {
+      const listed = await listPlaceMunicipalities(client, ccaaValid);
+      const hit = listed.data.find((m) => m.code === municipalityRaw);
+      if (hit) municipalityValid = hit.code;
+    } catch {
+      municipalityValid = "";
+    }
+  } else if (municipalityRaw && ccaaValid) {
+    municipalityValid = municipalityRaw;
+  }
 
   const filters: SearchFilters = {
     q: qInput,
@@ -442,18 +412,21 @@ export default async function SearchPage({
     };
 
     try {
-      const result = await searchTenders(client, {
-        ...searchInput,
-        limit: pageSize,
-        offset: (page - 1) * pageSize,
-      });
+      const [result, profile] = await Promise.all([
+        searchTenders(client, {
+          ...searchInput,
+          limit: pageSize,
+          offset: (page - 1) * pageSize,
+        }),
+        getSessionProfile(),
+      ]);
+      profileUserId = profile.data?.id ?? null;
+
       if (result.error) {
         error = result.error.message;
       } else {
-        // Defensa: nunca mostrar más de una página aunque la RPC devuelva de más.
         rows = (result.data ?? []).slice(0, pageSize);
         totalCount = knownTotal ?? result.totalCount;
-        // Página vacía sin ?tc= (p. ej. ?page=99): total_count no viene en filas → sondeo.
         if (
           rows.length === 0 &&
           page > 1 &&
@@ -482,6 +455,14 @@ export default async function SearchPage({
     }
   }
 
+  const filterFieldProps = {
+    ccaaRaw: ccaa,
+    municipalityRaw,
+    statusRaw,
+    procedureRaw,
+    contractTypeRaw,
+  };
+
   return (
     <main className={PAGE_MAIN_CLASS}>
       {back ? (
@@ -496,7 +477,7 @@ export default async function SearchPage({
       </h1>
 
       <SearchForm
-        formKey={`${qInput}|${cpvCodes.join(",")}|${cpvMatch}|${minRaw}|${maxRaw}|${ccaaValid}|${municipalityValid}|${statusValid}|${procedureValid}|${contractTypeValid}|${pubFromValid}|${pubToValid}|${openForSubmission}|${from}`}
+        formKey={`${qInput}|${cpvCodes.join(",")}|${cpvMatch}|${minRaw}|${maxRaw}|${ccaa}|${municipalityRaw}|${statusRaw}|${procedureRaw}|${contractTypeRaw}|${pubFromValid}|${pubToValid}|${openForSubmission}|${from}`}
         actions={
           <>
             <button
@@ -505,9 +486,9 @@ export default async function SearchPage({
             >
               Buscar
             </button>
-            {profileUserId ? (
-              <SaveSearchButton userId={profileUserId} />
-            ) : null}
+            <Suspense fallback={null}>
+              <SaveSearchSlot />
+            </Suspense>
           </>
         }
       >
@@ -538,109 +519,11 @@ export default async function SearchPage({
             </p>
           ) : null}
         </div>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div>
-            <label htmlFor="ccaa" className="block text-sm font-medium text-foreground">
-              Comunidad Autónoma
-            </label>
-            <select
-              id="ccaa"
-              name="ccaa"
-              defaultValue={ccaaValid}
-              className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
-            >
-              <option value="">Todas</option>
-              {SEARCH_CCAA_OPTIONS.map((opt) => {
-                const hasTenders =
-                  filterOptions.ccaaCodesWithTenders.has(opt.code);
-                return (
-                  <option
-                    key={opt.code}
-                    value={opt.code}
-                    disabled={!hasTenders}
-                    className={
-                      hasTenders
-                        ? undefined
-                        : "text-muted-foreground/50"
-                    }
-                  >
-                    {opt.name}
-                  </option>
-                );
-              })}
-            </select>
-          </div>
-          <MunicipalityFilter
-            initialCcaa={ccaaValid}
-            initialMunicipalityCode={municipalityValid}
-            initialMunicipalityName={municipalityName}
-          />
-        </div>
-        <div className="grid gap-4 sm:grid-cols-3">
-          <div>
-            <label
-              htmlFor="status"
-              className="block text-sm font-medium text-foreground"
-            >
-              Estado
-            </label>
-            <select
-              id="status"
-              name="status"
-              defaultValue={statusValid}
-              className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
-            >
-              <option value="">Todos</option>
-              {filterOptions.statuses.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label
-              htmlFor="procedure"
-              className="block text-sm font-medium text-foreground"
-            >
-              Procedimiento
-            </label>
-            <select
-              id="procedure"
-              name="procedure"
-              defaultValue={procedureValid}
-              className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
-            >
-              <option value="">Todos</option>
-              {filterOptions.procedureTypes.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label
-              htmlFor="contract_type"
-              className="block text-sm font-medium text-foreground"
-            >
-              Tipo de contrato
-            </label>
-            <select
-              id="contract_type"
-              name="contract_type"
-              defaultValue={contractTypeValid}
-              className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
-            >
-              <option value="">Todos</option>
-              {filterOptions.contractTypes.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
+        <Suspense
+          fallback={<SearchFilterFieldsFallback {...filterFieldProps} />}
+        >
+          <SearchFilterFields {...filterFieldProps} />
+        </Suspense>
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <label htmlFor="min" className="block text-sm font-medium text-foreground">
