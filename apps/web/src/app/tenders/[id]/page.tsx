@@ -95,6 +95,10 @@ function backLinkFromParams(
     if (Number.isInteger(pageRaw) && pageRaw > 1) {
       qs.set("page", String(pageRaw));
     }
+    const psRaw = first(params.ps).trim();
+    if (psRaw === "50" || psRaw === "100") {
+      qs.set("ps", psRaw);
+    }
     const query = qs.toString();
     return {
       href: query ? `/search?${query}` : "/search",

@@ -12,7 +12,7 @@ Contrato: búsqueda = RPC `public.search_tenders` (SECURITY INVOKER). Semántica
 - Tokens: `normalizeSearchQuery` / `tokenizeKeywords` (`@/lib/keywords`) — stopwords ES fuera; AND de tokens ≥2 chars. Misma regla en alertas (`ingestion/.../alerts/keywords.py`). Texto solo-stopwords en `/search` → aviso UI, sin RPC.
 - Pipeline RPC: filtros Criteria v1 (sí/no) → ramas FTS y `pg_trgm` (errata) con **top-K ≈ 300** cada una → merge → orden
   `rank` → `publication_date` → `cpv_hit_count` (si hay `p_cpv_codes`) → `created_at` → `LIMIT`/`OFFSET`.
-- UI `/search`: páginas de 10 (`?page=`); `total_count` en la RPC para «Mostrando a–b de X». Página editable (1…ceil(X/10)). Nueva búsqueda (submit) vuelve a página 1.
+- UI `/search`: mismo pager que favoritos (`ListPager`; `?page=` + `?ps=` 10/50/100); `total_count` en la RPC; ancla `#resultados` al cambiar de página. Nueva búsqueda (submit) vuelve a página 1 / `ps` por defecto.
 - Trgm solo si `char_length(query)` ∈ [3, 120]. FTS: `search_vector` / `spanish`. Trgm: `similarity`/`%` y `strict_word_similarity`/`<<%` sobre `title`.
 - Badge: `fts` solo si los tokens aparecen **literalmente** en el título; stemming-only o trgm → `trgm` (UI “errata”); sin texto → `filter`.
 - Cliente publishable + sesión; nunca `service_role`

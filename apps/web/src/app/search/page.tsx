@@ -20,9 +20,15 @@ import { CpvPicker } from "./cpv-picker";
 import { MunicipalityFilter } from "./municipality-filter";
 import { SaveSearchButton } from "./save-search-button";
 import { SearchForm } from "./search-form";
-import { SEARCH_PAGE_SIZE } from "./search-pagination";
-import { SearchResultsPager } from "./search-results-pager";
 import { formatCpvListPreview } from "@/lib/cpv";
+import {
+  parseSearchPageSize,
+  SEARCH_PAGE_SIZE,
+  SEARCH_RESULTS_ANCHOR,
+  type SearchPageSize,
+} from "./search-pagination";
+import { ScrollToSearchResults } from "./scroll-to-search-results";
+import { SearchResultsPager } from "./search-results-pager";
 
 function backFromSavedSearch(from: string): { href: string; label: string } | null {
   if (from === "favorites-searches") {
@@ -105,6 +111,7 @@ function tenderHrefFromSearch(
   tenderId: string,
   filters: SearchFilters,
   page: number,
+  pageSize: SearchPageSize,
 ): string {
   const params = new URLSearchParams({ from: "search" });
   if (filters.q) params.set("q", filters.q);
@@ -123,6 +130,7 @@ function tenderHrefFromSearch(
   if (filters.pubTo) params.set("pub_to", filters.pubTo);
   if (filters.openForSubmission) params.set("en_plazo", "1");
   if (page > 1) params.set("page", String(page));
+  if (pageSize !== SEARCH_PAGE_SIZE) params.set("ps", String(pageSize));
   return `/tenders/${tenderId}?${params.toString()}`;
 }
 
@@ -139,6 +147,7 @@ function ResultsList({
   searched,
   filters,
   page,
+  pageSize,
   totalCount,
   from,
   profileUserId,
@@ -149,6 +158,7 @@ function ResultsList({
   searched: boolean;
   filters: SearchFilters;
   page: number;
+  pageSize: SearchPageSize;
   totalCount: number;
   from: string;
   profileUserId: string | null;
@@ -172,10 +182,61 @@ function ResultsList({
     );
   }
 
+  const showPager = totalCount > pageSize || page > 1;
+
+  const list = (
+    <ul className="divide-y divide-border">
+      {rows.map((row) => (
+        <li key={row.id} className="py-4">
+          <div className="flex items-start gap-3">
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-baseline gap-2">
+                <h2 className="text-base font-medium text-foreground">
+                  <Link
+                    href={tenderHrefFromSearch(row.id, filters, page, pageSize)}
+                    className="text-foreground hover:text-link hover:underline"
+                  >
+                    {row.title}
+                  </Link>
+                </h2>
+                <MatchKindBadge kind={row.match_kind} />
+              </div>
+              <dl className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
+                <div>
+                  <dt className="inline text-muted-foreground">Importe: </dt>
+                  <dd className="inline">
+                    {formatMoney(row.estimated_value, row.currency)}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="inline text-muted-foreground">CPV: </dt>
+                  <dd className="inline font-mono">
+                    {formatCpvListPreview(row.cpv_codes)}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="inline text-muted-foreground">Estado: </dt>
+                  <dd className="inline">{formatTenderStatus(row.status)}</dd>
+                </div>
+              </dl>
+            </div>
+            {profileUserId ? (
+              <FavoriteHeartButton
+                userId={profileUserId}
+                tenderId={row.id}
+                initiallyFavorited={favoritedIds.has(row.id)}
+              />
+            ) : null}
+          </div>
+        </li>
+      ))}
+    </ul>
+  );
+
   const pager = (
     <SearchResultsPager
       page={page}
-      pageSize={SEARCH_PAGE_SIZE}
+      pageSize={pageSize}
       showing={rows.length}
       total={totalCount}
       filters={filters}
@@ -183,57 +244,35 @@ function ResultsList({
     />
   );
 
-  if (rows.length === 0) {
-    return <div className="mt-8">{pager}</div>;
+  if (!showPager) {
+    return (
+      <div id={SEARCH_RESULTS_ANCHOR} className="mt-8 scroll-mt-24">
+        <ScrollToSearchResults />
+        <div className="rounded-lg border border-border px-4">{list}</div>
+      </div>
+    );
   }
 
   return (
-    <div className="mt-8">
-      <ul className="divide-y divide-border border-t border-border">
-        {rows.map((row) => (
-          <li key={row.id} className="py-4">
-            <div className="flex items-start gap-3">
-              <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-baseline gap-2">
-                  <h2 className="text-base font-medium text-foreground">
-                    <Link
-                      href={tenderHrefFromSearch(row.id, filters, page)}
-                      className="text-foreground hover:text-link hover:underline"
-                    >
-                      {row.title}
-                    </Link>
-                  </h2>
-                  <MatchKindBadge kind={row.match_kind} />
-                </div>
-                <dl className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
-                  <div>
-                    <dt className="inline text-muted-foreground">Importe: </dt>
-                    <dd className="inline">{formatMoney(row.estimated_value, row.currency)}</dd>
-                  </div>
-                  <div>
-                    <dt className="inline text-muted-foreground">CPV: </dt>
-                    <dd className="inline font-mono">
-                      {formatCpvListPreview(row.cpv_codes)}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="inline text-muted-foreground">Estado: </dt>
-                    <dd className="inline">{formatTenderStatus(row.status)}</dd>
-                  </div>
-                </dl>
-              </div>
-              {profileUserId ? (
-                <FavoriteHeartButton
-                  userId={profileUserId}
-                  tenderId={row.id}
-                  initiallyFavorited={favoritedIds.has(row.id)}
-                />
-              ) : null}
-            </div>
-          </li>
-        ))}
-      </ul>
-      {pager}
+    <div id={SEARCH_RESULTS_ANCHOR} className="mt-8 scroll-mt-24">
+      <ScrollToSearchResults />
+      <div
+        className="flex flex-col overflow-hidden rounded-lg border border-border"
+        style={{ height: "calc(100dvh - 11.5rem)" }}
+      >
+        <div className="min-h-0 flex-1 overflow-y-auto px-4">
+          {rows.length === 0 ? (
+            <p className="py-8 text-center text-sm text-muted-foreground">
+              Sin resultados en esta página.
+            </p>
+          ) : (
+            list
+          )}
+        </div>
+        <div className="shrink-0 border-t border-border bg-background px-4 py-3">
+          {pager}
+        </div>
+      </div>
     </div>
   );
 }
@@ -267,6 +306,7 @@ export default async function SearchPage({
   const pageRaw = Number.parseInt(first(params.page).trim(), 10);
   const page =
     Number.isInteger(pageRaw) && pageRaw >= 1 ? pageRaw : 1;
+  const pageSize = parseSearchPageSize(first(params.ps));
   const min = minRaw === "" ? undefined : Number(minRaw);
   const max = maxRaw === "" ? undefined : Number(maxRaw);
 
@@ -400,14 +440,14 @@ export default async function SearchPage({
       const client = await createSupabaseServerClient();
       const result = await searchTenders(client, {
         ...searchInput,
-        limit: SEARCH_PAGE_SIZE,
-        offset: (page - 1) * SEARCH_PAGE_SIZE,
+        limit: pageSize,
+        offset: (page - 1) * pageSize,
       });
       if (result.error) {
         error = result.error.message;
       } else {
         // Defensa: nunca mostrar más de una página aunque la RPC devuelva de más.
-        rows = (result.data ?? []).slice(0, SEARCH_PAGE_SIZE);
+        rows = (result.data ?? []).slice(0, pageSize);
         totalCount = result.totalCount;
         // Página vacía (p. ej. ?page=99): total_count no viene en filas → sondeo.
         if (rows.length === 0 && page > 1 && totalCount === 0) {
@@ -677,6 +717,7 @@ export default async function SearchPage({
         searched={shouldSearch}
         filters={filters}
         page={page}
+        pageSize={pageSize}
         totalCount={totalCount}
         from={from}
         profileUserId={profileUserId}

@@ -1,17 +1,21 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
-import { useUndoToast } from "@/components/undo-toast";
-import { searchHref } from "./search-pagination";
+import {
+  ListPager,
+  type PageSize,
+} from "@/app/favorites/list-pager";
+import {
+  searchHref,
+  type SearchHrefFilters,
+  type SearchPageSize,
+} from "./search-pagination";
 
 export { SEARCH_PAGE_SIZE, searchHref } from "./search-pagination";
 
-type SearchPagerFilters = Parameters<typeof searchHref>[0];
-
 /**
- * Paginación de resultados: 10/página, total, página editable; flechas ← →.
+ * Controles de paginación del buscador: mismo UI que favoritos (`ListPager`).
+ * Navega por URL (`page` / `ps`) y ancla `#resultados`.
  */
 export function SearchResultsPager({
   page,
@@ -22,152 +26,38 @@ export function SearchResultsPager({
   from: searchFrom,
 }: {
   page: number;
-  pageSize: number;
+  pageSize: SearchPageSize;
   showing: number;
   total: number;
-  filters: SearchPagerFilters;
+  filters: SearchHrefFilters;
   from?: string;
 }) {
   const router = useRouter();
-  const { showStatus } = useUndoToast();
-  const totalPages = Math.max(1, Math.ceil(total / pageSize));
-  const [draft, setDraft] = useState(String(page));
-
-  useEffect(() => {
-    setDraft(String(page));
-  }, [page]);
+  const totalPages = Math.max(1, Math.ceil(Math.max(total, 1) / pageSize));
 
   if (total <= 0 && page <= 1) return null;
+  if (total <= pageSize && page <= 1) return null;
 
-  const from = showing === 0 ? 0 : (page - 1) * pageSize + 1;
-  const to = (page - 1) * pageSize + showing;
-  const atFirst = page <= 1;
-  const atLast = page >= totalPages;
-
-  function hrefForPage(p: number) {
-    return searchHref(filters, p, searchFrom);
+  function go(nextPage: number, nextSize: SearchPageSize = pageSize) {
+    const href = searchHref(filters, nextPage, {
+      from: searchFrom,
+      pageSize: nextSize,
+      withAnchor: true,
+    });
+    router.push(href, { scroll: false });
   }
-
-  function goToPage(next: number) {
-    const clamped = Math.min(Math.max(next, 1), totalPages);
-    if (clamped === page) {
-      setDraft(String(page));
-      return;
-    }
-    router.push(hrefForPage(clamped));
-  }
-
-  function commitDraft() {
-    const n = Number.parseInt(draft.trim(), 10);
-    if (!Number.isInteger(n) || n < 1 || n > totalPages) {
-      setDraft(String(page));
-      showStatus("Número de página inválido.");
-      return;
-    }
-    goToPage(n);
-  }
-
-  const navClass = (disabled: boolean) =>
-    disabled
-      ? "cursor-not-allowed text-muted-foreground/35"
-      : "text-foreground hover:text-primary";
-
-  const pageInput = (
-    <span className="inline-flex items-center gap-1.5 tabular-nums text-foreground">
-      <span>Página</span>
-      <input
-        type="text"
-        inputMode="numeric"
-        value={draft}
-        aria-label={`Número de página (1 a ${totalPages})`}
-        onChange={(e) => {
-          const value = e.target.value;
-          setDraft(value);
-          const n = Number.parseInt(value, 10);
-          if (Number.isInteger(n) && n >= 1 && n <= totalPages) {
-            goToPage(n);
-          }
-        }}
-        onBlur={commitDraft}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") {
-            e.preventDefault();
-            commitDraft();
-            (e.target as HTMLInputElement).blur();
-          }
-        }}
-        className="inline-flex h-8 w-12 items-center justify-center rounded-md border border-border bg-background px-1 text-center text-sm tabular-nums text-foreground outline-none focus:ring-2 focus:ring-ring"
-      />
-    </span>
-  );
 
   return (
-    <nav
-      className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4 text-sm text-muted-foreground"
-      aria-label="Paginación de resultados"
-    >
-      <p>
-        {showing === 0 ? (
-          <>Sin resultados en esta página.</>
-        ) : (
-          <>
-            <span className="sm:hidden">
-              Mostrando{" "}
-              <span className="font-medium tabular-nums text-foreground">
-                {from}–{to}
-              </span>{" "}
-              /{" "}
-              <span className="font-medium tabular-nums text-foreground">
-                {total}
-              </span>
-            </span>
-            <span className="hidden sm:inline">
-              Mostrando{" "}
-              <span className="font-medium tabular-nums text-foreground">
-                {from}–{to}
-              </span>{" "}
-              de{" "}
-              <span className="font-medium tabular-nums text-foreground">
-                {total}
-              </span>{" "}
-              licitaciones
-            </span>
-          </>
-        )}
-      </p>
-      {totalPages > 1 || page > 1 ? (
-        <div className="inline-flex items-center gap-2">
-          {atFirst ? (
-            <span className={navClass(true)} aria-disabled aria-label="Página anterior">
-              ←
-            </span>
-          ) : (
-            <Link
-              href={hrefForPage(page - 1)}
-              className={navClass(false)}
-              rel="prev"
-              aria-label="Página anterior"
-            >
-              ←
-            </Link>
-          )}
-          {pageInput}
-          {atLast ? (
-            <span className={navClass(true)} aria-disabled aria-label="Página siguiente">
-              →
-            </span>
-          ) : (
-            <Link
-              href={hrefForPage(page + 1)}
-              className={navClass(false)}
-              rel="next"
-              aria-label="Página siguiente"
-            >
-              →
-            </Link>
-          )}
-        </div>
-      ) : null}
-    </nav>
+    <ListPager
+      page={Math.min(Math.max(page, 1), totalPages)}
+      totalPages={totalPages}
+      pageSize={pageSize as PageSize}
+      showing={showing}
+      total={total}
+      itemLabel="licitaciones"
+      ariaPageSizeLabel="Licitaciones por página"
+      onPageChange={(p) => go(p)}
+      onPageSizeChange={(size) => go(1, size)}
+    />
   );
 }
