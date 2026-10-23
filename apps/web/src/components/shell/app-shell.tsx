@@ -1,57 +1,12 @@
-import {
-  getSessionProfile,
-  getSessionUser,
-  getSupabaseServerClient,
-} from "@/lib/auth/session";
-import {
-  hasUnreadFavoriteStatusNotifications,
-  type DigestFrequency,
-} from "@/lib/queries";
+import { Suspense } from "react";
 import { UndoToastProvider } from "@/components/undo-toast";
-import { AppHeader } from "./app-header";
+import { AuthenticatedChrome } from "./authenticated-chrome";
 
-function displayNameFrom(
-  profileName: string | null | undefined,
-  metaName: unknown,
-  email: string | null | undefined,
-): string {
-  if (profileName?.trim()) return profileName.trim();
-  if (typeof metaName === "string" && metaName.trim()) return metaName.trim();
-  if (email?.includes("@")) return email.split("@")[0] ?? "Usuario";
-  return "Usuario";
-}
-
-export async function AppShell({ children }: { children: React.ReactNode }) {
-  let isAuthenticated = false;
-  let displayName = "Usuario";
-  let userId = "";
-  let digestFrequency: DigestFrequency = "diaria";
-  let hasUnreadNotifications = false;
-  try {
-    const user = await getSessionUser();
-    isAuthenticated = Boolean(user);
-    if (user) {
-      const { data: profile } = await getSessionProfile();
-      displayName = displayNameFrom(
-        profile?.display_name,
-        user.user_metadata?.display_name,
-        user.email,
-      );
-      userId = profile?.id ?? "";
-      digestFrequency =
-        profile?.digest_frequency === "semanal" ? "semanal" : "diaria";
-      if (profile?.id) {
-        const supabase = await getSupabaseServerClient();
-        const unread = await hasUnreadFavoriteStatusNotifications(supabase, {
-          userId: profile.id,
-        });
-        hasUnreadNotifications = unread.data;
-      }
-    }
-  } catch {
-    isAuthenticated = false;
-  }
-
+/**
+ * Shell de layout: no espera auth ni badge antes de pintar `{children}`.
+ * Cabecera y puntito de no leídas llegan en streaming (Suspense).
+ */
+export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="relative flex min-h-full flex-1 flex-col bg-background text-foreground">
       <div
@@ -60,15 +15,16 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
       />
       <UndoToastProvider>
         <div className="relative flex min-h-full flex-1 flex-col">
-          {isAuthenticated ? (
-            <AppHeader
-              isAuthenticated
-              displayName={displayName}
-              userId={userId}
-              digestFrequency={digestFrequency}
-              hasUnreadNotifications={hasUnreadNotifications}
-            />
-          ) : null}
+          <Suspense
+            fallback={
+              <header
+                className="sticky top-0 z-40 h-[3.25rem] border-b border-border/80 bg-surface/95"
+                aria-hidden
+              />
+            }
+          >
+            <AuthenticatedChrome />
+          </Suspense>
           <div className="flex flex-1 flex-col">{children}</div>
         </div>
       </UndoToastProvider>

@@ -4,9 +4,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { DigestFrequency } from "@/lib/queries";
 import { cn } from "@/lib/cn";
+import type { ReactNode } from "react";
 import { AccountMenu } from "./account-menu";
 import { FavoritesNavItem } from "./favorites-nav-item";
-import { NotificationsButton } from "./notifications-button";
 
 function navClass(active: boolean) {
   return cn(
@@ -23,13 +23,14 @@ export function AppHeader({
   displayName,
   userId,
   digestFrequency,
-  hasUnreadNotifications = false,
+  notifications,
 }: {
   isAuthenticated: boolean;
   displayName: string;
   userId: string;
   digestFrequency: DigestFrequency;
-  hasUnreadNotifications?: boolean;
+  /** Slot RSC (p. ej. Suspense + badge); no bloquear el layout con la query. */
+  notifications: ReactNode;
 }) {
   const pathname = usePathname() || "/";
 
@@ -65,7 +66,7 @@ export function AppHeader({
         </nav>
 
         <div className="flex items-center gap-2">
-          <NotificationsButton hasUnread={hasUnreadNotifications} />
+          {notifications}
           {userId ? (
             <AccountMenu
               displayName={displayName}
