@@ -40,7 +40,7 @@ Fichas: [`docs/sources/`](../sources/).
 | Catalunya | `ingest-catalunya.yml` |
 | Euskadi | `ingest-euskadi.yml` |
 
-Cron de producción: **off** hasta Paso 10 + OK ([ADR 005](../adr/005-ingesta-actions-manual-first-cron-off.md)).
+Cron de producción: **on** (Semana 6 Paso 10; [ADR 005](../adr/005-ingesta-actions-manual-first-cron-off.md) enmienda). Horarios en [`.github/README.md`](../../.github/README.md).
 
 ## 5. Cerrar el incidente
 

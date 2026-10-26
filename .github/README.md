@@ -4,7 +4,7 @@
 
 Workflow: [`.github/workflows/ci.yml`](workflows/ci.yml)
 
-En cada push/PR a `main` ejecuta:
+En cada push/PR a `main` (y PRs en general) ejecuta:
 
 1. **Web lint / typecheck / build** — pnpm 10.33.0 + Node 24
 2. **Ingestion CLI smoke** — Python 3.12 + uv + `cli --help` + pytest
@@ -13,63 +13,51 @@ Comprobar runs: https://github.com/tecnico4-dev/efilicit/actions
 
 Tests de Postgres en ingestion se saltan si no hay DB ([ADR 004](../docs/adr/004-ci-ingestion-sin-postgres.md)).
 
+## Cron de producción (Semana 6 Paso 10)
+
+Horarios **UTC**. El disparo manual (`workflow_dispatch`) sigue en **dry-run** por defecto.
+
+| Workflow | Cron | En schedule |
+|---|---|---|
+| [ingest-placsp.yml](workflows/ingest-placsp.yml) | lun `05:00` | `live` × placsp / agregadas / menores; mes UTC actual; Storage on |
+| [ingest-catalunya.yml](workflows/ingest-catalunya.yml) | lun `06:00` | `live`, 10 páginas; Storage on |
+| [ingest-euskadi.yml](workflows/ingest-euskadi.yml) | lun `07:00` | `live`, 10 páginas; Storage on |
+| [alerts-digest.yml](workflows/alerts-digest.yml) | diario `08:00` | `write-resend`, ventana 1 día |
+
+Requisito: secrets del repo configurados; si faltan, el job falla en el guard. Detalle: [ADR 005](../docs/adr/005-ingesta-actions-manual-first-cron-off.md) (enmienda Paso 10).
+
 ## Ingesta PLACSP (Semanas 2–4)
 
 Workflow: [`.github/workflows/ingest-placsp.yml`](workflows/ingest-placsp.yml)
 
-- Disparo **manual** (`workflow_dispatch`). Cron **comentado** a propósito — [ADR 005](../docs/adr/005-ingesta-actions-manual-first-cron-off.md).
-- Input **`syndication`**: `placsp` (perfiles, default), `placsp_agregadas` (estatal Semana 3) o `placsp_menores` (Semana 4).
-- Modo por defecto: **`dry-run`** (fixture in-memory; no necesita secretos).
-- Modos con escritura: `fixture-db` / `live` — exigen secrets y fallan si faltan.
-- RAW a Storage (si `upload_storage=true`): API HTTP + `service_role` — [ADR 006](../docs/adr/006-raw-storage-httpx-sin-supabase-py.md).
+- Disparo **manual** + **cron** (Paso 10).
+- Input **`syndication`**: `placsp` / `placsp_agregadas` / `placsp_menores` (en cron se lanzan las tres).
+- Modo manual por defecto: **`dry-run`**.
+- RAW a Storage (si `upload_storage=true` o en cron): [ADR 006](../docs/adr/006-raw-storage-httpx-sin-supabase-py.md).
 
 | Secret | Uso |
 |---|---|
 | `EFILICIT_DATABASE_URL` | Postgres (fixture-db / live) |
-| `SUPABASE_URL` | API Storage si `upload_storage=true` |
-| `SUPABASE_SERVICE_ROLE_KEY` | Upload RAW si `upload_storage=true` (solo proceso confiable) |
+| `SUPABASE_URL` | API Storage si upload |
+| `SUPABASE_SERVICE_ROLE_KEY` | Upload RAW (solo proceso confiable) |
 
-Comprobar: Actions → **Ingest PLACSP** → **Run workflow** → syndication + mode `dry-run`.
+## Ingesta Catalunya / Euskadi
 
-## Ingesta Catalunya (Semana 3)
+Mismo patrón: manual dry-run + cron live los lunes (ver tabla arriba).
 
-Workflow: [`.github/workflows/ingest-catalunya.yml`](workflows/ingest-catalunya.yml)
-
-- Disparo **manual** (`workflow_dispatch`). Cron **comentado** ([ADR 005](../docs/adr/005-ingesta-actions-manual-first-cron-off.md)).
-- Modo por defecto: **`dry-run`** (fixture JSON in-memory; no necesita secretos).
-- Modos con escritura: `fixture-db` / `live` — mismos secrets que PLACSP; en `live` acotar `max_pages`.
-
-Comprobar: Actions → **Ingest Catalunya** → mode `dry-run`.
-
-## Ingesta Euskadi (Semana 3)
-
-Workflow: [`.github/workflows/ingest-euskadi.yml`](workflows/ingest-euskadi.yml)
-
-- Disparo **manual** (`workflow_dispatch`). Cron **comentado** ([ADR 005](../docs/adr/005-ingesta-actions-manual-first-cron-off.md)).
-- Modo por defecto: **`dry-run`** (fixture JSON in-memory).
-- Modos con escritura: `fixture-db` / `live` — mismos secrets; en `live` acotar `max_pages` (API: 10 ítems/página).
-
-Comprobar: Actions → **Ingest Euskadi** → mode `dry-run`.
-
-## Alertas / digest (Semana 5)
+## Alertas / digest (Semana 5+)
 
 Workflow: [`.github/workflows/alerts-digest.yml`](workflows/alerts-digest.yml)
 
-- Disparo **manual** (`workflow_dispatch`). Cron **comentado** ([ADR 005](../docs/adr/005-ingesta-actions-manual-first-cron-off.md)).
-- Envío Resend desde el **job Python** (no Edge Function) — [ADR 012](../docs/adr/012-digest-email-job-python-sin-edge-function.md).
-- Frecuencias de cuenta `daily` \| `weekly` (`instant` fuera del MVP) — [ADR 013](../docs/adr/013-alert-frequencies-daily-weekly-instant-diferido.md).
-- Modos:
-  - **`dry-run`** (default): fixtures en memoria + `FakeEmailSender` (sin secretos).
-  - **`write-fake`**: Postgres real + Fake (necesita `EFILICIT_DATABASE_URL`).
-  - **`write-resend`**: Postgres + Resend real (necesita DB + `RESEND_API_KEY` + `ALERT_FROM_EMAIL`).
+- Manual + cron diario 08:00 UTC `write-resend`.
+- Envío Resend desde el **job Python** — [ADR 012](../docs/adr/012-digest-email-job-python-sin-edge-function.md).
+- Frecuencias de cuenta `diaria` \| `semanal` — [ADR 013](../docs/adr/013-alert-frequencies-daily-weekly-instant-diferido.md).
 
 | Secret | Uso |
 |---|---|
 | `EFILICIT_DATABASE_URL` | Postgres (`write-*`) |
-| `RESEND_API_KEY` | Solo `write-resend` |
-| `ALERT_FROM_EMAIL` | Solo `write-resend` (remitente verificado en Resend) |
-
-Comprobar: Actions → **Alerts digest** → mode `dry-run`.
+| `RESEND_API_KEY` | `write-resend` / cron |
+| `ALERT_FROM_EMAIL` | Remitente Resend |
 
 ## Protección de `main` — decisión del proyecto
 
@@ -106,14 +94,14 @@ Crear Environments (`preview`, `production`) cuando haga falta desplegar. **No**
 
 | Secret | Dónde / cuándo |
 |---|---|
-| `EFILICIT_DATABASE_URL` | Ingestas `fixture-db`/`live` y alertas `write-*` |
-| `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` | Upload RAW en ingestas |
-| `RESEND_API_KEY` / `ALERT_FROM_EMAIL` | Alertas `write-resend` |
+| `EFILICIT_DATABASE_URL` | Ingestas `fixture-db`/`live` y alertas `write-*` / cron |
+| `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` | Upload RAW en ingestas (manual o cron) |
+| `RESEND_API_KEY` / `ALERT_FROM_EMAIL` | Alertas `write-resend` / cron diario |
 | `SUPABASE_ACCESS_TOKEN` | Futuro (ops remotas) |
 | Tokens Vercel | Cuando haya deploy |
 
 Ahora mismo el **CI** (`ci.yml`) **no** necesita secretos.  
-Los workflows de ingesta y alertas solo exigen secrets en modos con escritura o envío real.
+Los workflows de ingesta y alertas exigen secrets en modos con escritura, envío real o **schedule**.
 
 ## ADR
 

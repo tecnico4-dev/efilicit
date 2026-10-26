@@ -26,7 +26,7 @@ Euskadi KontratazioA: `run-euskadi` (Semana 3 Paso 9).
 - Digest diario (Paso 8): `drain_daily_digests` + `FakeEmailSender` (tests) /
   `ResendEmailSender` (`RESEND_API_KEY`, `ALERT_FROM_EMAIL` solo en entorno).
 - CLI (Paso 9): `run-alerts` — **dry-run por defecto** (fixtures + Fake, sin DB/Resend).
-- Workflow: `.github/workflows/alerts-digest.yml` (`workflow_dispatch`; cron off).
+- Workflow: `.github/workflows/alerts-digest.yml` (`workflow_dispatch` + cron diario 08:00 UTC `write-resend`).
 
 ```powershell
 uv run pytest tests/test_alert_match.py tests/test_alert_batch.py tests/test_alert_digest.py tests/test_run_alerts_cli.py -q

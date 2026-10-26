@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Semana 6 Paso 10: cron de producción en GitHub Actions — digest diario 08:00 UTC (`write-resend`); ingestas PLACSP/Catalunya/Euskadi los lunes 05–07 UTC (`live`). Manual `workflow_dispatch` sigue en dry-run por defecto.
 - Semana 6 Paso 9 (hardening): inventario RLS (`docs/security/rls-inventory.md` + `scripts/verify_rls_enabled.sql`); CLI `source-health` sobre `source_sync`; runbooks `source-down`, `reprocess-source-date`, `replay-artifact`.
 - Script `scripts/seed_demo_remote.py`: vacía dominio remoto (conserva users + geo) e inserta ~50 licitaciones demo ES variadas para demos (Vercel/Supabase).
 - Ficha: botón «Histórico registrado» junto al estado (si hay hitos en `tender_events`); popover con fecha → estado (hover preview, click para fijar).

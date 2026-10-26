@@ -19,7 +19,7 @@ Los pasos globales (0–11) se mantienen. El estado se marca **aquí**, no con �
 | 7. Dashboard básico | Hecho | `/` autenticada: resumen alertas/favoritos/búsquedas + CTAs |
 | 8. Estados + responsive global | Hecho | `ErrorState`/`EmptyState`/`RouteSkeleton`; `loading.tsx` en rutas MVP; nav Favoritos táctil; padding móvil unificado |
 | 9. Hardening (RLS, healthchecks, runbooks, CI) | Hecho | Inventario RLS + `verify_rls_enabled.sql`; CLI `source-health`; runbooks; CI en PRs |
-| 10. Cron / programación (decisión) | Pendiente | Default: cron **off** hasta OK |
+| 10. Cron / programación (decisión) | Hecho | Schedules on (ADR 005 enmienda); alertas diario 08:00 UTC; ingestas lun 05–07 UTC |
 | 11. Cierre MVP (CHANGELOG / ADR) | Pendiente | |
 
 ## Criterios transversales (cierre Semana 6)
@@ -31,7 +31,7 @@ Los pasos globales (0–11) se mantienen. El estado se marca **aquí**, no con �
 | RLS owner-only en datos de usuario (favoritos/alertas) | Hecho | `verify:rls` + `verify:rls:favorites`; inventario Paso 9 |
 | Brand corporativo documentado y aplicado | Hecho | Documentado + shell y rutas MVP; Paso 8 unifica estados |
 | CI verde (lint / typecheck / tests / build) | Hecho | Workflow CI; PRs disparan web + ingestion |
-| Cron prod solo con OK explícito | Pendiente | Sigue off (Paso 10) |
+| Cron prod solo con OK explícito | Hecho | Paso 10: schedules activos |
 | ADRs estructurales (si hubo) | N/A | Paso 9 sin ADR nuevo |
 | CHANGELOG actualizado | En curso | Paso 9 documentado; cierre en Paso 11 |
 
@@ -45,10 +45,10 @@ Los pasos globales (0–11) se mantienen. El estado se marca **aquí**, no con �
 | Guarda una búsqueda | Hecho | Botón en `/search` + form en `/alerts` |
 | Crea una alerta | Hecho | `/alerts` + «Crear alerta» en `/search` (sesión) |
 | Recibe un email | Pendiente | Resend; dominio eficen vía IT si aplica |
-| Fuentes se ejecutan programadamente | Pendiente | O N/A justificado si cron sigue off con OK (Paso 10) |
+| Fuentes se ejecutan programadamente | Hecho | Cron ingestas + digest (Paso 10) |
 | Jobs idempotentes | Hecho | Pipelines + alertas; revalidado en corridas S2–S5 |
 | Trazabilidad hasta RAW | Hecho | `source_artifacts` + Storage; runbooks |
 | Seguridad y CI revisados | Hecho | Paso 9 (RLS inventory + CI) |
 | Documentación al día | En curso | Runbooks + RLS; cierre formal Paso 11 |
 
-**Semana 6 en curso** (Paso 9 hecho; siguiente Paso 10). No mergear a `main` hasta OK explícito.
+**Semana 6 en curso** (Pasos 0–10 hechos; siguiente Paso 11 cierre). No mergear a `main` hasta OK explícito.

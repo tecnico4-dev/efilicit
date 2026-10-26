@@ -1,7 +1,6 @@
-# Semana 3 / Paso 9 — ingesta Euskadi (KontratazioA REST) vía GitHub Actions.
-# Default seguro: dry-run con fixture JSON (sin secretos, sin writes).
-# Live API o writes: solo dispatch explícito + secrets. Cron off (ADR 005).
-# Artefacto = página JSON (10 avisos/página fijos por la API).
+# Semana 3 + Semana 6 Paso 10 — ingesta Euskadi (KontratazioA REST) vía GitHub Actions.
+# Manual: workflow_dispatch (default dry-run).
+# Cron: lunes 07:00 UTC, live (max_pages=10; API = 10 ítems/página).
 name: Ingest Euskadi
 
 on:
@@ -34,17 +33,17 @@ on:
         description: "Subir RAW a Storage (requiere SUPABASE_SERVICE_ROLE_KEY + SUPABASE_URL)"
         type: boolean
         default: false
-  # Cron off (ADR 005) hasta acordar entorno + secrets.
-  # schedule:
-  #   - cron: "0 7 * * 1"
+  schedule:
+    # Lunes 07:00 UTC
+    - cron: "0 7 * * 1"
 
 concurrency:
-  group: ingest-euskadi-${{ inputs.mode }}
+  group: ingest-euskadi-${{ github.event_name }}-${{ github.event.inputs.mode || 'live' }}
   cancel-in-progress: false
 
 jobs:
   ingest:
-    name: Run euskadi (${{ inputs.mode }})
+    name: Run euskadi (${{ github.event_name == 'schedule' && 'live' || inputs.mode }})
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -53,6 +52,11 @@ jobs:
       EFILICIT_DATABASE_URL: ${{ secrets.EFILICIT_DATABASE_URL }}
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      MODE: ${{ github.event_name == 'schedule' && 'live' || inputs.mode }}
+      MAX_PAGES: ${{ github.event_name == 'schedule' && '10' || inputs.max_pages || '1' }}
+      START_PAGE: ${{ github.event_name == 'schedule' && '1' || inputs.start_page || '1' }}
+      RUN_ID: ${{ github.event.inputs.run_id || '' }}
+      UPLOAD_STORAGE: ${{ github.event_name == 'schedule' && 'true' || inputs.upload_storage }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -69,14 +73,14 @@ jobs:
         run: uv sync --frozen
 
       - name: Guard secrets for write modes
-        if: inputs.mode != 'dry-run'
+        if: env.MODE != 'dry-run'
         run: |
           set -euo pipefail
           if [ -z "${EFILICIT_DATABASE_URL:-}" ]; then
-            echo "::error::Missing repository secret EFILICIT_DATABASE_URL (required for ${{ inputs.mode }})"
+            echo "::error::Missing repository secret EFILICIT_DATABASE_URL (required for ${MODE})"
             exit 1
           fi
-          if [ "${{ inputs.upload_storage }}" = "true" ]; then
+          if [ "${UPLOAD_STORAGE}" = "true" ]; then
             if [ -z "${SUPABASE_SERVICE_ROLE_KEY:-}" ]; then
               echo "::error::upload_storage=true requires secret SUPABASE_SERVICE_ROLE_KEY"
               exit 1
@@ -90,15 +94,11 @@ jobs:
       - name: Run Euskadi CLI
         run: |
           set -euo pipefail
-          MODE="${{ inputs.mode }}"
-          MAX_PAGES="${{ inputs.max_pages }}"
-          START_PAGE="${{ inputs.start_page }}"
-          RUN_ID="${{ inputs.run_id }}"
           EXTRA=(--max-pages "$MAX_PAGES" --start-page "$START_PAGE")
-          if [ -n "$RUN_ID" ]; then
+          if [ -n "${RUN_ID:-}" ]; then
             EXTRA+=(--run-id "$RUN_ID")
           fi
-          if [ "${{ inputs.upload_storage }}" != "true" ] && [ "$MODE" != "dry-run" ]; then
+          if [ "${UPLOAD_STORAGE}" != "true" ] && [ "$MODE" != "dry-run" ]; then
             EXTRA+=(--no-storage)
           fi
 
