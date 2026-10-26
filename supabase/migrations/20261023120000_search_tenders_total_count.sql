@@ -370,8 +370,20 @@ as $$
   offset (select off from bounds);
 $$;
 
-comment on function public.search_tenders is
+comment on function public.search_tenders(
+  text, text[], text[], text, text[], uuid[], text, text[], text[], text[], text[],
+  numeric, numeric, text[], text[], text[], date, date,
+  timestamptz, timestamptz, boolean, integer, integer
+) is
   'FTS+trgm top-K + Criteria; total_count; desempate cpv_hit_count; trgm 3–120; CPV any|all; open_for_submission.';
 
-revoke all on function public.search_tenders from public;
-grant execute on function public.search_tenders to anon, authenticated;
+revoke all on function public.search_tenders(
+  text, text[], text[], text, text[], uuid[], text, text[], text[], text[], text[],
+  numeric, numeric, text[], text[], text[], date, date,
+  timestamptz, timestamptz, boolean, integer, integer
+) from public;
+grant execute on function public.search_tenders(
+  text, text[], text[], text, text[], uuid[], text, text[], text[], text[], text[],
+  numeric, numeric, text[], text[], text[], date, date,
+  timestamptz, timestamptz, boolean, integer, integer
+) to anon, authenticated;
