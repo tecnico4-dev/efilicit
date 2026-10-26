@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Semana 6 Paso 9 (hardening): inventario RLS (`docs/security/rls-inventory.md` + `scripts/verify_rls_enabled.sql`); CLI `source-health` sobre `source_sync`; runbooks `source-down`, `reprocess-source-date`, `replay-artifact`.
 - Script `scripts/seed_demo_remote.py`: vacía dominio remoto (conserva users + geo) e inserta ~50 licitaciones demo ES variadas para demos (Vercel/Supabase).
 - Ficha: botón «Histórico registrado» junto al estado (si hay hitos en `tender_events`); popover con fecha → estado (hover preview, click para fijar).
 - Plazos: `deadline_at` canónico en UTC; valores sin offset (p. ej. PLACSP) se interpretan como `Europe/Madrid`. UI muestra hora peninsular. Canarias → BACKLOG.
@@ -47,6 +48,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- CI: el workflow se dispara también en pull requests (no solo `main`) y admite `workflow_dispatch`.
+- ESLint: `react-hooks/set-state-in-effect` en warn (patrones mounted/pager); evita fallar CI hasta refactor.
 - Nav: el puntito de no leídas usa RPC `has_unread_favorite_status_notifications` (EXISTS) en lugar de montar la lista completa de avisos en cada navegación.
 - Layout: cabecera y badge de no leídas en `Suspense` — `AppShell` ya no espera auth/unread antes de pintar `{children}` (navegación más reactiva).
 - Inicio: métrica «Sin leer» + 3 avisos recientes vía RPC (`count_unread_*` / `list_recent_*`) en lugar de montar el buzón completo.

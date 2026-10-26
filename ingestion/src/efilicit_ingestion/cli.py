@@ -199,6 +199,25 @@ def build_parser() -> argparse.ArgumentParser:
         default=1,
         help="Con --write: ventana de tenders en días (default: 1).",
     )
+
+    health = sub.add_parser(
+        "source-health",
+        help=(
+            "Healthcheck mínimo por fuente (última fila source_sync). "
+            "Necesita EFILICIT_DATABASE_URL."
+        ),
+    )
+    health.add_argument(
+        "--max-age-hours",
+        type=int,
+        default=48,
+        help="Un success más antiguo que esto cuenta como stale (default: 48).",
+    )
+    health.add_argument(
+        "--fail-on-stale",
+        action="store_true",
+        help="Exit 1 si alguna fuente está stale (además de failed).",
+    )
     return parser
 
 
@@ -218,6 +237,8 @@ def main(argv: list[str] | None = None) -> int:
         return _cmd_run_euskadi(args)
     if args.command == "run-alerts":
         return _cmd_run_alerts(args)
+    if args.command == "source-health":
+        return _cmd_source_health(args)
 
     parser.print_help()
     return 2
@@ -366,6 +387,36 @@ def _cmd_run_alerts(args: argparse.Namespace) -> int:
     if result.drain.digests_failed and not result.dry_run:
         return 1
     return 0
+
+
+def _cmd_source_health(args: argparse.Namespace) -> int:
+    from datetime import timedelta
+
+    from efilicit_ingestion.ops.source_health import (
+        exit_code_for,
+        fetch_latest_syncs,
+        format_health_report,
+        mark_stale,
+    )
+    from efilicit_ingestion.pipeline.postgres import connect
+
+    if args.max_age_hours < 1:
+        print("error: --max-age-hours must be >= 1", file=sys.stderr)
+        return 2
+
+    try:
+        with connect() as conn:
+            rows = fetch_latest_syncs(conn)
+            rows = mark_stale(
+                rows,
+                max_age=timedelta(hours=int(args.max_age_hours)),
+            )
+    except Exception as exc:  # noqa: BLE001
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
+
+    print(format_health_report(rows))
+    return exit_code_for(rows, fail_on_stale=bool(args.fail_on_stale))
 
 
 if __name__ == "__main__":

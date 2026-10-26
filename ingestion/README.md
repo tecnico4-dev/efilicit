@@ -162,6 +162,16 @@ uv run python -m efilicit_ingestion.cli run-placsp --from-month 2026-09 --to-mon
 
 Solo cuando quieras probar descarga oficial (ZIPs pueden ser grandes).
 
+## Healthcheck por fuente
+
+```powershell
+uv run python -m efilicit_ingestion.cli source-health
+# Opcional: fallar si no hay success reciente
+uv run python -m efilicit_ingestion.cli source-health --fail-on-stale --max-age-hours 48
+```
+
+Requiere `EFILICIT_DATABASE_URL`. Runbooks: [`docs/runbooks/`](../docs/runbooks/).
+
 ## GitHub Actions
 
 Workflow: [`.github/workflows/ingest-placsp.yml`](../.github/workflows/ingest-placsp.yml)
