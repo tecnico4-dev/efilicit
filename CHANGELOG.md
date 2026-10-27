@@ -51,6 +51,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Notificaciones: papelera por aviso (icono); pestaña «Papelera» (30 días; aviso de caducidad + recuperar a Todas; luego ocultas vía `notification_trash`).
 
+### Fixed
+
+- Actions: `ingest-placsp.yml` — `concurrency` movido dentro del job (no puede usar `matrix` a nivel workflow).
+
 ### Changed
 
 - CI: el workflow se dispara también en pull requests (no solo `main`) y admite `workflow_dispatch`.

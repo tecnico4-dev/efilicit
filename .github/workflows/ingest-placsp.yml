@@ -50,14 +50,14 @@ on:
     # Lunes 05:00 UTC
     - cron: "0 5 * * 1"
 
-concurrency:
-  group: ingest-placsp-${{ github.event_name }}-${{ matrix.syndication }}-${{ github.event.inputs.mode || 'live' }}
-  cancel-in-progress: false
-
 jobs:
   ingest:
     name: Run ${{ matrix.syndication }} (${{ github.event_name == 'schedule' && 'live' || inputs.mode }})
     runs-on: ubuntu-latest
+    # concurrency aquí (no a nivel workflow): `matrix` solo existe en el job
+    concurrency:
+      group: ingest-placsp-${{ github.event_name }}-${{ matrix.syndication }}-${{ github.event.inputs.mode || 'live' }}
+      cancel-in-progress: false
     strategy:
       fail-fast: false
       matrix:
