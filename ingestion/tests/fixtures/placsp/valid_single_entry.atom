@@ -3,7 +3,8 @@
 <feed xmlns="http://www.w3.org/2005/Atom"
       xmlns:cbc="urn:dgpe:names:draft:codice:schema:xsd:CommonBasicComponents-2"
       xmlns:cac="urn:dgpe:names:draft:codice:schema:xsd:CommonAggregateComponents-2"
-      xmlns:cac-ext="urn:dgpe:names:draft:codice-place-ext:schema:xsd:CommonAggregateComponents-2">
+      xmlns:cac-ext="urn:dgpe:names:draft:codice-place-ext:schema:xsd:CommonAggregateComponents-2"
+      xmlns:cbc-place-ext="urn:dgpe:names:draft:codice-place-ext:schema:xsd:CommonBasicComponents-2">
   <id>https://example.invalid/sindicacion/fixture-valid</id>
   <title>PLACSP fixture feed — valid</title>
   <updated>2026-09-10T12:00:00+02:00</updated>
@@ -15,7 +16,7 @@
     <content type="application/xml">
       <cac-ext:ContractFolderStatus>
         <cbc:ContractFolderID>EXP/2026/0001</cbc:ContractFolderID>
-        <cbc:ContractFolderStatusCode listURI="http://contrataciondelestado.es/codice/cl/2.08/TenderingProcessStatusCode-2.08.gc">PUB</cbc:ContractFolderStatusCode>
+        <cbc-place-ext:ContractFolderStatusCode listURI="https://contrataciondelestado.es/codice/cl/2.04/SyndicationContractFolderStatusCode-2.04.gc">PUB</cbc-place-ext:ContractFolderStatusCode>
         <cac-ext:LocatedContractingParty>
           <cac:Party>
             <cac:PartyIdentification>

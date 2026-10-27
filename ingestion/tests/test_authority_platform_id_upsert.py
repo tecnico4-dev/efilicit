@@ -35,7 +35,7 @@ def _record(
         payload={
             "canonical": {
                 "title": f"Tender {source_record_id}",
-                "status": "published",
+                "status": "publicada",
                 "source_tender_id": source_record_id,
                 "authority": {
                     "name": name,

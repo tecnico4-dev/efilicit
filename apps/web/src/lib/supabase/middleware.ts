@@ -3,10 +3,11 @@ import { NextResponse, type NextRequest } from "next/server";
 import type { Database } from "@efilicit/types";
 
 /**
- * Refresca cookies de sesión Auth en cada request emparejado por el middleware.
+ * Refresca cookies de sesión Auth en cada request.
  *
- * También protege `/account` y `/alerts` (redirect a `/login` sin sesión)
- * y evita que un usuario ya autenticado vea `/login` o `/register`.
+ * Invite-only (ADR 016): sin registro público; `/` anónimo → `/login`.
+ * Gate de producto: rutas protegidas abajo — las páginas RSC no deben
+ * repetir getUser+redirect; solo leen perfil (`getSessionProfile`) si lo necesitan.
  * Solo publishable/anon — nunca service_role.
  */
 export async function updateSession(request: NextRequest) {
@@ -41,8 +42,28 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const path = request.nextUrl.pathname;
+
+  if (path === "/account" || path.startsWith("/account/")) {
+    const redirectUrl = request.nextUrl.clone();
+    redirectUrl.pathname = "/";
+    redirectUrl.search = "";
+    return NextResponse.redirect(redirectUrl);
+  }
+
+  // Sin sesión: `/` es solo un salto a la pantalla de login (ya no hay landing intermedia).
+  if ((path === "/" || path === "") && !user) {
+    const redirectUrl = request.nextUrl.clone();
+    redirectUrl.pathname = "/login";
+    redirectUrl.search = "";
+    return NextResponse.redirect(redirectUrl);
+  }
+
   const isProtected =
-    path.startsWith("/account") || path.startsWith("/alerts");
+    path.startsWith("/alerts") ||
+    path.startsWith("/notifications") ||
+    path.startsWith("/search") ||
+    path.startsWith("/favorites") ||
+    path.startsWith("/tenders");
 
   if (isProtected && !user) {
     const redirectUrl = request.nextUrl.clone();
@@ -51,9 +72,9 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(redirectUrl);
   }
 
-  if ((path === "/login" || path === "/register") && user) {
+  if (path === "/login" && user) {
     const redirectUrl = request.nextUrl.clone();
-    redirectUrl.pathname = "/account";
+    redirectUrl.pathname = "/";
     redirectUrl.search = "";
     return NextResponse.redirect(redirectUrl);
   }

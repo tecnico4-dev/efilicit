@@ -1,21 +1,197 @@
 @import "tailwindcss";
 
-/* Semana 5: fondo claro fijo para legibilidad.
-   Brand / dark mode → Semana 6. */
+@custom-variant dark (&:is(.dark *));
+
+/**
+ * Tokens corporativos Eficen (Semana 6).
+ * Fuente: docs/brand/tokens.css (efilumen-web / Color.kt).
+ * Default de app: oscuro (`next-themes` defaultTheme="dark"); claro disponible.
+ */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f4fbfd;
+  --foreground: #212121;
+
+  --primary: #52b9d8;
+  --primary-foreground: #ffffff;
+  --primary-dark: #3a9bbf;
+  --primary-light: #b3e3f0;
+
+  --surface: #ffffff;
+  --surface-foreground: #212121;
+  --muted: #eaf6fa;
+  --muted-foreground: #757575;
+  --border: #d6eaf1;
+  --ring: #52b9d8;
+  --link: #3a9bbf;
+
+  --destructive: #d32f2f;
+
+  --card: #ffffff;
+  --card-foreground: #212121;
+  --secondary: #eef8fc;
+  --secondary-foreground: #212121;
+  --accent: #d6f0f8;
+  --accent-foreground: #212121;
+  --input: #d6eaf1;
+
+  --radius: 0.625rem;
+}
+
+.dark {
+  --background: #0b1226;
+  --foreground: #ededed;
+
+  --primary: #3b82f6;
+  --primary-foreground: #ffffff;
+  --primary-dark: #2563eb;
+  --primary-light: #1e3157;
+
+  --surface: #111b33;
+  --surface-foreground: #ededed;
+  --muted: #1a2742;
+  --muted-foreground: #9ca3af;
+  --border: #374151;
+  --ring: #3b82f6;
+  --link: #60a5fa;
+
+  --destructive: #ef4444;
+
+  --card: #111827;
+  --card-foreground: #ededed;
+  --secondary: #1b2840;
+  --secondary-foreground: #ededed;
+  --accent: #1e3157;
+  --accent-foreground: #ededed;
+  --input: #374151;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-dark: var(--primary-dark);
+  --color-primary-light: var(--primary-light);
+  --color-surface: var(--surface);
+  --color-surface-foreground: var(--surface-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-ring: var(--ring);
+  --color-link: var(--link);
+  --color-destructive: var(--destructive);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-input: var(--input);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
 }
 
 body {
-  background: #ffffff;
-  color: #171717;
-  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+}
+
+/** Checkbox marca: tick blanco sobre primary Eficen. */
+.ef-checkbox {
+  appearance: none;
+  background-color: var(--background);
+  border: 1px solid var(--border);
+  border-radius: 0.25rem;
+  flex-shrink: 0;
+  height: 1rem;
+  width: 1rem;
+}
+
+.ef-checkbox:checked {
+  background-color: var(--primary);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='%23ffffff' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M3.5 8.5 6.5 11.5 12.5 4.5'/%3E%3C/svg%3E");
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+  border-color: var(--primary);
+}
+
+.ef-checkbox:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--ring) 50%, transparent);
+  outline-offset: 2px;
+}
+
+@keyframes login-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.login-card {
+  animation: login-card-in 280ms ease-out both;
+}
+
+@keyframes home-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.home-dashboard {
+  background:
+    radial-gradient(
+      120% 80% at 50% -10%,
+      color-mix(in srgb, var(--primary-light) 55%, transparent),
+      transparent 55%
+    ),
+    var(--background);
+}
+
+.home-anim {
+  animation: home-fade-up 420ms ease-out both;
+}
+
+.home-anim-delay-1 {
+  animation-delay: 50ms;
+}
+.home-anim-delay-2 {
+  animation-delay: 100ms;
+}
+.home-anim-delay-3 {
+  animation-delay: 150ms;
+}
+.home-anim-delay-4 {
+  animation-delay: 200ms;
+}
+.home-anim-delay-5 {
+  animation-delay: 260ms;
+}
+.home-anim-delay-6 {
+  animation-delay: 320ms;
+}
+.home-anim-delay-7 {
+  animation-delay: 380ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .login-card,
+  .home-anim {
+    animation: none;
+  }
 }

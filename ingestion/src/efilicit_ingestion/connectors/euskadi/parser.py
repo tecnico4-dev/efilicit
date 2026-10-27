@@ -32,6 +32,7 @@ _STATUS = {
     "cancelada": "ANU",
 }
 
+# contractType.name (ES, plegado) → CODICE ContractCode 2.08.
 _CONTRACT_TYPE = {
     "suministros": "1",
     "suministro": "1",
@@ -39,6 +40,46 @@ _CONTRACT_TYPE = {
     "servicio": "2",
     "obras": "3",
     "obra": "3",
+    "concesion de servicios": "22",
+    "concesion servicios": "22",
+    "concesion de obras": "32",
+    "concesion obras": "32",
+    "concesion de obras publicas": "31",
+    "concesion obras publicas": "31",
+    "gestion de servicios publicos": "21",
+    "gestion servicios publicos": "21",
+    "colaboracion publico privada": "40",
+    "colaboracion publico-privada": "40",
+    "colaboracion entre el sector publico y sector privado": "40",
+    "administrativo especial": "7",
+    "privado": "8",
+    "patrimonial": "50",
+}
+
+# Si la API trae id CODICE en contractType.id, preferirlo al nombre.
+_CONTRACT_TYPE_IDS = frozenset(_CONTRACT_TYPE.values())
+
+# Etiquetas de contractProcedureType (ES, plegadas) → SyndicationTenderingProcessCode.
+_PROCEDURE_TYPE = {
+    "abierto": "1",
+    "restringido": "2",
+    "negociado sin publicidad": "3",
+    "negociado con publicidad": "4",
+    "negociado": "3",
+    "dialogo competitivo": "5",
+    "contrato menor": "6",
+    "menor": "6",
+    "derivado de acuerdo marco": "7",
+    "acuerdo marco": "7",
+    "concurso de proyectos": "8",
+    "abierto simplificado": "9",
+    "asociacion para la innovacion": "10",
+    "derivado de asociacion para la innovacion": "11",
+    "sistema dinamico de adquisicion": "12",
+    "licitacion con negociacion": "13",
+    "normas internas": "100",
+    "otros": "999",
+    "otro": "999",
 }
 
 
@@ -86,28 +127,35 @@ def _map_row(row: dict[str, Any], artifact: RemoteArtifact) -> SourceRecord | No
     status_name = _nested_name(row.get("contractProcedureStatus"))
     type_name = _nested_name(row.get("contractType"))
     procedure_name = _nested_name(row.get("contractProcedureType"))
+    procedure_type = _PROCEDURE_TYPE.get(_fold(procedure_name or ""), None)
+    contract_type = _contract_type_code(row.get("contractType"), type_name)
 
     links = row.get("_links") if isinstance(row.get("_links"), dict) else {}
     self_link = links.get("self") if isinstance(links.get("self"), dict) else {}
     publication_url = _text(self_link.get("href"))
 
+    # estimated_value = sin IVA (campo budgetWithoutVAT de la API).
     budget = row.get("budgetWithoutVAT")
     estimated = str(budget) if budget is not None else None
+    # Plazo de presentación: ``deadlineDate`` en /contracting-notices.
+    # CPV de la licitación no viene en este endpoint (sí en /contracts); no mapear
+    # ``contractingAuthority.CPV`` (actividad del órgano, no del objeto).
+    deadline = _text(row.get("deadlineDate"))
 
     payload: dict[str, Any] = {
         "title": title,
         "project_name": title,
         "status": _STATUS.get(_fold(status_name or ""), None),
         "status_label": status_name,
-        "procedure_type": None,
+        "procedure_type": procedure_type,
         "procedure_label": procedure_name,
-        "contract_type": _CONTRACT_TYPE.get(_fold(type_name or ""), None),
+        "contract_type": contract_type,
         "contract_type_label": type_name,
         "estimated_value": estimated,
         "currency": "EUR",
         "cpv_codes": [],
         "nuts_codes": [nuts] if nuts else [],
-        "deadline_at": None,
+        "deadline_at": deadline,
         "updated_at": _text(authority.get("publicationDate")),
         "publication_url": publication_url,
         "contract_folder_id": _text(row.get("code")),
@@ -126,6 +174,17 @@ def _map_row(row: dict[str, Any], artifact: RemoteArtifact) -> SourceRecord | No
     return SourceRecord(source_record_id=record_id, payload=payload)
 
 
+def _contract_type_code(raw: Any, type_name: str | None) -> str | None:
+    """Prefiere ``contractType.id`` si es un código CODICE conocido; si no, el nombre."""
+    if isinstance(raw, dict) and raw.get("id") is not None:
+        code = str(raw["id"]).strip()
+        if code in _CONTRACT_TYPE_IDS:
+            return code
+    if type_name:
+        return _CONTRACT_TYPE.get(_fold(type_name), None)
+    return None
+
+
 def _nested_name(value: Any) -> str | None:
     if isinstance(value, dict):
         return _text(value.get("name"))
@@ -142,8 +201,8 @@ def _text(value: Any) -> str | None:
 
 
 def _fold(value: str) -> str:
-    """Quita acentos para matchear claves de mapas de estado/tipo."""
-    lowered = value.lower()
+    """Quita acentos / puntuación ligera para matchear claves de mapas."""
+    lowered = value.lower().replace("·", "").replace("'", "")
     return lowered.translate(
         str.maketrans(
             {

@@ -5,7 +5,9 @@ La web nunca escribe en ``notification_queue`` ni lee emails de Auth.
 
 Lecturas:
 
-- alertas activas + ventana de tenders (join organismo para criteria).
+- alertas activas + ventana de tenders (join organismo; paginada, sin techo duro).
+- ventana post-ingesta: ``tenders.updated_at`` ∈ [started_at, finished_at]
+  de ``source_sync`` success/partial del día (ADR 020).
 - emails y ``digest_frequency`` de cuenta para el drenado.
 
 Escrituras: upsert idempotente en ``notification_queue`` (ON CONFLICT DO NOTHING).
@@ -13,6 +15,7 @@ Escrituras: upsert idempotente en ``notification_queue`` (ON CONFLICT DO NOTHING
 
 from __future__ import annotations
 
+from collections.abc import Callable, Sequence
 from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 from typing import Any
@@ -50,34 +53,97 @@ def load_active_alerts(conn: psycopg.Connection) -> list[AlertRule]:
             user_id=str(row["user_id"]),
             name=row["name"],
             criteria=dict(row["criteria"] or {}),
-            frequency=row["frequency"] or "daily",
+            frequency=row["frequency"] or "diaria",
             is_active=bool(row["is_active"]),
         )
         for row in rows
     ]
 
 
-def load_tender_candidates(
+def _row_to_tender_candidate(row: dict[str, Any]) -> TenderCandidate:
+    value = row["estimated_value"]
+    return TenderCandidate(
+        id=str(row["id"]),
+        title=row["title"],
+        description=row["description"],
+        status=row["status"],
+        procedure_type=row["procedure_type"],
+        contract_type=row["contract_type"],
+        estimated_value=Decimal(str(value)) if value is not None else None,
+        cpv_codes=tuple(row["cpv_codes"] or ()),
+        publication_date=row["publication_date"],
+        deadline_at=row["deadline_at"],
+        authority_id=_as_str(row["contracting_authority_id"]),
+        authority_tax_id=row["authority_tax_id"],
+        authority_name=row["authority_name"],
+        authority_name_normalized=row["authority_name_normalized"],
+        municipality=row["municipality"],
+        country=row["country"],
+        place_ccaa_code=row["place_ccaa_code"],
+        place_municipality_code=row["place_municipality_code"],
+        updated_at=row["updated_at"],
+    )
+
+
+def _normalize_since(since: date | datetime | None) -> datetime:
+    if since is None:
+        return datetime.now(timezone.utc) - timedelta(days=1)
+    if isinstance(since, date) and not isinstance(since, datetime):
+        return datetime(since.year, since.month, since.day, tzinfo=timezone.utc)
+    return since
+
+
+def _as_utc(dt: datetime) -> datetime:
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(timezone.utc)
+
+
+def list_success_sync_windows(
     conn: psycopg.Connection,
     *,
-    since: date | datetime | None = None,
-    limit: int = 5000,
-) -> list[TenderCandidate]:
-    """Ventana de licitaciones para matching (por updated_at / publication_date).
+    on_date: date,
+) -> list[tuple[datetime, datetime]]:
+    """Ventanas ``[started_at, finished_at]`` de syncs success/partial del día UTC.
 
-    Incluye campos del organismo: criteria.authority / geography viven ahí.
+    Un sync cuenta para ``on_date`` si ``(finished_at AT UTC)::date = on_date``.
+    Usado por el job de match post-ingesta (ADR 020): sin ``since_days``.
     """
-    if since is None:
-        since = datetime.now(timezone.utc) - timedelta(days=1)
-    if isinstance(since, date) and not isinstance(since, datetime):
-        since_dt = datetime(since.year, since.month, since.day, tzinfo=timezone.utc)
-    else:
-        since_dt = since
-
     with conn.cursor(row_factory=dict_row) as cur:
         cur.execute(
             """
-            select
+            select started_at, finished_at
+            from public.source_sync
+            where status in ('success', 'partial')
+              and finished_at is not null
+              and (finished_at at time zone 'utc')::date = %s
+            order by started_at
+            """,
+            (on_date,),
+        )
+        rows = cur.fetchall()
+    out: list[tuple[datetime, datetime]] = []
+    for row in rows:
+        start = _as_utc(row["started_at"])
+        end = _as_utc(row["finished_at"])
+        if end < start:
+            continue
+        out.append((start, end))
+    return out
+
+
+def tender_touch_in_sync_windows(
+    touch_at: datetime | None,
+    windows: Sequence[tuple[datetime, datetime]],
+) -> bool:
+    """True si ``touch_at`` cae en alguna ventana [start, end] inclusive."""
+    if touch_at is None or not windows:
+        return False
+    touch = _as_utc(touch_at)
+    return any(start <= touch <= end for start, end in windows)
+
+
+_TENDER_SELECT = """
               t.id,
               t.title,
               t.description,
@@ -85,11 +151,21 @@ def load_tender_candidates(
               t.procedure_type,
               t.contract_type,
               t.estimated_value,
-              t.cpv_code,
+              coalesce(
+                (
+                  select array_agg(tc.cpv_code order by tc.cpv_code)
+                  from public.tender_cpvs tc
+                  where tc.tender_id = t.id
+                ),
+                '{}'::text[]
+              ) as cpv_codes,
               t.publication_date,
               t.deadline_at,
               t.updated_at,
+              coalesce(t.updated_at, t.created_at) as touch_at,
               t.contracting_authority_id,
+              t.place_ccaa_code,
+              t.place_municipality_code,
               ca.tax_id as authority_tax_id,
               ca.name as authority_name,
               ca.name_normalized as authority_name_normalized,
@@ -98,41 +174,210 @@ def load_tender_candidates(
             from public.tenders t
             left join public.contracting_authorities ca
               on ca.id = t.contracting_authority_id
-            where
-              coalesce(t.updated_at, t.created_at) >= %s
-              or coalesce(t.publication_date, '-infinity'::date) >= (%s::timestamptz)::date
-            order by coalesce(t.updated_at, t.created_at) desc
-            limit %s
-            """,
-            (since_dt, since_dt, limit),
-        )
-        rows = cur.fetchall()
+"""
 
-    out: list[TenderCandidate] = []
+
+def _rows_to_candidate_page(
+    rows: list[dict[str, Any]],
+) -> list[tuple[TenderCandidate, datetime]]:
+    out: list[tuple[TenderCandidate, datetime]] = []
     for row in rows:
-        value = row["estimated_value"]
-        out.append(
-            TenderCandidate(
-                id=str(row["id"]),
-                title=row["title"],
-                description=row["description"],
-                status=row["status"],
-                procedure_type=row["procedure_type"],
-                contract_type=row["contract_type"],
-                estimated_value=Decimal(str(value)) if value is not None else None,
-                cpv_code=row["cpv_code"],
-                publication_date=row["publication_date"],
-                deadline_at=row["deadline_at"],
-                authority_id=_as_str(row["contracting_authority_id"]),
-                authority_tax_id=row["authority_tax_id"],
-                authority_name=row["authority_name"],
-                authority_name_normalized=row["authority_name_normalized"],
-                municipality=row["municipality"],
-                country=row["country"],
-                updated_at=row["updated_at"],
-            )
-        )
+        touch = row["touch_at"]
+        if touch is not None and touch.tzinfo is None:
+            touch = touch.replace(tzinfo=timezone.utc)
+        out.append((_row_to_tender_candidate(row), touch))
     return out
+
+
+def load_tender_candidates_page(
+    conn: psycopg.Connection,
+    *,
+    since: date | datetime | None = None,
+    limit: int = 5000,
+    before_touch_at: datetime | None = None,
+    before_id: str | None = None,
+) -> list[tuple[TenderCandidate, datetime]]:
+    """Una página por calendario ``since`` (legado / backfill futuro).
+
+    Preferir ``load_tender_candidates_for_sync_day`` en el cron de match (ADR 020).
+    """
+    since_dt = _normalize_since(since)
+    page_size = max(1, int(limit))
+    use_cursor = before_touch_at is not None and before_id is not None
+
+    sql = f"select {_TENDER_SELECT} where ("
+    sql += """
+                coalesce(t.updated_at, t.created_at) >= %s
+                or coalesce(t.publication_date, '-infinity'::date) >= (%s::timestamptz)::date
+              )
+    """
+    params: list[Any] = [since_dt, since_dt]
+    if use_cursor:
+        sql += """
+              and (
+                coalesce(t.updated_at, t.created_at) < %s
+                or (
+                  coalesce(t.updated_at, t.created_at) = %s
+                  and t.id < %s::uuid
+                )
+              )
+        """
+        params.extend([before_touch_at, before_touch_at, before_id])
+    sql += """
+            order by coalesce(t.updated_at, t.created_at) desc, t.id desc
+            limit %s
+    """
+    params.append(page_size)
+
+    with conn.cursor(row_factory=dict_row) as cur:
+        cur.execute(sql, params)
+        rows = cur.fetchall()
+    return _rows_to_candidate_page(rows)
+
+
+def load_tender_candidates_sync_page(
+    conn: psycopg.Connection,
+    *,
+    windows: Sequence[tuple[datetime, datetime]],
+    limit: int = 5000,
+    before_touch_at: datetime | None = None,
+    before_id: str | None = None,
+) -> list[tuple[TenderCandidate, datetime]]:
+    """Página de tenders cuyo touch cae en alguna ventana de sync (ADR 020).
+
+    Criterio: ``coalesce(updated_at, created_at)`` ∈ [started_at, finished_at].
+    No usa ``last_seen_at`` (re-visita sin cambio de negocio no alerta).
+    """
+    if not windows:
+        return []
+
+    page_size = max(1, int(limit))
+    use_cursor = before_touch_at is not None and before_id is not None
+
+    window_preds: list[str] = []
+    params: list[Any] = []
+    for start, end in windows:
+        window_preds.append(
+            "(coalesce(t.updated_at, t.created_at) >= %s"
+            " and coalesce(t.updated_at, t.created_at) <= %s)"
+        )
+        params.extend([start, end])
+
+    sql = f"select {_TENDER_SELECT} where ({' or '.join(window_preds)})"
+    if use_cursor:
+        sql += """
+              and (
+                coalesce(t.updated_at, t.created_at) < %s
+                or (
+                  coalesce(t.updated_at, t.created_at) = %s
+                  and t.id < %s::uuid
+                )
+              )
+        """
+        params.extend([before_touch_at, before_touch_at, before_id])
+    sql += """
+            order by coalesce(t.updated_at, t.created_at) desc, t.id desc
+            limit %s
+    """
+    params.append(page_size)
+
+    with conn.cursor(row_factory=dict_row) as cur:
+        cur.execute(sql, params)
+        rows = cur.fetchall()
+    return _rows_to_candidate_page(rows)
+
+
+def collect_paginated_candidates(
+    fetch_page: Callable[
+        [datetime | None, str | None],
+        list[tuple[TenderCandidate, datetime]],
+    ],
+    *,
+    page_size: int = 5000,
+) -> list[TenderCandidate]:
+    """Acumula páginas hasta agotar la ventana (helper testeable sin Postgres).
+
+    ``fetch_page(before_touch_at, before_id)`` → lista ``(TenderCandidate, touch_at)``.
+    """
+    page_size = max(1, int(page_size))
+    out: list[TenderCandidate] = []
+    seen: set[str] = set()
+    before_touch_at: datetime | None = None
+    before_id: str | None = None
+
+    while True:
+        page = fetch_page(before_touch_at, before_id)
+        if not page:
+            break
+        for candidate, touch_at in page:
+            if candidate.id in seen:
+                continue
+            seen.add(candidate.id)
+            out.append(candidate)
+        if len(page) < page_size:
+            break
+        last_candidate, last_touch = page[-1]
+        before_touch_at = last_touch
+        before_id = last_candidate.id
+    return out
+
+
+def load_tender_candidates(
+    conn: psycopg.Connection,
+    *,
+    since: date | datetime | None = None,
+    limit: int = 5000,
+) -> list[TenderCandidate]:
+    """Ventana por calendario ``since`` (legado / backfill futuro; no cron).
+
+    El cron de match usa ``load_tender_candidates_for_sync_day`` (ADR 020).
+    """
+    page_size = max(1, int(limit))
+
+    def fetch_page(
+        before_touch_at: datetime | None,
+        before_id: str | None,
+    ) -> list[tuple[TenderCandidate, datetime]]:
+        return load_tender_candidates_page(
+            conn,
+            since=since,
+            limit=page_size,
+            before_touch_at=before_touch_at,
+            before_id=before_id,
+        )
+
+    return collect_paginated_candidates(fetch_page, page_size=page_size)
+
+
+def load_tender_candidates_for_sync_day(
+    conn: psycopg.Connection,
+    *,
+    on_date: date,
+    limit: int = 5000,
+) -> list[TenderCandidate]:
+    """Tenders tocados en syncs success/partial que terminaron en ``on_date`` UTC.
+
+    Ver ``list_success_sync_windows`` + ADR 020. Si no hay syncs ese día → [].
+    """
+    windows = list_success_sync_windows(conn, on_date=on_date)
+    if not windows:
+        return []
+
+    page_size = max(1, int(limit))
+
+    def fetch_page(
+        before_touch_at: datetime | None,
+        before_id: str | None,
+    ) -> list[tuple[TenderCandidate, datetime]]:
+        return load_tender_candidates_sync_page(
+            conn,
+            windows=windows,
+            limit=page_size,
+            before_touch_at=before_touch_at,
+            before_id=before_id,
+        )
+
+    return collect_paginated_candidates(fetch_page, page_size=page_size)
 
 
 def load_user_emails(
@@ -163,7 +408,9 @@ def load_user_digest_frequencies(
     conn: psycopg.Connection,
     user_ids: list[str] | None = None,
 ) -> dict[str, str]:
-    """``public.users.id`` → ``digest_frequency`` (daily|weekly; ADR 013)."""
+    """``public.users.id`` → ``digest_frequency`` (diaria|semanal; ADR 013)."""
+    from efilicit_ingestion.alerts.queue import normalize_digest_frequency
+
     with conn.cursor(row_factory=dict_row) as cur:
         if user_ids:
             ids = [UUID(u) for u in user_ids]
@@ -184,7 +431,7 @@ def load_user_digest_frequencies(
             )
         rows = cur.fetchall()
     return {
-        row["user_id"]: (row["digest_frequency"] or "daily").strip().lower()
+        row["user_id"]: normalize_digest_frequency(row["digest_frequency"])
         for row in rows
     }
 

@@ -9,7 +9,11 @@ import pytest
 
 from efilicit_ingestion.connectors import EuskadiConnector, SourceConnector
 from efilicit_ingestion.connectors.euskadi import EUSKADI, EuskadiHttpError, EuskadiParseError
-from efilicit_ingestion.connectors.euskadi.parser import parse_euskadi_artifact
+from efilicit_ingestion.connectors.euskadi.parser import (
+    _CONTRACT_TYPE,
+    _fold,
+    parse_euskadi_artifact,
+)
 from efilicit_ingestion.models import RemoteArtifact, SyncContext
 from efilicit_ingestion.pipeline import stages
 
@@ -81,10 +85,38 @@ def test_euskadi_parse_maps_and_skips_without_id() -> None:
     assert records[0].source_record_id == "900001"
     assert records[0].payload["status"] == "PUB"
     assert records[0].payload["contract_type"] == "1"
+    assert records[0].payload["procedure_type"] == "1"
+    assert records[0].payload["procedure_label"] == "Abierto"
     assert records[0].payload["authority"]["tax_id"] == "S4833001C"
+    assert records[0].payload["deadline_at"] == "2026-10-15T12:00:00"
+    assert records[0].payload["cpv_codes"] == []
     assert records[1].source_record_id == "900002"
     assert records[1].payload["status"] == "ADJ"
     assert records[1].payload["authority"]["tax_id"] is None
+    assert records[1].payload["deadline_at"] is None
+
+
+def test_euskadi_concession_labels_and_codice_ids() -> None:
+    assert _CONTRACT_TYPE[_fold("Concesión de servicios")] == "22"
+    assert _CONTRACT_TYPE[_fold("Concesión de obras")] == "32"
+    assert _CONTRACT_TYPE[_fold("Gestión de servicios públicos")] == "21"
+
+    raw = b"""{
+      "totalItems": 1,
+      "items": [{
+        "id": 900099,
+        "code": "EXP/CONC",
+        "object": "Concesion fixture",
+        "contractingAuthority": {"name": "Org Fixture"},
+        "contractType": {"id": 22, "name": "Concesion de servicios"},
+        "contractProcedureStatus": {"name": "Publicacion"}
+      }]
+    }"""
+    records = list(parse_euskadi_artifact(raw, _artifact()))
+    assert len(records) == 1
+    assert records[0].payload["contract_type"] == "22"
+    canonical = stages.normalize(records)[0].payload["canonical"]
+    assert canonical["contract_type"] == "concesion_servicios"
 
 
 def test_euskadi_parse_malformed_raises() -> None:
@@ -98,10 +130,16 @@ def test_euskadi_parse_normalize_identity() -> None:
     identified = stages.resolve_identity(stages.normalize(records))
     first = identified[0].payload["canonical"]
     assert first["title"].startswith("Suministro")
-    assert first["status"] == "published"
-    assert first["contract_type"] == "supplies"
+    assert first["status"] == "publicada"
+    assert first["contract_type"] == "suministros"
+    assert first["procedure_type"] == "abierto"
     assert first["estimated_value"] == Decimal("12500.5")
+    assert first["deadline_at"] is not None
+    # Fixture naive 12:00 Madrid (CEST) → 10:00 UTC
+    assert first["deadline_at"].isoformat().startswith("2026-10-15T10:00:00")
+    assert first["cpv_codes"] == []
     assert first["authority"]["tax_id"] == "S4833001C"
     assert first["authority"]["identity_confidence"] == "HIGH"
     second = identified[1].payload["canonical"]
     assert second["authority"]["identity_confidence"] == "MEDIUM"
+    assert second["deadline_at"] is None

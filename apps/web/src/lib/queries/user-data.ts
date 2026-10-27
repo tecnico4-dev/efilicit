@@ -15,13 +15,18 @@ type SavedSearchRow = Database["public"]["Tables"]["saved_searches"]["Row"];
 type ProfileRow = Database["public"]["Tables"]["users"]["Row"];
 type Json = Database["public"]["Tables"]["alerts"]["Insert"]["criteria"];
 
-export type DigestFrequency = "daily" | "weekly";
+export type DigestFrequency = "diaria" | "semanal";
 
 function asJson(criteria: SearchCriteria): Json {
   return criteria as unknown as Json;
 }
 
-/** Perfil de aplicación ligado al `auth.users` de la sesión actual. */
+/**
+ * Perfil vía el cliente pasado (p. ej. browser / actions).
+ * En Server Components preferir `getSessionProfile` (`@/lib/auth/session`)
+ * para compartir cache por request con AppShell — no importar session aquí
+ * (este módulo también lo usan Client Components).
+ */
 export async function getOwnProfile(
   client: SupabaseClient<Database>,
 ): Promise<{ data: ProfileRow | null; error: Error | null }> {
@@ -45,7 +50,7 @@ export async function getOwnProfile(
 
 /**
  * Actualiza la frecuencia de digest de la cuenta y alinea `alerts.frequency`.
- * Valores: daily | weekly (`instant` fuera del MVP).
+ * Valores: diaria | semanal (`instantanea` fuera del MVP).
  */
 export async function updateOwnDigestFrequency(
   client: SupabaseClient<Database>,
@@ -104,9 +109,37 @@ export async function createOwnAlert(
       user_id: input.userId,
       name: input.name,
       criteria: asJson(input.criteria),
-      frequency: input.frequency ?? "daily",
+      frequency: input.frequency ?? "diaria",
       is_active: true,
     })
+    .select("*")
+    .single();
+
+  if (error) return { data: null, error: new Error(error.message) };
+  return { data, error: null };
+}
+
+/** Actualiza nombre, criteria y/o is_active de una alerta propia (RLS). */
+export async function updateOwnAlert(
+  client: SupabaseClient<Database>,
+  input: {
+    alertId: string;
+    name?: string;
+    criteria?: SearchCriteria;
+    isActive?: boolean;
+  },
+): Promise<{ data: AlertRow | null; error: Error | null }> {
+  const patch: Database["public"]["Tables"]["alerts"]["Update"] = {
+    updated_at: new Date().toISOString(),
+  };
+  if (input.name !== undefined) patch.name = input.name;
+  if (input.criteria !== undefined) patch.criteria = asJson(input.criteria);
+  if (input.isActive !== undefined) patch.is_active = input.isActive;
+
+  const { data, error } = await client
+    .from("alerts")
+    .update(patch)
+    .eq("id", input.alertId)
     .select("*")
     .single();
 
@@ -146,4 +179,61 @@ export async function createOwnSavedSearch(
 
   if (error) return { data: null, error: new Error(error.message) };
   return { data, error: null };
+}
+
+/** Borra una búsqueda guardada propia (RLS). */
+export async function deleteOwnSavedSearch(
+  client: SupabaseClient<Database>,
+  input: { searchId: string },
+): Promise<{ error: Error | null }> {
+  const { error } = await client
+    .from("saved_searches")
+    .delete()
+    .eq("id", input.searchId);
+
+  if (error) return { error: new Error(error.message) };
+  return { error: null };
+}
+
+/** Borra una alerta propia (RLS). */
+export async function deleteOwnAlert(
+  client: SupabaseClient<Database>,
+  input: { alertId: string },
+): Promise<{ error: Error | null }> {
+  const { error } = await client.from("alerts").delete().eq("id", input.alertId);
+
+  if (error) return { error: new Error(error.message) };
+  return { error: null };
+}
+
+/** ¿Ya hay una alerta propia con ese nombre? (comparación sin distinguir mayúsculas). */
+export async function ownAlertNameTaken(
+  client: SupabaseClient<Database>,
+  input: { name: string; excludeAlertId?: string },
+): Promise<{ taken: boolean; error: Error | null }> {
+  const { data, error } = await listOwnAlerts(client);
+  if (error) return { taken: false, error };
+  const needle = input.name.trim().toLowerCase();
+  const taken = data.some(
+    (a) =>
+      a.name.trim().toLowerCase() === needle &&
+      a.id !== input.excludeAlertId,
+  );
+  return { taken, error: null };
+}
+
+/** ¿Ya hay una búsqueda guardada propia con ese nombre? (sin distinguir mayúsculas). */
+export async function ownSavedSearchNameTaken(
+  client: SupabaseClient<Database>,
+  input: { name: string; excludeSearchId?: string },
+): Promise<{ taken: boolean; error: Error | null }> {
+  const { data, error } = await listOwnSavedSearches(client);
+  if (error) return { taken: false, error };
+  const needle = input.name.trim().toLowerCase();
+  const taken = data.some(
+    (s) =>
+      s.name.trim().toLowerCase() === needle &&
+      s.id !== input.excludeSearchId,
+  );
+  return { taken, error: null };
 }

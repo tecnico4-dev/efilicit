@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 
 from efilicit_ingestion.alerts.criteria import SearchCriteria, parse_criteria
@@ -15,11 +15,11 @@ def _tender(**overrides: object) -> TenderCandidate:
         id="t-1",
         title="Mantenimiento de software en Madrid",
         description="Soporte de aplicaciones",
-        status="published",
+        status="publicada",
         procedure_type="open",
-        contract_type="services",
+        contract_type="servicios",
         estimated_value=Decimal("50000"),
-        cpv_code="72000000",
+        cpv_codes=("72000000",),
         publication_date=date(2026, 9, 1),
         authority_id="auth-1",
         authority_tax_id="P2807900B",
@@ -55,6 +55,24 @@ def test_keywords_and_cpv_match() -> None:
     assert hit.priority == "high"
 
 
+def test_keywords_require_all_significant_tokens() -> None:
+    """AND tras stopwords: 'software de madrid' exige software y madrid."""
+    both = parse_criteria(
+        {"version": 1, "keywords": ["software de madrid"]}
+    )
+    assert evaluate_tender(both, _tender()) is not None
+
+    missing = parse_criteria(
+        {"version": 1, "keywords": ["software", "barcelona"]}
+    )
+    assert evaluate_tender(missing, _tender()) is None
+
+
+def test_keywords_stopwords_alone_do_not_match() -> None:
+    criteria = parse_criteria({"version": 1, "keywords": ["de", "el", "la"]})
+    assert evaluate_tender(criteria, _tender()) is None
+
+
 def test_no_match_when_cpv_differs() -> None:
     criteria = parse_criteria(
         {
@@ -66,18 +84,68 @@ def test_no_match_when_cpv_differs() -> None:
     assert evaluate_tender(criteria, _tender()) is None
 
 
+def test_cpv_match_all_requires_every_prefix() -> None:
+    multi = _tender(cpv_codes=("72000000", "30213000"))
+    any_ok = parse_criteria(
+        {"version": 1, "cpv_codes": ["72", "45"], "cpv_match": "any"}
+    )
+    assert evaluate_tender(any_ok, multi) is not None
+
+    all_miss = parse_criteria(
+        {"version": 1, "cpv_codes": ["72", "45"], "cpv_match": "all"}
+    )
+    assert evaluate_tender(all_miss, multi) is None
+
+    all_hit = parse_criteria(
+        {"version": 1, "cpv_codes": ["72", "302"], "cpv_match": "all"}
+    )
+    assert evaluate_tender(all_hit, multi) is not None
+
+
+def test_cpv_single_digit_prefix_matches_division() -> None:
+    """``30000000`` (prefijo ``3``) cubre ``34100000``, no solo ``30…``."""
+    vehicle = _tender(cpv_codes=("34100000",))
+    criteria = parse_criteria({"version": 1, "cpv_codes": ["30000000"]})
+    assert evaluate_tender(criteria, vehicle) is not None
+    assert evaluate_tender(
+        parse_criteria({"version": 1, "cpv_codes": ["3"]}), vehicle
+    ) is not None
+
+
 def test_value_range_and_geography() -> None:
     criteria = parse_criteria(
         {
             "version": 1,
             "estimated_value_min": 10_000,
             "estimated_value_max": 100_000,
-            "geography": {"municipalities": ["Madrid"]},
+            "geography": {"ccaa_codes": ["13"]},
         }
+    )
+    hit = evaluate_tender(criteria, _tender(place_ccaa_code="13"))
+    assert hit is not None
+    assert set(hit.reasons) == {"estimated_value", "geography"}
+
+
+def test_geography_legacy_municipality_text() -> None:
+    criteria = parse_criteria(
+        {"version": 1, "geography": {"municipalities": ["Madrid"]}}
     )
     hit = evaluate_tender(criteria, _tender())
     assert hit is not None
-    assert set(hit.reasons) == {"estimated_value", "geography"}
+    assert hit.reasons == ("geography",)
+
+
+def test_open_for_submission_requires_future_deadline() -> None:
+    criteria = parse_criteria({"version": 1, "open_for_submission": True})
+    future = datetime.now(timezone.utc) + timedelta(days=7)
+    past = datetime.now(timezone.utc) - timedelta(days=1)
+
+    hit = evaluate_tender(criteria, _tender(deadline_at=future))
+    assert hit is not None
+    assert "deadline" in hit.reasons
+
+    assert evaluate_tender(criteria, _tender(deadline_at=past)) is None
+    assert evaluate_tender(criteria, _tender(deadline_at=None)) is None
 
 
 def test_match_alert_to_tenders_filters_inactive_and_misses() -> None:
@@ -86,7 +154,7 @@ def test_match_alert_to_tenders_filters_inactive_and_misses() -> None:
         id="t-works",
         title="Obras de asfaltado",
         description="Calzada",
-        cpv_code="45233140",
+        cpv_codes=("45233140",),
         estimated_value=Decimal("200000"),
     )
     alert = AlertRule(

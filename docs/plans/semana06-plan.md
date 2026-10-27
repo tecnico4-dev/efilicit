@@ -1,0 +1,181 @@
+# Semana 6 — Plan: web integrada + cierre MVP
+
+> **Estado:** en curso (Pasos 0–10 hechos; siguiente: Paso 11 cierre MVP).  
+> **Checklist:** [fase6-checklist.md](fase6-checklist.md)  
+> **Precondición:** Semana 5 cerrada y en `main` ([fase5-checklist.md](fase5-checklist.md)).  
+> **Norma:** `docs/00`–`04` y `.cursor/rules/`. La web sigue consumiendo el **modelo canónico**; sin parsers/RAW. ADR solo ante cambio estructural.  
+> **Rama de trabajo:** `tecnico4/semana-06` (no mergear a `main` hasta OK explícito).  
+> **Referencia de criterios:** `docs/04-roadmap-mvp.md` § Semana 6.
+
+---
+
+## Partimos de
+
+Semana 5 dejó **cableado y verificado** (local):
+
+| Pieza | Estado |
+|---|---|
+| Búsqueda FTS + `pg_trgm` + badge FTS/errata | OK — UI mínima “de prueba” |
+| Auth SSR + RLS Alice≠Bob | OK |
+| Alertas batch → cola → digest Resend | OK — Fake + real (correo personal); dominio `@eficen.com` → IT |
+| CLI `run-alerts` + workflow `alerts-digest.yml` | OK — **cron off** |
+| Ingestas PLACSP/CCAA | OK — cron off |
+
+Meta de Semana 6 (`docs/04` § Semana 6):
+
+1. **Web integrada** coherente: buscador, ficha, multi-fuente, favoritos, alertas, dashboard básico; estados carga/vacío/error; responsive.
+2. **Hardening:** RLS revisado, CI verde, healthchecks por fuente, runbooks mínimos, docs al día.
+3. Flujo E2E de producto: registrarse → buscar → ficha → guardar → alertar → email.
+
+**Fuera / paralelo (no bloquea el diseño):**
+
+- Verificar dominio Resend `eficen.com` (IT).
+- Activar **cron** de ingestas/alertas en producción → solo con OK explícito (sigue el patrón Semanas 2–5).
+- TED, subvenciones, motor de búsqueda externo, cola Redis, etc. → ADR si se plantean.
+
+---
+
+## Cómo lo hacemos
+
+1. Cumplir tareas y criterios de `docs/04-roadmap-mvp.md` § Semana 6.
+2. **Paso 0 primero:** kit visual desde el repo corporativo de la empresa (colores, tipografías, logos, patrones, copy). Sin esto no se rediseña “en serio”.
+3. No invertir tiempo en pulir el copy/estética de la UI mínima de Semana 5: se **sustituye** al aplicar el design system.
+4. Reutilizar `lib/queries` / Auth / RPC / motor de alertas; ampliar esquema solo con migraciones si hace falta (p. ej. favoritos).
+5. `service_role` nunca en el navegador; secretos fuera de Git.
+6. Pasos pequeños y verificables; push a la rama; merge a `main` solo con OK explícito.
+7. ADR solo ante cambio estructural; default esperado: N/A o pocos ADR puntuales.
+8. El acabado visual es 🎨 libre en roadmap, pero en este proyecto se **ancla** al brand corporativo documentado en Paso 0.
+
+---
+
+## Pasos
+
+### 0. Kit visual corporativo (brand)
+
+Recabar del **otro repositorio web de la empresa** (acceso del equipo) y documentar en el repo EfiLicit (p. ej. `docs/brand/` o equivalente breve):
+
+- colores / tokens CSS;
+- tipografías;
+- logos / assets (sin secretos; respetar licencia/uso interno);
+- patrones de layout (nav, botones, formularios);
+- reglas de copy si existen.
+
+No copiar la app entera ni mezclar código ajeno sin revisión. El entregable es una **guía + tokens** usables por `apps/web`.
+
+**Listo cuando:** documento de brand en el repo; checklist Paso 0; decisión de ubicación de tokens registrada en [Decisiones](#decisiones-durante-la-ejecución).
+
+### 1. Design system base en `apps/web`
+
+Aplicar tokens del Paso 0 (CSS variables / Tailwind theme), tipografía, fondo/brand, componentes base (botón, input, nav shell). Quitar look “placeholder” de Semana 5 en layout global.
+
+**Listo cuando:** home + shell con identidad corporativa; sin ficha completa aún.
+
+### 2. Buscador — UX de producto
+
+Rediseñar `/search` (sin textos de demo innecesarios): resultados claros, filtros, estados vacío/carga/error, responsive. Misma capa `searchTenders`.
+
+**Listo cuando:** búsqueda usable en móvil/desktop con el nuevo look.
+
+### 3. Ficha de licitación
+
+Ruta de detalle sobre el canónico (campos MVP). Enlaces desde resultados de búsqueda.
+
+**Listo cuando:** abrir una licitación desde `/search` muestra ficha legible.
+
+### 4. Multi-fuente en ficha
+
+Mostrar las fuentes (`tender_sources`) de la misma licitación canónica.
+
+**Listo cuando:** una tender con varias fuentes las lista en la ficha.
+
+### 5. Favoritos / seguimiento
+
+Persistencia + RLS owner-only (migración si no existe tabla). UI mínima: marcar/desmarcar desde ficha o lista.
+
+**Listo cuando:** usuario A ve solo sus favoritos; script o prueba A≠B.
+
+### 6. Alertas — gestión de producto
+
+Pulir `/alerts` (y flujo desde búsqueda/ficha si aplica): crear/editar/activar con criteria v1; sin copy de prueba.
+
+**Listo cuando:** flujo crear alerta alineado al nuevo diseño; batch local sigue funcionando.
+
+### 7. Dashboard básico
+
+Vista autenticada resumida (p. ej. alertas activas, favoritos recientes, accesos a buscar). Sin overbuild.
+
+**Listo cuando:** `/` o `/dashboard` autenticado tiene un propósito claro.
+
+### 8. Estados + responsive global
+
+Carga, vacío, error en las rutas principales; revisión móvil de shell + búsqueda + ficha + alertas.
+
+**Listo cuando:** checklist UX de estados cubierto en rutas MVP.
+
+### 9. Hardening
+
+- Revisar RLS tablas expuestas.
+- Healthchecks por fuente (alcance acordado).
+- Runbooks mínimos: `source-down.md`, `reprocess-source-date.md` (+ `replay-artifact.md` si el pipeline lo soporta).
+- CI verde (lint / typecheck / tests / build).
+
+**Listo cuando:** ítems de hardening del roadmap marcados o N/A justificado.
+
+### 10. Cron / programación (decisión explícita)
+
+Documentar y, solo con OK, activar o dejar off los crons de ingesta/alertas. Default: **seguir off** hasta entorno + secretos + dominio email listos.
+
+**Listo cuando:** decisión registrada; YAML acorde (cron comentado o activo con OK).
+
+### 11. Cierre MVP
+
+CHANGELOG, checklist Fase 6, ADR N/A o ADRs puntuales, handoff. Criterios de salida `docs/04` § Semana 6.
+
+**Listo cuando:** checklist cerrado; merge a `main` solo con OK explícito.
+
+---
+
+## Decisiones durante la ejecución
+
+| Cuándo | Decisión | Motivo / consecuencia |
+|---|---|---|
+| Inicio Semana 6 | Ejecutar **paso a paso** con revisión | Igual que Semanas 0–5 |
+| Plan | Rama `tecnico4/semana-06`; plan/checklist solo en esta rama al inicio | No ensuciar `main` con borradores S6 |
+| Plan | **Paso 0 = brand corporativo** antes de rediseñar | Evitar inventar look; alinear con web Eficen |
+| Plan | No pulir copy UI Semana 5; se reemplaza en Pasos 1–2 | Ahorrar trabajo desechable |
+| Plan | Cron prod sigue **off** hasta Paso 10 + OK | Mismo patrón que ingestas/alertas S2–S5 |
+| Plan | Dominio Resend `@eficen.com` es vía IT, paralelo | No bloquea diseño web |
+| Paso 0 | Brand en `docs/brand/` (README + `tokens.css` + `patterns.md`) desde efilumen-web | Fuente de verdad para Paso 1; no copiar app EfiLumen |
+| Paso 0 | Tokens de referencia en `docs/brand/tokens.css`; aplicación real en `apps/web/.../globals.css` en Paso 1 | Evitar importar docs en runtime |
+| Paso 0 | Sin logo oficial en efilumen-web/public; pendiente aportar SVG/PNG | Mientras tanto: nombre producto + primary |
+| Paso 0 | MVP EfiLicit: modo claro corporativo primero; dark opcional | Dark EfiLumen es más “blue genérico” |
+| Paso 1 | Tokens en `apps/web/.../globals.css`; shell global `AppShell`/`AppHeader`; `Button`/`Input` | Identidad en home + login; `/search` etc. se rediseñan en Pasos 2+ |
+| Tras Paso 1 | Tema oscuro **default** + opción claro (`next-themes`, toggle cabecera); tokens `.dark` de brand | Alineado a EfiLumen; claro corporativo `#52b9d8` / dark más azul genérico |
+| Paso 2 | `/search` usable con tokens; sin placeholders de ejemplo ni copy Semana 5 | Layout simple (revert del overbuild); misma RPC; ficha en Paso 3 |
+| Feedback UX | No inventar layout al quitar textos de ejemplo: solo quitar el texto pedido | Aplicable a búsqueda y formulario de alertas |
+| Paso 3 | Ficha `/tenders/[id]` con `getTenderById`; enlace desde título en `/search` | Multi-fuente en Paso 4; favoritos/alertas en ficha solo con sesión (comentar al implementar) |
+| Paso 4 | `tender_sources` en ficha; badge Canónica si `source_code` = `canonical_source_code` | Lectura pública RLS ya existente |
+| Paso 5 | Tabla `favorites` + RLS; toggle solo con sesión; nav Favoritos; script A≠B | Sin botón favorito para anónimos |
+| Paso 6 | `/alerts` producto: crear/editar/activar; criteria v1; crear desde `/search` | Sin UUIDs ni copy de prueba; digest sigue en Cuenta |
+| Paso 7 | `/` autenticada = dashboard (alertas activas, favoritos, búsquedas; CTAs) | Sin ruta `/dashboard`; anónimo sigue en landing |
+| Tras Paso 7 (UX) | Soft undo al borrar búsqueda/alerta: toast + Revertir (~7s); × circular flotante en esquina del globo | Preferencia usuario; dismiss inmediato opcional |
+| Tras Paso 7 (UX) | Editar alerta: Editar desactivado mientras edita; Cancelar junto a Guardar cambios | Cancela restaura valores previos |
+| Tras Paso 7 (UX) | «Limpiar campos» en búsqueda solo si hay algún campo con valor | No visible con form vacío |
+| Tras Paso 7 (UX) | Frecuencia de notificaciones editable en `/alerts` (select daily/weekly) + toast de confirmación | Misma sync que Cuenta (`updateOwnDigestFrequency`); toast `showStatus` sin Revertir |
+| Tras Paso 7 (UX) | `/favorites/tenders` paginado 10/pág; controles solo si &gt;10; página editable con validación | Hub `/favorites` sin cambios |
+| Tras Paso 7 (UX) | Contenido `max-w-6xl` (cabecera alineada); móvil sigue fluido | Menos hueco lateral en escritorio |
+| Tras Paso 7 (UX) | Búsqueda ampliada (global/título/estado/órgano) revertida; UI = Texto + CPV + importes | Pendiente reintentar filtros cuando haya tiempo; layout `max-w-6xl` se mantiene |
+| Tras Paso 7 (UX) | Auth invite-only: landing sin nav; solo «Iniciar sesión»; sin registro público; búsqueda exige sesión | [ADR 016](../adr/016-auth-invite-only-sin-registro-publico.md); cambio de contraseña opcional al primer login + en Cuenta |
+| Paso 8 | Estados unificados (`ErrorState`/`EmptyState`) + `loading.tsx` en rutas MVP; Favoritos nav con toque; `PAGE_MAIN` `px-4 sm:px-6` | Sin hamburger; sin overbuild de design system |
+| Paso 9 | Hardening: inventario RLS + script SQL; CLI `source-health`; runbooks `source-down` / `reprocess-source-date` / `replay-artifact` (replay = workaround); CI en PRs; ESLint `set-state-in-effect` → warn | Sin ADR nuevo; cron sigue off → Paso 10 |
+| Paso 10 | Cron on: ingestas lun 05–07; alertas → [ADR 020](../adr/020-alertas-match-post-ingesta-y-digest-diario.md) match lun 08:00 + digest diario 09:00 | Secrets obligatorios en schedule; dispatch manual dry-run default |
+
+---
+
+## Referencias
+
+- [docs/04-roadmap-mvp.md](../04-roadmap-mvp.md) § Semana 6  
+- [fase6-checklist.md](fase6-checklist.md) · [semana05-plan.md](semana05-plan.md) · [fase5-checklist.md](fase5-checklist.md)  
+- Búsqueda: `apps/web/src/lib/queries/search-tenders.ts` · RPC `search_tenders`  
+- Alertas: `efilicit_ingestion.alerts` · `alerts-match.yml` + `alerts-digest.yml` ([ADR 020](../adr/020-alertas-match-post-ingesta-y-digest-diario.md))  
+- Auth/RLS: `@supabase/ssr` · `verify:rls`

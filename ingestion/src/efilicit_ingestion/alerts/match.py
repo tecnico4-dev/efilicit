@@ -7,7 +7,8 @@ aunque el ranking de búsqueda (FTS/trgm) no se reutiliza aquí.
 Reglas:
 
 - Dimensiones omitidas = no entran en el AND.
-- Dentro de una dimensión lista (keywords, CPV, …): OR.
+- Dentro de una dimensión lista (CPV, statuses, …): OR (salvo CPV ``all``).
+- ``keywords``: tokens significativos en AND (como la búsqueda FTS); stopwords ignoradas.
 - Criteria vacío (solo ``version``) → sin match (anti-spam).
 - Score = dimensiones que pasan / dimensiones activas; prioridad por umbrales.
 """
@@ -18,6 +19,7 @@ from datetime import date, datetime
 from decimal import Decimal
 
 from efilicit_ingestion.alerts.criteria import SearchCriteria, parse_criteria
+from efilicit_ingestion.alerts.keywords import fold_text, tokenize_keywords
 from efilicit_ingestion.alerts.models import AlertMatch, AlertRule, TenderCandidate
 
 PRIORITY_HIGH = "high"
@@ -37,12 +39,10 @@ def _parse_date(value: str | None) -> date | None:
 
 
 def _parse_dt(value: str | None) -> datetime | None:
-    """ISO datetime; si solo hay fecha, ancla a 00:00 UTC."""
-    if not value:
-        return None
-    if len(value) == 10:
-        return datetime.fromisoformat(f"{value}T00:00:00+00:00")
-    return datetime.fromisoformat(value.replace("Z", "+00:00"))
+    """ISO → UTC (naive / solo fecha = Europe/Madrid, igual que canónico)."""
+    from efilicit_ingestion.pipeline.canonical import parse_datetime_to_utc
+
+    return parse_datetime_to_utc(value)
 
 
 def _text_blob(tender: TenderCandidate) -> str:
@@ -51,16 +51,44 @@ def _text_blob(tender: TenderCandidate) -> str:
 
 
 def _keyword_hit(tender: TenderCandidate, keywords: list[str]) -> bool:
-    blob = _norm(_text_blob(tender))
-    return any(_norm(k) in blob for k in keywords if k.strip())
-
-
-def _cpv_hit(tender: TenderCandidate, codes: list[str]) -> bool:
-    """Prefijo CPV: ``72000000`` casa ``72000000-1`` y códigos hijos."""
-    cpv = (tender.cpv_code or "").strip()
-    if not cpv:
+    """Todas las palabras significativas deben aparecer (AND); stopwords fuera."""
+    tokens = tokenize_keywords(*keywords)
+    if not tokens:
         return False
-    return any(cpv.startswith(code.strip()) for code in codes if code.strip())
+    blob = fold_text(_text_blob(tender))
+    return all(token in blob for token in tokens)
+
+
+def _cpv_search_prefix(code: str) -> str:
+    """Quita ceros finales del CPV de 8 dígitos; 1 dígito vale (``3`` → ``3``, no ``30``)."""
+    digits = "".join(c for c in code.strip() if c.isdigit())
+    if not digits:
+        return code.strip()
+    base = digits[:8].ljust(8, "0")
+    trimmed = base.rstrip("0")
+    return trimmed if trimmed else "0"
+
+
+def _cpv_hit(
+    tender: TenderCandidate,
+    codes: list[str],
+    *,
+    match: str | None = None,
+) -> bool:
+    """Prefijo CPV: ``any`` (OR×OR, default) o ``all`` (cada criterio cubierto)."""
+    tender_codes = [c.strip() for c in tender.cpv_codes if c and str(c).strip()]
+    if not tender_codes:
+        return False
+    needles = [_cpv_search_prefix(code) for code in codes if code.strip()]
+    needles = [n for n in needles if n]
+    if not needles:
+        return False
+    mode = (match or "any").strip().lower()
+    if mode == "all":
+        return all(
+            any(tc.startswith(needle) for tc in tender_codes) for needle in needles
+        )
+    return any(tc.startswith(needle) for tc in tender_codes for needle in needles)
 
 
 def _authority_hit(tender: TenderCandidate, criteria: SearchCriteria) -> bool | None:
@@ -86,11 +114,17 @@ def _authority_hit(tender: TenderCandidate, criteria: SearchCriteria) -> bool | 
 
 
 def _geography_hit(tender: TenderCandidate, criteria: SearchCriteria) -> bool | None:
-    """Geo del organismo canónico (municipio/país), no de la licitación."""
+    """Lugar de ejecución (códigos) + legacy sede organismo / país."""
     geo = criteria.geography
     if geo is None:
         return None
     checks: list[bool] = []
+    if geo.ccaa_codes:
+        code = (tender.place_ccaa_code or "").strip()
+        checks.append(bool(code) and code in geo.ccaa_codes)
+    if geo.municipality_codes:
+        code = (tender.place_municipality_code or "").strip()
+        checks.append(bool(code) and code in geo.municipality_codes)
     if geo.municipalities:
         mun = _norm(tender.municipality)
         checks.append(bool(mun) and mun in {_norm(m) for m in geo.municipalities})
@@ -142,6 +176,17 @@ def _date_from_hit(tender: TenderCandidate, criteria: SearchCriteria) -> bool | 
 
 
 def _deadline_hit(tender: TenderCandidate, criteria: SearchCriteria) -> bool | None:
+    if criteria.open_for_submission is True:
+        if tender.deadline_at is None:
+            return False
+        from datetime import datetime, timezone
+
+        now = datetime.now(timezone.utc)
+        deadline = tender.deadline_at
+        if deadline.tzinfo is None:
+            deadline = deadline.replace(tzinfo=timezone.utc)
+        return deadline > now
+
     if criteria.deadline_from is None and criteria.deadline_to is None:
         return None
     if tender.deadline_at is None:
@@ -171,7 +216,8 @@ def evaluate_tender(
 ) -> AlertMatch | None:
     """Devuelve match si todas las dimensiones presentes pasan (AND); None si no.
 
-    Arrays dentro de una dimensión: OR. Criteria vacío → no match (anti-spam).
+    Keywords: AND de tokens significativos. Resto de arrays: OR.
+    Criteria vacío → no match (anti-spam).
     ``alert_id`` / ``user_id`` los rellena el caller (aquí van vacíos).
     """
     if not criteria.has_filters():
@@ -184,7 +230,11 @@ def evaluate_tender(
         ),
         (
             "cpv_codes",
-            _cpv_hit(tender, criteria.cpv_codes) if criteria.cpv_codes else None,
+            (
+                _cpv_hit(tender, criteria.cpv_codes, match=criteria.cpv_match)
+                if criteria.cpv_codes
+                else None
+            ),
         ),
         ("authority", _authority_hit(tender, criteria)),
         ("geography", _geography_hit(tender, criteria)),

@@ -58,7 +58,7 @@ class MatchCandidate:
     title: str | None = None
     tax_id: str | None = None
     expediente: str | None = None
-    cpv_code: str | None = None
+    cpv_codes: tuple[str, ...] = ()
     estimated_value: Decimal | None = None
     publication_date: date | None = None
 
@@ -75,7 +75,7 @@ class MatchLookup(Protocol):
         exclude_source_code: str,
         tax_id: str | None = None,
         expediente: str | None = None,
-        cpv_code: str | None = None,
+        cpv_codes: list[str] | None = None,
         limit: int = 50,
     ) -> list[MatchCandidate]:
         """Prefiltra candidatos de fuentes ≠ ``exclude_source_code``.
@@ -182,7 +182,8 @@ def _decide(
     authority = canonical.get("authority") or {}
     tax_id = authority.get("tax_id")
     expediente = extract_expediente(record)
-    cpv_code = canonical.get("cpv_code")
+    raw_cpvs = canonical.get("cpv_codes") or []
+    cpv_codes = [c for c in raw_cpvs if isinstance(c, str) and c]
     title = canonical.get("title")
     estimated_value = canonical.get("estimated_value")
     publication_date = _as_date(canonical.get("publication_date"))
@@ -191,7 +192,7 @@ def _decide(
         exclude_source_code=source_code,
         tax_id=tax_id,
         expediente=expediente,
-        cpv_code=cpv_code,
+        cpv_codes=cpv_codes or None,
         limit=50,
     )
     if not candidates:
@@ -204,7 +205,7 @@ def _decide(
             tax_id=tax_id,
             expediente=expediente,
             title=title,
-            cpv_code=cpv_code,
+            cpv_codes=cpv_codes,
             estimated_value=estimated_value,
             publication_date=publication_date,
         )
@@ -251,7 +252,7 @@ def _score_against(
     tax_id: str | None,
     expediente: str | None,
     title: str | None,
-    cpv_code: str | None,
+    cpv_codes: list[str],
     estimated_value: Decimal | None,
     publication_date: date | None,
 ) -> _ScoredMatch | None:
@@ -273,7 +274,7 @@ def _score_against(
         and expediente != candidate.expediente
     )
     sim = title_similarity(title, candidate.title)
-    cpv_match = bool(cpv_code and candidate.cpv_code and cpv_code == candidate.cpv_code)
+    cpv_match = bool(cpv_codes and set(cpv_codes) & set(candidate.cpv_codes))
     amount_match = _amounts_close(estimated_value, candidate.estimated_value)
     date_match = bool(
         publication_date

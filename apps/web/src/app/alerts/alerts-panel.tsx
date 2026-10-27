@@ -2,13 +2,22 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  criteriaEqual,
+  criteriaHasFilters,
+  formFieldsToCriteria,
+  parseCriteria,
+} from "@/lib/criteria-display";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import {
   createOwnAlert,
   createOwnSavedSearch,
+  listOwnSavedSearches,
+  ownAlertNameTaken,
   type DigestFrequency,
 } from "@/lib/queries";
-import type { SearchCriteria } from "@efilicit/types";
 
 export function AlertsPanel({
   userId,
@@ -18,32 +27,70 @@ export function AlertsPanel({
   digestFrequency: DigestFrequency;
 }) {
   const router = useRouter();
-  const [name, setName] = useState("Alerta software");
-  const [keywords, setKeywords] = useState("software,mantenimiento");
-  const [cpv, setCpv] = useState("72000000");
+  const [name, setName] = useState("");
+  const [keywords, setKeywords] = useState("");
+  const [cpv, setCpv] = useState("");
+  const [min, setMin] = useState("");
+  const [max, setMax] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
-  function buildCriteria(): SearchCriteria {
-    const kw = keywords
-      .split(",")
-      .map((s) => s.trim())
-      .filter(Boolean);
-    return {
-      version: 1,
-      keywords: kw.length ? kw : undefined,
-      cpv_codes: cpv.trim() ? [cpv.trim()] : undefined,
-    };
+  function resetForm() {
+    setName("");
+    setKeywords("");
+    setCpv("");
+    setMin("");
+    setMax("");
+  }
+
+  function buildOrFail() {
+    const criteria = formFieldsToCriteria({ keywords, cpv, min, max });
+    if (!name.trim()) {
+      setError("Indica un nombre.");
+      return null;
+    }
+    if (!criteriaHasFilters(criteria)) {
+      setError("Indica al menos un criterio (keywords, CPV o importe).");
+      return null;
+    }
+    const minVal = criteria.estimated_value_min;
+    const maxVal = criteria.estimated_value_max;
+    if (
+      minVal != null &&
+      maxVal != null &&
+      !Number.isNaN(minVal) &&
+      !Number.isNaN(maxVal) &&
+      minVal > maxVal
+    ) {
+      setError("Importe solicitado inválido.");
+      return null;
+    }
+    return { name: name.trim(), criteria };
   }
 
   async function onCreateAlert() {
-    setPending(true);
     setError(null);
+    const built = buildOrFail();
+    if (!built) return;
+
+    setPending(true);
     const client = createSupabaseBrowserClient();
+    const nameCheck = await ownAlertNameTaken(client, { name: built.name });
+    if (nameCheck.error) {
+      setPending(false);
+      setError(nameCheck.error.message);
+      return;
+    }
+    if (nameCheck.taken) {
+      setPending(false);
+      setError("Ya existe una alerta con este nombre.");
+      return;
+    }
+
     const { error: createError } = await createOwnAlert(client, {
       userId,
-      name: name.trim() || "Alerta",
-      criteria: buildCriteria(),
+      name: built.name,
+      criteria: built.criteria,
       frequency: digestFrequency,
     });
     setPending(false);
@@ -51,92 +98,130 @@ export function AlertsPanel({
       setError(createError.message);
       return;
     }
+    resetForm();
     router.refresh();
   }
 
   async function onCreateSavedSearch() {
-    setPending(true);
     setError(null);
+    const built = buildOrFail();
+    if (!built) return;
+
+    setPending(true);
     const client = createSupabaseBrowserClient();
+    const existing = await listOwnSavedSearches(client);
+    if (existing.error) {
+      setPending(false);
+      setError(existing.error.message);
+      return;
+    }
+    if (
+      existing.data.some((s) =>
+        criteriaEqual(built.criteria, parseCriteria(s.criteria)),
+      )
+    ) {
+      setPending(false);
+      setError("Ya tienes una búsqueda guardada con esos mismos parámetros.");
+      return;
+    }
+
     const { error: createError } = await createOwnSavedSearch(client, {
       userId,
-      name: name.trim() || "Búsqueda guardada",
-      criteria: buildCriteria(),
+      name: built.name,
+      criteria: built.criteria,
     });
     setPending(false);
     if (createError) {
       setError(createError.message);
       return;
     }
+    resetForm();
     router.refresh();
   }
 
   return (
-    <form className="mt-6 space-y-4 rounded-md border border-zinc-200 bg-white p-4">
-      <h2 className="text-base font-medium text-zinc-900">Crear (propio)</h2>
-      <p className="text-sm text-zinc-600">
-        El email de coincidencias usa la frecuencia de tu cuenta (
-        {digestFrequency === "weekly" ? "semanal" : "diaria"}). Cámbiala en{" "}
-        <a href="/account" className="underline">
-          Cuenta
-        </a>
-        .
-      </p>
+    <form className="mt-8 space-y-4 border-t border-border pt-8">
+      <h2 className="text-base font-medium text-foreground">Crear alerta</h2>
       <div>
-        <label htmlFor="item_name" className="block text-sm font-medium text-zinc-800">
-          Nombre
+        <label htmlFor="item_name" className="block text-sm font-medium text-foreground">
+          Nombre de la alerta
         </label>
-        <input
+        <Input
           id="item_name"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:border-zinc-500"
+          className="mt-1"
         />
       </div>
       <div>
-        <label htmlFor="keywords" className="block text-sm font-medium text-zinc-800">
-          Keywords (coma)
+        <label htmlFor="keywords" className="block text-sm font-medium text-foreground">
+          Keywords (separados por comas)
         </label>
-        <input
+        <Input
           id="keywords"
           value={keywords}
           onChange={(e) => setKeywords(e.target.value)}
-          className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:border-zinc-500"
+          className="mt-1"
         />
       </div>
       <div>
-        <label htmlFor="cpv" className="block text-sm font-medium text-zinc-800">
-          CPV
+        <label htmlFor="cpv" className="block text-sm font-medium text-foreground">
+          CPV (prefijo)
         </label>
-        <input
+        <Input
           id="cpv"
           value={cpv}
           onChange={(e) => setCpv(e.target.value)}
-          className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 font-mono text-sm text-zinc-900 outline-none focus:border-zinc-500"
+          className="mt-1 font-mono"
         />
       </div>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div>
+          <label htmlFor="min" className="block text-sm font-medium text-foreground">
+            Importe mín. (sin IVA)
+          </label>
+          <Input
+            id="min"
+            type="number"
+            min={0}
+            step={1}
+            value={min}
+            onChange={(e) => setMin(e.target.value)}
+            className="mt-1"
+          />
+        </div>
+        <div>
+          <label htmlFor="max" className="block text-sm font-medium text-foreground">
+            Importe máx. (sin IVA)
+          </label>
+          <Input
+            id="max"
+            type="number"
+            min={0}
+            step={1}
+            value={max}
+            onChange={(e) => setMax(e.target.value)}
+            className="mt-1"
+          />
+        </div>
+      </div>
       {error ? (
-        <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-900" role="alert">
+        <p className="text-sm text-destructive" role="alert">
           {error}
         </p>
       ) : null}
       <div className="flex flex-wrap gap-2">
-        <button
-          type="button"
-          disabled={pending}
-          onClick={onCreateAlert}
-          className="rounded-md bg-zinc-900 px-3 py-2 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-60"
-        >
+        <Button type="button" disabled={pending} onClick={onCreateAlert}>
           Crear alerta
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
+          variant="outline"
           disabled={pending}
           onClick={onCreateSavedSearch}
-          className="rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm font-medium text-zinc-900 hover:bg-zinc-100 disabled:opacity-60"
         >
           Guardar búsqueda
-        </button>
+        </Button>
       </div>
     </form>
   );

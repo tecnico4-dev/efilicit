@@ -31,16 +31,18 @@ def test_normalize_valid_fixture_maps_mvp_fields() -> None:
     assert len(identified) == 1
     canonical = identified[0].payload["canonical"]
     assert canonical["title"].startswith("Suministro de material")
-    assert canonical["status"] == "published"
+    assert canonical["status"] == "publicada"
     assert canonical["status_code"] == "PUB"
-    assert canonical["contract_type"] == "supplies"
-    assert canonical["procedure_type"] == "open"
-    assert canonical["estimated_value"] == Decimal("12500.50")
+    assert canonical["contract_type"] == "suministros"
+    assert canonical["procedure_type"] == "abierto"
+    assert canonical["estimated_value"] == Decimal("10330.99")
     assert canonical["currency"] == "EUR"
-    assert canonical["cpv_code"] == "30192700"
+    assert canonical["cpv_codes"] == ["30192700"]
     assert canonical["nuts_code"] == "ES300"
     assert canonical["publication_date"].isoformat() == "2026-09-10"
-    assert canonical["deadline_at"].isoformat().startswith("2026-10-01T14:00:00")
+    # Fixture naive 14:00 (Madrid, CEST) → 12:00 UTC
+    assert canonical["deadline_at"].isoformat().startswith("2026-10-01T12:00:00")
+    assert canonical["deadline_at"].tzinfo is not None
     assert canonical["source_tender_id"] == "B00000000:EXP/2026/0001"
     assert canonical["authority"]["tax_id"] == "B00000000"
     assert canonical["authority"]["name_normalized"] == (
@@ -56,7 +58,7 @@ def test_normalize_incomplete_fixture_identity_is_low_without_tax_id() -> None:
 
     assert canonical["status"] is None
     assert canonical["estimated_value"] is None
-    assert canonical["cpv_code"] is None
+    assert canonical["cpv_codes"] == []
     assert canonical["authority"]["tax_id"] is None
     assert canonical["authority"]["identity_confidence"] == "LOW"
     assert "ayuntamiento fixture sin nif" in canonical["authority"]["name_normalized"]
@@ -81,3 +83,43 @@ def test_resolve_identity_medium_with_platform_id_only() -> None:
 
 def test_normalize_name_strips_accents_and_case() -> None:
     assert normalize_name("  Ayuntamiento de Málaga  ") == "ayuntamiento de malaga"
+
+
+def test_normalize_cpv_pads_to_8_and_keeps_check_digit() -> None:
+    from efilicit_ingestion.pipeline.canonical import normalize_cpv_code
+
+    assert normalize_cpv_code("31640000") == "31640000"
+    assert normalize_cpv_code("316400") == "31640000"
+    assert normalize_cpv_code("31") == "31000000"
+    assert normalize_cpv_code("31640000-4") == "31640000-4"
+    assert normalize_cpv_code("3019.2700") == "30192700"
+    assert normalize_cpv_code("N/A") is None
+
+    record = SourceRecord(
+        source_record_id="cpv-ok",
+        payload={
+            "title": "Test",
+            "authority": {"name": "Org"},
+            "cpv_codes": ["316400-4"],
+            "nuts_codes": [],
+        },
+    )
+    assert stages.normalize([record])[0].payload["canonical"]["cpv_codes"] == [
+        "31640000"
+    ]
+
+
+def test_normalize_procedure_code_9_is_abierto_simplificado() -> None:
+    record = SourceRecord(
+        source_record_id="proc-9",
+        payload={
+            "title": "Test abierto simplificado",
+            "procedure_type": "9",
+            "authority": {"name": "Org", "tax_id": "B00000000"},
+            "cpv_codes": [],
+            "nuts_codes": [],
+        },
+    )
+    canonical = stages.normalize([record])[0].payload["canonical"]
+    assert canonical["procedure_type"] == "abierto_simplificado"
+    assert canonical["procedure_code"] == "9"

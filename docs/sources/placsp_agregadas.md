@@ -263,7 +263,7 @@ No garantiza el 100 % de todos los contratos locales de cada CCAA. Catalunya y E
 
 ### Campos canónicos prioritarios (MVP)
 
-Igual que `placsp`: título/objeto, estado, fechas, importes, CPV, tipo/procedimiento, organismo (NIF/CIF cuando exista), URL, trazabilidad RAW.
+Igual que `placsp`: título/objeto, estado, fechas, importes sin IVA, CPV, tipo/procedimiento, organismo (NIF/CIF cuando exista), URL, trazabilidad RAW.
 
 ---
 

@@ -1,0 +1,227 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Fixture notificaciones in-app — pasada 3. Buscar: NOTIF -->
+<feed xmlns="http://www.w3.org/2005/Atom"
+      xmlns:cbc="urn:dgpe:names:draft:codice:schema:xsd:CommonBasicComponents-2"
+      xmlns:cac="urn:dgpe:names:draft:codice:schema:xsd:CommonAggregateComponents-2"
+      xmlns:cac-ext="urn:dgpe:names:draft:codice-place-ext:schema:xsd:CommonAggregateComponents-2"
+      xmlns:cbc-place-ext="urn:dgpe:names:draft:codice-place-ext:schema:xsd:CommonBasicComponents-2">
+  <id>https://example.invalid/sindicacion/notif-test-v3</id>
+  <title>PLACSP notif test feed — v3</title>
+  <updated>2026-10-19T13:00:00+02:00</updated>
+
+  <entry>
+    <id>https://contrataciondelsectorpublico.gob.es/wps/fixture?idExpediente=NOTIF-TEST-001</id>
+    <title>NOTIF Alfa suministro oficina (publicada)</title>
+    <updated>2026-10-19T13:00:01+02:00</updated>
+    <link href="https://contrataciondelsectorpublico.gob.es/wps/fixture?idE=NOTIF-TEST-001" rel="alternate"/>
+    <content type="application/xml">
+      <cac-ext:ContractFolderStatus>
+        <cbc:ContractFolderID>NOTIF/2026/001</cbc:ContractFolderID>
+        <cbc-place-ext:ContractFolderStatusCode listURI="https://contrataciondelestado.es/codice/cl/2.04/SyndicationContractFolderStatusCode-2.04.gc">PUB</cbc-place-ext:ContractFolderStatusCode>
+        <cac-ext:LocatedContractingParty>
+          <cac:Party>
+            <cac:PartyIdentification>
+              <cbc:ID schemeName="NIF">B11111111</cbc:ID>
+            </cac:PartyIdentification>
+            <cac:PartyName>
+              <cbc:Name>Organismo Notif Test S.A.</cbc:Name>
+            </cac:PartyName>
+          </cac:Party>
+        </cac-ext:LocatedContractingParty>
+        <cac:ProcurementProject>
+          <cbc:Name>NOTIF Alfa suministro oficina (publicada)</cbc:Name>
+          <cbc:TypeCode listURI="http://contrataciondelestado.es/codice/cl/2.08/ContractCode-2.08.gc">1</cbc:TypeCode>
+          <cac:BudgetAmount>
+            <cbc:TotalAmount currencyID="EUR">11000.00</cbc:TotalAmount>
+            <cbc:TaxExclusiveAmount currencyID="EUR">9090.91</cbc:TaxExclusiveAmount>
+          </cac:BudgetAmount>
+          <cac:RequiredCommodityClassification>
+            <cbc:ItemClassificationCode listURI="http://contrataciondelestado.es/codice/cl/1.04/CPV2008-1.04.gc">30192000</cbc:ItemClassificationCode>
+          </cac:RequiredCommodityClassification>
+          <cac:RealizedLocation>
+            <cbc:CountrySubentityCode listURI="http://publications.europa.eu/resource/authority/nuts">ES300</cbc:CountrySubentityCode>
+          </cac:RealizedLocation>
+        </cac:ProcurementProject>
+        <cac:TenderingProcess>
+          <cbc:ProcedureCode listURI="http://contrataciondelestado.es/codice/cl/2.07/SyndicationTenderingProcessCode-2.07.gc">1</cbc:ProcedureCode>
+          <cac:TenderSubmissionDeadlinePeriod>
+            <cbc:EndDate>2026-11-15</cbc:EndDate>
+            <cbc:EndTime>14:00:00</cbc:EndTime>
+          </cac:TenderSubmissionDeadlinePeriod>
+        </cac:TenderingProcess>
+      </cac-ext:ContractFolderStatus>
+    </content>
+  </entry>
+  <entry>
+    <id>https://contrataciondelsectorpublico.gob.es/wps/fixture?idExpediente=NOTIF-TEST-002</id>
+    <title>NOTIF Beta servicios limpieza (adjudicada)</title>
+    <updated>2026-10-19T13:00:02+02:00</updated>
+    <link href="https://contrataciondelsectorpublico.gob.es/wps/fixture?idE=NOTIF-TEST-002" rel="alternate"/>
+    <content type="application/xml">
+      <cac-ext:ContractFolderStatus>
+        <cbc:ContractFolderID>NOTIF/2026/002</cbc:ContractFolderID>
+        <cbc-place-ext:ContractFolderStatusCode listURI="https://contrataciondelestado.es/codice/cl/2.04/SyndicationContractFolderStatusCode-2.04.gc">ADJ</cbc-place-ext:ContractFolderStatusCode>
+        <cac-ext:LocatedContractingParty>
+          <cac:Party>
+            <cac:PartyIdentification>
+              <cbc:ID schemeName="NIF">B11111111</cbc:ID>
+            </cac:PartyIdentification>
+            <cac:PartyName>
+              <cbc:Name>Organismo Notif Test S.A.</cbc:Name>
+            </cac:PartyName>
+          </cac:Party>
+        </cac-ext:LocatedContractingParty>
+        <cac:ProcurementProject>
+          <cbc:Name>NOTIF Beta servicios limpieza (adjudicada)</cbc:Name>
+          <cbc:TypeCode listURI="http://contrataciondelestado.es/codice/cl/2.08/ContractCode-2.08.gc">2</cbc:TypeCode>
+          <cac:BudgetAmount>
+            <cbc:TotalAmount currencyID="EUR">22000.00</cbc:TotalAmount>
+            <cbc:TaxExclusiveAmount currencyID="EUR">18181.82</cbc:TaxExclusiveAmount>
+          </cac:BudgetAmount>
+          <cac:RequiredCommodityClassification>
+            <cbc:ItemClassificationCode listURI="http://contrataciondelestado.es/codice/cl/1.04/CPV2008-1.04.gc">90910000</cbc:ItemClassificationCode>
+          </cac:RequiredCommodityClassification>
+          <cac:RealizedLocation>
+            <cbc:CountrySubentityCode listURI="http://publications.europa.eu/resource/authority/nuts">ES300</cbc:CountrySubentityCode>
+          </cac:RealizedLocation>
+        </cac:ProcurementProject>
+        <cac:TenderingProcess>
+          <cbc:ProcedureCode listURI="http://contrataciondelestado.es/codice/cl/2.07/SyndicationTenderingProcessCode-2.07.gc">1</cbc:ProcedureCode>
+          <cac:TenderSubmissionDeadlinePeriod>
+            <cbc:EndDate>2026-11-20</cbc:EndDate>
+            <cbc:EndTime>14:00:00</cbc:EndTime>
+          </cac:TenderSubmissionDeadlinePeriod>
+        </cac:TenderingProcess>
+      </cac-ext:ContractFolderStatus>
+    </content>
+  </entry>
+  <entry>
+    <id>https://contrataciondelsectorpublico.gob.es/wps/fixture?idExpediente=NOTIF-TEST-003</id>
+    <title>NOTIF Gamma equipos informaticos (resuelta)</title>
+    <updated>2026-10-19T13:00:03+02:00</updated>
+    <link href="https://contrataciondelsectorpublico.gob.es/wps/fixture?idE=NOTIF-TEST-003" rel="alternate"/>
+    <content type="application/xml">
+      <cac-ext:ContractFolderStatus>
+        <cbc:ContractFolderID>NOTIF/2026/003</cbc:ContractFolderID>
+        <cbc-place-ext:ContractFolderStatusCode listURI="https://contrataciondelestado.es/codice/cl/2.04/SyndicationContractFolderStatusCode-2.04.gc">RES</cbc-place-ext:ContractFolderStatusCode>
+        <cac-ext:LocatedContractingParty>
+          <cac:Party>
+            <cac:PartyIdentification>
+              <cbc:ID schemeName="NIF">B11111111</cbc:ID>
+            </cac:PartyIdentification>
+            <cac:PartyName>
+              <cbc:Name>Organismo Notif Test S.A.</cbc:Name>
+            </cac:PartyName>
+          </cac:Party>
+        </cac-ext:LocatedContractingParty>
+        <cac:ProcurementProject>
+          <cbc:Name>NOTIF Gamma equipos informaticos (resuelta)</cbc:Name>
+          <cbc:TypeCode listURI="http://contrataciondelestado.es/codice/cl/2.08/ContractCode-2.08.gc">1</cbc:TypeCode>
+          <cac:BudgetAmount>
+            <cbc:TotalAmount currencyID="EUR">33000.00</cbc:TotalAmount>
+            <cbc:TaxExclusiveAmount currencyID="EUR">27272.73</cbc:TaxExclusiveAmount>
+          </cac:BudgetAmount>
+          <cac:RequiredCommodityClassification>
+            <cbc:ItemClassificationCode listURI="http://contrataciondelestado.es/codice/cl/1.04/CPV2008-1.04.gc">30200000</cbc:ItemClassificationCode>
+          </cac:RequiredCommodityClassification>
+          <cac:RealizedLocation>
+            <cbc:CountrySubentityCode listURI="http://publications.europa.eu/resource/authority/nuts">ES300</cbc:CountrySubentityCode>
+          </cac:RealizedLocation>
+        </cac:ProcurementProject>
+        <cac:TenderingProcess>
+          <cbc:ProcedureCode listURI="http://contrataciondelestado.es/codice/cl/2.07/SyndicationTenderingProcessCode-2.07.gc">1</cbc:ProcedureCode>
+          <cac:TenderSubmissionDeadlinePeriod>
+            <cbc:EndDate>2026-11-25</cbc:EndDate>
+            <cbc:EndTime>14:00:00</cbc:EndTime>
+          </cac:TenderSubmissionDeadlinePeriod>
+        </cac:TenderingProcess>
+      </cac-ext:ContractFolderStatus>
+    </content>
+  </entry>
+  <entry>
+    <id>https://contrataciondelsectorpublico.gob.es/wps/fixture?idExpediente=NOTIF-TEST-004</id>
+    <title>NOTIF Delta obras mantenimiento (resuelta)</title>
+    <updated>2026-10-19T13:00:04+02:00</updated>
+    <link href="https://contrataciondelsectorpublico.gob.es/wps/fixture?idE=NOTIF-TEST-004" rel="alternate"/>
+    <content type="application/xml">
+      <cac-ext:ContractFolderStatus>
+        <cbc:ContractFolderID>NOTIF/2026/004</cbc:ContractFolderID>
+        <cbc-place-ext:ContractFolderStatusCode listURI="https://contrataciondelestado.es/codice/cl/2.04/SyndicationContractFolderStatusCode-2.04.gc">RES</cbc-place-ext:ContractFolderStatusCode>
+        <cac-ext:LocatedContractingParty>
+          <cac:Party>
+            <cac:PartyIdentification>
+              <cbc:ID schemeName="NIF">B11111111</cbc:ID>
+            </cac:PartyIdentification>
+            <cac:PartyName>
+              <cbc:Name>Organismo Notif Test S.A.</cbc:Name>
+            </cac:PartyName>
+          </cac:Party>
+        </cac-ext:LocatedContractingParty>
+        <cac:ProcurementProject>
+          <cbc:Name>NOTIF Delta obras mantenimiento (resuelta)</cbc:Name>
+          <cbc:TypeCode listURI="http://contrataciondelestado.es/codice/cl/2.08/ContractCode-2.08.gc">3</cbc:TypeCode>
+          <cac:BudgetAmount>
+            <cbc:TotalAmount currencyID="EUR">44000.00</cbc:TotalAmount>
+            <cbc:TaxExclusiveAmount currencyID="EUR">36363.64</cbc:TaxExclusiveAmount>
+          </cac:BudgetAmount>
+          <cac:RequiredCommodityClassification>
+            <cbc:ItemClassificationCode listURI="http://contrataciondelestado.es/codice/cl/1.04/CPV2008-1.04.gc">45210000</cbc:ItemClassificationCode>
+          </cac:RequiredCommodityClassification>
+          <cac:RealizedLocation>
+            <cbc:CountrySubentityCode listURI="http://publications.europa.eu/resource/authority/nuts">ES300</cbc:CountrySubentityCode>
+          </cac:RealizedLocation>
+        </cac:ProcurementProject>
+        <cac:TenderingProcess>
+          <cbc:ProcedureCode listURI="http://contrataciondelestado.es/codice/cl/2.07/SyndicationTenderingProcessCode-2.07.gc">1</cbc:ProcedureCode>
+          <cac:TenderSubmissionDeadlinePeriod>
+            <cbc:EndDate>2026-11-30</cbc:EndDate>
+            <cbc:EndTime>14:00:00</cbc:EndTime>
+          </cac:TenderSubmissionDeadlinePeriod>
+        </cac:TenderingProcess>
+      </cac-ext:ContractFolderStatus>
+    </content>
+  </entry>
+  <entry>
+    <id>https://contrataciondelsectorpublico.gob.es/wps/fixture?idExpediente=NOTIF-TEST-005</id>
+    <title>NOTIF Epsilon consultoria (resuelta)</title>
+    <updated>2026-10-19T13:00:05+02:00</updated>
+    <link href="https://contrataciondelsectorpublico.gob.es/wps/fixture?idE=NOTIF-TEST-005" rel="alternate"/>
+    <content type="application/xml">
+      <cac-ext:ContractFolderStatus>
+        <cbc:ContractFolderID>NOTIF/2026/005</cbc:ContractFolderID>
+        <cbc-place-ext:ContractFolderStatusCode listURI="https://contrataciondelestado.es/codice/cl/2.04/SyndicationContractFolderStatusCode-2.04.gc">RES</cbc-place-ext:ContractFolderStatusCode>
+        <cac-ext:LocatedContractingParty>
+          <cac:Party>
+            <cac:PartyIdentification>
+              <cbc:ID schemeName="NIF">B11111111</cbc:ID>
+            </cac:PartyIdentification>
+            <cac:PartyName>
+              <cbc:Name>Organismo Notif Test S.A.</cbc:Name>
+            </cac:PartyName>
+          </cac:Party>
+        </cac-ext:LocatedContractingParty>
+        <cac:ProcurementProject>
+          <cbc:Name>NOTIF Epsilon consultoria (resuelta)</cbc:Name>
+          <cbc:TypeCode listURI="http://contrataciondelestado.es/codice/cl/2.08/ContractCode-2.08.gc">2</cbc:TypeCode>
+          <cac:BudgetAmount>
+            <cbc:TotalAmount currencyID="EUR">55000.00</cbc:TotalAmount>
+            <cbc:TaxExclusiveAmount currencyID="EUR">45454.55</cbc:TaxExclusiveAmount>
+          </cac:BudgetAmount>
+          <cac:RequiredCommodityClassification>
+            <cbc:ItemClassificationCode listURI="http://contrataciondelestado.es/codice/cl/1.04/CPV2008-1.04.gc">79400000</cbc:ItemClassificationCode>
+          </cac:RequiredCommodityClassification>
+          <cac:RealizedLocation>
+            <cbc:CountrySubentityCode listURI="http://publications.europa.eu/resource/authority/nuts">ES300</cbc:CountrySubentityCode>
+          </cac:RealizedLocation>
+        </cac:ProcurementProject>
+        <cac:TenderingProcess>
+          <cbc:ProcedureCode listURI="http://contrataciondelestado.es/codice/cl/2.07/SyndicationTenderingProcessCode-2.07.gc">1</cbc:ProcedureCode>
+          <cac:TenderSubmissionDeadlinePeriod>
+            <cbc:EndDate>2026-12-05</cbc:EndDate>
+            <cbc:EndTime>14:00:00</cbc:EndTime>
+          </cac:TenderSubmissionDeadlinePeriod>
+        </cac:TenderingProcess>
+      </cac-ext:ContractFolderStatus>
+    </content>
+  </entry>
+</feed>

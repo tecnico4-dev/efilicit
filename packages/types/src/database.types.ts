@@ -213,6 +213,42 @@ export type Database = {
           },
         ]
       }
+      favorites: {
+        Row: {
+          created_at: string
+          id: string
+          tender_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          tender_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          tender_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "favorites_tender_id_fkey"
+            columns: ["tender_id"]
+            isOneToOne: false
+            referencedRelation: "tenders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "favorites_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notification_queue: {
         Row: {
           alert_id: string | null
@@ -263,6 +299,72 @@ export type Database = {
           },
           {
             foreignKeyName: "notification_queue_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notification_reads: {
+        Row: {
+          event_id: string
+          read_at: string
+          user_id: string
+        }
+        Insert: {
+          event_id: string
+          read_at?: string
+          user_id: string
+        }
+        Update: {
+          event_id?: string
+          read_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_reads_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "tender_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_reads_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notification_trash: {
+        Row: {
+          event_id: string
+          trashed_at: string
+          user_id: string
+        }
+        Insert: {
+          event_id: string
+          trashed_at?: string
+          user_id: string
+        }
+        Update: {
+          event_id?: string
+          trashed_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_trash_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "tender_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_trash_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"
@@ -472,6 +574,7 @@ export type Database = {
       tender_events: {
         Row: {
           created_at: string
+          event_status: string | null
           event_type: string
           id: string
           occurred_at: string
@@ -481,6 +584,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          event_status?: string | null
           event_type: string
           id?: string
           occurred_at?: string
@@ -490,6 +594,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          event_status?: string | null
           event_type?: string
           id?: string
           occurred_at?: string
@@ -577,18 +682,84 @@ export type Database = {
           },
         ]
       }
+      geo_ccaa: {
+        Row: {
+          code: string
+          name: string
+        }
+        Insert: {
+          code: string
+          name: string
+        }
+        Update: {
+          code?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      geo_municipio: {
+        Row: {
+          ccaa_code: string
+          code: string
+          name: string
+        }
+        Insert: {
+          ccaa_code: string
+          code: string
+          name: string
+        }
+        Update: {
+          ccaa_code?: string
+          code?: string
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "geo_municipio_ccaa_code_fkey"
+            columns: ["ccaa_code"]
+            isOneToOne: false
+            referencedRelation: "geo_ccaa"
+            referencedColumns: ["code"]
+          },
+        ]
+      }
+      tender_cpvs: {
+        Row: {
+          tender_id: string
+          cpv_code: string
+        }
+        Insert: {
+          tender_id: string
+          cpv_code: string
+        }
+        Update: {
+          tender_id?: string
+          cpv_code?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tender_cpvs_tender_id_fkey"
+            columns: ["tender_id"]
+            isOneToOne: false
+            referencedRelation: "tenders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tenders: {
         Row: {
           canonical_source_code: string
           contract_type: string | null
           contracting_authority_id: string | null
-          cpv_code: string | null
           created_at: string
           currency: string
           deadline_at: string | null
           description: string | null
           estimated_value: number | null
           id: string
+          place_ccaa_code: string | null
+          place_municipality_code: string | null
+          place_nuts_code: string | null
           procedure_type: string | null
           publication_date: string | null
           search_vector: unknown
@@ -600,13 +771,15 @@ export type Database = {
           canonical_source_code: string
           contract_type?: string | null
           contracting_authority_id?: string | null
-          cpv_code?: string | null
           created_at?: string
           currency?: string
           deadline_at?: string | null
           description?: string | null
           estimated_value?: number | null
           id?: string
+          place_ccaa_code?: string | null
+          place_municipality_code?: string | null
+          place_nuts_code?: string | null
           procedure_type?: string | null
           publication_date?: string | null
           search_vector?: unknown
@@ -618,13 +791,15 @@ export type Database = {
           canonical_source_code?: string
           contract_type?: string | null
           contracting_authority_id?: string | null
-          cpv_code?: string | null
           created_at?: string
           currency?: string
           deadline_at?: string | null
           description?: string | null
           estimated_value?: number | null
           id?: string
+          place_ccaa_code?: string | null
+          place_municipality_code?: string | null
+          place_nuts_code?: string | null
           procedure_type?: string | null
           publication_date?: string | null
           search_vector?: unknown
@@ -640,6 +815,20 @@ export type Database = {
             referencedRelation: "contracting_authorities"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "tenders_place_ccaa_code_fkey"
+            columns: ["place_ccaa_code"]
+            isOneToOne: false
+            referencedRelation: "geo_ccaa"
+            referencedColumns: ["code"]
+          },
+          {
+            foreignKeyName: "tenders_place_municipality_code_fkey"
+            columns: ["place_municipality_code"]
+            isOneToOne: false
+            referencedRelation: "geo_municipio"
+            referencedColumns: ["code"]
+          },
         ]
       }
       users: {
@@ -649,6 +838,7 @@ export type Database = {
           digest_frequency: string
           display_name: string | null
           id: string
+          notifications_read_at: string | null
           updated_at: string
         }
         Insert: {
@@ -657,6 +847,7 @@ export type Database = {
           digest_frequency?: string
           display_name?: string | null
           id?: string
+          notifications_read_at?: string | null
           updated_at?: string
         }
         Update: {
@@ -665,6 +856,7 @@ export type Database = {
           digest_frequency?: string
           display_name?: string | null
           id?: string
+          notifications_read_at?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -682,14 +874,22 @@ export type Database = {
           p_contract_types?: string[]
           p_countries?: string[]
           p_cpv_codes?: string[]
+          /** `any` (default) | `all` — ADR 019 */
+          p_cpv_match?: string
           p_deadline_from?: string
           p_deadline_to?: string
+          /** true → deadline_at > now() (excluye sin plazo) */
+          p_open_for_submission?: boolean
           p_estimated_value_max?: number
           p_estimated_value_min?: number
           p_keywords?: string[]
           p_limit?: number
+          p_ccaa_codes?: string[]
           p_municipalities?: string[]
+          p_municipality_codes?: string[]
           p_offset?: number
+          /** Si se pasa, la RPC no recuenta: total_count = este valor (paginación). */
+          p_known_total?: number
           p_procedure_types?: string[]
           p_publication_date_from?: string
           p_publication_date_to?: string
@@ -699,7 +899,7 @@ export type Database = {
         Returns: {
           contract_type: string
           contracting_authority_id: string
-          cpv_code: string
+          cpv_codes: string[]
           created_at: string
           currency: string
           deadline_at: string
@@ -712,7 +912,63 @@ export type Database = {
           rank: number
           status: string
           title: string
+          /** Universo de la búsqueda (sin texto: filtros; con texto: tras top-K). */
+          total_count: number
           updated_at: string
+        }[]
+      }
+      list_place_municipalities: {
+        Args: {
+          p_ccaa_code: string
+        }
+        Returns: {
+          code: string
+          name: string
+        }[]
+      }
+      list_tender_filter_options: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          kind: string
+          value: string
+        }[]
+      }
+      has_unread_favorite_status_notifications: {
+        Args: {
+          p_user_id: string
+        }
+        Returns: boolean
+      }
+      count_unread_favorite_status_notifications: {
+        Args: {
+          p_user_id: string
+        }
+        Returns: number
+      }
+      list_recent_favorite_status_notifications: {
+        Args: {
+          p_user_id: string
+          p_limit?: number
+        }
+        Returns: {
+          detected_at: string
+          event_id: string
+          new_status: string
+          occurred_at: string
+          previous_status: string
+          source_code: string
+          tender_id: string
+          title: string
+          unread: boolean
+        }[]
+      }
+      tender_max_last_seen: {
+        Args: {
+          p_tender_ids: string[]
+        }
+        Returns: {
+          last_seen_at: string
+          tender_id: string
         }[]
       }
     }

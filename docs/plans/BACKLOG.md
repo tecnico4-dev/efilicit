@@ -16,7 +16,17 @@ No son bugs olvidados ni el trabajo de la siguiente semana del roadmap. Son huec
 
 - **Otras frecuencias de digest / `instant`.** MVP = `daily` \| `weekly` a nivel de cuenta (`users.digest_frequency`). `instant` (email al detectar coincidencia) y otras cadencias quedan fuera: más emails, otra latencia y otro diseño de drenado ([ADR 013](../adr/013-alert-frequencies-daily-weekly-instant-diferido.md)). Preferencia de cuenta (un correo con todas las alertas), no por alerta.
 - **Limpiar CHECK de `alerts.frequency`.** El esqueleto Semana 1 aún admite `instant` en `alerts`; el producto usa `users.digest_frequency`. Alinear esquema / sync cuando se toque migraciones de alertas.
-- **Separar match/encolado y envío en dos jobs.** Hoy `run-alerts` hace ambos en un solo proceso; suficiente mientras solo haya daily/weekly ([ADR 012](../adr/012-digest-email-job-python-sin-edge-function.md)).
+- ~~**Separar match/encolado y envío en dos jobs.**~~ **Hecho** ([ADR 020](../adr/020-alertas-match-post-ingesta-y-digest-diario.md)): `alerts-match.yml` (lun 08:00, ventana sync/`updated_at`) + `alerts-digest.yml` (diario 09:00, solo drain). CLI `--phase match|send|all`.
+- **Backfill de match al crear / activar una alerta (UX mid-week).**  
+  **Problema:** el match productivo solo corre **después del bloque de ingestas del lunes**. Si un usuario crea o reactiva una alerta el miércoles, **no** se evalúa contra el catálogo que ya está en Postgres hasta el próximo lunes (y solo sobre licitaciones con `updated_at` en la ventana de esos syncs). Hasta entonces la alerta parece “vacía” aunque haya tenders antiguos que encajarían.  
+  **Qué NO hacer:** un tercer cron diario de match “por si acaso”, ni volver a `since_days` en el cron post-ingesta ([ADR 020](../adr/020-alertas-match-post-ingesta-y-digest-diario.md)).  
+  **Dirección deseada:** al **crear** o **pasar a activa** una alerta (API/UI o job disparado desde ahí), un **backfill único**:
+  1. Cargar candidatos del catálogo con una ventana explícita de producto (p. ej. últimos 30 días por `publication_date` / `updated_at`, o tope de N filas) — reutilizar helpers tipo `load_tender_candidates(since=…)` solo en este camino, no en el cron de sync.
+  2. Correr el mismo `run_alert_batch` / matcher que el job semanal.
+  3. Encolar en `notification_queue` con el periodo de digest **actual** de la cuenta (`diaria` / `semanal`, [ADR 013](../adr/013-alert-frequencies-daily-weekly-instant-diferido.md)).
+  4. **No** enviar email en ese momento: el cron diario `alerts-digest` (phase send) drena según frecuencia.  
+  **Notas:** idempotencia de cola evita duplicar si el lunes re-toca las mismas filas; acotar coste (límite de filas / timeout); decidir si aplica también al “editar criteria” de una alerta ya activa. Documentar en UI el lag mientras no exista este backfill.  
+  **Estado:** backlog; no bloquea ADR 020.
 - **Edge Function de email (N/A intencional).** El digest se envía desde el job Python + Actions, no desde `supabase/functions/` ([ADR 012](../adr/012-digest-email-job-python-sin-edge-function.md)). Replantear solo si hace falta otro canal (p. ej. reenvío desde la web).
 - **Doble envío de digest si el job falla tras Resend (aceptado en MVP).** El drenado envía el correo y después marca `notification_queue` como `sent` + `commit`. Si el proceso cae entre ambas, los ítems siguen `pending` y una reejecución puede reenviar el mismo digest. Decisión explícita: preferir un posible duplicado frente a perder el aviso. No endurecer (idempotency key en Resend, estado intermedio, commit por digest, etc.) salvo que el duplicado se observe de forma recurrente en ops.
 
@@ -25,9 +35,8 @@ No son bugs olvidados ni el trabajo de la siguiente semana del roadmap. Son huec
 ## 2. Email / ops / CI
 
 - **Dominio `eficen.com` en Resend.** Verificación de dominio / envío desde correo corporativo (IT). Pruebas Semana 5 OK con correo personal.
-- **Cron de producción — ingestas.** Workflows `ingest-placsp`, `ingest-catalunya`, `ingest-euskadi`: `schedule` off; manual-first hasta OK explícito ([ADR 005](../adr/005-ingesta-actions-manual-first-cron-off.md)).
-- **Cron de producción — alertas.** `alerts-digest.yml`: mismo patrón; cron off.
-- **Scheduling como DoD del MVP.** Criterio de cierre del roadmap: fuentes “programadamente”; activar cuando entorno + secretos + OK.
+- **ZIPs grandes en cron PLACSP / Storage.** Cron activo (Paso 10); descarga + upload pueden fallar con paquetes grandes. Endurecer subida (multipart/resumable), timeouts, un artefacto/paquete por corrida. **No** trocear el ZIP oficial.
+- ~~Cron de producción — ingestas / alertas.~~ **Hecho** Semana 6 Paso 10 (schedules on; [ADR 005](../adr/005-ingesta-actions-manual-first-cron-off.md) enmienda).
 - **Environments / secrets de deploy.** Preview/production, Vercel, tokens — cablear cuando haya despliegue real (ver `.github/README.md`).
 - **CI ingestion sin Postgres en Actions (intencional).** Tests DB en skip en CI; integración local con `supabase start` ([ADR 004](../adr/004-ci-ingestion-sin-postgres.md)).
 - **Protección de `main` en GitHub.** Branch protection aplazada en repo Free privado; CI + disciplina manual ([ADR 001](../adr/001-proteccion-main-aplazada.md)).
@@ -37,8 +46,10 @@ No son bugs olvidados ni el trabajo de la siguiente semana del roadmap. Son huec
 
 ## 3. Ingesta / pipeline / datos canónicos
 
+- **Husos Canarias (y otros no peninsulares).** Hoy `deadline_at` naive se interpreta como `Europe/Madrid` → UTC. Canarias (`Atlantic/Canary`) y posibles excepciones territoriales no se modelan. Valorar solo si aparece error medible en plazos.
+- **Euskadi: CPV de licitación.** `/contracting-notices` no trae CPV del objeto (`deadlineDate` → ya mapeado a `deadline_at`). El CPV está en `/contracts` (REVASCON), enlazado vía `_links.contracts`. No usar `contractingAuthority.CPV` (actividad del órgano). Mejora: enriquecer avisos con GET al enlace cuando exista; anuncios abiertos sin contrato registrado suelen quedar sin CPV. Valorar después si hace falta ingesta secundaria de `/contracts` (posible ADR de colección). Ficha: [euskadi.md](../sources/euskadi.md).
 - **Tabla `public.errors`.** Existe en esquema; el pipeline no escribe ahí de forma sistemática (fallos de corrida → `source_sync`; [ADR 003](../adr/003-acceso-canonico-publico-etl-privado.md)). La bitácora `failed` en `source_sync` **sí** se persiste tras rollback del upsert. Cablear `errors` (p. ej. fallos por registro) solo si hace falta detalle fino; o documentar deprecación.
-- **Timeline de versiones dentro del mismo ZIP/Atom PLACSP.** Hoy, si un expediente aparece varias veces, el parse se queda con el `atom:updated` más reciente (estado canónico correcto). Las versiones intermedias no generan `tender_events`. Mejora futura: ordenar por fecha y emitir eventos de transición (p. ej. publicada → plazo ampliado → adjudicada) para la ficha/historial, sin pisar la regla de “estado actual = versión más nueva”. El RAW del ZIP ya conserva la evidencia. Priorizar cuando exista UI de historial.
+- **Timeline de versiones dentro del mismo ZIP/Atom PLACSP.** Hoy, si un expediente aparece varias veces, el parse se queda con el `atom:updated` más reciente (estado canónico correcto). Las versiones intermedias no generan `tender_events`. Mejora futura: ordenar por fecha y emitir eventos de transición (p. ej. publicada → plazo ampliado → adjudicada) para enriquecer el «Histórico registrado» de la ficha, sin pisar la regla de “estado actual = versión más nueva”. El RAW del ZIP ya conserva la evidencia. La UI de historial en ficha ya existe (hitos que sí están en `tender_events`).
 - **Replay de artefacto en pipeline.** Runbook futuro cuando el pipeline soporte reprocess/replay (`docs/runbooks/`).
 - **Catálogo NUTS / geo de búsqueda completa.** Semana 5: geo vía join a organismo; sin catálogo NUTS inventado. Ampliar si el producto lo exige.
 - **Adaptador CSV “de familia”.** N/A en Semana 3 salvo bloqueo medible ([ADR 007](../adr/007-adaptador-csv-familia-na-semana3.md)); backlog puntual por CCAA si hace falta.
@@ -71,7 +82,15 @@ Detalle por CCAA: [cobertura-ccaa.md](../sources/cobertura-ccaa.md). Checklist a
 
 ---
 
-## 6. Referencia rápida ADRs (aplazados / N/A)
+## 6. Web / búsqueda
+
+- **Ordenación de resultados en `/search`.** Hoy el orden lo fija la RPC (rank texto → fecha publicación → cobertura CPV → `created_at`). Con paginación ya tiene más sentido: UI para ordenar por campos útiles (p. ej. fecha publicación, importe, plazo, relevancia). Preferible parámetros de orden en `search_tenders` (o sort estable + keyset) antes que reordenar solo en cliente.
+- **Búsqueda FTS vs alertas substring.** Tras alinear stopwords + AND, la búsqueda sigue siendo FTS/`pg_trgm` y el match de alertas es substring en título/descripción. Puede haber divergencias raras. **Alinear solo si en uso real molesta** (no es bug MVP).
+- **Títulos / textos en castellano (fuentes cooficiales).** Catalunya (y en menor medida Euskadi/Galicia si aplica) publican título/objeto en catalán u otra lengua cooficial; el canónico conserva el texto oficial de la fuente. Mejora de producto: ofrecer castellano en UI (y/o campo canónico derivado) sin inventar el RAW — p. ej. preferir campo ES si la fuente lo trae; si no, traducción asistida (MT/LLM) con trazabilidad. **No** es el mismo patrón que `prettify_display_title` (solo mayúsculas). Requiere decisión de producto + ADR si implica proveedor/persistencia nueva.
+
+---
+
+## 7. Referencia rápida ADRs (aplazados / N/A)
 
 | ADR | Tema | Lectura en backlog |
 |-----|------|--------------------|
@@ -101,3 +120,4 @@ Detalle por CCAA: [cobertura-ccaa.md](../sources/cobertura-ccaa.md). Checklist a
 - Matching: si ambas fuentes traen expediente y difiere → nunca `auto` (como mucho `pending`); NIF + señales blandas sigue válido si falta expediente en un lado.
 - Re-ingesta: `tender_events` / `tenders.updated_at` solo si cambian campos canónicos; `tender_sources.last_seen_at` marca que la fuente la ha vuelto a ver.
 - Bitácora `source_sync` `failed` persistida tras rollback del upsert (refuerzo [ADR 003](../adr/003-acceso-canonico-publico-etl-privado.md)).
+- Paginación de resultados en `/search` (20 por página, `?page=`; Anterior / Siguiente).

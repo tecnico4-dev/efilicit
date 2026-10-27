@@ -2,6 +2,7 @@ export type { Database } from "./database.types";
 export type {
   AlertCriteria,
   AuthorityCriteria,
+  CpvMatchMode,
   CriteriaFields,
   CriteriaVersion,
   GeographyCriteria,

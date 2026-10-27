@@ -40,32 +40,32 @@ export function DigestFrequencyForm({
   }
 
   return (
-    <div className="mt-8 rounded-md border border-zinc-200 bg-white p-4">
-      <h2 className="text-base font-medium text-zinc-900">Email de alertas</h2>
-      <p className="mt-1 text-sm text-zinc-600">
+    <div className="mt-8 rounded-md border border-border bg-background p-4">
+      <h2 className="text-base font-medium text-foreground">Email de alertas</h2>
+      <p className="mt-1 text-sm text-muted-foreground">
         Un correo con todas tus alertas. Diario, o semanal (lunes UTC).
       </p>
       <div className="mt-4">
-        <label htmlFor="digest_frequency" className="block text-sm font-medium text-zinc-800">
+        <label htmlFor="digest_frequency" className="block text-sm font-medium text-foreground">
           Frecuencia
         </label>
         <select
           id="digest_frequency"
           value={frequency}
           onChange={(e) => setFrequency(e.target.value as DigestFrequency)}
-          className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:border-zinc-500"
+          className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
         >
-          <option value="daily">Diario</option>
-          <option value="weekly">Semanal</option>
+          <option value="diaria">Diario</option>
+          <option value="semanal">Semanal</option>
         </select>
       </div>
       {error ? (
-        <p className="mt-3 rounded-md bg-red-50 px-3 py-2 text-sm text-red-900" role="alert">
+        <p className="mt-3 rounded-md bg-surface px-3 py-2 text-sm text-destructive" role="alert">
           {error}
         </p>
       ) : null}
       {saved ? (
-        <p className="mt-3 rounded-md bg-emerald-50 px-3 py-2 text-sm text-emerald-900">
+        <p className="mt-3 rounded-md bg-muted px-3 py-2 text-sm text-foreground">
           Preferencia guardada. Tus alertas usan esta frecuencia.
         </p>
       ) : null}
@@ -73,7 +73,7 @@ export function DigestFrequencyForm({
         type="button"
         disabled={pending}
         onClick={onSave}
-        className="mt-4 rounded-md bg-zinc-900 px-3 py-2 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-60"
+        className="mt-4 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary-dark disabled:opacity-60"
       >
         Guardar
       </button>

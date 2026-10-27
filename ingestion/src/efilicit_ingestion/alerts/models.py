@@ -18,8 +18,9 @@ from uuid import UUID
 class TenderCandidate:
     """Proyección mínima de licitación + organismo para matching de alertas.
 
-    Incluye tax_id/nombre/geo del organismo porque criteria.authority y
-    geography no viven en ``tenders`` sino en el join con authorities.
+    Incluye tax_id/nombre del organismo (criteria.authority) y place_* de la
+    licitación (criteria.geography.ccaa_codes / municipality_codes). El texto
+    ``municipality`` del organismo es solo legacy (ADR 018).
     """
 
     id: str
@@ -29,7 +30,7 @@ class TenderCandidate:
     procedure_type: str | None = None
     contract_type: str | None = None
     estimated_value: Decimal | float | None = None
-    cpv_code: str | None = None
+    cpv_codes: tuple[str, ...] = ()
     publication_date: date | None = None
     deadline_at: datetime | None = None
     authority_id: str | None = None
@@ -38,6 +39,8 @@ class TenderCandidate:
     authority_name_normalized: str | None = None
     municipality: str | None = None
     country: str | None = None
+    place_ccaa_code: str | None = None
+    place_municipality_code: str | None = None
     updated_at: datetime | None = None
 
 

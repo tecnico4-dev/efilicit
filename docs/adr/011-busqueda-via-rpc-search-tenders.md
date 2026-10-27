@@ -77,4 +77,6 @@ Migraciones de referencia: `20260929100000_semana5_search_tenders_rpc.sql` y suc
 - `docs/plans/semana05-plan.md` · `docs/plans/fase5-checklist.md`
 - [ADR 003](003-acceso-canonico-publico-etl-privado.md) (canónico legible; sin `service_role` en browser)
 - `supabase/migrations/20260929100000_semana5_search_tenders_rpc.sql`
+- Migraciones posteriores de ranking/top-K/CPV: `20261022130000_search_tenders_topk_trgm_guards.sql`, `20261022140000_search_tenders_cpv_hit_tiebreak.sql`
+- Semántica operativa (stopwords/AND, top-K, orden): `apps/web/src/lib/queries/README.md` + CHANGELOG (Unreleased) — sin ADR aparte
 - `apps/web/src/lib/queries/search-tenders.ts`

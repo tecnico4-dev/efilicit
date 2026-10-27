@@ -11,6 +11,7 @@ from efilicit_ingestion.connectors.placsp.parser import parse_placsp_artifact
 from efilicit_ingestion.models import RemoteArtifact
 from efilicit_ingestion.pipeline import stages
 from efilicit_ingestion.pipeline.canonical_repo import (
+    EVENT_TYPE_INGESTED,
     InMemoryCanonicalRepository,
     PostgresCanonicalRepository,
 )
@@ -44,11 +45,12 @@ def test_inmemory_upsert_is_idempotent_on_source_tender_id() -> None:
     assert len(repo.tenders) == 1
     assert len(repo.tender_sources) == 1
     assert len(repo.events) == 1
-    assert repo.events[0]["event_type"] == "published"
+    assert repo.events[0]["event_type"] == EVENT_TYPE_INGESTED
+    assert repo.events[0]["event_status"] == "publicada"
 
     tender = next(iter(repo.tenders.values()))
     assert tender["title"].startswith("Suministro")
-    assert tender["cpv_code"] == "30192700"
+    assert tender["cpv_codes"] == ["30192700"]
     assert tender["estimated_value"] is not None
 
 
@@ -110,7 +112,10 @@ def test_postgres_upsert_populates_canonical_and_does_not_duplicate() -> None:
 
         row = conn.execute(
             """
-            select t.title, t.status, t.cpv_code, t.estimated_value, a.tax_id, a.identity_confidence
+            select t.title, t.status, (
+              select coalesce(array_agg(c.cpv_code order by c.cpv_code), '{}'::text[])
+              from public.tender_cpvs c where c.tender_id = t.id
+            ), t.estimated_value, a.tax_id, a.identity_confidence
             from public.tenders t
             join public.tender_sources ts on ts.tender_id = t.id
             left join public.contracting_authorities a on a.id = t.contracting_authority_id
@@ -120,15 +125,15 @@ def test_postgres_upsert_populates_canonical_and_does_not_duplicate() -> None:
         ).fetchone()
         assert row is not None
         assert row[0].startswith("Suministro")
-        assert row[1] == "published"
-        assert row[2] == "30192700"
+        assert row[1] == "publicada"
+        assert list(row[2]) == ["30192700"]
         assert row[3] is not None
         assert row[4] == "B00000000"
         assert row[5] == "HIGH"
 
         events = conn.execute(
             """
-            select event_type
+            select event_type, event_status
             from public.tender_events e
             join public.tender_sources ts on ts.tender_id = e.tender_id
             where ts.source_code = %s and ts.source_tender_id = %s
@@ -136,7 +141,8 @@ def test_postgres_upsert_populates_canonical_and_does_not_duplicate() -> None:
             """,
             (SOURCE_CODE, source_tender_id),
         ).fetchall()
-        assert [e[0] for e in events] == ["published"]
+        assert [e[0] for e in events] == [EVENT_TYPE_INGESTED]
+        assert [e[1] for e in events] == ["publicada"]
 
         docs = conn.execute(
             """

@@ -18,6 +18,9 @@
       "contractType": {"id": 1, "name": "Suministros"},
       "contractProcedureStatus": {"id": 1, "name": "Publicación"},
       "contractProcedureType": {"id": 1, "name": "Abierto"},
+      "firstPublicationDate": "2026-09-01",
+      "lastPublicationDate": "2026-09-15",
+      "deadlineDate": "2026-10-15T12:00:00",
       "budgetWithoutVAT": 12500.5,
       "minorContract": false,
       "_links": {

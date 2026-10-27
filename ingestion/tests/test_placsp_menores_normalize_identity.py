@@ -45,16 +45,16 @@ def test_menores_normalize_valid_fixture_maps_mvp_fields() -> None:
     assert len(identified) == 1
     canonical = identified[0].payload["canonical"]
     assert canonical["title"].startswith("Suministro de material")
-    assert canonical["status"] == "published"
+    assert canonical["status"] == "publicada"
     assert canonical["status_code"] == "PUB"
-    assert canonical["contract_type"] == "supplies"
-    assert canonical["procedure_type"] == "open"
-    assert canonical["estimated_value"] == Decimal("12500.50")
+    assert canonical["contract_type"] == "suministros"
+    assert canonical["procedure_type"] == "abierto"
+    assert canonical["estimated_value"] == Decimal("10330.99")
     assert canonical["currency"] == "EUR"
-    assert canonical["cpv_code"] == "30192700"
+    assert canonical["cpv_codes"] == ["30192700"]
     assert canonical["nuts_code"] == "ES300"
     assert canonical["publication_date"].isoformat() == "2026-09-10"
-    assert canonical["deadline_at"].isoformat().startswith("2026-10-01T14:00:00")
+    assert canonical["deadline_at"].isoformat().startswith("2026-10-01T12:00:00")
     assert canonical["source_tender_id"] == "B00000000:EXP/2026/0001"
     assert canonical["authority"]["tax_id"] == "B00000000"
     assert canonical["authority"]["name_normalized"] == (
@@ -70,7 +70,7 @@ def test_menores_normalize_incomplete_fixture_identity_is_low() -> None:
 
     assert canonical["status"] is None
     assert canonical["estimated_value"] is None
-    assert canonical["cpv_code"] is None
+    assert canonical["cpv_codes"] == []
     assert canonical["authority"]["tax_id"] is None
     assert canonical["authority"]["identity_confidence"] == "LOW"
     assert "ayuntamiento fixture sin nif" in canonical["authority"]["name_normalized"]

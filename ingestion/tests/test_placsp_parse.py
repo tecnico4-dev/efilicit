@@ -36,7 +36,7 @@ def test_parse_valid_entry_extracts_mvp_fields() -> None:
     assert payload["title"].startswith("Suministro de material")
     assert payload["status"] == "PUB"
     assert payload["contract_folder_id"] == "EXP/2026/0001"
-    assert payload["estimated_value"] == "12500.50"
+    assert payload["estimated_value"] == "10330.99"
     assert payload["currency"] == "EUR"
     assert payload["cpv_codes"] == ["30192700"]
     assert payload["nuts_codes"] == ["ES300"]
@@ -59,6 +59,29 @@ def test_parse_incomplete_entry_keeps_stable_id_without_tax_id() -> None:
     assert record.payload["cpv_codes"] == []
     assert record.payload["authority"]["tax_id"] is None
     assert record.payload["authority"]["name"] == "Ayuntamiento Fixture Sin NIF"
+
+
+def test_parse_status_from_cbc_place_ext_namespace() -> None:
+    """Atom real: ContractFolderStatusCode en cbc-place-ext, no en cbc."""
+    records = list(parse_placsp_artifact(_load("valid_single_entry.atom"), _artifact()))
+    assert records[0].payload["status"] == "PUB"
+
+
+def test_parse_status_fallback_from_atom_title() -> None:
+    records = list(
+        parse_placsp_artifact(_load("status_title_fallback.atom"), _artifact())
+    )
+    assert len(records) == 1
+    assert records[0].payload["status"] == "ADJ"
+    assert records[0].source_record_id == "B11111111:EXP/2026/TITLE"
+
+
+def test_parse_status_legacy_cbc_namespace_still_works() -> None:
+    """Compat: fixtures antiguos / overlap con cbc:ContractFolderStatusCode."""
+    overlap = Path(__file__).parent / "fixtures" / "overlap" / "same_tender_placsp.atom"
+    records = list(parse_placsp_artifact(overlap.read_bytes(), _artifact()))
+    assert len(records) == 1
+    assert records[0].payload["status"] == "PUB"
 
 
 def test_parse_unexpected_entry_without_identity_is_skipped() -> None:
@@ -85,6 +108,8 @@ def test_parse_keeps_newest_atom_updated_for_same_folder() -> None:
     assert "adjudicada" in record.payload["title"].lower()
     assert record.recorded_at is not None
     assert record.recorded_at.day == 28
+    # Fixture solo trae TotalAmount → fallback (mejor esfuerzo).
+    assert record.payload["estimated_value"] == "1000.00"
 
 
 def test_parse_zip_keeps_newest_across_atom_members() -> None:

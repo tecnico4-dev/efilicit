@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Sin ContractFolderStatusCode en CODICE; el estado solo va en atom:title. -->
+<feed xmlns="http://www.w3.org/2005/Atom"
+      xmlns:cbc="urn:dgpe:names:draft:codice:schema:xsd:CommonBasicComponents-2"
+      xmlns:cac="urn:dgpe:names:draft:codice:schema:xsd:CommonAggregateComponents-2"
+      xmlns:cac-ext="urn:dgpe:names:draft:codice-place-ext:schema:xsd:CommonAggregateComponents-2">
+  <id>https://example.invalid/sindicacion/fixture-title-status</id>
+  <title>PLACSP fixture — status from atom:title</title>
+  <updated>2026-09-10T12:00:00+02:00</updated>
+  <entry>
+    <id>https://contrataciondelsectorpublico.gob.es/wps/fixture?idExpediente=FIX-TITLE-STATUS</id>
+    <title>Id licitación: EXP/2026/TITLE; Órgano: Ayuntamiento Fixture; Estado: ADJ</title>
+    <updated>2026-09-10T10:15:00+02:00</updated>
+    <link href="https://contrataciondelsectorpublico.gob.es/wps/fixture?idE=FIX-TITLE-STATUS" rel="alternate"/>
+    <content type="application/xml">
+      <cac-ext:ContractFolderStatus>
+        <cbc:ContractFolderID>EXP/2026/TITLE</cbc:ContractFolderID>
+        <cac-ext:LocatedContractingParty>
+          <cac:Party>
+            <cac:PartyIdentification>
+              <cbc:ID schemeName="NIF">B11111111</cbc:ID>
+            </cac:PartyIdentification>
+            <cac:PartyName>
+              <cbc:Name>Ayuntamiento Fixture Title Status</cbc:Name>
+            </cac:PartyName>
+          </cac:Party>
+        </cac-ext:LocatedContractingParty>
+        <cac:ProcurementProject>
+          <cbc:Name>Servicio con estado solo en título Atom</cbc:Name>
+        </cac:ProcurementProject>
+      </cac-ext:ContractFolderStatus>
+    </content>
+  </entry>
+</feed>

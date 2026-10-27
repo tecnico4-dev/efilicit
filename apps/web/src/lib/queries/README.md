@@ -5,14 +5,18 @@ Los Server Components / Actions importan helpers tipados; la UI no arma SQL.
 
 ## Búsqueda (Semana 5 / Paso 3 / ADR 011)
 
+Contrato: búsqueda = RPC `public.search_tenders` (SECURITY INVOKER). Semántica de tokens/ranking abajo (CHANGELOG + migraciones `20261022130000_*` / `20261022140000_*`); no hay ADR aparte.
+
 - `searchTenders(client, { query, criteria, limit, offset })` → RPC `public.search_tenders`
-- FTS (`search_vector`, config `spanish`) + fallback `pg_trgm` en `title`
-  (`similarity` / `%` y `strict_word_similarity` / `<<%` para erratas por palabra)
-- Filtros alineados con Criteria v1 (`@efilicit/types`)
-- Ranking: `greatest(ts_rank, similarity, strict_word_similarity)` + fecha de publicación
-- Badge: `fts` solo si los tokens de la consulta aparecen **literalmente** en el título;
-  si el hit es solo por stemming español → `trgm` (UI “errata”)
-- Cliente publishable/anon + sesión; nunca `service_role`
+- `listSearchFilterOptions(client)` → RPC `list_tender_filter_options` (status / procedimiento / tipo / CCAA con datos)
+- Tokens: `normalizeSearchQuery` / `tokenizeKeywords` (`@/lib/keywords`) — stopwords ES fuera; AND de tokens ≥2 chars. Misma regla en alertas (`ingestion/.../alerts/keywords.py`). Texto solo-stopwords en `/search` → aviso UI, sin RPC.
+- Pipeline RPC: filtros Criteria v1 (sí/no) → ramas FTS y `pg_trgm` (errata) con **top-K ≈ 300** cada una → merge → orden
+  `rank` → `publication_date` → `cpv_hit_count` (si hay `p_cpv_codes`) → `created_at` → `LIMIT`/`OFFSET`.
+- UI `/search`: mismo pager que favoritos (`ListPager`; `?page=` + `?ps=` 10/20/50/100); `total_count` en la RPC; ancla `#resultados` + scroll interno arriba al paginar. Nueva búsqueda (submit) vuelve a página 1 / `ps` por defecto.
+- Paginación: tras la 1.ª respuesta el pager guarda el total en `?tc=`; siguientes páginas pasan `p_known_total` y la RPC no vuelve a hacer `count` del universo. Submit del formulario no envía `tc` → se recalcula.
+- Trgm solo si `char_length(query)` ∈ [3, 120]. FTS: `search_vector` / `spanish`. Trgm: `similarity`/`%` y `strict_word_similarity`/`<<%` sobre `title`.
+- Badge: `fts` solo si los tokens aparecen **literalmente** en el título; stemming-only o trgm → `trgm` (UI “errata”); sin texto → `filter`.
+- Cliente publishable + sesión; nunca `service_role`
 
 Ejemplo (Node / consola con env de la web):
 
@@ -30,9 +34,31 @@ const { data, error } = await searchTenders(client, {
 
 Comprobación SQL directa: ver plan Semana 5 / checklist Paso 3.
 
+## Ficha de licitación (Semana 6 / Pasos 3–4)
+
+- `getTenderById(client, id)` → `tenders` + `contracting_authorities` + `tender_sources`
+- `listTenderStatusHistory(client, id)` → hitos de estado desde `tender_events` (compactados)
+- UI: `/tenders/[id]`; enlace desde resultados de `/search`; «Histórico registrado» junto al estado
+- Multi-fuente: lista de orígenes con badge “Canónica” si coincide `canonical_source_code`
+
+## Favoritos (Semana 6 / Paso 5)
+
+- `addOwnFavorite` / `removeOwnFavorite` / `isOwnFavorite` / `listOwnFavorites`
+- `listOwnFavorites` incluye `last_seen_at` vía RPC `tender_max_last_seen` (sin embeber todas las sources)
+- Tabla `favorites` (RLS owner-only); UI: toggle en ficha (solo sesión) + `/favorites`
+- Prueba A≠B: `pnpm --filter @efilicit/web verify:rls:favorites`
+
 ## Alertas / búsquedas / perfil (Semana 5 / Paso 6)
 
-- `createOwnAlert` / `listOwnAlerts` / `createOwnSavedSearch` / `listOwnSavedSearches`
-- `getOwnProfile` / `updateOwnDigestFrequency` (daily|weekly; ADR 013)
-- UI: `/alerts`, `/account` (requieren login; middleware redirige)
+- `createOwnAlert` / `updateOwnAlert` / `deleteOwnAlert` / `ownAlertNameTaken` / `listOwnAlerts`
+- `createOwnSavedSearch` / `deleteOwnSavedSearch` / `listOwnSavedSearches`
+- `getOwnProfile(client)` / `updateOwnDigestFrequency` (daily|weekly; ADR 013)
+- RSC: `getSessionUser` / `getSessionProfile` en `lib/auth/session` (`cache` por request; no importar desde Client Components)
+- UI: `/alerts` (crear/editar/activar), crear alerta desde `/search` (sesión), `/account`
 - Prueba RLS Alice≠Bob: `pnpm --filter @efilicit/web verify:rls`
+
+## Notificaciones in-app
+
+- `listFavoriteStatusNotifications` → favoritos ∩ cambios de estado (`tender_events`) + `notification_reads` / `notification_trash` (buzón `/notifications`)
+- `listRecentFavoriteStatusNotifications` / `countUnreadFavoriteStatusNotifications` → preview home (RPC; no montar el buzón)
+- `hasUnreadFavoriteStatusNotifications` → RPC `has_unread_favorite_status_notifications` (EXISTS); badge del nav

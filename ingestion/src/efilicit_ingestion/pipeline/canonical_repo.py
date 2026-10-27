@@ -15,6 +15,10 @@ Re-ingesta sin cambios de contenido: actualiza ``tender_sources.last_seen_at``
 (señal operativa “sigue viva”) pero **no** escribe ``tender_events`` ni mueve
 ``tenders.updated_at``. ``stats.updated`` cuenta solo cambios reales.
 
+``tender_events.event_type`` = hecho de pipeline (``ingerida`` | ``actualizada``);
+``event_status`` = snapshot del status de negocio en ese momento (mismo vocabulario
+ES que ``tenders.status``).
+
 Sigue siendo el único punto de escritura canónica del ETL.
 """
 
@@ -37,6 +41,10 @@ from efilicit_ingestion.pipeline.matching import (
     MatchCandidate,
     expediente_from_source_tender_id,
 )
+
+# Hechos de pipeline en tender_events (no confundir con status de negocio).
+EVENT_TYPE_INGESTED = "ingerida"
+EVENT_TYPE_UPDATED = "actualizada"
 
 # ADR 015: menor número = mayor prioridad. Fuentes desconocidas → 1000.
 # Al añadir un source_code nuevo: actualizar este dict + tabla del ADR 015
@@ -110,7 +118,7 @@ class CanonicalRepository(Protocol):
         exclude_source_code: str,
         tax_id: str | None = None,
         expediente: str | None = None,
-        cpv_code: str | None = None,
+        cpv_codes: list[str] | None = None,
         limit: int = 50,
     ) -> list[MatchCandidate]:
         """Prefiltro de candidatos de otras fuentes (entrada del scorer Semana 4)."""
@@ -186,7 +194,8 @@ class InMemoryCanonicalRepository:
                 self.events.append(
                     {
                         "tender_id": tender_id,
-                        "event_type": canonical.get("status") or "ingested",
+                        "event_type": EVENT_TYPE_INGESTED,
+                        "event_status": canonical.get("status"),
                         "source_code": source_code,
                     }
                 )
@@ -195,7 +204,7 @@ class InMemoryCanonicalRepository:
                         {
                             "tender_id": tender_id,
                             "title": canonical.get("title"),
-                            "document_type": "publication",
+                            "document_type": "publicacion",
                             "url": canonical.get("source_url"),
                             "source_code": source_code,
                             "artifact_id": artifact_id,
@@ -222,7 +231,8 @@ class InMemoryCanonicalRepository:
                         self.events.append(
                             {
                                 "tender_id": tender_id,
-                                "event_type": "updated",
+                                "event_type": EVENT_TYPE_UPDATED,
+                                "event_status": canonical.get("status"),
                                 "source_code": source_code,
                             }
                         )
@@ -236,7 +246,7 @@ class InMemoryCanonicalRepository:
         exclude_source_code: str,
         tax_id: str | None = None,
         expediente: str | None = None,
-        cpv_code: str | None = None,
+        cpv_codes: list[str] | None = None,
         limit: int = 50,
     ) -> list[MatchCandidate]:
         """Misma semántica que Postgres: prefiltro por NIF / expediente / CPV.
@@ -245,6 +255,7 @@ class InMemoryCanonicalRepository:
         en tests grandes). Deduplica por ``tender_id`` por si una licitación
         ya tiene varios ``tender_sources``.
         """
+        incoming_cpvs = set(cpv_codes or [])
         out: list[MatchCandidate] = []
         seen_tenders: set[str] = set()
         for (src, source_tender_id), link in self.tender_sources.items():
@@ -257,17 +268,17 @@ class InMemoryCanonicalRepository:
             authority = self._authority_by_id(tender.get("contracting_authority_id"))
             cand_tax = authority.get("tax_id") if authority else None
             cand_exp = expediente_from_source_tender_id(source_tender_id)
-            cand_cpv = tender.get("cpv_code")
+            cand_cpvs = tuple(tender.get("cpv_codes") or ())
 
             if tax_id and cand_tax == tax_id:
                 pass
             elif expediente and cand_exp == expediente:
                 pass
-            elif cpv_code and cand_cpv == cpv_code:
+            elif incoming_cpvs and incoming_cpvs & set(cand_cpvs):
                 pass
             else:
                 # Con filtros activos y sin coincidencia → fuera del prefiltro.
-                if tax_id or expediente or cpv_code:
+                if tax_id or expediente or incoming_cpvs:
                     continue
 
             out.append(
@@ -278,7 +289,7 @@ class InMemoryCanonicalRepository:
                     title=tender.get("title"),
                     tax_id=cand_tax,
                     expediente=cand_exp,
-                    cpv_code=cand_cpv,
+                    cpv_codes=cand_cpvs,
                     estimated_value=_as_decimal(tender.get("estimated_value")),
                     publication_date=_as_date(tender.get("publication_date")),
                 )
@@ -336,7 +347,7 @@ class PostgresCanonicalRepository:
         exclude_source_code: str,
         tax_id: str | None = None,
         expediente: str | None = None,
-        cpv_code: str | None = None,
+        cpv_codes: list[str] | None = None,
         limit: int = 50,
     ) -> list[MatchCandidate]:
         """Prefiltro SQL: otras fuentes con mismo NIF, expediente o CPV.
@@ -357,9 +368,14 @@ class PostgresCanonicalRepository:
             )
             params.append(expediente)
             params.append(f"%:{expediente}")
-        if cpv_code:
-            filters.append("t.cpv_code = %s")
-            params.append(cpv_code)
+        if cpv_codes:
+            filters.append(
+                "exists ("
+                "  select 1 from public.tender_cpvs tc"
+                "  where tc.tender_id = t.id and tc.cpv_code = any(%s)"
+                ")"
+            )
+            params.append(list(cpv_codes))
         if not filters:
             return []
         clauses.append("(" + " OR ".join(filters) + ")")
@@ -371,9 +387,16 @@ class PostgresCanonicalRepository:
               ts.source_tender_id,
               t.title,
               a.tax_id,
-              t.cpv_code,
               t.estimated_value,
-              t.publication_date
+              t.publication_date,
+              coalesce(
+                (
+                  select array_agg(tc.cpv_code order by tc.cpv_code)
+                  from public.tender_cpvs tc
+                  where tc.tender_id = t.id
+                ),
+                '{{}}'::text[]
+              )
             from public.tender_sources ts
             join public.tenders t on t.id = ts.tender_id
             left join public.contracting_authorities a
@@ -386,6 +409,7 @@ class PostgresCanonicalRepository:
         out: list[MatchCandidate] = []
         for row in rows:
             source_tender_id = str(row[2])
+            raw_cpvs = row[7] or []
             out.append(
                 MatchCandidate(
                     tender_id=str(row[0]),
@@ -399,9 +423,9 @@ class PostgresCanonicalRepository:
                         if expediente and source_tender_id == expediente
                         else None
                     ),
-                    cpv_code=row[5],
-                    estimated_value=_as_decimal(row[6]),
-                    publication_date=_as_date(row[7]),
+                    cpv_codes=tuple(raw_cpvs),
+                    estimated_value=_as_decimal(row[5]),
+                    publication_date=_as_date(row[6]),
                 )
             )
         return out
@@ -470,7 +494,8 @@ class PostgresCanonicalRepository:
                 )
                 self._insert_event(
                     tender_id=tender_id,
-                    event_type=canonical.get("status") or "ingested",
+                    event_type=EVENT_TYPE_INGESTED,
+                    event_status=canonical.get("status"),
                     source_code=source_code,
                     payload={"source_tender_id": source_tender_id},
                     occurred_at=record.recorded_at,
@@ -508,7 +533,8 @@ class PostgresCanonicalRepository:
                         )
                         self._insert_event(
                             tender_id=tender_id,
-                            event_type="updated",
+                            event_type=EVENT_TYPE_UPDATED,
+                            event_status=canonical.get("status"),
                             source_code=source_code,
                             payload={"source_tender_id": source_tender_id},
                             occurred_at=record.recorded_at,
@@ -532,8 +558,9 @@ class PostgresCanonicalRepository:
         row = self._conn.execute(
             """
             select title, description, status, procedure_type, contract_type,
-                   estimated_value, currency, cpv_code, publication_date,
-                   deadline_at, contracting_authority_id
+                   estimated_value, currency, publication_date,
+                   deadline_at, contracting_authority_id,
+                   place_nuts_code, place_ccaa_code, place_municipality_code
             from public.tenders
             where id = %s::uuid
             """,
@@ -541,6 +568,14 @@ class PostgresCanonicalRepository:
         ).fetchone()
         if row is None:
             return True
+        cpv_rows = self._conn.execute(
+            """
+            select cpv_code from public.tender_cpvs
+            where tender_id = %s::uuid
+            order by cpv_code
+            """,
+            (tender_id,),
+        ).fetchall()
         current = {
             "title": row[0],
             "description": row[1],
@@ -549,10 +584,13 @@ class PostgresCanonicalRepository:
             "contract_type": row[4],
             "estimated_value": row[5],
             "currency": row[6],
-            "cpv_code": row[7],
-            "publication_date": row[8],
-            "deadline_at": row[9],
-            "contracting_authority_id": str(row[10]) if row[10] is not None else None,
+            "cpv_codes": [r[0] for r in cpv_rows],
+            "publication_date": row[7],
+            "deadline_at": row[8],
+            "contracting_authority_id": str(row[9]) if row[9] is not None else None,
+            "place_nuts_code": row[10],
+            "place_ccaa_code": row[11],
+            "place_municipality_code": row[12],
         }
         return _tender_content_differs(current, canonical, authority_id)
 
@@ -657,6 +695,16 @@ class PostgresCanonicalRepository:
         assert row is not None
         return str(row[0])
 
+    def _known_municipality_code(self, code: str | None) -> str | None:
+        """Solo persiste municipio si está en ``geo_municipio`` (FK)."""
+        if not code:
+            return None
+        row = self._conn.execute(
+            "select 1 from public.geo_municipio where code = %s",
+            (code,),
+        ).fetchone()
+        return code if row is not None else None
+
     def _insert_tender(
         self,
         canonical: dict[str, Any],
@@ -664,14 +712,19 @@ class PostgresCanonicalRepository:
         *,
         canonical_source_code: str,
     ) -> str:
+        mun = self._known_municipality_code(canonical.get("place_municipality_code"))
         row = self._conn.execute(
             """
             insert into public.tenders (
               title, description, status, procedure_type, contract_type,
-              estimated_value, currency, cpv_code, publication_date, deadline_at,
-              contracting_authority_id, canonical_source_code
+              estimated_value, currency, publication_date, deadline_at,
+              contracting_authority_id, canonical_source_code,
+              place_nuts_code, place_ccaa_code, place_municipality_code
             )
-            values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s::uuid, %s)
+            values (
+              %s, %s, %s, %s, %s, %s, %s, %s, %s, %s::uuid, %s,
+              %s, %s, %s
+            )
             returning id
             """,
             (
@@ -682,15 +735,19 @@ class PostgresCanonicalRepository:
                 canonical.get("contract_type"),
                 canonical.get("estimated_value"),
                 canonical.get("currency") or "EUR",
-                canonical.get("cpv_code"),
                 canonical.get("publication_date"),
                 canonical.get("deadline_at"),
                 authority_id,
                 canonical_source_code,
+                canonical.get("place_nuts_code"),
+                canonical.get("place_ccaa_code"),
+                mun,
             ),
         ).fetchone()
         assert row is not None
-        return str(row[0])
+        tender_id = str(row[0])
+        self._replace_tender_cpvs(tender_id, canonical.get("cpv_codes") or [])
+        return tender_id
 
     def _update_tender(
         self,
@@ -700,6 +757,7 @@ class PostgresCanonicalRepository:
         *,
         canonical_source_code: str,
     ) -> None:
+        mun = self._known_municipality_code(canonical.get("place_municipality_code"))
         self._conn.execute(
             """
             update public.tenders set
@@ -710,11 +768,13 @@ class PostgresCanonicalRepository:
               contract_type = %s,
               estimated_value = %s,
               currency = %s,
-              cpv_code = %s,
               publication_date = %s,
               deadline_at = %s,
               contracting_authority_id = %s::uuid,
               canonical_source_code = %s,
+              place_nuts_code = %s,
+              place_ccaa_code = %s,
+              place_municipality_code = %s,
               updated_at = now()
             where id = %s::uuid
             """,
@@ -726,14 +786,42 @@ class PostgresCanonicalRepository:
                 canonical.get("contract_type"),
                 canonical.get("estimated_value"),
                 canonical.get("currency") or "EUR",
-                canonical.get("cpv_code"),
                 canonical.get("publication_date"),
                 canonical.get("deadline_at"),
                 authority_id,
                 canonical_source_code,
+                canonical.get("place_nuts_code"),
+                canonical.get("place_ccaa_code"),
+                mun,
                 tender_id,
             ),
         )
+        self._replace_tender_cpvs(tender_id, canonical.get("cpv_codes") or [])
+
+    def _replace_tender_cpvs(self, tender_id: str, cpv_codes: list[Any]) -> None:
+        """Sustituye el conjunto CPV del tender (ADR 019 / fuente ganadora)."""
+        codes: list[str] = []
+        seen: set[str] = set()
+        for raw in cpv_codes:
+            if not isinstance(raw, str):
+                continue
+            code = raw.strip()
+            if len(code) == 8 and code.isdigit() and code not in seen:
+                seen.add(code)
+                codes.append(code)
+        self._conn.execute(
+            "delete from public.tender_cpvs where tender_id = %s::uuid",
+            (tender_id,),
+        )
+        for code in codes:
+            self._conn.execute(
+                """
+                insert into public.tender_cpvs (tender_id, cpv_code)
+                values (%s::uuid, %s)
+                on conflict do nothing
+                """,
+                (tender_id, code),
+            )
 
     def _insert_tender_source(
         self,
@@ -866,6 +954,7 @@ class PostgresCanonicalRepository:
         *,
         tender_id: str,
         event_type: str,
+        event_status: str | None,
         source_code: str,
         payload: dict[str, Any],
         occurred_at: datetime | None,
@@ -873,11 +962,18 @@ class PostgresCanonicalRepository:
         self._conn.execute(
             """
             insert into public.tender_events (
-              tender_id, event_type, occurred_at, source_code, payload
+              tender_id, event_type, event_status, occurred_at, source_code, payload
             )
-            values (%s::uuid, %s, coalesce(%s, now()), %s, %s)
+            values (%s::uuid, %s, %s, coalesce(%s, now()), %s, %s)
             """,
-            (tender_id, event_type, occurred_at, source_code, Json(payload)),
+            (
+                tender_id,
+                event_type,
+                event_status,
+                occurred_at,
+                source_code,
+                Json(payload),
+            ),
         )
 
     def _maybe_insert_document(
@@ -906,7 +1002,7 @@ class PostgresCanonicalRepository:
             insert into public.documents (
               tender_id, title, document_type, url, source_code, artifact_id
             )
-            values (%s::uuid, %s, 'publication', %s, %s, %s::uuid)
+            values (%s::uuid, %s, 'publicacion', %s, %s, %s::uuid)
             """,
             (tender_id, canonical.get("title"), url, source_code, artifact_id),
         )
@@ -1016,11 +1112,14 @@ def _tender_row(
         "contract_type": canonical.get("contract_type"),
         "estimated_value": canonical.get("estimated_value"),
         "currency": canonical.get("currency") or "EUR",
-        "cpv_code": canonical.get("cpv_code"),
+        "cpv_codes": list(canonical.get("cpv_codes") or []),
         "publication_date": canonical.get("publication_date"),
         "deadline_at": canonical.get("deadline_at"),
         "contracting_authority_id": authority_id,
         "canonical_source_code": canonical_source_code,
+        "place_nuts_code": canonical.get("place_nuts_code"),
+        "place_ccaa_code": canonical.get("place_ccaa_code"),
+        "place_municipality_code": canonical.get("place_municipality_code"),
     }
 
 
@@ -1039,10 +1138,13 @@ def _tender_content_differs(
             "contract_type": canonical.get("contract_type"),
             "estimated_value": canonical.get("estimated_value"),
             "currency": canonical.get("currency") or "EUR",
-            "cpv_code": canonical.get("cpv_code"),
+            "cpv_codes": list(canonical.get("cpv_codes") or []),
             "publication_date": canonical.get("publication_date"),
             "deadline_at": canonical.get("deadline_at"),
             "contracting_authority_id": authority_id,
+            "place_nuts_code": canonical.get("place_nuts_code"),
+            "place_ccaa_code": canonical.get("place_ccaa_code"),
+            "place_municipality_code": canonical.get("place_municipality_code"),
         }
     )
 
@@ -1050,6 +1152,7 @@ def _tender_content_differs(
 def _tender_compare_snapshot(row: dict[str, Any]) -> tuple[Any, ...]:
     """Normaliza campos canónicos para comparar igualdad de contenido."""
     auth = row.get("contracting_authority_id")
+    cpvs = tuple(sorted(str(c) for c in (row.get("cpv_codes") or []) if c))
     return (
         (row.get("title") or "Untitled"),
         row.get("description"),
@@ -1058,10 +1161,13 @@ def _tender_compare_snapshot(row: dict[str, Any]) -> tuple[Any, ...]:
         row.get("contract_type"),
         _as_decimal(row.get("estimated_value")),
         (row.get("currency") or "EUR"),
-        row.get("cpv_code"),
+        cpvs,
         _as_date(row.get("publication_date")),
         _as_datetime(row.get("deadline_at")),
         str(auth) if auth is not None else None,
+        row.get("place_nuts_code"),
+        row.get("place_ccaa_code"),
+        row.get("place_municipality_code"),
     )
 
 

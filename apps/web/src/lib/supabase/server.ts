@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { cache } from "react";
 import type { Database } from "@efilicit/types";
 
 /**
@@ -8,8 +9,10 @@ import type { Database } from "@efilicit/types";
  * Publishable/anon key + cookies de sesión Auth. Nunca `service_role`
  * (solo procesos confiables / ETL). El middleware refresca la sesión cuando
  * este cliente no puede mutar cookies desde un Server Component.
+ *
+ * Memoizado por request (`cache`) para que layout y página compartan instancia.
  */
-export async function createSupabaseServerClient() {
+export const createSupabaseServerClient = cache(async () => {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 
@@ -37,4 +40,4 @@ export async function createSupabaseServerClient() {
       },
     },
   });
-}
+});

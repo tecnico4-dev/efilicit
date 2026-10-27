@@ -1,12 +1,10 @@
-# Semana 5 / Paso 9 — alertas batch + digest vía GitHub Actions.
+# ADR 020 — drenado diario de digests (sin match).
 #
-# Flujo: match → notification_queue → un email por usuario/periodo (Resend).
-# Por defecto: dry-run in-memory (FakeEmailSender, sin secretos, sin writes).
-# Escritura a Postgres o envío Resend: solo workflow_dispatch explícito + secrets.
-#
-# Cron desactivado a propósito (ADR 005): no envío diario hasta OK + secrets.
+# Flujo: notification_queue pending → un email por usuario/periodo (Resend).
+# Manual: workflow_dispatch (default dry-run).
+# Cron: diario 09:00 UTC (tras match lunes 08:00; el resto de días solo envía).
+# Frecuencias diaria|semanal; instant fuera del MVP (ADR 013).
 # Envío desde el job Python, no Edge Function (ADR 012).
-# Frecuencias daily|weekly; instant fuera del MVP (ADR 013).
 name: Alerts digest
 
 on:
@@ -14,9 +12,9 @@ on:
     inputs:
       mode:
         description: >
-          dry-run = fixtures en memoria + Fake (seguro).
-          write-fake = Postgres match→cola→digest con FakeEmailSender (necesita EFILICIT_DATABASE_URL).
-          write-resend = igual + Resend real (necesita DB + RESEND_API_KEY + ALERT_FROM_EMAIL).
+          dry-run = fixtures en memoria + Fake (seguro; phase send sobre cola vacía de dry-run match).
+          write-fake = drena cola Postgres con FakeEmailSender (necesita EFILICIT_DATABASE_URL).
+          write-resend = drena cola + Resend real (DB + RESEND_API_KEY + ALERT_FROM_EMAIL).
         type: choice
         options:
           - dry-run
@@ -27,21 +25,17 @@ on:
         description: "Día de digest YYYY-MM-DD (vacío = hoy UTC)"
         required: false
         default: ""
-      since_days:
-        description: "Ventana de tenders en días (solo write-*)"
-        required: false
-        default: "1"
-  # Cron desactivado a propósito: no envío diario hasta OK explícito + secrets.
-  # schedule:
-  #   - cron: "0 7 * * *"
+  schedule:
+    # Diario 09:00 UTC — hora fija del sistema (no por usuario; ADR 013 / 020).
+    - cron: "0 9 * * *"
 
 concurrency:
-  group: alerts-digest-${{ inputs.mode }}
+  group: alerts-digest-${{ github.event_name }}-${{ github.event.inputs.mode || 'write-resend' }}
   cancel-in-progress: false
 
 jobs:
   alerts:
-    name: Run alerts (${{ inputs.mode }})
+    name: Run alerts send (${{ github.event_name == 'schedule' && 'write-resend' || inputs.mode }})
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -50,6 +44,8 @@ jobs:
       EFILICIT_DATABASE_URL: ${{ secrets.EFILICIT_DATABASE_URL }}
       RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
       ALERT_FROM_EMAIL: ${{ secrets.ALERT_FROM_EMAIL }}
+      MODE: ${{ github.event_name == 'schedule' && 'write-resend' || inputs.mode }}
+      DIGEST: ${{ github.event_name == 'schedule' && '' || inputs.digest }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -66,14 +62,14 @@ jobs:
         run: uv sync --frozen
 
       - name: Guard secrets for write modes
-        if: inputs.mode != 'dry-run'
+        if: env.MODE != 'dry-run'
         run: |
           set -euo pipefail
           if [ -z "${EFILICIT_DATABASE_URL:-}" ]; then
-            echo "::error::Missing repository secret EFILICIT_DATABASE_URL (required for ${{ inputs.mode }})"
+            echo "::error::Missing repository secret EFILICIT_DATABASE_URL (required for ${MODE})"
             exit 1
           fi
-          if [ "${{ inputs.mode }}" = "write-resend" ]; then
+          if [ "${MODE}" = "write-resend" ]; then
             if [ -z "${RESEND_API_KEY:-}" ]; then
               echo "::error::write-resend requires secret RESEND_API_KEY"
               exit 1
@@ -84,34 +80,33 @@ jobs:
             fi
           fi
 
-      - name: Run alerts CLI
+      - name: Run alerts send CLI
         run: |
           set -euo pipefail
-          MODE="${{ inputs.mode }}"
-          DIGEST="${{ inputs.digest }}"
-          SINCE="${{ inputs.since_days }}"
           EXTRA=()
-          if [ -n "$DIGEST" ]; then
+          if [ -n "${DIGEST:-}" ]; then
             EXTRA+=(--digest "$DIGEST")
           fi
 
           case "$MODE" in
             dry-run)
+              # Smoke: phase all en memoria (match+drain fixtures); cron real usa write-resend+send.
               uv run python -m efilicit_ingestion.cli run-alerts \
                 --dry-run \
+                --phase all \
                 "${EXTRA[@]}"
               ;;
             write-fake)
               uv run python -m efilicit_ingestion.cli run-alerts \
                 --write \
-                --since-days "$SINCE" \
+                --phase send \
                 "${EXTRA[@]}"
               ;;
             write-resend)
               uv run python -m efilicit_ingestion.cli run-alerts \
                 --write \
+                --phase send \
                 --send \
-                --since-days "$SINCE" \
                 "${EXTRA[@]}"
               ;;
             *)

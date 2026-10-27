@@ -28,3 +28,8 @@ No uses un ADR para el estado de una fuente o un parser: eso va en `docs/sources
 | [013](013-alert-frequencies-daily-weekly-instant-diferido.md) | Frecuencias MVP `daily`\|`weekly`; `instant` diferido | Aceptado |
 | [014](014-upsert-organismos-por-platform-id.md) | Upsert de organismos por `platform_id` cuando no hay NIF/CIF | Aceptado |
 | [015](015-fuente-ganadora-canonica.md) | Fuente ganadora canónica (ranking fijo, sin mezcla de campos) | Aceptado |
+| [016](016-auth-invite-only-sin-registro-publico.md) | Auth invite-only: sin registro público ni búsqueda anónima en UI | Aceptado |
+| [017](017-tender-events-tipo-pipeline-y-status.md) | `tender_events`: hecho de pipeline vs estado de negocio | Aceptado |
+| [018](018-geografia-lugar-ejecucion-ccaa-municipio.md) | Geografía lugar de ejecución: CCAA + municipio (sin provincia) | Aceptado |
+| [019](019-tender-cpvs-multivalor.md) | CPV multivalor en `tender_cpvs` (sin columna en `tenders`) | Aceptado |
+| [020](020-alertas-match-post-ingesta-y-digest-diario.md) | Alertas: match post-ingesta (ventana sync) + digest diario (solo envío) | Aceptado |

@@ -9,6 +9,7 @@ Reglas de producto:
 - Dimensiones omitidas = no filtran.
 - Criteria vacío (solo version) → **sin matches** (anti-spam).
 - Dentro de una dimensión tipo lista: OR; entre dimensiones: AND (en el matcher).
+- CPV: ``cpv_match`` ``any`` (default) | ``all`` (ADR 019).
 """
 
 from __future__ import annotations
@@ -18,6 +19,7 @@ from typing import Any, Literal
 from pydantic import BaseModel, ConfigDict, model_validator
 
 CriteriaVersion = Literal[1]
+CpvMatchMode = Literal["any", "all"]
 
 
 class AuthorityCriteria(BaseModel):
@@ -31,10 +33,16 @@ class AuthorityCriteria(BaseModel):
 
 
 class GeographyCriteria(BaseModel):
-    """Geo vía campos del organismo canónico (sin catálogo NUTS completo)."""
+    """Lugar de ejecución (códigos) + legacy sede organismo.
+
+    Preferido: ``ccaa_codes`` / ``municipality_codes`` sobre ``tenders.place_*``.
+    ``municipalities`` (texto) es legacy sobre sede del organismo (ADR 018).
+    """
 
     model_config = ConfigDict(extra="forbid")
 
+    ccaa_codes: list[str] | None = None
+    municipality_codes: list[str] | None = None
     municipalities: list[str] | None = None
     countries: list[str] | None = None
 
@@ -50,6 +58,7 @@ class SearchCriteria(BaseModel):
     version: CriteriaVersion = 1
     keywords: list[str] | None = None
     cpv_codes: list[str] | None = None
+    cpv_match: CpvMatchMode | None = None
     authority: AuthorityCriteria | None = None
     geography: GeographyCriteria | None = None
     estimated_value_min: float | None = None
@@ -61,6 +70,7 @@ class SearchCriteria(BaseModel):
     publication_date_to: str | None = None
     deadline_from: str | None = None
     deadline_to: str | None = None
+    open_for_submission: bool | None = None
 
     @model_validator(mode="after")
     def _value_range_ok(self) -> SearchCriteria:
@@ -74,7 +84,8 @@ class SearchCriteria(BaseModel):
 
         Usado por el matcher: sin filtros → no encolar (evita alertas “todo”).
         """
-        data = self.model_dump(exclude={"version"}, exclude_none=True)
+        # cpv_match solo no filtra; hace falta cpv_codes.
+        data = self.model_dump(exclude={"version", "cpv_match"}, exclude_none=True)
         for key, value in data.items():
             if value in (None, [], {}, ""):
                 continue
@@ -92,11 +103,15 @@ CRITERIA_EXAMPLE_V1: dict[str, Any] = {
     "keywords": ["software", "mantenimiento"],
     "cpv_codes": ["72000000"],
     "authority": {"tax_ids": ["P2807900B"]},
-    "geography": {"municipalities": ["Madrid"], "countries": ["ES"]},
+    "geography": {
+        "ccaa_codes": ["13"],
+        "municipality_codes": ["28079"],
+        "countries": ["ES"],
+    },
     "estimated_value_min": 10_000,
     "estimated_value_max": 500_000,
-    "contract_types": ["services"],
-    "procedure_types": ["open"],
+    "contract_types": ["servicios"],
+    "procedure_types": ["abierto"],
     "publication_date_from": "2026-01-01",
     "publication_date_to": "2026-12-31",
 }
@@ -114,6 +129,7 @@ KNOWN_CRITERIA_KEYS: frozenset[str] = frozenset(
         "version",
         "keywords",
         "cpv_codes",
+        "cpv_match",
         "authority",
         "geography",
         "estimated_value_min",
@@ -125,6 +141,7 @@ KNOWN_CRITERIA_KEYS: frozenset[str] = frozenset(
         "publication_date_to",
         "deadline_from",
         "deadline_to",
+        "open_for_submission",
     }
 )
 
@@ -132,6 +149,7 @@ __all__ = [
     "AlertCriteria",
     "AuthorityCriteria",
     "CRITERIA_EXAMPLE_V1",
+    "CpvMatchMode",
     "CriteriaVersion",
     "GeographyCriteria",
     "KNOWN_CRITERIA_KEYS",

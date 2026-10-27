@@ -1,0 +1,101 @@
+# ADR 020 — match de alertas post-ingesta (sin envío de email).
+#
+# Flujo: sync success del día → tenders.updated_at en ventana → notification_queue.
+# Manual: workflow_dispatch (default dry-run).
+# Cron: lunes 08:00 UTC (tras PLACSP 05 / Cat 06 / Euskadi 07).
+# No usa since_days. Envío = alerts-digest.yml (diario).
+name: Alerts match
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: >
+          dry-run = fixtures en memoria (seguro).
+          write = Postgres match→cola (necesita EFILICIT_DATABASE_URL).
+        type: choice
+        options:
+          - dry-run
+          - write
+        default: dry-run
+      digest:
+        description: "Día ancla YYYY-MM-DD para periodo de cola (vacío = hoy UTC)"
+        required: false
+        default: ""
+      sync_date:
+        description: "Día UTC de source_sync success (vacío = mismo que digest/hoy)"
+        required: false
+        default: ""
+  schedule:
+    # Lunes 08:00 UTC — después del bloque de ingestas 05–07.
+    - cron: "0 8 * * 1"
+
+concurrency:
+  group: alerts-match-${{ github.event_name }}-${{ github.event.inputs.mode || 'write' }}
+  cancel-in-progress: false
+
+jobs:
+  match:
+    name: Run alerts match (${{ github.event_name == 'schedule' && 'write' || inputs.mode }})
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ingestion
+    env:
+      EFILICIT_DATABASE_URL: ${{ secrets.EFILICIT_DATABASE_URL }}
+      MODE: ${{ github.event_name == 'schedule' && 'write' || inputs.mode }}
+      DIGEST: ${{ github.event_name == 'schedule' && '' || inputs.digest }}
+      SYNC_DATE: ${{ github.event_name == 'schedule' && '' || inputs.sync_date }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Sync dependencies
+        run: uv sync --frozen
+
+      - name: Guard secrets for write
+        if: env.MODE != 'dry-run'
+        run: |
+          set -euo pipefail
+          if [ -z "${EFILICIT_DATABASE_URL:-}" ]; then
+            echo "::error::Missing repository secret EFILICIT_DATABASE_URL (required for ${MODE})"
+            exit 1
+          fi
+
+      - name: Run alerts match CLI
+        run: |
+          set -euo pipefail
+          EXTRA=()
+          if [ -n "${DIGEST:-}" ]; then
+            EXTRA+=(--digest "$DIGEST")
+          fi
+          if [ -n "${SYNC_DATE:-}" ]; then
+            EXTRA+=(--sync-date "$SYNC_DATE")
+          fi
+
+          case "$MODE" in
+            dry-run)
+              uv run python -m efilicit_ingestion.cli run-alerts \
+                --dry-run \
+                --phase match \
+                "${EXTRA[@]}"
+              ;;
+            write)
+              uv run python -m efilicit_ingestion.cli run-alerts \
+                --write \
+                --phase match \
+                "${EXTRA[@]}"
+              ;;
+            *)
+              echo "::error::Unknown mode: $MODE"
+              exit 1
+              ;;
+          esac

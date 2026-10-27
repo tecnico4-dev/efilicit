@@ -23,6 +23,7 @@ Aquí se documenta **cómo se ha decidido ejecutar** cada semana del roadmap (or
 | Semana 3 / Fase 3 (escalado estatal + primeras CCAA) | [semana03-plan.md](semana03-plan.md) | [fase3-checklist.md](fase3-checklist.md) | Cerrada |
 | Semana 4 / Fase 4 (cobertura territorial + deduplicación) | [semana04-plan.md](semana04-plan.md) | [fase4-checklist.md](fase4-checklist.md) | Cerrada |
 | Semana 5 / Fase 5 (búsqueda + Auth + alertas) | [semana05-plan.md](semana05-plan.md) | [fase5-checklist.md](fase5-checklist.md) | Cerrada |
+| Semana 6 / Fase 6 (web integrada + cierre MVP) | [semana06-plan.md](semana06-plan.md) | [fase6-checklist.md](fase6-checklist.md) | En curso |
 
 **Backlog unificado:** [BACKLOG.md](BACKLOG.md) — aplazados / N/A / mejoras posibles sacadas del plan (no el trabajo de la semana siguiente).
 

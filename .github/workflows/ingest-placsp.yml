@@ -1,7 +1,6 @@
-# Semana 2 / Paso 9 — primer workflow real de ingesta (+ sindicaciones 3/4).
-# Default seguro: dry-run con fixture (sin secretos, sin writes a DB/Storage).
-# Live o writes: solo workflow_dispatch explícito + secrets (ZIPs pueden ser enormes).
-# Cron off a propósito hasta acordar entorno (ADR 005).
+# Semana 2–4 + Semana 6 Paso 10 — ingesta PLACSP vía GitHub Actions.
+# Manual: workflow_dispatch (default dry-run).
+# Cron: lunes 05:00 UTC, live de las 3 sindicaciones (mes UTC actual).
 # Artefacto = ZIP mensual Atom/CODICE; syndication: placsp | placsp_agregadas | placsp_menores.
 name: Ingest PLACSP
 
@@ -28,7 +27,7 @@ on:
           - live
         default: dry-run
       from_month:
-        description: "live: inicio YYYY-MM (obligatorio en live)"
+        description: "live: inicio YYYY-MM (obligatorio en live manual; cron = mes UTC actual)"
         required: false
         default: ""
       to_month:
@@ -38,7 +37,7 @@ on:
       as_of:
         description: "Fecha pivote YYYY-MM-DD (discover / fixture window)"
         required: false
-        default: "2026-09-11"
+        default: ""
       run_id:
         description: "run_id opcional (fixture-db/live); vacío = UUID"
         required: false
@@ -47,18 +46,22 @@ on:
         description: "Subir RAW a Storage (requiere SUPABASE_SERVICE_ROLE_KEY + SUPABASE_URL)"
         type: boolean
         default: false
-# Cron comentado a propósito hasta acordar entorno + secrets (ADR 005).
-# schedule:
-#   - cron: "0 5 * * 1"
-
-concurrency:
-  group: ingest-placsp-${{ inputs.syndication }}-${{ inputs.mode }}
-  cancel-in-progress: false
+  schedule:
+    # Lunes 05:00 UTC
+    - cron: "0 5 * * 1"
 
 jobs:
   ingest:
-    name: Run ${{ inputs.syndication }} (${{ inputs.mode }})
+    name: Run ${{ matrix.syndication }} (${{ github.event_name == 'schedule' && 'live' || inputs.mode }})
     runs-on: ubuntu-latest
+    # concurrency aquí (no a nivel workflow): `matrix` solo existe en el job
+    concurrency:
+      group: ingest-placsp-${{ github.event_name }}-${{ matrix.syndication }}-${{ github.event.inputs.mode || 'live' }}
+      cancel-in-progress: false
+    strategy:
+      fail-fast: false
+      matrix:
+        syndication: ${{ github.event_name == 'schedule' && fromJSON('["placsp","placsp_agregadas","placsp_menores"]') || fromJSON(format('["{0}"]', github.event.inputs.syndication || 'placsp')) }}
     defaults:
       run:
         working-directory: ingestion
@@ -66,6 +69,13 @@ jobs:
       EFILICIT_DATABASE_URL: ${{ secrets.EFILICIT_DATABASE_URL }}
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      MODE: ${{ github.event_name == 'schedule' && 'live' || inputs.mode }}
+      # Cron: subir RAW si hay secrets (fallará el step de guard si faltan)
+      UPLOAD_STORAGE: ${{ github.event_name == 'schedule' && 'true' || inputs.upload_storage }}
+      FROM_MONTH: ${{ github.event.inputs.from_month || '' }}
+      TO_MONTH: ${{ github.event.inputs.to_month || '' }}
+      AS_OF: ${{ github.event.inputs.as_of || '' }}
+      RUN_ID: ${{ github.event.inputs.run_id || '' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -82,14 +92,14 @@ jobs:
         run: uv sync --frozen
 
       - name: Guard secrets for write modes
-        if: inputs.mode != 'dry-run'
+        if: env.MODE != 'dry-run'
         run: |
           set -euo pipefail
           if [ -z "${EFILICIT_DATABASE_URL:-}" ]; then
-            echo "::error::Missing repository secret EFILICIT_DATABASE_URL (required for ${{ inputs.mode }})"
+            echo "::error::Missing repository secret EFILICIT_DATABASE_URL (required for ${MODE})"
             exit 1
           fi
-          if [ "${{ inputs.upload_storage }}" = "true" ]; then
+          if [ "${UPLOAD_STORAGE}" = "true" ]; then
             if [ -z "${SUPABASE_SERVICE_ROLE_KEY:-}" ]; then
               echo "::error::upload_storage=true requires secret SUPABASE_SERVICE_ROLE_KEY"
               exit 1
@@ -103,18 +113,15 @@ jobs:
       - name: Run PLACSP CLI
         run: |
           set -euo pipefail
-          MODE="${{ inputs.mode }}"
-          SYNDICATION="${{ inputs.syndication }}"
-          AS_OF="${{ inputs.as_of }}"
-          RUN_ID="${{ inputs.run_id }}"
+          SYNDICATION="${{ matrix.syndication }}"
           EXTRA=(--syndication "$SYNDICATION")
-          if [ -n "$AS_OF" ]; then
+          if [ -n "${AS_OF:-}" ]; then
             EXTRA+=(--as-of "$AS_OF")
           fi
-          if [ -n "$RUN_ID" ]; then
+          if [ -n "${RUN_ID:-}" ]; then
             EXTRA+=(--run-id "$RUN_ID")
           fi
-          if [ "${{ inputs.upload_storage }}" != "true" ] && [ "$MODE" != "dry-run" ]; then
+          if [ "${UPLOAD_STORAGE}" != "true" ] && [ "$MODE" != "dry-run" ]; then
             EXTRA+=(--no-storage)
           fi
 
@@ -131,15 +138,15 @@ jobs:
                 "${EXTRA[@]}"
               ;;
             live)
-              FROM="${{ inputs.from_month }}"
-              TO="${{ inputs.to_month }}"
+              FROM="${FROM_MONTH:-}"
+              TO="${TO_MONTH:-}"
               if [ -z "$FROM" ]; then
-                echo "::error::live mode requires input from_month (YYYY-MM)"
-                exit 1
+                FROM="$(date -u +%Y-%m)"
               fi
               if [ -z "$TO" ]; then
                 TO="$FROM"
               fi
+              echo "live window: ${FROM} .. ${TO}"
               uv run python -m efilicit_ingestion.cli run-placsp \
                 --from-month "$FROM" \
                 --to-month "$TO" \

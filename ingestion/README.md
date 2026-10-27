@@ -20,25 +20,26 @@ Euskadi KontratazioA: `run-euskadi` (Semana 3 Paso 9).
 
 `discover` → `fetch` → RAW → `parse` → normalize/identidad → upsert canónico.
 
-## Alertas (Semana 5)
+## Alertas (Semana 5+ / ADR 020)
 
 - Matching batch → cola: `efilicit_ingestion.alerts` (`run_alert_batch`).
-- Digest diario (Paso 8): `drain_daily_digests` + `FakeEmailSender` (tests) /
-  `ResendEmailSender` (`RESEND_API_KEY`, `ALERT_FROM_EMAIL` solo en entorno).
-- CLI (Paso 9): `run-alerts` — **dry-run por defecto** (fixtures + Fake, sin DB/Resend).
-- Workflow: `.github/workflows/alerts-digest.yml` (`workflow_dispatch`; cron off).
+- Digest: `drain_daily_digests` + `FakeEmailSender` / `ResendEmailSender`.
+- CLI: `run-alerts` — **dry-run por defecto**; `--phase match|send|all`.
+- Workflows: `alerts-match.yml` (lun 08:00 UTC, match) · `alerts-digest.yml` (diario 09:00 UTC, send).
+- Ventana de match write: sync success del `--sync-date` + `tenders.updated_at` (sin `since_days`).
 
 ```powershell
-uv run pytest tests/test_alert_match.py tests/test_alert_batch.py tests/test_alert_digest.py tests/test_run_alerts_cli.py -q
+uv run pytest tests/test_alert_match.py tests/test_alert_batch.py tests/test_alert_digest.py tests/test_run_alerts_cli.py tests/test_alert_sync_window.py -q
 
 # Dry-run (seguro; default)
 uv run python -m efilicit_ingestion.cli run-alerts
 
-# Postgres local + Fake (sin Resend)
-uv run python -m efilicit_ingestion.cli run-alerts --write --since-days 7
+# Solo match (cron post-ingesta)
+# uv run python -m efilicit_ingestion.cli run-alerts --write --phase match
 
-# Postgres + Resend (secretos en entorno)
-# uv run python -m efilicit_ingestion.cli run-alerts --write --send
+# Solo envío Fake / Resend
+# uv run python -m efilicit_ingestion.cli run-alerts --write --phase send
+# uv run python -m efilicit_ingestion.cli run-alerts --write --phase send --send
 ```
 
 ## Corrida E2E local
@@ -161,6 +162,16 @@ uv run python -m efilicit_ingestion.cli run-placsp --from-month 2026-09 --to-mon
 ```
 
 Solo cuando quieras probar descarga oficial (ZIPs pueden ser grandes).
+
+## Healthcheck por fuente
+
+```powershell
+uv run python -m efilicit_ingestion.cli source-health
+# Opcional: fallar si no hay success reciente
+uv run python -m efilicit_ingestion.cli source-health --fail-on-stale --max-age-hours 48
+```
+
+Requiere `EFILICIT_DATABASE_URL`. Runbooks: [`docs/runbooks/`](../docs/runbooks/).
 
 ## GitHub Actions
 
