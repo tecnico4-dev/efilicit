@@ -102,6 +102,16 @@ def test_cpv_match_all_requires_every_prefix() -> None:
     assert evaluate_tender(all_hit, multi) is not None
 
 
+def test_cpv_single_digit_prefix_matches_division() -> None:
+    """``30000000`` (prefijo ``3``) cubre ``34100000``, no solo ``30…``."""
+    vehicle = _tender(cpv_codes=("34100000",))
+    criteria = parse_criteria({"version": 1, "cpv_codes": ["30000000"]})
+    assert evaluate_tender(criteria, vehicle) is not None
+    assert evaluate_tender(
+        parse_criteria({"version": 1, "cpv_codes": ["3"]}), vehicle
+    ) is not None
+
+
 def test_value_range_and_geography() -> None:
     criteria = parse_criteria(
         {

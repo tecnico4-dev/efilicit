@@ -17,8 +17,9 @@ export function normalizeCpvCode(raw: string): string | null {
 export function cpvSearchPrefix(code: string): string {
   const normalized = normalizeCpvCode(code);
   if (!normalized) return code.replace(/\D/g, "");
+  // Un dígito vale: `3` → `3%` (no forzar `30`). Todo ceros → `0`.
   const trimmed = normalized.replace(/0+$/, "");
-  return trimmed.length >= 2 ? trimmed : normalized.slice(0, 2);
+  return trimmed.length > 0 ? trimmed : "0";
 }
 
 export function cpvCodesForSearch(

@@ -59,6 +59,16 @@ def _keyword_hit(tender: TenderCandidate, keywords: list[str]) -> bool:
     return all(token in blob for token in tokens)
 
 
+def _cpv_search_prefix(code: str) -> str:
+    """Quita ceros finales del CPV de 8 dígitos; 1 dígito vale (``3`` → ``3``, no ``30``)."""
+    digits = "".join(c for c in code.strip() if c.isdigit())
+    if not digits:
+        return code.strip()
+    base = digits[:8].ljust(8, "0")
+    trimmed = base.rstrip("0")
+    return trimmed if trimmed else "0"
+
+
 def _cpv_hit(
     tender: TenderCandidate,
     codes: list[str],
@@ -69,7 +79,8 @@ def _cpv_hit(
     tender_codes = [c.strip() for c in tender.cpv_codes if c and str(c).strip()]
     if not tender_codes:
         return False
-    needles = [code.strip() for code in codes if code.strip()]
+    needles = [_cpv_search_prefix(code) for code in codes if code.strip()]
+    needles = [n for n in needles if n]
     if not needles:
         return False
     mode = (match or "any").strip().lower()

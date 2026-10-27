@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Prefijo CPV de 1 dígito: `3` busca `3%` (no forzaba `30%`); mismo criterio en alertas batch.
+
 ### Added
 
 - Semana 6 Paso 10: cron de producción en GitHub Actions — digest diario 08:00 UTC (`write-resend`); ingestas PLACSP/Catalunya/Euskadi los lunes 05–07 UTC (`live`). Manual `workflow_dispatch` sigue en dry-run por defecto.
