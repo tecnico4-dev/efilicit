@@ -55,7 +55,7 @@ En Semana 5 el envío Resend se hace **desde el job Python** del digest:
 ### Negativas / riesgos
 
 - Quien espere “email = Edge Function” puede confundirse; este ADR + BACKLOG lo aclaran.
-- Separar match/encolado y envío en dos jobs (u otra pieza) queda como evolución posible (`docs/plans/BACKLOG.md`), no como deuda de Semana 5.
+- Separar match/encolado y envío en dos jobs quedó como evolución en Semana 5; **hecho** en [ADR 020](020-alertas-match-post-ingesta-y-digest-diario.md) (dos workflows + `--phase`). Este ADR 012 sigue gobernando: envío desde Python, no Edge Function.
 
 ---
 

@@ -38,10 +38,12 @@ En otra terminal:
 
 ```powershell
 cd C:\Users\tecnico4\dev\efilicit\ingestion
-uv run python -m efilicit_ingestion.cli run-alerts --write --since-days 30
+# Hace falta una ingesta previa el mismo día UTC (source_sync success) —
+# la ventana de match es sync + updated_at (ADR 020), no since_days.
+uv run python -m efilicit_ingestion.cli run-alerts --write --phase all
 ```
 
-**Esperado (ejemplo):** `mode=write+fake`, `matches≥1`, `enqueued_new≥1` o `enqueued_existing`, `drain … sent≥1`, `failed=0`.  
+**Esperado (ejemplo):** `mode=write+fake`, `phase=all`, `matches≥1`, `enqueued_new≥1` o `enqueued_existing`, `drain … sent≥1`, `failed=0`.  
 No llega correo a la bandeja: el Fake solo deja rastro en DB.
 
 ## Fase C — Cola en Studio
@@ -65,7 +67,8 @@ Cuando tengas cuenta Resend + secretos en entorno:
 ```powershell
 $env:RESEND_API_KEY="re_..."
 $env:ALERT_FROM_EMAIL="EfiLicit <onboarding@resend.dev>"
-uv run python -m efilicit_ingestion.cli run-alerts --write --send --since-days 30
+# El match ya debió haber encolado antes; phase send solo drena.
+uv run python -m efilicit_ingestion.cli run-alerts --write --phase send --send
 ```
 
 ## Criterios Paso 10

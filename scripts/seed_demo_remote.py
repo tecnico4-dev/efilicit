@@ -560,8 +560,10 @@ def render_sql() -> str:
             -- Conserva: auth.users, public.users, geo_ccaa, geo_municipio.
             begin;
 
+            -- Misma lista que scripts/wipe_app_data.sql (mantener alineadas).
             truncate table
               public.notification_reads,
+              public.notification_trash,
               public.notification_queue,
               public.favorites,
               public.alerts,

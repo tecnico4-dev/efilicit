@@ -168,7 +168,7 @@ CHANGELOG, checklist Fase 6, ADR N/A o ADRs puntuales, handoff. Criterios de sal
 | Tras Paso 7 (UX) | Auth invite-only: landing sin nav; solo «Iniciar sesión»; sin registro público; búsqueda exige sesión | [ADR 016](../adr/016-auth-invite-only-sin-registro-publico.md); cambio de contraseña opcional al primer login + en Cuenta |
 | Paso 8 | Estados unificados (`ErrorState`/`EmptyState`) + `loading.tsx` en rutas MVP; Favoritos nav con toque; `PAGE_MAIN` `px-4 sm:px-6` | Sin hamburger; sin overbuild de design system |
 | Paso 9 | Hardening: inventario RLS + script SQL; CLI `source-health`; runbooks `source-down` / `reprocess-source-date` / `replay-artifact` (replay = workaround); CI en PRs; ESLint `set-state-in-effect` → warn | Sin ADR nuevo; cron sigue off → Paso 10 |
-| Paso 10 | Cron on: alertas `0 8 * * *` write-resend; PLACSP lun 05:00 live×3; Catalunya 06:00; Euskadi 07:00; ADR 005 enmienda | Secrets obligatorios en schedule; dispatch manual sigue dry-run default |
+| Paso 10 | Cron on: ingestas lun 05–07; alertas → [ADR 020](../adr/020-alertas-match-post-ingesta-y-digest-diario.md) match lun 08:00 + digest diario 09:00 | Secrets obligatorios en schedule; dispatch manual dry-run default |
 
 ---
 
@@ -177,5 +177,5 @@ CHANGELOG, checklist Fase 6, ADR N/A o ADRs puntuales, handoff. Criterios de sal
 - [docs/04-roadmap-mvp.md](../04-roadmap-mvp.md) § Semana 6  
 - [fase6-checklist.md](fase6-checklist.md) · [semana05-plan.md](semana05-plan.md) · [fase5-checklist.md](fase5-checklist.md)  
 - Búsqueda: `apps/web/src/lib/queries/search-tenders.ts` · RPC `search_tenders`  
-- Alertas: `efilicit_ingestion.alerts` · workflow `alerts-digest.yml`  
+- Alertas: `efilicit_ingestion.alerts` · `alerts-match.yml` + `alerts-digest.yml` ([ADR 020](../adr/020-alertas-match-post-ingesta-y-digest-diario.md))  
 - Auth/RLS: `@supabase/ssr` · `verify:rls`

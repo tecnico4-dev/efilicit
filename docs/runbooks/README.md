@@ -7,6 +7,7 @@ Procedimientos operativos del MVP (Semana 6 / Paso 9).
 | [source-down.md](source-down.md) | Fuente fallida o sin success reciente |
 | [reprocess-source-date.md](reprocess-source-date.md) | Re-ejecutar una ventana / corrida |
 | [replay-artifact.md](replay-artifact.md) | Replay desde Storage (aún limitado; workaround) |
+| [wipe-app-data.md](wipe-app-data.md) | Vaciar dominio/producto; conservar users + geo |
 
 Healthcheck rápido:
 

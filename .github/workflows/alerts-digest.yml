@@ -1,10 +1,10 @@
-# Semana 5 / Paso 9 + Semana 6 Paso 10 — alertas batch + digest vía GitHub Actions.
+# ADR 020 — drenado diario de digests (sin match).
 #
-# Flujo: match → notification_queue → un email por usuario/periodo (Resend).
+# Flujo: notification_queue pending → un email por usuario/periodo (Resend).
 # Manual: workflow_dispatch (default dry-run).
-# Cron: diario 08:00 UTC en write-resend (Paso 10; secrets obligatorios).
-# Envío desde el job Python, no Edge Function (ADR 012).
+# Cron: diario 09:00 UTC (tras match lunes 08:00; el resto de días solo envía).
 # Frecuencias diaria|semanal; instant fuera del MVP (ADR 013).
+# Envío desde el job Python, no Edge Function (ADR 012).
 name: Alerts digest
 
 on:
@@ -12,9 +12,9 @@ on:
     inputs:
       mode:
         description: >
-          dry-run = fixtures en memoria + Fake (seguro).
-          write-fake = Postgres match→cola→digest con FakeEmailSender (necesita EFILICIT_DATABASE_URL).
-          write-resend = igual + Resend real (necesita DB + RESEND_API_KEY + ALERT_FROM_EMAIL).
+          dry-run = fixtures en memoria + Fake (seguro; phase send sobre cola vacía de dry-run match).
+          write-fake = drena cola Postgres con FakeEmailSender (necesita EFILICIT_DATABASE_URL).
+          write-resend = drena cola + Resend real (DB + RESEND_API_KEY + ALERT_FROM_EMAIL).
         type: choice
         options:
           - dry-run
@@ -25,13 +25,9 @@ on:
         description: "Día de digest YYYY-MM-DD (vacío = hoy UTC)"
         required: false
         default: ""
-      since_days:
-        description: "Ventana de tenders en días (solo write-*)"
-        required: false
-        default: "1"
   schedule:
-    # Diario 08:00 UTC — hora fija del sistema (no por usuario; ADR 013).
-    - cron: "0 8 * * *"
+    # Diario 09:00 UTC — hora fija del sistema (no por usuario; ADR 013 / 020).
+    - cron: "0 9 * * *"
 
 concurrency:
   group: alerts-digest-${{ github.event_name }}-${{ github.event.inputs.mode || 'write-resend' }}
@@ -39,7 +35,7 @@ concurrency:
 
 jobs:
   alerts:
-    name: Run alerts (${{ github.event_name == 'schedule' && 'write-resend' || inputs.mode }})
+    name: Run alerts send (${{ github.event_name == 'schedule' && 'write-resend' || inputs.mode }})
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -48,10 +44,8 @@ jobs:
       EFILICIT_DATABASE_URL: ${{ secrets.EFILICIT_DATABASE_URL }}
       RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
       ALERT_FROM_EMAIL: ${{ secrets.ALERT_FROM_EMAIL }}
-      # schedule no trae inputs → modo productivo
       MODE: ${{ github.event_name == 'schedule' && 'write-resend' || inputs.mode }}
       DIGEST: ${{ github.event_name == 'schedule' && '' || inputs.digest }}
-      SINCE: ${{ github.event_name == 'schedule' && '1' || inputs.since_days || '1' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -86,7 +80,7 @@ jobs:
             fi
           fi
 
-      - name: Run alerts CLI
+      - name: Run alerts send CLI
         run: |
           set -euo pipefail
           EXTRA=()
@@ -96,21 +90,23 @@ jobs:
 
           case "$MODE" in
             dry-run)
+              # Smoke: phase all en memoria (match+drain fixtures); cron real usa write-resend+send.
               uv run python -m efilicit_ingestion.cli run-alerts \
                 --dry-run \
+                --phase all \
                 "${EXTRA[@]}"
               ;;
             write-fake)
               uv run python -m efilicit_ingestion.cli run-alerts \
                 --write \
-                --since-days "$SINCE" \
+                --phase send \
                 "${EXTRA[@]}"
               ;;
             write-resend)
               uv run python -m efilicit_ingestion.cli run-alerts \
                 --write \
+                --phase send \
                 --send \
-                --since-days "$SINCE" \
                 "${EXTRA[@]}"
               ;;
             *)

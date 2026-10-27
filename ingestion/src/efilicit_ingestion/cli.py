@@ -167,7 +167,7 @@ def build_parser() -> argparse.ArgumentParser:
     alerts = sub.add_parser(
         "run-alerts",
         help=(
-            "Batch de alertas + digest email (Semana 5). "
+            "Alertas: match→cola y/o digest email (ADR 020). "
             "Por defecto: dry-run en memoria con FakeEmailSender (sin DB / sin Resend)."
         ),
     )
@@ -182,22 +182,39 @@ def build_parser() -> argparse.ArgumentParser:
         "--write",
         action="store_false",
         dest="dry_run",
-        help="Lee alertas/tenders de Postgres, encola y drena (necesita EFILICIT_DATABASE_URL).",
+        help=(
+            "Postgres real (EFILICIT_DATABASE_URL). "
+            "Match usa ventana de source_sync del --sync-date (no since_days)."
+        ),
     )
     alerts.add_argument(
         "--send",
         action="store_true",
-        help="Con --write: envía vía Resend (RESEND_API_KEY + ALERT_FROM_EMAIL). Si no, Fake.",
+        help=(
+            "Con --write y phase send|all: envía vía Resend "
+            "(RESEND_API_KEY + ALERT_FROM_EMAIL). Si no, Fake."
+        ),
+    )
+    alerts.add_argument(
+        "--phase",
+        choices=("all", "match", "send"),
+        default="all",
+        help=(
+            "all=match+drain (default manual); "
+            "match=solo encolar (cron post-ingesta); "
+            "send=solo drenar cola (cron diario)."
+        ),
     )
     alerts.add_argument(
         "--digest",
-        help="Día de digest YYYY-MM-DD (default: hoy UTC).",
+        help="Día ancla del digest YYYY-MM-DD (default: hoy UTC).",
     )
     alerts.add_argument(
-        "--since-days",
-        type=int,
-        default=1,
-        help="Con --write: ventana de tenders en días (default: 1).",
+        "--sync-date",
+        help=(
+            "Día UTC de syncs success/partial para la ventana de match "
+            "(default: mismo que --digest / hoy). Solo aplica a phase match|all."
+        ),
     )
 
     health = sub.add_parser(
@@ -359,9 +376,13 @@ def _cmd_run_alerts(args: argparse.Namespace) -> int:
             print("error: --digest must be YYYY-MM-DD", file=sys.stderr)
             return 2
 
-    if args.since_days < 0:
-        print("error: --since-days must be >= 0", file=sys.stderr)
-        return 2
+    sync_date = None
+    if getattr(args, "sync_date", None):
+        try:
+            sync_date = date.fromisoformat(args.sync_date)
+        except ValueError:
+            print("error: --sync-date must be YYYY-MM-DD", file=sys.stderr)
+            return 2
 
     if args.send and args.dry_run:
         print(
@@ -370,11 +391,19 @@ def _cmd_run_alerts(args: argparse.Namespace) -> int:
         )
         return 2
 
+    if args.send and args.phase == "match":
+        print(
+            "error: --send no aplica a --phase match (solo encola; usa send|all)",
+            file=sys.stderr,
+        )
+        return 2
+
     config = AlertsRunConfig(
         dry_run=bool(args.dry_run),
         send=bool(args.send),
         digest=digest,
-        since_days=int(args.since_days),
+        sync_date=sync_date,
+        phase=args.phase,
     )
 
     try:

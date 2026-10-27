@@ -66,9 +66,20 @@ OK explícito de producto: se **descomentan / activan** los `schedule` en:
 | `ingest-placsp.yml` | `0 5 * * 1` (lun) | `live` × 3 sindicaciones; mes UTC actual; Storage on |
 | `ingest-catalunya.yml` | `0 6 * * 1` (lun) | `live`, `max_pages=10`, Storage on |
 | `ingest-euskadi.yml` | `0 7 * * 1` (lun) | `live`, `max_pages=10`, Storage on |
-| `alerts-digest.yml` | `0 8 * * *` (diario) | `write-resend`, `since_days=1` |
+| `alerts-digest.yml` | `0 8 * * *` (diario) | `write-resend`, `since_days=1` *(caducado — ver enmienda ADR 020)* |
 
 `workflow_dispatch` sigue disponible; default manual = dry-run. Sin secrets, el cron falla en el guard (no escribe a ciegas).
+
+### Enmienda — ADR 020 (2026-10-27)
+
+La fila única de alertas del Paso 10 queda **sustituida en cadencia** por [ADR 020](020-alertas-match-post-ingesta-y-digest-diario.md):
+
+| Workflow | Cron (UTC) | Modo en schedule |
+|---|---|---|
+| `alerts-match.yml` | `0 8 * * 1` (lun) | `--phase match` (ventana sync/`updated_at`; sin `since_days`) |
+| `alerts-digest.yml` | `0 9 * * *` (diario) | `--phase send --send` (solo drenado Resend) |
+
+Ingestas lunes 05–07 sin cambio. Este ADR 005 sigue siendo la historia manual-first → cron on; el detalle de alertas vive en 020.
 
 ## Verificación
 

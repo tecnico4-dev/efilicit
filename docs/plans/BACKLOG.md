@@ -16,7 +16,17 @@ No son bugs olvidados ni el trabajo de la siguiente semana del roadmap. Son huec
 
 - **Otras frecuencias de digest / `instant`.** MVP = `daily` \| `weekly` a nivel de cuenta (`users.digest_frequency`). `instant` (email al detectar coincidencia) y otras cadencias quedan fuera: más emails, otra latencia y otro diseño de drenado ([ADR 013](../adr/013-alert-frequencies-daily-weekly-instant-diferido.md)). Preferencia de cuenta (un correo con todas las alertas), no por alerta.
 - **Limpiar CHECK de `alerts.frequency`.** El esqueleto Semana 1 aún admite `instant` en `alerts`; el producto usa `users.digest_frequency`. Alinear esquema / sync cuando se toque migraciones de alertas.
-- **Separar match/encolado y envío en dos jobs.** Hoy `run-alerts` hace ambos en un solo proceso; suficiente mientras solo haya daily/weekly ([ADR 012](../adr/012-digest-email-job-python-sin-edge-function.md)).
+- ~~**Separar match/encolado y envío en dos jobs.**~~ **Hecho** ([ADR 020](../adr/020-alertas-match-post-ingesta-y-digest-diario.md)): `alerts-match.yml` (lun 08:00, ventana sync/`updated_at`) + `alerts-digest.yml` (diario 09:00, solo drain). CLI `--phase match|send|all`.
+- **Backfill de match al crear / activar una alerta (UX mid-week).**  
+  **Problema:** el match productivo solo corre **después del bloque de ingestas del lunes**. Si un usuario crea o reactiva una alerta el miércoles, **no** se evalúa contra el catálogo que ya está en Postgres hasta el próximo lunes (y solo sobre licitaciones con `updated_at` en la ventana de esos syncs). Hasta entonces la alerta parece “vacía” aunque haya tenders antiguos que encajarían.  
+  **Qué NO hacer:** un tercer cron diario de match “por si acaso”, ni volver a `since_days` en el cron post-ingesta ([ADR 020](../adr/020-alertas-match-post-ingesta-y-digest-diario.md)).  
+  **Dirección deseada:** al **crear** o **pasar a activa** una alerta (API/UI o job disparado desde ahí), un **backfill único**:
+  1. Cargar candidatos del catálogo con una ventana explícita de producto (p. ej. últimos 30 días por `publication_date` / `updated_at`, o tope de N filas) — reutilizar helpers tipo `load_tender_candidates(since=…)` solo en este camino, no en el cron de sync.
+  2. Correr el mismo `run_alert_batch` / matcher que el job semanal.
+  3. Encolar en `notification_queue` con el periodo de digest **actual** de la cuenta (`diaria` / `semanal`, [ADR 013](../adr/013-alert-frequencies-daily-weekly-instant-diferido.md)).
+  4. **No** enviar email en ese momento: el cron diario `alerts-digest` (phase send) drena según frecuencia.  
+  **Notas:** idempotencia de cola evita duplicar si el lunes re-toca las mismas filas; acotar coste (límite de filas / timeout); decidir si aplica también al “editar criteria” de una alerta ya activa. Documentar en UI el lag mientras no exista este backfill.  
+  **Estado:** backlog; no bloquea ADR 020.
 - **Edge Function de email (N/A intencional).** El digest se envía desde el job Python + Actions, no desde `supabase/functions/` ([ADR 012](../adr/012-digest-email-job-python-sin-edge-function.md)). Replantear solo si hace falta otro canal (p. ej. reenvío desde la web).
 - **Doble envío de digest si el job falla tras Resend (aceptado en MVP).** El drenado envía el correo y después marca `notification_queue` como `sent` + `commit`. Si el proceso cae entre ambas, los ítems siguen `pending` y una reejecución puede reenviar el mismo digest. Decisión explícita: preferir un posible duplicado frente a perder el aviso. No endurecer (idempotency key en Resend, estado intermedio, commit por digest, etc.) salvo que el duplicado se observe de forma recurrente en ops.
 

@@ -6,6 +6,8 @@ La web nunca escribe en ``notification_queue`` ni lee emails de Auth.
 Lecturas:
 
 - alertas activas + ventana de tenders (join organismo; paginada, sin techo duro).
+- ventana post-ingesta: ``tenders.updated_at`` ∈ [started_at, finished_at]
+  de ``source_sync`` success/partial del día (ADR 020).
 - emails y ``digest_frequency`` de cuenta para el drenado.
 
 Escrituras: upsert idempotente en ``notification_queue`` (ON CONFLICT DO NOTHING).
@@ -13,7 +15,7 @@ Escrituras: upsert idempotente en ``notification_queue`` (ON CONFLICT DO NOTHING
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 from typing import Any
@@ -91,25 +93,57 @@ def _normalize_since(since: date | datetime | None) -> datetime:
     return since
 
 
-def load_tender_candidates_page(
+def _as_utc(dt: datetime) -> datetime:
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(timezone.utc)
+
+
+def list_success_sync_windows(
     conn: psycopg.Connection,
     *,
-    since: date | datetime | None = None,
-    limit: int = 5000,
-    before_touch_at: datetime | None = None,
-    before_id: str | None = None,
-) -> list[tuple[TenderCandidate, datetime]]:
-    """Una página de la ventana (más recientes primero).
+    on_date: date,
+) -> list[tuple[datetime, datetime]]:
+    """Ventanas ``[started_at, finished_at]`` de syncs success/partial del día UTC.
 
-    ``before_*`` = cursor keyset tras la última fila de la página anterior
-    (``touch_at`` DESC, ``id`` DESC). Devuelve (candidato, touch_at) para paginar.
+    Un sync cuenta para ``on_date`` si ``(finished_at AT UTC)::date = on_date``.
+    Usado por el job de match post-ingesta (ADR 020): sin ``since_days``.
     """
-    since_dt = _normalize_since(since)
-    page_size = max(1, int(limit))
-    use_cursor = before_touch_at is not None and before_id is not None
+    with conn.cursor(row_factory=dict_row) as cur:
+        cur.execute(
+            """
+            select started_at, finished_at
+            from public.source_sync
+            where status in ('success', 'partial')
+              and finished_at is not null
+              and (finished_at at time zone 'utc')::date = %s
+            order by started_at
+            """,
+            (on_date,),
+        )
+        rows = cur.fetchall()
+    out: list[tuple[datetime, datetime]] = []
+    for row in rows:
+        start = _as_utc(row["started_at"])
+        end = _as_utc(row["finished_at"])
+        if end < start:
+            continue
+        out.append((start, end))
+    return out
 
-    sql = """
-            select
+
+def tender_touch_in_sync_windows(
+    touch_at: datetime | None,
+    windows: Sequence[tuple[datetime, datetime]],
+) -> bool:
+    """True si ``touch_at`` cae en alguna ventana [start, end] inclusive."""
+    if touch_at is None or not windows:
+        return False
+    touch = _as_utc(touch_at)
+    return any(start <= touch <= end for start, end in windows)
+
+
+_TENDER_SELECT = """
               t.id,
               t.title,
               t.description,
@@ -140,8 +174,39 @@ def load_tender_candidates_page(
             from public.tenders t
             left join public.contracting_authorities ca
               on ca.id = t.contracting_authority_id
-            where
-              (
+"""
+
+
+def _rows_to_candidate_page(
+    rows: list[dict[str, Any]],
+) -> list[tuple[TenderCandidate, datetime]]:
+    out: list[tuple[TenderCandidate, datetime]] = []
+    for row in rows:
+        touch = row["touch_at"]
+        if touch is not None and touch.tzinfo is None:
+            touch = touch.replace(tzinfo=timezone.utc)
+        out.append((_row_to_tender_candidate(row), touch))
+    return out
+
+
+def load_tender_candidates_page(
+    conn: psycopg.Connection,
+    *,
+    since: date | datetime | None = None,
+    limit: int = 5000,
+    before_touch_at: datetime | None = None,
+    before_id: str | None = None,
+) -> list[tuple[TenderCandidate, datetime]]:
+    """Una página por calendario ``since`` (legado / backfill futuro).
+
+    Preferir ``load_tender_candidates_for_sync_day`` en el cron de match (ADR 020).
+    """
+    since_dt = _normalize_since(since)
+    page_size = max(1, int(limit))
+    use_cursor = before_touch_at is not None and before_id is not None
+
+    sql = f"select {_TENDER_SELECT} where ("
+    sql += """
                 coalesce(t.updated_at, t.created_at) >= %s
                 or coalesce(t.publication_date, '-infinity'::date) >= (%s::timestamptz)::date
               )
@@ -167,14 +232,59 @@ def load_tender_candidates_page(
     with conn.cursor(row_factory=dict_row) as cur:
         cur.execute(sql, params)
         rows = cur.fetchall()
+    return _rows_to_candidate_page(rows)
 
-    out: list[tuple[TenderCandidate, datetime]] = []
-    for row in rows:
-        touch = row["touch_at"]
-        if touch is not None and touch.tzinfo is None:
-            touch = touch.replace(tzinfo=timezone.utc)
-        out.append((_row_to_tender_candidate(row), touch))
-    return out
+
+def load_tender_candidates_sync_page(
+    conn: psycopg.Connection,
+    *,
+    windows: Sequence[tuple[datetime, datetime]],
+    limit: int = 5000,
+    before_touch_at: datetime | None = None,
+    before_id: str | None = None,
+) -> list[tuple[TenderCandidate, datetime]]:
+    """Página de tenders cuyo touch cae en alguna ventana de sync (ADR 020).
+
+    Criterio: ``coalesce(updated_at, created_at)`` ∈ [started_at, finished_at].
+    No usa ``last_seen_at`` (re-visita sin cambio de negocio no alerta).
+    """
+    if not windows:
+        return []
+
+    page_size = max(1, int(limit))
+    use_cursor = before_touch_at is not None and before_id is not None
+
+    window_preds: list[str] = []
+    params: list[Any] = []
+    for start, end in windows:
+        window_preds.append(
+            "(coalesce(t.updated_at, t.created_at) >= %s"
+            " and coalesce(t.updated_at, t.created_at) <= %s)"
+        )
+        params.extend([start, end])
+
+    sql = f"select {_TENDER_SELECT} where ({' or '.join(window_preds)})"
+    if use_cursor:
+        sql += """
+              and (
+                coalesce(t.updated_at, t.created_at) < %s
+                or (
+                  coalesce(t.updated_at, t.created_at) = %s
+                  and t.id < %s::uuid
+                )
+              )
+        """
+        params.extend([before_touch_at, before_touch_at, before_id])
+    sql += """
+            order by coalesce(t.updated_at, t.created_at) desc, t.id desc
+            limit %s
+    """
+    params.append(page_size)
+
+    with conn.cursor(row_factory=dict_row) as cur:
+        cur.execute(sql, params)
+        rows = cur.fetchall()
+    return _rows_to_candidate_page(rows)
 
 
 def collect_paginated_candidates(
@@ -218,10 +328,9 @@ def load_tender_candidates(
     since: date | datetime | None = None,
     limit: int = 5000,
 ) -> list[TenderCandidate]:
-    """Toda la ventana de matching; ``limit`` = tamaño de página (no techo).
+    """Ventana por calendario ``since`` (legado / backfill futuro; no cron).
 
-    Incluye organismo (authority) y place_* de la licitación (geography).
-    Pagina por keyset hasta agotar filas del «since».
+    El cron de match usa ``load_tender_candidates_for_sync_day`` (ADR 020).
     """
     page_size = max(1, int(limit))
 
@@ -232,6 +341,37 @@ def load_tender_candidates(
         return load_tender_candidates_page(
             conn,
             since=since,
+            limit=page_size,
+            before_touch_at=before_touch_at,
+            before_id=before_id,
+        )
+
+    return collect_paginated_candidates(fetch_page, page_size=page_size)
+
+
+def load_tender_candidates_for_sync_day(
+    conn: psycopg.Connection,
+    *,
+    on_date: date,
+    limit: int = 5000,
+) -> list[TenderCandidate]:
+    """Tenders tocados en syncs success/partial que terminaron en ``on_date`` UTC.
+
+    Ver ``list_success_sync_windows`` + ADR 020. Si no hay syncs ese día → [].
+    """
+    windows = list_success_sync_windows(conn, on_date=on_date)
+    if not windows:
+        return []
+
+    page_size = max(1, int(limit))
+
+    def fetch_page(
+        before_touch_at: datetime | None,
+        before_id: str | None,
+    ) -> list[tuple[TenderCandidate, datetime]]:
+        return load_tender_candidates_sync_page(
+            conn,
+            windows=windows,
             limit=page_size,
             before_touch_at=before_touch_at,
             before_id=before_id,
