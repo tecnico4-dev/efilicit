@@ -4,11 +4,15 @@
  * Gate de acceso: el middleware (`updateSession`) ya redirige anónimos a `/login`
  * en rutas de producto. Las páginas no deben repetir `getUser` + redirect;
  * solo necesitan el perfil de aplicación (`public.users`) cuando usen `userId`.
+ *
+ * Sin env público de Supabase (p. ej. `next build` en CI al prerenderizar
+ * `/_not-found` con el chrome del layout): se trata como “sin sesión”, no throw.
  */
 import { cache } from "react";
 import type { User } from "@supabase/supabase-js";
 import type { Database } from "@efilicit/types";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getPublicSupabaseEnv } from "@/lib/supabase/public-env";
 
 export type SessionProfile = Database["public"]["Tables"]["users"]["Row"];
 
@@ -17,11 +21,20 @@ export const getSupabaseServerClient = createSupabaseServerClient;
 
 /** Auth user de la sesión actual (una llamada a getUser por request). */
 export const getSessionUser = cache(async (): Promise<User | null> => {
-  const supabase = await getSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  return user;
+  if (!getPublicSupabaseEnv()) {
+    return null;
+  }
+
+  try {
+    const supabase = await getSupabaseServerClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    return user;
+  } catch {
+    // Prerender / entorno sin cookies / Auth no alcanzable → anónimo.
+    return null;
+  }
 });
 
 /**

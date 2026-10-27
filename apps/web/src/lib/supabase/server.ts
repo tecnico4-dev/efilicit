@@ -2,6 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { cache } from "react";
 import type { Database } from "@efilicit/types";
+import { requirePublicSupabaseEnv } from "@/lib/supabase/public-env";
 
 /**
  * Cliente de servidor (Server Components, Route Handlers, Server Actions).
@@ -11,16 +12,10 @@ import type { Database } from "@efilicit/types";
  * este cliente no puede mutar cookies desde un Server Component.
  *
  * Memoizado por request (`cache`) para que layout y página compartan instancia.
+ * Para “¿hay sesión?” sin tumbar prerender/CI, usar `getSessionUser` (tolera env ausente).
  */
 export const createSupabaseServerClient = cache(async () => {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
-
-  if (!url || !key) {
-    throw new Error(
-      "Faltan NEXT_PUBLIC_SUPABASE_URL o NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY (copia apps/web/.env.example → .env.local)",
-    );
-  }
+  const { url, key } = requirePublicSupabaseEnv();
 
   const cookieStore = await cookies();
 
