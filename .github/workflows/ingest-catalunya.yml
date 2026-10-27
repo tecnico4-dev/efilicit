@@ -1,6 +1,6 @@
 # Semana 3 + Semana 6 Paso 10 — ingesta Catalunya (Socrata) vía GitHub Actions.
 # Manual: workflow_dispatch (default dry-run).
-# Cron: lunes 06:00 UTC, live (max_pages=10).
+# Cron: TEMP mié 04:00 UTC (prueba); estable ADR 020 = lun 06:00 UTC.
 name: Ingest Catalunya
 
 on:
@@ -38,8 +38,8 @@ on:
         type: boolean
         default: false
   schedule:
-    # Lunes 06:00 UTC
-    - cron: "0 6 * * 1"
+    # TEMP prueba 2026-10-28: mié 04:00 UTC (= 05:00 Madrid). Revertir → lun 06:00 UTC (ADR 020).
+    - cron: "0 4 * * 3"
 
 concurrency:
   group: ingest-catalunya-${{ github.event_name }}-${{ github.event.inputs.mode || 'live' }}

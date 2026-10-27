@@ -2,7 +2,7 @@
 #
 # Flujo: sync success del día → tenders.updated_at en ventana → notification_queue.
 # Manual: workflow_dispatch (default dry-run).
-# Cron: lunes 08:00 UTC (tras PLACSP 05 / Cat 06 / Euskadi 07).
+# Cron: TEMP mié 06:00 UTC (prueba); estable ADR 020 = lun 08:00 UTC.
 # No usa since_days. Envío = alerts-digest.yml (diario).
 name: Alerts match
 
@@ -27,8 +27,8 @@ on:
         required: false
         default: ""
   schedule:
-    # Lunes 08:00 UTC — después del bloque de ingestas 05–07.
-    - cron: "0 8 * * 1"
+    # TEMP prueba 2026-10-28: mié 06:00 UTC (= 07:00 Madrid). Revertir → lun 08:00 UTC (ADR 020).
+    - cron: "0 6 * * 3"
 
 concurrency:
   group: alerts-match-${{ github.event_name }}-${{ github.event.inputs.mode || 'write' }}

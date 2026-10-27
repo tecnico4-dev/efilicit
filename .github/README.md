@@ -17,13 +17,17 @@ Tests de Postgres en ingestion se saltan si no hay DB ([ADR 004](../docs/adr/004
 
 Horarios **UTC**. El disparo manual (`workflow_dispatch`) sigue en **dry-run** por defecto.
 
-| Workflow | Cron | En schedule |
-|---|---|---|
-| [ingest-placsp.yml](workflows/ingest-placsp.yml) | lun `05:00` | `live` × placsp / agregadas / menores; mes UTC actual; Storage on |
-| [ingest-catalunya.yml](workflows/ingest-catalunya.yml) | lun `06:00` | `live`, 10 páginas; Storage on |
-| [ingest-euskadi.yml](workflows/ingest-euskadi.yml) | lun `07:00` | `live`, 10 páginas; Storage on |
-| [alerts-match.yml](workflows/alerts-match.yml) | lun `08:00` | `--phase match` (ventana sync / `updated_at`; sin `since_days`) |
-| [alerts-digest.yml](workflows/alerts-digest.yml) | diario `09:00` | `--phase send` + Resend (solo drenado) |
+**TEMP (prueba 2026-10-28, miércoles)** — revertir a ADR 020 tras OK:
+
+| Workflow | Cron TEMP (UTC) | Madrid (UTC+1) | En schedule |
+|---|---|---|---|
+| [ingest-placsp.yml](workflows/ingest-placsp.yml) | mié `02:00` | 03:00 | `live` ×3; Storage on |
+| [ingest-catalunya.yml](workflows/ingest-catalunya.yml) | mié `04:00` | 05:00 | `live`, 10 páginas; Storage on |
+| [ingest-euskadi.yml](workflows/ingest-euskadi.yml) | mié `05:00` | 06:00 | `live`, 10 páginas; Storage on |
+| [alerts-match.yml](workflows/alerts-match.yml) | mié `06:00` | 07:00 | `--phase match` |
+| [alerts-digest.yml](workflows/alerts-digest.yml) | diario `06:30` | 07:30 | `--phase send` + Resend |
+
+Cadencia estable (ADR 020): ingestas lun 05–07; match lun 08:00; digest diario 09:00.
 
 Requisito: secrets del repo configurados; si faltan, el job falla en el guard. Detalle: [ADR 020](../docs/adr/020-alertas-match-post-ingesta-y-digest-diario.md) · [ADR 005](../docs/adr/005-ingesta-actions-manual-first-cron-off.md).
 

@@ -2,7 +2,7 @@
 #
 # Flujo: notification_queue pending → un email por usuario/periodo (Resend).
 # Manual: workflow_dispatch (default dry-run).
-# Cron: diario 09:00 UTC (tras match lunes 08:00; el resto de días solo envía).
+# Cron: TEMP diario 06:30 UTC (prueba); estable ADR 020 = diario 09:00 UTC.
 # Frecuencias diaria|semanal; instant fuera del MVP (ADR 013).
 # Envío desde el job Python, no Edge Function (ADR 012).
 name: Alerts digest
@@ -26,8 +26,8 @@ on:
         required: false
         default: ""
   schedule:
-    # Diario 09:00 UTC — hora fija del sistema (no por usuario; ADR 013 / 020).
-    - cron: "0 9 * * *"
+    # TEMP prueba 2026-10-28: diario 06:30 UTC (= 07:30 Madrid). Revertir → 09:00 UTC (ADR 020).
+    - cron: "30 6 * * *"
 
 concurrency:
   group: alerts-digest-${{ github.event_name }}-${{ github.event.inputs.mode || 'write-resend' }}
