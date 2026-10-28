@@ -31,8 +31,8 @@ URLs típicas (confirma con `supabase status`):
 ## Paso 8 — qué valida
 
 - Bucket Storage privado `raw` (clientes no escriben RAW; la ingesta usará service role).
-- Tabla smoke `setup_rls_smoke` con RLS (cada usuario solo ve lo suyo).
-- Seed: `alice@example.com` / `bob@example.com` (password local: `password123`).
+- Seed Auth: `alice@example.com` / `bob@example.com` (password local: `password123`).
+- La tabla smoke `setup_rls_smoke` de Fase 0 se retiró (`20261028130000_…`); RLS de producto en `users` / alertas / favoritos / etc.
 
 ## Remoto (Paso 7)
 

@@ -104,14 +104,9 @@ begin
     )
   on conflict (id) do nothing;
 
-  -- Una nota por usuario: con sesión de Alice no debe verse la de Bob (y viceversa).
-  insert into public.setup_rls_smoke (owner_id, note)
-  values
-    (user_a, 'Nota de Alice — solo ella debe verla con RLS'),
-    (user_b, 'Nota de Bob — solo él debe verla con RLS');
-
   -- Perfiles de aplicación (public.users). El trigger on_auth_user_created también
   -- los crea en registros nuevos; aquí se aseguran Alice/Bob tras db reset.
+  -- RLS owner-only se verifica en users/alerts/favorites (ya no existe setup_rls_smoke).
   insert into public.users (auth_user_id, display_name)
   values
     (user_a, 'Alice'),

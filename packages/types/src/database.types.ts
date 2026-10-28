@@ -407,27 +407,6 @@ export type Database = {
           },
         ]
       }
-      setup_rls_smoke: {
-        Row: {
-          created_at: string
-          id: string
-          note: string
-          owner_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          note: string
-          owner_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          note?: string
-          owner_id?: string
-        }
-        Relationships: []
-      }
       source_artifacts: {
         Row: {
           artifact_key: string

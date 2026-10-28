@@ -13,7 +13,7 @@ export function createSupabaseBrowserClient() {
 }
 
 /**
- * Alias histórico del cliente público (home / health-check Fase 0).
+ * Alias histórico del cliente público (browser).
  * Preferir `createSupabaseBrowserClient` o `createSupabaseServerClient` en código nuevo.
  */
 export function createSupabaseClient() {

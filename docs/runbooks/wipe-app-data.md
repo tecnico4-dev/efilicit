@@ -14,8 +14,7 @@ favoritos, colas), **sin** tocar cuentas ni catálogos geográficos.
 
 Dominio canónico (`tenders`, fuentes, eventos, CPVs, documentos, organismos,
 proveedores), sync (`source_sync`, `source_artifacts`, `errors`), alertas /
-búsquedas guardadas / favoritos / colas y lecturas de notificación, y
-`setup_rls_smoke`.
+búsquedas guardadas / favoritos / colas y lecturas de notificación.
 
 Script canónico: [`scripts/wipe_app_data.sql`](../../scripts/wipe_app_data.sql).
 

@@ -39,7 +39,8 @@ pnpm --filter @efilicit/web verify:rls:favorites
 | `source_sync` | Sí | **sin** policies a anon/auth | Revoke + RLS; solo ETL |
 | `source_artifacts` | Sí | idem | |
 | `errors` | Sí | idem | Pipeline no escribe sistemático (BACKLOG) |
-| `setup_rls_smoke` | Sí | own (Fase 0) | Andamiaje; quitar a largo plazo (BACKLOG) |
+
+Políticas owner-only usan `(select auth.uid())` (initplan; migración `20261028130000_…`). `setup_rls_smoke` retirada en la misma migración.
 
 ## RPCs sensibles
 

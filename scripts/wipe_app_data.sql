@@ -35,8 +35,7 @@ truncate table
   public.suppliers,
   public.source_artifacts,
   public.source_sync,
-  public.errors,
-  public.setup_rls_smoke
+  public.errors
 restart identity cascade;
 
 commit;
@@ -61,5 +60,4 @@ union all select 'favorites', count(*) from public.favorites
 union all select 'notification_queue', count(*) from public.notification_queue
 union all select 'notification_reads', count(*) from public.notification_reads
 union all select 'notification_trash', count(*) from public.notification_trash
-union all select 'setup_rls_smoke', count(*) from public.setup_rls_smoke
 order by 1;

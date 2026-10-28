@@ -577,8 +577,7 @@ def render_sql() -> str:
               public.suppliers,
               public.source_artifacts,
               public.source_sync,
-              public.errors,
-              public.setup_rls_smoke
+              public.errors
             restart identity cascade;
             """
         )
