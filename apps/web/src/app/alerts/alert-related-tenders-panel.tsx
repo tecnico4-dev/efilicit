@@ -13,6 +13,11 @@ import {
 } from "@/lib/queries";
 import { formatTenderStatus } from "@/lib/tender-labels";
 import { formatMoney } from "@/app/favorites/favorites-shared";
+import {
+  DEFAULT_PAGE_SIZE,
+  ListPager,
+  type PageSize,
+} from "@/app/favorites/list-pager";
 
 export type RelatedTendersView = "all" | "sent" | "pending";
 
@@ -71,10 +76,78 @@ function FolderTab({
   );
 }
 
+function RelatedItemRow({
+  item,
+  onNavigate,
+}: {
+  item: AlertRelatedQueueItem;
+  onNavigate: () => void;
+}) {
+  const title =
+    item.tender?.title?.trim() || item.payloadTitle || "Licitación";
+  const showError = isSendError(item.status);
+
+  return (
+    <li className="px-4 py-4">
+      <div className="flex items-start justify-between gap-3">
+        <Link
+          href={`/tenders/${item.tenderId}?from=alerts`}
+          className="min-w-0 flex-1 text-base font-medium text-foreground hover:text-link hover:underline"
+          onClick={onNavigate}
+        >
+          {title}
+        </Link>
+        {showError ? (
+          <span
+            className="shrink-0 rounded-full border border-destructive/40 bg-destructive/10 px-2 py-0.5 text-[11px] font-semibold text-destructive"
+            title={item.lastError ?? undefined}
+          >
+            Error al enviar
+          </span>
+        ) : null}
+      </div>
+      {item.tender ? (
+        <dl className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
+          <div>
+            <dt className="inline">Importe: </dt>
+            <dd className="inline">
+              {formatMoney(
+                item.tender.estimated_value,
+                item.tender.currency,
+              )}
+            </dd>
+          </div>
+          <div>
+            <dt className="inline">CPV: </dt>
+            <dd className="inline font-mono">
+              {formatCpvListPreview(item.tender.cpv_codes)}
+            </dd>
+          </div>
+          <div>
+            <dt className="inline">Estado: </dt>
+            <dd className="inline">{formatTenderStatus(item.tender.status)}</dd>
+          </div>
+        </dl>
+      ) : (
+        <p className="mt-2 text-sm text-muted-foreground">
+          Licitación no disponible en el catálogo
+        </p>
+      )}
+      <p className="mt-2 text-xs text-muted-foreground">
+        {item.status === "sent" && item.sentAt
+          ? `Enviada · ${formatWhen(item.sentAt)}`
+          : item.status === "pending"
+            ? `Pendiente · detectada ${formatWhen(item.createdAt)}`
+            : `En cola · ${formatWhen(item.createdAt)}`}
+      </p>
+    </li>
+  );
+}
+
 /**
  * Modal: licitaciones de notification_queue para una alerta.
  * Carpetas Todas / Enviadas / Pendientes (estas dos solo si tienen ítems).
- * Default: Enviadas si hay; si no, Todas.
+ * Default: Todas. Paginación estilo favoritos (10 / 50 / 100).
  */
 export function AlertRelatedTendersPanel({
   alertId,
@@ -91,7 +164,9 @@ export function AlertRelatedTendersPanel({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [items, setItems] = useState<AlertRelatedQueueItem[]>([]);
-  const [view, setView] = useState<RelatedTendersView>("sent");
+  const [view, setView] = useState<RelatedTendersView>("all");
+  const [pageSize, setPageSize] = useState<PageSize>(DEFAULT_PAGE_SIZE);
+  const [page, setPage] = useState(1);
 
   useEffect(() => setMounted(true), []);
 
@@ -109,6 +184,8 @@ export function AlertRelatedTendersPanel({
     let cancelled = false;
     setLoading(true);
     setError(null);
+    setView("all");
+    setPage(1);
     const client = createSupabaseBrowserClient();
     void listOwnAlertRelatedQueueItems(client, { alertId }).then((result) => {
       if (cancelled) return;
@@ -119,8 +196,6 @@ export function AlertRelatedTendersPanel({
         return;
       }
       setItems(result.data);
-      const sentCount = result.data.filter((i) => i.status === "sent").length;
-      setView(sentCount > 0 ? "sent" : "all");
     });
     return () => {
       cancelled = true;
@@ -140,6 +215,30 @@ export function AlertRelatedTendersPanel({
     return items;
   }, [items, view]);
 
+  const total = visible.length;
+  const showPager = total > DEFAULT_PAGE_SIZE;
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+
+  const pageItems = useMemo(() => {
+    const safe = Math.min(Math.max(page, 1), totalPages);
+    const start = (safe - 1) * pageSize;
+    return visible.slice(start, start + pageSize);
+  }, [visible, page, pageSize, totalPages]);
+
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages);
+  }, [page, totalPages]);
+
+  function selectView(next: RelatedTendersView) {
+    setView(next);
+    setPage(1);
+  }
+
+  function onPageSizeChange(next: number) {
+    setPageSize(next as PageSize);
+    setPage(1);
+  }
+
   if (!open || !mounted) return null;
 
   return createPortal(
@@ -154,7 +253,7 @@ export function AlertRelatedTendersPanel({
         className="flex max-h-[min(90vh,720px)] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-border bg-background shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-start justify-between gap-3 border-b border-border px-5 py-4">
+        <div className="flex shrink-0 items-start justify-between gap-3 border-b border-border px-5 py-4">
           <div className="min-w-0">
             <h2
               id={`alert-related-title-${alertId}`}
@@ -171,7 +270,7 @@ export function AlertRelatedTendersPanel({
           </Button>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-5 pt-3">
+        <div className="flex min-h-0 flex-1 flex-col px-5 pb-5 pt-3">
           {loading ? (
             <p className="py-8 text-center text-sm text-muted-foreground">
               Cargando…
@@ -187,7 +286,7 @@ export function AlertRelatedTendersPanel({
           ) : (
             <>
               <div
-                className="flex flex-wrap items-end gap-1 px-1"
+                className="flex shrink-0 flex-wrap items-end gap-1 px-1"
                 role="tablist"
                 aria-label="Filtro de envíos"
               >
@@ -195,14 +294,14 @@ export function AlertRelatedTendersPanel({
                   active={view === "all"}
                   label="Todas"
                   count={counts.all}
-                  onSelect={() => setView("all")}
+                  onSelect={() => selectView("all")}
                 />
                 {counts.sent > 0 ? (
                   <FolderTab
                     active={view === "sent"}
                     label="Enviadas"
                     count={counts.sent}
-                    onSelect={() => setView("sent")}
+                    onSelect={() => selectView("sent")}
                   />
                 ) : null}
                 {counts.pending > 0 ? (
@@ -210,85 +309,60 @@ export function AlertRelatedTendersPanel({
                     active={view === "pending"}
                     label="Pendientes de enviar"
                     count={counts.pending}
-                    onSelect={() => setView("pending")}
+                    onSelect={() => selectView("pending")}
                   />
                 ) : null}
               </div>
 
-              <div className="relative z-0 overflow-hidden rounded-lg rounded-tl-none border border-border bg-surface/40">
-                {visible.length === 0 ? (
+              {visible.length === 0 ? (
+                <div className="relative z-0 overflow-hidden rounded-lg rounded-tl-none border border-border bg-surface/40">
                   <p className="px-4 py-8 text-center text-sm text-muted-foreground">
                     No hay licitaciones en esta vista.
                   </p>
-                ) : (
+                </div>
+              ) : showPager ? (
+                <div className="relative z-0 flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg rounded-tl-none border border-border bg-surface/40">
+                  <div
+                    key={`${view}-${page}-${pageSize}`}
+                    className="min-h-0 flex-1 overflow-y-auto"
+                  >
+                    <ul className="divide-y divide-border">
+                      {pageItems.map((item) => (
+                        <RelatedItemRow
+                          key={item.queueId}
+                          item={item}
+                          onNavigate={onClose}
+                        />
+                      ))}
+                    </ul>
+                  </div>
+                  <div className="shrink-0 border-t border-border bg-background px-4 py-3">
+                    <ListPager
+                      page={page}
+                      totalPages={totalPages}
+                      pageSize={pageSize}
+                      showing={pageItems.length}
+                      total={total}
+                      itemLabel="licitaciones"
+                      ariaPageSizeLabel="Licitaciones por página"
+                      onPageChange={setPage}
+                      onPageSizeChange={onPageSizeChange}
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div className="relative z-0 overflow-hidden rounded-lg rounded-tl-none border border-border bg-surface/40">
                   <ul className="divide-y divide-border">
-                    {visible.map((item) => {
-                      const title =
-                        item.tender?.title?.trim() ||
-                        item.payloadTitle ||
-                        "Licitación";
-                      const showError = isSendError(item.status);
-                      return (
-                        <li key={item.queueId} className="px-4 py-4">
-                          <div className="flex items-start justify-between gap-3">
-                            <Link
-                              href={`/tenders/${item.tenderId}?from=alerts`}
-                              className="min-w-0 flex-1 text-base font-medium text-foreground hover:text-link hover:underline"
-                              onClick={onClose}
-                            >
-                              {title}
-                            </Link>
-                            {showError ? (
-                              <span
-                                className="shrink-0 rounded-full border border-destructive/40 bg-destructive/10 px-2 py-0.5 text-[11px] font-semibold text-destructive"
-                                title={item.lastError ?? undefined}
-                              >
-                                Error al enviar
-                              </span>
-                            ) : null}
-                          </div>
-                          {item.tender ? (
-                            <dl className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
-                              <div>
-                                <dt className="inline">Importe: </dt>
-                                <dd className="inline">
-                                  {formatMoney(
-                                    item.tender.estimated_value,
-                                    item.tender.currency,
-                                  )}
-                                </dd>
-                              </div>
-                              <div>
-                                <dt className="inline">CPV: </dt>
-                                <dd className="inline font-mono">
-                                  {formatCpvListPreview(item.tender.cpv_codes)}
-                                </dd>
-                              </div>
-                              <div>
-                                <dt className="inline">Estado: </dt>
-                                <dd className="inline">
-                                  {formatTenderStatus(item.tender.status)}
-                                </dd>
-                              </div>
-                            </dl>
-                          ) : (
-                            <p className="mt-2 text-sm text-muted-foreground">
-                              Licitación no disponible en el catálogo
-                            </p>
-                          )}
-                          <p className="mt-2 text-xs text-muted-foreground">
-                            {item.status === "sent" && item.sentAt
-                              ? `Enviada · ${formatWhen(item.sentAt)}`
-                              : item.status === "pending"
-                                ? `Pendiente · detectada ${formatWhen(item.createdAt)}`
-                                : `En cola · ${formatWhen(item.createdAt)}`}
-                          </p>
-                        </li>
-                      );
-                    })}
+                    {pageItems.map((item) => (
+                      <RelatedItemRow
+                        key={item.queueId}
+                        item={item}
+                        onNavigate={onClose}
+                      />
+                    ))}
                   </ul>
-                )}
-              </div>
+                </div>
+              )}
             </>
           )}
         </div>

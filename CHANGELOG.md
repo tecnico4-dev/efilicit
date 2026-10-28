@@ -23,7 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Alertas: «Licitaciones relacionadas» (cola `notification_queue` por alerta) — modal con carpetas Todas / Enviadas / Pendientes; `failed`/`cancelled` con marca «Error al enviar»; orden por `created_at`.
+- Alertas: «Licitaciones relacionadas» (cola `notification_queue` por alerta) — modal con carpetas Todas (default) / Enviadas / Pendientes; paginación 10/50/100 como favoritos; `failed`/`cancelled` con marca «Error al enviar»; orden por `created_at`.
 - [ADR 020](docs/adr/020-alertas-match-post-ingesta-y-digest-diario.md): alertas en dos crons — `alerts-match` lun 08:00 UTC (`--phase match`, ventana `source_sync` + `updated_at`, sin `since_days`); `alerts-digest` diario 09:00 UTC (`--phase send`, solo Resend). CLI `--phase` / `--sync-date`. Backfill al crear alerta → backlog.
 - Runbook + `scripts/wipe_app_data.sql`: vaciado operativo del remoto (dominio + alertas/favoritos/colas); conserva `users` y geo (`geo_ccaa` / `geo_municipio`).
 - Semana 6 Paso 10: cron de producción en GitHub Actions — ingestas PLACSP/Catalunya/Euskadi los lunes 05–07 UTC (`live`). Manual `workflow_dispatch` sigue en dry-run por defecto. *(Alertas: cadencia actualizada en ADR 020.)*
