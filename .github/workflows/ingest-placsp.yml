@@ -47,8 +47,8 @@ on:
         type: boolean
         default: false
   schedule:
-    # TEMP prueba 2026-10-28: mié 02:00 UTC (= 03:00 Madrid). Revertir → lun 05:00 UTC (ADR 020).
-    - cron: "0 2 * * 3"
+    # TEMP prueba 2026-10-29: jue 02:00 UTC (= 03:00 Madrid). Revertir → lun 05:00 UTC (ADR 020).
+    - cron: "0 2 * * 4"
 
 jobs:
   ingest:

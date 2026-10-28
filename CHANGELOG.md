@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- TEMP cron 2026-10-28 (mié): PLACSP 02:00 / Cat 04:00 / Euskadi 05:00 / match 06:00 / digest 06:30 UTC — revertir a ADR 020 tras la prueba.
+- TEMP cron 2026-10-29 (jue): PLACSP 02:00 / Cat 04:00 / Euskadi 05:00 / match 06:00 / digest 06:30 UTC — revertir a ADR 020 tras la prueba.
 
 ### Fixed
 

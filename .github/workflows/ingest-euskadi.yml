@@ -1,6 +1,6 @@
 # Semana 3 + Semana 6 Paso 10 — ingesta Euskadi (KontratazioA REST) vía GitHub Actions.
 # Manual: workflow_dispatch (default dry-run).
-# Cron: TEMP mié 05:00 UTC (prueba); estable ADR 020 = lun 07:00 UTC.
+# Cron: TEMP jue 05:00 UTC (prueba 2026-10-29); estable ADR 020 = lun 07:00 UTC.
 name: Ingest Euskadi
 
 on:
@@ -34,8 +34,8 @@ on:
         type: boolean
         default: false
   schedule:
-    # TEMP prueba 2026-10-28: mié 05:00 UTC (= 06:00 Madrid). Revertir → lun 07:00 UTC (ADR 020).
-    - cron: "0 5 * * 3"
+    # TEMP prueba 2026-10-29: jue 05:00 UTC (= 06:00 Madrid). Revertir → lun 07:00 UTC (ADR 020).
+    - cron: "0 5 * * 4"
 
 concurrency:
   group: ingest-euskadi-${{ github.event_name }}-${{ github.event.inputs.mode || 'live' }}
