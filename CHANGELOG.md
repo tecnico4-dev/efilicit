@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Auth: `handle_new_user` sin `EXECUTE` para `anon`/`authenticated` (sigue el trigger; deja de exponerse como RPC SECURITY DEFINER).
 - CI/`next build`: `getSessionUser` y `AuthenticatedChrome` no exigen env Supabase en prerender (p. ej. `/_not-found`); sin sesión si faltan `NEXT_PUBLIC_*`.
 - Prefijo CPV de 1 dígito: `3` busca `3%` (no forzaba `30%`); mismo criterio en alertas batch.
 
