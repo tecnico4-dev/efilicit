@@ -14,7 +14,7 @@ import { SEARCH_CCAA_OPTIONS } from "@/lib/geo-ccaa";
 import { normalizeSearchQuery } from "@/lib/keywords";
 import { formatTenderStatus } from "@/lib/tender-labels";
 import { formatCpvListPreview, normalizeCpvCode } from "@/lib/cpv";
-import { CpvPicker } from "./cpv-picker";
+import type { CriteriaFilterInitial } from "@/lib/criteria-display";
 import { SaveSearchSlot } from "./save-search-slot";
 import {
   SearchFilterFields,
@@ -455,12 +455,21 @@ export default async function SearchPage({
     }
   }
 
-  const filterFieldProps = {
-    ccaaRaw: ccaa,
-    municipalityRaw,
-    statusRaw,
-    procedureRaw,
-    contractTypeRaw,
+  const filterInitial: CriteriaFilterInitial = {
+    q: qInput,
+    cpvCodes,
+    cpvMatch,
+    min: minRaw,
+    max: maxRaw,
+    ccaa,
+    municipalityCode: municipalityRaw,
+    municipalityName: "",
+    status: statusRaw,
+    procedure: procedureRaw,
+    contractType: contractTypeRaw,
+    pubFrom: pubFromValid,
+    pubTo: pubToValid,
+    openForSubmission,
   };
 
   return (
@@ -495,108 +504,19 @@ export default async function SearchPage({
         {from === "favorites" || from === "favorites-searches" ? (
           <input type="hidden" name="from" value={from} />
         ) : null}
-        <div>
-          <label htmlFor="q" className="block text-sm font-medium text-foreground">
-            Texto
-          </label>
-          <input
-            id="q"
-            name="q"
-            type="search"
-            defaultValue={qInput}
-            aria-invalid={queryOnlyNoise || undefined}
-            aria-describedby={queryOnlyNoise ? "q-noise-hint" : undefined}
-            className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
-          />
-          {queryOnlyNoise ? (
-            <p
-              id="q-noise-hint"
-              className="mt-1 text-xs text-destructive"
-              role="alert"
-            >
-              Escribe al menos un término significativo para realizar la
-              búsqueda. Evita palabras como «de», «el» o «la».
-            </p>
-          ) : null}
-        </div>
         <Suspense
-          fallback={<SearchFilterFieldsFallback {...filterFieldProps} />}
+          fallback={
+            <SearchFilterFieldsFallback
+              initial={filterInitial}
+              queryOnlyNoise={queryOnlyNoise}
+            />
+          }
         >
-          <SearchFilterFields {...filterFieldProps} />
-        </Suspense>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div>
-            <label htmlFor="min" className="block text-sm font-medium text-foreground">
-              Importe mín. (sin IVA)
-            </label>
-            <input
-              id="min"
-              name="min"
-              type="number"
-              min={0}
-              step={1}
-              defaultValue={minRaw}
-              className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
-            />
-          </div>
-          <div>
-            <label htmlFor="max" className="block text-sm font-medium text-foreground">
-              Importe máx. (sin IVA)
-            </label>
-            <input
-              id="max"
-              name="max"
-              type="number"
-              min={0}
-              step={1}
-              defaultValue={maxRaw}
-              className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
-            />
-          </div>
-        </div>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div>
-            <label
-              htmlFor="pub_from"
-              className="block text-sm font-medium text-foreground"
-            >
-              Publicación desde
-            </label>
-            <input
-              id="pub_from"
-              name="pub_from"
-              type="date"
-              defaultValue={pubFromValid}
-              className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
-            />
-          </div>
-          <div>
-            <label
-              htmlFor="pub_to"
-              className="block text-sm font-medium text-foreground"
-            >
-              Publicación hasta
-            </label>
-            <input
-              id="pub_to"
-              name="pub_to"
-              type="date"
-              defaultValue={pubToValid}
-              className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
-            />
-          </div>
-        </div>
-        <CpvPicker initialCodes={cpvCodes} initialMatch={cpvMatch} />
-        <label className="inline-flex items-center gap-2 text-sm text-foreground">
-          <input
-            type="checkbox"
-            name="en_plazo"
-            value="1"
-            defaultChecked={openForSubmission}
-            className="ef-checkbox"
+          <SearchFilterFields
+            initial={filterInitial}
+            queryOnlyNoise={queryOnlyNoise}
           />
-          Solo en plazo
-        </label>
+        </Suspense>
       </SearchForm>
 
       <ResultsList

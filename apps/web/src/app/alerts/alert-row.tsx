@@ -5,12 +5,20 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
+  CriteriaFilters,
+  type CriteriaFilterOptionsProp,
+} from "@/components/criteria/criteria-filters";
+import {
   criteriaHasFilters,
-  criteriaToFormFields,
-  formFieldsToCriteria,
+  criteriaToFilterInitial,
   formatCriteriaSummary,
   parseCriteria,
 } from "@/lib/criteria-display";
+import {
+  buildCriteriaFromSearchForm,
+  hasInvalidAmountRange,
+  hasInvalidPublicationRange,
+} from "@/lib/build-criteria-from-form";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { ownAlertNameTaken, updateOwnAlert } from "@/lib/queries";
 import type { Database } from "@efilicit/types";
@@ -18,17 +26,21 @@ import { RemoveAlertButton } from "./remove-alert-button";
 
 type AlertRow = Database["public"]["Tables"]["alerts"]["Row"];
 
-export function AlertRowItem({ alert }: { alert: AlertRow }) {
+export function AlertRowItem({
+  alert,
+  filterOptions,
+}: {
+  alert: AlertRow;
+  filterOptions: CriteriaFilterOptionsProp;
+}) {
   const router = useRouter();
   const criteria = parseCriteria(alert.criteria);
-  const fields = criteriaToFormFields(criteria);
+  const formId = `alert-edit-form-${alert.id}`;
+  const idPrefix = `alert-edit-${alert.id}-`;
 
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(alert.name);
-  const [keywords, setKeywords] = useState(fields.keywords);
-  const [cpv, setCpv] = useState(fields.cpv);
-  const [min, setMin] = useState(fields.min);
-  const [max, setMax] = useState(fields.max);
+  const [editKey, setEditKey] = useState(0);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -49,25 +61,26 @@ export function AlertRowItem({ alert }: { alert: AlertRow }) {
   }
 
   async function onSaveEdit() {
-    const nextCriteria = formFieldsToCriteria({ keywords, cpv, min, max });
+    const form = document.getElementById(formId) as HTMLFormElement | null;
+    if (!form) {
+      setError("No se encontró el formulario.");
+      return;
+    }
     if (!name.trim()) {
       setError("Indica un nombre.");
       return;
     }
-    if (!criteriaHasFilters(nextCriteria)) {
-      setError("Indica al menos un criterio (keywords, CPV o importe).");
+    if (hasInvalidAmountRange(form)) {
+      setError("Importe solicitado inválido.");
       return;
     }
-    const minVal = nextCriteria.estimated_value_min;
-    const maxVal = nextCriteria.estimated_value_max;
-    if (
-      minVal != null &&
-      maxVal != null &&
-      !Number.isNaN(minVal) &&
-      !Number.isNaN(maxVal) &&
-      minVal > maxVal
-    ) {
-      setError("Importe solicitado inválido.");
+    if (hasInvalidPublicationRange(form)) {
+      setError("Rango de fechas de publicación inválido.");
+      return;
+    }
+    const nextCriteria = buildCriteriaFromSearchForm(form);
+    if (!nextCriteria || !criteriaHasFilters(nextCriteria)) {
+      setError("Indica al menos un criterio de búsqueda.");
       return;
     }
 
@@ -103,6 +116,13 @@ export function AlertRowItem({ alert }: { alert: AlertRow }) {
     router.refresh();
   }
 
+  function cancelEdit() {
+    setName(alert.name);
+    setEditKey((k) => k + 1);
+    setError(null);
+    setEditing(false);
+  }
+
   return (
     <li className="py-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -132,6 +152,7 @@ export function AlertRowItem({ alert }: { alert: AlertRow }) {
             aria-pressed={editing}
             onClick={() => {
               setEditing(true);
+              setEditKey((k) => k + 1);
               setError(null);
             }}
           >
@@ -151,85 +172,32 @@ export function AlertRowItem({ alert }: { alert: AlertRow }) {
       </div>
 
       {editing ? (
-        <div className="mt-4 space-y-3 rounded-lg border border-border bg-surface p-4">
+        <form
+          id={formId}
+          className="mt-4 space-y-3 rounded-lg border border-border bg-surface p-4"
+          onSubmit={(e) => e.preventDefault()}
+        >
           <div>
             <label
-              htmlFor={`edit-name-${alert.id}`}
+              htmlFor={`${idPrefix}name`}
               className="block text-sm font-medium text-foreground"
             >
               Nombre de la alerta
             </label>
             <Input
-              id={`edit-name-${alert.id}`}
+              id={`${idPrefix}name`}
               value={name}
               onChange={(e) => setName(e.target.value)}
               className="mt-1"
             />
           </div>
-          <div>
-            <label
-              htmlFor={`edit-kw-${alert.id}`}
-              className="block text-sm font-medium text-foreground"
-            >
-              Keywords (separados por comas)
-            </label>
-            <Input
-              id={`edit-kw-${alert.id}`}
-              value={keywords}
-              onChange={(e) => setKeywords(e.target.value)}
-              className="mt-1"
-            />
-          </div>
-          <div>
-            <label
-              htmlFor={`edit-cpv-${alert.id}`}
-              className="block text-sm font-medium text-foreground"
-            >
-              CPV (prefijo)
-            </label>
-            <Input
-              id={`edit-cpv-${alert.id}`}
-              value={cpv}
-              onChange={(e) => setCpv(e.target.value)}
-              className="mt-1 font-mono"
-            />
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div>
-              <label
-                htmlFor={`edit-min-${alert.id}`}
-                className="block text-sm font-medium text-foreground"
-              >
-                Importe mín. (sin IVA)
-              </label>
-              <Input
-                id={`edit-min-${alert.id}`}
-                type="number"
-                min={0}
-                step={1}
-                value={min}
-                onChange={(e) => setMin(e.target.value)}
-                className="mt-1"
-              />
-            </div>
-            <div>
-              <label
-                htmlFor={`edit-max-${alert.id}`}
-                className="block text-sm font-medium text-foreground"
-              >
-                Importe máx. (sin IVA)
-              </label>
-              <Input
-                id={`edit-max-${alert.id}`}
-                type="number"
-                min={0}
-                step={1}
-                value={max}
-                onChange={(e) => setMax(e.target.value)}
-                className="mt-1"
-              />
-            </div>
-          </div>
+          <CriteriaFilters
+            key={editKey}
+            initial={criteriaToFilterInitial(criteria)}
+            filterOptions={filterOptions}
+            formId={formId}
+            idPrefix={idPrefix}
+          />
           <div className="flex flex-wrap gap-2">
             <Button
               type="button"
@@ -244,20 +212,12 @@ export function AlertRowItem({ alert }: { alert: AlertRow }) {
               variant="outline"
               size="sm"
               disabled={pending}
-              onClick={() => {
-                setName(alert.name);
-                setKeywords(fields.keywords);
-                setCpv(fields.cpv);
-                setMin(fields.min);
-                setMax(fields.max);
-                setError(null);
-                setEditing(false);
-              }}
+              onClick={cancelEdit}
             >
               Cancelar
             </Button>
           </div>
-        </div>
+        </form>
       ) : null}
 
       {error ? (

@@ -1,6 +1,5 @@
 import type { SearchCriteria } from "@efilicit/types";
 import { SEARCH_CCAA_OPTIONS } from "@/lib/geo-ccaa";
-import { tokenizeKeywords } from "@/lib/keywords";
 import {
   formatContractType,
   formatProcedureType,
@@ -91,16 +90,58 @@ export function formatCriteriaSummary(criteria: SearchCriteria): string {
   return parts.length ? parts.join(" · ") : "Sin criterios";
 }
 
-/** Campos editables del formulario de alertas (subset MVP de criteria v1). */
-export function criteriaToFormFields(criteria: SearchCriteria): {
-  keywords: string;
-  cpv: string;
+/** Valores iniciales del bloque compartido de filtros (búsqueda / alertas). */
+export type CriteriaFilterInitial = {
+  q: string;
+  cpvCodes: string[];
+  cpvMatch: "any" | "all";
   min: string;
   max: string;
-} {
+  ccaa: string;
+  municipalityCode: string;
+  municipalityName: string;
+  status: string;
+  procedure: string;
+  contractType: string;
+  pubFrom: string;
+  pubTo: string;
+  openForSubmission: boolean;
+};
+
+export function emptyCriteriaFilterInitial(): CriteriaFilterInitial {
   return {
-    keywords: criteria.keywords?.join(", ") ?? "",
-    cpv: criteria.cpv_codes?.[0] ?? "",
+    q: "",
+    cpvCodes: [],
+    cpvMatch: "any",
+    min: "",
+    max: "",
+    ccaa: "",
+    municipalityCode: "",
+    municipalityName: "",
+    status: "",
+    procedure: "",
+    contractType: "",
+    pubFrom: "",
+    pubTo: "",
+    openForSubmission: false,
+  };
+}
+
+/** Hidrata el formulario compartido desde Criteria v1. */
+export function criteriaToFilterInitial(
+  criteria: SearchCriteria,
+): CriteriaFilterInitial {
+  const base = emptyCriteriaFilterInitial();
+  return {
+    ...base,
+    q: criteria.keywords?.join(" ") ?? "",
+    cpvCodes: criteria.cpv_codes?.length ? [...criteria.cpv_codes] : [],
+    cpvMatch:
+      criteria.cpv_codes &&
+      criteria.cpv_codes.length >= 2 &&
+      criteria.cpv_match === "all"
+        ? "all"
+        : "any",
     min:
       criteria.estimated_value_min != null
         ? String(criteria.estimated_value_min)
@@ -109,27 +150,15 @@ export function criteriaToFormFields(criteria: SearchCriteria): {
       criteria.estimated_value_max != null
         ? String(criteria.estimated_value_max)
         : "",
-  };
-}
-
-export function formFieldsToCriteria(input: {
-  keywords: string;
-  cpv: string;
-  min?: string;
-  max?: string;
-}): SearchCriteria {
-  const kw = tokenizeKeywords(input.keywords.replace(/,/g, " "));
-  const cpv = input.cpv.trim();
-  const minRaw = input.min?.trim() ?? "";
-  const maxRaw = input.max?.trim() ?? "";
-  const min = minRaw === "" ? undefined : Number(minRaw);
-  const max = maxRaw === "" ? undefined : Number(maxRaw);
-  return {
-    version: 1,
-    keywords: kw.length ? kw : undefined,
-    cpv_codes: cpv ? [cpv] : undefined,
-    estimated_value_min: min != null && !Number.isNaN(min) ? min : undefined,
-    estimated_value_max: max != null && !Number.isNaN(max) ? max : undefined,
+    ccaa: criteria.geography?.ccaa_codes?.[0] ?? "",
+    municipalityCode: criteria.geography?.municipality_codes?.[0] ?? "",
+    municipalityName: "",
+    status: criteria.statuses?.[0] ?? "",
+    procedure: criteria.procedure_types?.[0] ?? "",
+    contractType: criteria.contract_types?.[0] ?? "",
+    pubFrom: criteria.publication_date_from ?? "",
+    pubTo: criteria.publication_date_to ?? "",
+    openForSubmission: criteria.open_for_submission === true,
   };
 }
 

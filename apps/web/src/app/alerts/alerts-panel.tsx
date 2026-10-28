@@ -5,11 +5,20 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
+  CriteriaFilters,
+  type CriteriaFilterOptionsProp,
+} from "@/components/criteria/criteria-filters";
+import {
   criteriaEqual,
   criteriaHasFilters,
-  formFieldsToCriteria,
+  emptyCriteriaFilterInitial,
   parseCriteria,
 } from "@/lib/criteria-display";
+import {
+  buildCriteriaFromSearchForm,
+  hasInvalidAmountRange,
+  hasInvalidPublicationRange,
+} from "@/lib/build-criteria-from-form";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import {
   createOwnAlert,
@@ -19,50 +28,51 @@ import {
   type DigestFrequency,
 } from "@/lib/queries";
 
+export const ALERT_CREATE_FORM_ID = "alert-create-form";
+
 export function AlertsPanel({
   userId,
   digestFrequency,
+  filterOptions,
 }: {
   userId: string;
   digestFrequency: DigestFrequency;
+  filterOptions: CriteriaFilterOptionsProp;
 }) {
   const router = useRouter();
   const [name, setName] = useState("");
-  const [keywords, setKeywords] = useState("");
-  const [cpv, setCpv] = useState("");
-  const [min, setMin] = useState("");
-  const [max, setMax] = useState("");
+  const [formKey, setFormKey] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
   function resetForm() {
     setName("");
-    setKeywords("");
-    setCpv("");
-    setMin("");
-    setMax("");
+    setFormKey((k) => k + 1);
   }
 
   function buildOrFail() {
-    const criteria = formFieldsToCriteria({ keywords, cpv, min, max });
+    const form = document.getElementById(
+      ALERT_CREATE_FORM_ID,
+    ) as HTMLFormElement | null;
+    if (!form) {
+      setError("No se encontró el formulario.");
+      return null;
+    }
     if (!name.trim()) {
       setError("Indica un nombre.");
       return null;
     }
-    if (!criteriaHasFilters(criteria)) {
-      setError("Indica al menos un criterio (keywords, CPV o importe).");
+    if (hasInvalidAmountRange(form)) {
+      setError("Importe solicitado inválido.");
       return null;
     }
-    const minVal = criteria.estimated_value_min;
-    const maxVal = criteria.estimated_value_max;
-    if (
-      minVal != null &&
-      maxVal != null &&
-      !Number.isNaN(minVal) &&
-      !Number.isNaN(maxVal) &&
-      minVal > maxVal
-    ) {
-      setError("Importe solicitado inválido.");
+    if (hasInvalidPublicationRange(form)) {
+      setError("Rango de fechas de publicación inválido.");
+      return null;
+    }
+    const criteria = buildCriteriaFromSearchForm(form);
+    if (!criteria || !criteriaHasFilters(criteria)) {
+      setError("Indica al menos un criterio de búsqueda.");
       return null;
     }
     return { name: name.trim(), criteria };
@@ -140,10 +150,17 @@ export function AlertsPanel({
   }
 
   return (
-    <form className="mt-8 space-y-4 border-t border-border pt-8">
+    <form
+      id={ALERT_CREATE_FORM_ID}
+      className="mt-8 space-y-4 border-t border-border pt-8"
+      onSubmit={(e) => e.preventDefault()}
+    >
       <h2 className="text-base font-medium text-foreground">Crear alerta</h2>
       <div>
-        <label htmlFor="item_name" className="block text-sm font-medium text-foreground">
+        <label
+          htmlFor="item_name"
+          className="block text-sm font-medium text-foreground"
+        >
           Nombre de la alerta
         </label>
         <Input
@@ -153,58 +170,13 @@ export function AlertsPanel({
           className="mt-1"
         />
       </div>
-      <div>
-        <label htmlFor="keywords" className="block text-sm font-medium text-foreground">
-          Keywords (separados por comas)
-        </label>
-        <Input
-          id="keywords"
-          value={keywords}
-          onChange={(e) => setKeywords(e.target.value)}
-          className="mt-1"
-        />
-      </div>
-      <div>
-        <label htmlFor="cpv" className="block text-sm font-medium text-foreground">
-          CPV (prefijo)
-        </label>
-        <Input
-          id="cpv"
-          value={cpv}
-          onChange={(e) => setCpv(e.target.value)}
-          className="mt-1 font-mono"
-        />
-      </div>
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div>
-          <label htmlFor="min" className="block text-sm font-medium text-foreground">
-            Importe mín. (sin IVA)
-          </label>
-          <Input
-            id="min"
-            type="number"
-            min={0}
-            step={1}
-            value={min}
-            onChange={(e) => setMin(e.target.value)}
-            className="mt-1"
-          />
-        </div>
-        <div>
-          <label htmlFor="max" className="block text-sm font-medium text-foreground">
-            Importe máx. (sin IVA)
-          </label>
-          <Input
-            id="max"
-            type="number"
-            min={0}
-            step={1}
-            value={max}
-            onChange={(e) => setMax(e.target.value)}
-            className="mt-1"
-          />
-        </div>
-      </div>
+      <CriteriaFilters
+        key={formKey}
+        initial={emptyCriteriaFilterInitial()}
+        filterOptions={filterOptions}
+        formId={ALERT_CREATE_FORM_ID}
+        idPrefix="alert-create-"
+      />
       {error ? (
         <p className="text-sm text-destructive" role="alert">
           {error}

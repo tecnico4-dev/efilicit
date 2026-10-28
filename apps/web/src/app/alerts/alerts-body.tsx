@@ -3,7 +3,8 @@ import {
   getSessionProfile,
   getSupabaseServerClient,
 } from "@/lib/auth/session";
-import { listOwnAlerts } from "@/lib/queries";
+import { listOwnAlerts, listSearchFilterOptions } from "@/lib/queries";
+import type { CriteriaFilterOptionsProp } from "@/components/criteria/criteria-filters";
 import { AlertRowItem } from "./alert-row";
 import { AlertsPanel } from "./alerts-panel";
 import { DigestFrequencyControl } from "./digest-frequency-control";
@@ -24,9 +25,10 @@ export async function AlertsBody() {
     );
   }
 
-  const [profileResult, alertsResult] = await Promise.all([
+  const [profileResult, alertsResult, filterListed] = await Promise.all([
     getSessionProfile(),
     listOwnAlerts(supabase),
+    listSearchFilterOptions(supabase),
   ]);
 
   if (!profileResult.data) {
@@ -41,11 +43,26 @@ export async function AlertsBody() {
   const digestFrequency =
     profileResult.data.digest_frequency === "semanal" ? "semanal" : "diaria";
 
+  const filterOptions: CriteriaFilterOptionsProp = filterListed.error
+    ? {
+        statuses: [],
+        procedureTypes: [],
+        contractTypes: [],
+        ccaaCodesWithTenders: [],
+      }
+    : {
+        statuses: filterListed.data.statuses,
+        procedureTypes: filterListed.data.procedureTypes,
+        contractTypes: filterListed.data.contractTypes,
+        ccaaCodesWithTenders: [...filterListed.data.ccaaCodesWithTenders],
+      };
+
   return (
     <>
       <AlertsPanel
         userId={profileResult.data.id}
         digestFrequency={digestFrequency}
+        filterOptions={filterOptions}
       />
 
       <section className="mt-10">
@@ -63,7 +80,11 @@ export async function AlertsBody() {
         ) : (
           <ul className="mt-3 divide-y divide-border border-t border-border">
             {alertsResult.data.map((a) => (
-              <AlertRowItem key={a.id} alert={a} />
+              <AlertRowItem
+                key={a.id}
+                alert={a}
+                filterOptions={filterOptions}
+              />
             ))}
           </ul>
         )}

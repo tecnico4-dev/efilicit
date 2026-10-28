@@ -26,6 +26,8 @@ type Props = {
   /** Código INE de municipio inicial (URL), si es válido para esa CCAA. */
   initialMunicipalityCode: string;
   initialMunicipalityName?: string;
+  /** Formulario que contiene el `<select name="ccaa">` (búsqueda o alertas). */
+  formId?: string;
 };
 
 /**
@@ -36,6 +38,7 @@ export function MunicipalityFilter({
   initialCcaa,
   initialMunicipalityCode,
   initialMunicipalityName = "",
+  formId = SEARCH_FORM_ID,
 }: Props) {
   const listId = useId();
   const [ccaa, setCcaa] = useState(initialCcaa);
@@ -52,7 +55,7 @@ export function MunicipalityFilter({
   const inputDisabled = !enabled || noMunicipalities;
 
   useEffect(() => {
-    const form = document.getElementById(SEARCH_FORM_ID) as HTMLFormElement | null;
+    const form = document.getElementById(formId) as HTMLFormElement | null;
     const select = form?.elements.namedItem("ccaa");
     if (!(select instanceof HTMLSelectElement)) return;
 
@@ -65,7 +68,7 @@ export function MunicipalityFilter({
     };
     select.addEventListener("change", onCcaaChange);
     return () => select.removeEventListener("change", onCcaaChange);
-  }, []);
+  }, [formId]);
 
   useEffect(() => {
     if (!ccaa) {
@@ -126,7 +129,7 @@ export function MunicipalityFilter({
   }
 
   useEffect(() => {
-    const form = document.getElementById(SEARCH_FORM_ID) as HTMLFormElement | null;
+    const form = document.getElementById(formId) as HTMLFormElement | null;
     if (!form) return;
     const onSubmit = () => {
       // Antes de enviar: si el texto no corresponde a un código válido, vaciar.
@@ -139,7 +142,7 @@ export function MunicipalityFilter({
     };
     form.addEventListener("submit", onSubmit);
     return () => form.removeEventListener("submit", onSubmit);
-  }, []);
+  }, [formId]);
 
   useEffect(() => {
     function onDocMouseDown(e: MouseEvent) {
