@@ -6,7 +6,7 @@
 
 **Reemplaza:** Ninguno
 
-**Reemplazado por:** Ninguno
+**Reemplazado por:** Ninguno (complementado por [021](021-raw-storage-tus-resumable-httpx.md) para uploads grandes vía TUS/`httpx`)
 
 ---
 

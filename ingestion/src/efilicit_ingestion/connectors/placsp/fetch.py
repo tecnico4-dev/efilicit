@@ -1,8 +1,9 @@
 """Descarga HTTP de ZIPs PLACSP: timeout, reintento, tamaño, checksum.
 
 Los paquetes mensuales pueden ser muy grandes → presupuesto por defecto
-256 MiB y descarga en stream (corta si el body crece de más). Solo reintenta
-fallos de transporte/timeout; un HTTP 4xx/5xx tipado no se reintenta a ciegas.
+512 MiB, timeout largo y descarga en stream (corta si el body crece de más).
+Solo reintenta fallos de transporte/timeout; un HTTP 4xx/5xx tipado no se
+reintenta a ciegas.
 """
 
 from __future__ import annotations
@@ -26,9 +27,9 @@ from efilicit_ingestion.connectors.placsp.errors import (
 )
 
 # Presupuesto por defecto de un ZIP mensual (configurable por conector).
-DEFAULT_MAX_BYTES = 256 * 1024 * 1024
-DEFAULT_TIMEOUT_SECONDS = 60.0
-DEFAULT_RETRY_ATTEMPTS = 3
+DEFAULT_MAX_BYTES = 512 * 1024 * 1024
+DEFAULT_TIMEOUT_SECONDS = 600.0
+DEFAULT_RETRY_ATTEMPTS = 4
 
 # Getter inyectable en tests: (url) -> (status_code, headers, body). Sin red real.
 FetchTransport = Callable[[str], tuple[int, dict[str, str], bytes]]
@@ -110,7 +111,12 @@ def download_bytes(
         if http_client is not None:
             return _via_client(http_client)
 
-        timeout = httpx.Timeout(cfg.timeout_seconds)
+        timeout = httpx.Timeout(
+            connect=30.0,
+            read=cfg.timeout_seconds,
+            write=cfg.timeout_seconds,
+            pool=30.0,
+        )
         with httpx.Client(timeout=timeout, follow_redirects=True) as client:
             return _via_client(client)
 

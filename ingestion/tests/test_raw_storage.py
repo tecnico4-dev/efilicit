@@ -34,6 +34,7 @@ from efilicit_ingestion.pipeline.supabase_storage import (
     SupabaseStorageError,
     default_service_role_key,
     default_supabase_url,
+    storage_api_base_url,
 )
 
 SOURCE_CODE = "placsp"
@@ -199,10 +200,87 @@ def test_supabase_storage_upload_error() -> None:
         base_url="http://storage.test",
         service_role_key="test-service-role",
         http_client=client,
+        retry_attempts=2,
     )
     with pytest.raises(SupabaseStorageError):
         store.store(source_code=SOURCE_CODE, artifact=_artifact(), raw=FAKE_ZIP)
     client.close()
+
+
+def test_storage_api_base_url_prefers_direct_host() -> None:
+    assert (
+        storage_api_base_url("https://abcd1234.supabase.co")
+        == "https://abcd1234.storage.supabase.co"
+    )
+    assert storage_api_base_url("http://127.0.0.1:54321") == "http://127.0.0.1:54321"
+    assert (
+        storage_api_base_url("https://abcd1234.storage.supabase.co")
+        == "https://abcd1234.storage.supabase.co"
+    )
+
+
+def test_supabase_storage_upload_retries_then_succeeds() -> None:
+    attempts = {"n": 0}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        attempts["n"] += 1
+        if attempts["n"] < 2:
+            return httpx.Response(503, text="temporary")
+        return httpx.Response(200, json={"ok": True})
+
+    client = httpx.Client(transport=httpx.MockTransport(handler))
+    store = SupabaseStorageArtifactStore(
+        base_url="http://storage.test",
+        service_role_key="test-service-role",
+        http_client=client,
+        retry_attempts=3,
+    )
+    stored = store.store(source_code=SOURCE_CODE, artifact=_artifact(), raw=FAKE_ZIP)
+    client.close()
+    assert stored.checksum == sha256_hex(FAKE_ZIP)
+    assert attempts["n"] == 2
+
+
+def test_supabase_storage_tus_upload_with_mock_http() -> None:
+    """Umbral bajo fuerza TUS; payload pequeño evita generar 6 MiB en test."""
+    patches: list[bytes] = []
+    offsets_seen: list[int] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        url = str(request.url)
+        if request.method == "POST" and "/storage/v1/upload/resumable" in url:
+            assert request.headers.get("tus-resumable") == "1.0.0"
+            assert "Upload-Length" in request.headers or "upload-length" in {
+                k.lower() for k in request.headers
+            }
+            return httpx.Response(
+                201,
+                headers={"Location": "http://storage.test/storage/v1/upload/resumable/abc"},
+            )
+        if request.method == "PATCH":
+            offsets_seen.append(int(request.headers["upload-offset"]))
+            patches.append(request.content)
+            new_offset = int(request.headers["upload-offset"]) + len(request.content)
+            return httpx.Response(204, headers={"Upload-Offset": str(new_offset)})
+        return httpx.Response(500, text=f"unexpected {request.method} {url}")
+
+    payload = b"PK\x03\x04" + b"x" * 40
+    client = httpx.Client(transport=httpx.MockTransport(handler))
+    store = SupabaseStorageArtifactStore(
+        base_url="http://storage.test",
+        service_role_key="test-service-role",
+        http_client=client,
+        resumable_threshold_bytes=16,
+        tus_chunk_size=16,
+    )
+    stored = store.store(source_code=SOURCE_CODE, artifact=_artifact(), raw=payload)
+    client.close()
+
+    assert stored.byte_size == len(payload)
+    assert stored.checksum == sha256_hex(payload)
+    assert b"".join(patches) == payload
+    assert offsets_seen[0] == 0
+    assert sum(len(p) for p in patches) == len(payload)
 
 
 def test_fetch_validate_and_store_raw_roundtrip_memory_style() -> None:
