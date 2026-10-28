@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- TEMP cron 2026-10-29 (jue): PLACSP 02:00 / Cat 04:00 / Euskadi 05:00 / match 06:00 / digest 06:30 UTC — revertir a ADR 020 tras la prueba.
+- Despertador de ingest/alertas: cron externo → `workflow_dispatch` (sin `on.schedule` en GitHub). [ADR 020](docs/adr/020-alertas-match-post-ingesta-y-digest-diario.md) reescrito; runbook [external-cron-dispatch](docs/runbooks/external-cron-dispatch.md) + `scripts/dispatch-workflow.sh`. Cadencia estable: ingestas lun 05–07 UTC, match lun 08:00, digest diario 09:00. Prueba 2026-10-29 (Madrid): PLACSP 03:00×3 / Cat 05:00 / Euskadi 06:00 / match 07:00 / digest 07:30.
 
 ### Fixed
 

@@ -1,10 +1,10 @@
-# 020 - Alertas: match post-ingesta (ventana sync) + digest diario (solo envío)
+# 020 - Alertas: match post-ingesta + digest diario; despertador = cron externo
 
-**Fecha:** 2026-10-27
+**Fecha:** 2026-10-28 (reescritura; decisión match/digest 2026-10-27)
 
 **Estado:** Aceptado
 
-**Reemplaza:** Ninguno (complementa / actualiza cadencias de [005](005-ingesta-actions-manual-first-cron-off.md) enmienda Paso 10 y cierra la evolución prevista en [012](012-digest-email-job-python-sin-edge-function.md))
+**Reemplaza:** Ninguno (complementa / actualiza cadencias de [005](005-ingesta-actions-manual-first-cron-off.md); cierra la evolución prevista en [012](012-digest-email-job-python-sin-edge-function.md); sustituye la confianza en `on.schedule` de GitHub para ingest/alertas)
 
 **Reemplazado por:** Ninguno
 
@@ -12,77 +12,92 @@
 
 ## Contexto
 
-Tras Semana 6 Paso 10 un único cron diario (`alerts-digest.yml`, `write-resend`, `since_days=1`) hacía **match → cola → envío** cada día. Las ingestas productivas, sin embargo, son **semanales** (lunes). Eso dejaba:
+Tras Semana 6 Paso 10 un único cron diario (`alerts-digest.yml`, `write-resend`, `since_days=1`) hacía **match → cola → envío** cada día. Las ingestas productivas son **semanales** (lunes). Eso dejaba match diario casi vacío y acoplaba dos ritmos distintos; `since_days` era un proxy flojo de “esta corrida”.
 
-- match diario con ventana de calendario casi vacía los días sin descarga;
-- acoplamiento de dos ritmos distintos (novedades de fuente vs calendario de correo);
-- `since_days` como proxy flojo de “lo recién ingerido”, no de “esta corrida”.
+Se separaron dos jobs (match post-ingesta / digest solo envío) con ventana `source_sync` + `updated_at`.
 
-El código ya separaba `run_alert_batch` y `drain_daily_digests`; el backlog ([012](012-digest-email-job-python-sin-edge-function.md) / `BACKLOG`) anticipaba dos jobs.
+En producción, los `on.schedule` nativos de GitHub **no dispararon** (best-effort: retrasos o drops sin run). Por eso el despertador pasa a un **cron externo** que llama `workflow_dispatch` vía API; Actions sigue ejecutando el trabajo con los secrets del repo.
 
 ## Decisión
 
-### Dos jobs de Actions
+### Orquestación (despertador)
 
-| Job | Workflow | Cron (UTC) | Qué hace |
+- **Reloj:** servicio externo (p. ej. [cron-job.org](https://cron-job.org)) → `POST .../actions/workflows/<file>/dispatches` con PAT (`actions:write`).
+- **Trabajo:** GitHub Actions (`workflow_dispatch` + secrets). Los YAML de ingest/alertas **no** llevan `on.schedule`.
+- Procedimiento: [docs/runbooks/external-cron-dispatch.md](../runbooks/external-cron-dispatch.md); prueba local: `scripts/dispatch-workflow.sh`.
+
+### Dos jobs de Actions (producto)
+
+| Job | Workflow | Cadencia estable (UTC) | Qué hace |
 |---|---|---|---|
 | Match → cola | `alerts-match.yml` | lun `08:00` (tras ingestas 05–07) | Evalúa alertas activas; encola en `notification_queue`. **No** envía email. |
-| Drain → Resend | `alerts-digest.yml` | diario `09:00` | Solo drena la cola. Respeta `users.digest_frequency` ([013](013-alert-frequencies-daily-weekly-instant-diferido.md)): **diaria** envía ese día; **semanal** encola y solo envía **lunes UTC**. **No** hace match. |
+| Drain → Resend | `alerts-digest.yml` | diario `09:00` | Solo drena la cola. Respeta `users.digest_frequency` ([013](013-alert-frequencies-daily-weekly-instant-diferido.md)): **diaria** ese día; **semanal** solo **lunes UTC**. **No** hace match. |
 
-CLI: `run-alerts --phase match|send|all`. Cron de match → `--phase match`; cron de digest → `--phase send --send`.
+CLI: `run-alerts --phase match|send|all`. Match → `--phase match`; digest → `--phase send --send`.
+
+Ingestas (mismo despertador externo): PLACSP ×3 lun 05:00; Catalunya lun 06:00; Euskadi lun 07:00. Un dispatch PLACSP = **una** sindicación (tres jobs HTTP).
 
 ### Ventana de match (sin `since_days`)
 
-- **No** se usa ventana por calendario (`since_days`).
-- Se toman `source_sync` con `status ∈ {success, partial}` cuya `(finished_at ATUTC)::date` es el día del job (`--sync-date`, default = día UTC del digest/hoy).
-- Entran licitaciones cuyo `coalesce(tenders.updated_at, tenders.created_at)` cae en **algún** `[started_at, finished_at]` de esos syncs.
-- Se usa **`updated_at` (negocio)**, no `tender_sources.last_seen_at`: una re-visita idéntica en fuente no debe generar alerta; sí altas y cambios canónicos de esa corrida.
+- **No** ventana por calendario (`since_days`).
+- `source_sync` con `status ∈ {success, partial}` cuya `(finished_at ATUTC)::date` es el día del job (`--sync-date`, default = día UTC).
+- Licitaciones cuyo `coalesce(tenders.updated_at, tenders.created_at)` cae en algún `[started_at, finished_at]` de esos syncs.
+- Se usa **`updated_at` (negocio)**, no `tender_sources.last_seen_at`.
 
 ### Manual
 
-`workflow_dispatch` sigue en dry-run por defecto. Sin secrets, el schedule falla en el guard.
+`workflow_dispatch` desde UI o script: dry-run por defecto. Sin secrets, modos write fallan en el guard.
 
 ### Alternativas descartadas
 
-- **Mantener un solo cron diario match+send con `since_days=1` o `7`.** Descartada: confunde ritmos; `since_days=7` es el “parche B” rechazado explícitamente.
+- **Confiar en `on.schedule` de GitHub.** Descartada: best-effort; retrasos/drops sin run (observado en prod).
+- **Mantener un solo cron diario match+send con `since_days`.** Descartada: confunde ritmos.
 - **Ventana por `last_seen_at`.** Descartada: alertaría re-visitas sin cambio.
-- **Match “literalmente al acabar cada fuente” (workflow_run encadenado).** Aplazado: un cron lunes 08:00 tras el bloque 05–07 basta al inicio; se puede endurecer después.
-- **Backfill al crear/activar alerta en este ADR.** Fuera de corte → backlog (lag documentado hasta entonces).
+- **Match encadenado con `workflow_run` tras cada fuente.** Aplazado: un disparo lunes 08:00 tras el bloque 05–07 basta al inicio.
+- **Backfill al crear/activar alerta en este ADR.** Fuera de corte → backlog.
 
 ## Consecuencias
 
 ### Positivas
 
-- Match alineado con el ciclo de descarga; envío alineado con la preferencia de cuenta.
-- Sin trabajo de match vacío entre lunes.
-- Contrato operativo claro en dos YAML + CLI `--phase`.
+- Match alineado con descarga; envío alineado con preferencia de cuenta.
+- Despertador bajo control operativo (horario y reintentos del servicio externo).
+- Contrato claro: dos YAML + CLI `--phase` + runbook de dispatch.
 
 ### Negativas / riesgos
 
-- Si una ingesta del lunes se alarga más allá de 08:00, el match puede ver syncs incompletos o ninguno de esa fuente → re-dispatch manual de `alerts-match` o ajustar hora.
-- Alerta creada mid-week **no** ve el catálogo ya en BD hasta el próximo match post-ingesta (salvo backfill futuro en backlog).
-- Lunes: digest a las 09:00 para no adelantarse al match de las 08:00.
+- PAT / secreto del despertador **fuera del repo**; rotación y scope mínimos.
+- Si se reactiva `on.schedule` **y** el cron externo, doble disparo.
+- Si una ingesta del lunes se alarga más allá de 08:00, el match puede ver syncs incompletos → re-dispatch de `alerts-match`.
+- Alerta creada mid-week no ve el catálogo hasta el próximo match (salvo backfill en backlog).
 
 ## Riesgos
 
 | Riesgo | Mitigación |
 |---|---|
-| Match sin syncs success ese día | `tenders_seen=0`; logs `sync_windows=0`; re-run manual |
-| Carrera match vs digest el lunes | Digest diario a **09:00**, match a **08:00** |
-| Reintroducir `since_days` en cron | Prohibido por este ADR; legado solo en helpers de código para backfill futuro |
+| GitHub `schedule` silencioso | No usar `on.schedule` en ingest/alertas; despertador externo |
+| Doble corrida | No reintroducir `schedule` mientras el cron externo esté activo |
+| PAT filtrado | Fine-grained mínimo; no versionar; rotar si hay sospecha |
+| Match sin syncs success ese día | `tenders_seen=0`; re-dispatch manual |
+| Carrera match vs digest el lunes | Digest 09:00, match 08:00 |
+| Reintroducir `since_days` en el match post-ingesta | Prohibido; legado solo para backfill futuro |
 
 ## Verificación
 
-- Existen `alerts-match.yml` (lun 08:00, `--phase match`) y `alerts-digest.yml` (diario 09:00, `--phase send`).
+- Workflows ingest/alertas: solo `workflow_dispatch`; sin `on.schedule`.
+- Runbook external-cron-dispatch + script `dispatch-workflow.sh`.
+- Cadencia estable documentada (lun ingest/match; digest diario 09:00 UTC).
 - `run-alerts --write --phase match` no llama Resend; no acepta `--send`.
 - Ventana = sync del día + `updated_at`; sin input `since_days` en workflows.
-- Enmienda en [005](005-ingesta-actions-manual-first-cron-off.md); nota en [012](012-digest-email-job-python-sin-edge-function.md).
+- Enmienda en [005](005-ingesta-actions-manual-first-cron-off.md).
 
 ## Referencias
 
-- [005](005-ingesta-actions-manual-first-cron-off.md) — cron Actions
+- [005](005-ingesta-actions-manual-first-cron-off.md) — historia manual-first → cron
 - [012](012-digest-email-job-python-sin-edge-function.md) — envío desde Python
 - [013](013-alert-frequencies-daily-weekly-instant-diferido.md) — diaria / semanal
-- `.github/workflows/alerts-match.yml` · `alerts-digest.yml`
+- [docs/runbooks/external-cron-dispatch.md](../runbooks/external-cron-dispatch.md)
+- `.github/workflows/alerts-match.yml` · `alerts-digest.yml` · ingest-*
+- `scripts/dispatch-workflow.sh`
 - `ingestion/src/efilicit_ingestion/run_alerts.py` · `alerts/postgres.py`
 - `docs/plans/BACKLOG.md` — backfill al crear/activar alerta

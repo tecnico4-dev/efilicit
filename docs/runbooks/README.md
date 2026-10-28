@@ -4,6 +4,7 @@ Procedimientos operativos del MVP (Semana 6 / Paso 9).
 
 | Runbook | Uso |
 |---|---|
+| [external-cron-dispatch.md](external-cron-dispatch.md) | Cron externo → `workflow_dispatch` (ingest/alertas; ADR 020) |
 | [source-down.md](source-down.md) | Fuente fallida o sin success reciente |
 | [reprocess-source-date.md](reprocess-source-date.md) | Re-ejecutar una ventana / corrida |
 | [replay-artifact.md](replay-artifact.md) | Replay desde Storage (aún limitado; workaround) |

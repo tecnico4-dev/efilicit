@@ -1,6 +1,6 @@
 # Semana 2–4 + Semana 6 Paso 10 — ingesta PLACSP vía GitHub Actions.
-# Manual: workflow_dispatch (default dry-run).
-# Cron: lunes 05:00 UTC, live de las 3 sindicaciones (mes UTC actual).
+# Disparo: workflow_dispatch (default dry-run). Sin on.schedule (ADR 020: cron externo).
+# Cadencia productiva: runbook external-cron-dispatch (3 jobs, una sindicación cada uno).
 # Artefacto = ZIP mensual Atom/CODICE; syndication: placsp | placsp_agregadas | placsp_menores.
 name: Ingest PLACSP
 
@@ -27,7 +27,7 @@ on:
           - live
         default: dry-run
       from_month:
-        description: "live: inicio YYYY-MM (obligatorio en live manual; cron = mes UTC actual)"
+        description: "live: inicio YYYY-MM (vacío = mes UTC actual)"
         required: false
         default: ""
       to_month:
@@ -46,9 +46,6 @@ on:
         description: "Subir RAW a Storage (requiere SUPABASE_SERVICE_ROLE_KEY + SUPABASE_URL)"
         type: boolean
         default: false
-  schedule:
-    # TEMP prueba 2026-10-29: jue 02:00 UTC (= 03:00 Madrid). Revertir → lun 05:00 UTC (ADR 020).
-    - cron: "0 2 * * 4"
 
 jobs:
   ingest:

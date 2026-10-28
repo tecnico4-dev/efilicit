@@ -1,8 +1,7 @@
 # ADR 020 — drenado diario de digests (sin match).
 #
 # Flujo: notification_queue pending → un email por usuario/periodo (Resend).
-# Manual: workflow_dispatch (default dry-run).
-# Cron: TEMP jue 06:30 UTC (prueba 2026-10-29); estable ADR 020 = diario 09:00 UTC.
+# Disparo: workflow_dispatch (default dry-run). Sin on.schedule (cron externo).
 # Frecuencias diaria|semanal; instant fuera del MVP (ADR 013).
 # Envío desde el job Python, no Edge Function (ADR 012).
 name: Alerts digest
@@ -25,9 +24,6 @@ on:
         description: "Día de digest YYYY-MM-DD (vacío = hoy UTC)"
         required: false
         default: ""
-  schedule:
-    # TEMP prueba 2026-10-29: jue 06:30 UTC (= 07:30 Madrid). Revertir → diario 09:00 UTC (ADR 020).
-    - cron: "30 6 * * 4"
 
 concurrency:
   group: alerts-digest-${{ github.event_name }}-${{ github.event.inputs.mode || 'write-resend' }}

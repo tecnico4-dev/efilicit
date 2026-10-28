@@ -13,32 +13,34 @@ Comprobar runs: https://github.com/tecnico4-dev/efilicit/actions
 
 Tests de Postgres en ingestion se saltan si no hay DB ([ADR 004](../docs/adr/004-ci-ingestion-sin-postgres.md)).
 
-## Cron de producción (Semana 6 Paso 10)
+## Cadencia de producción (ADR 020)
 
-Horarios **UTC**. El disparo manual (`workflow_dispatch`) sigue en **dry-run** por defecto.
+El **trabajo** corre en GitHub Actions (`workflow_dispatch` + secrets). El **despertador** es un cron externo → API dispatch — **sin** `on.schedule` en ingest/alertas.
 
-**TEMP (prueba 2026-10-29, jueves madrugada)** — revertir a ADR 020 tras OK:
+Runbook: [docs/runbooks/external-cron-dispatch.md](../docs/runbooks/external-cron-dispatch.md) · script: [`scripts/dispatch-workflow.sh`](../scripts/dispatch-workflow.sh).
 
-| Workflow | Cron TEMP (UTC) | Madrid (UTC+1) | En schedule |
-|---|---|---|---|
-| [ingest-placsp.yml](workflows/ingest-placsp.yml) | jue `02:00` | 03:00 | `live` ×3; Storage on |
-| [ingest-catalunya.yml](workflows/ingest-catalunya.yml) | jue `04:00` | 05:00 | `live`, 10 páginas; Storage on |
-| [ingest-euskadi.yml](workflows/ingest-euskadi.yml) | jue `05:00` | 06:00 | `live`, 10 páginas; Storage on |
-| [alerts-match.yml](workflows/alerts-match.yml) | jue `06:00` | 07:00 | `--phase match` |
-| [alerts-digest.yml](workflows/alerts-digest.yml) | jue `06:30` | 07:30 | `--phase send` + Resend |
+Horarios de producto **UTC** (configurar en el servicio externo):
 
-Cadencia estable (ADR 020): ingestas lun 05–07; match lun 08:00; digest diario 09:00.
+| Workflow | Cadencia estable (UTC) | Inputs productivos |
+|---|---|---|
+| [ingest-placsp.yml](workflows/ingest-placsp.yml) ×3 | lun 05:00 | `mode=live`, `upload_storage=true`; un job por `syndication` |
+| [ingest-catalunya.yml](workflows/ingest-catalunya.yml) | lun 06:00 | `live`, `max_pages=10`, Storage on |
+| [ingest-euskadi.yml](workflows/ingest-euskadi.yml) | lun 07:00 | `live`, `max_pages=10`, Storage on |
+| [alerts-match.yml](workflows/alerts-match.yml) | lun 08:00 | `mode=write` (`--phase match`) |
+| [alerts-digest.yml](workflows/alerts-digest.yml) | diario 09:00 | `mode=write-resend` (`--phase send`) |
 
-Requisito: secrets del repo configurados; si faltan, el job falla en el guard. Detalle: [ADR 020](../docs/adr/020-alertas-match-post-ingesta-y-digest-diario.md) · [ADR 005](../docs/adr/005-ingesta-actions-manual-first-cron-off.md).
+Disparo manual desde la UI de Actions: **dry-run** por defecto. Sin secrets, los modos write fallan en el guard.
+
+Detalle: [ADR 020](../docs/adr/020-alertas-match-post-ingesta-y-digest-diario.md) · [ADR 005](../docs/adr/005-ingesta-actions-manual-first-cron-off.md).
 
 ## Ingesta PLACSP (Semanas 2–4)
 
 Workflow: [`.github/workflows/ingest-placsp.yml`](workflows/ingest-placsp.yml)
 
-- Disparo **manual** + **cron** (Paso 10).
-- Input **`syndication`**: `placsp` / `placsp_agregadas` / `placsp_menores` (en cron se lanzan las tres).
+- Disparo **`workflow_dispatch`** (manual o cron externo).
+- Input **`syndication`**: `placsp` / `placsp_agregadas` / `placsp_menores` (tres jobs externos en cadencia productiva).
 - Modo manual por defecto: **`dry-run`**.
-- RAW a Storage (si `upload_storage=true` o en cron): [ADR 006](../docs/adr/006-raw-storage-httpx-sin-supabase-py.md).
+- RAW a Storage (si `upload_storage=true`): [ADR 006](../docs/adr/006-raw-storage-httpx-sin-supabase-py.md).
 
 | Secret | Uso |
 |---|---|
@@ -48,7 +50,7 @@ Workflow: [`.github/workflows/ingest-placsp.yml`](workflows/ingest-placsp.yml)
 
 ## Ingesta Catalunya / Euskadi
 
-Mismo patrón: manual dry-run + cron live los lunes (ver tabla arriba).
+Mismo patrón: manual dry-run + dispatch productivo vía cron externo (tabla arriba).
 
 ## Alertas / match + digest (Semana 5+ / ADR 020)
 
@@ -60,12 +62,12 @@ Mismo patrón: manual dry-run + cron live los lunes (ver tabla arriba).
 - Ventana de match = `source_sync` success/partial del día + `tenders.updated_at` (no `since_days`, no `last_seen_at`).
 - Envío Resend desde el **job Python** — [ADR 012](../docs/adr/012-digest-email-job-python-sin-edge-function.md).
 - Frecuencias de cuenta `diaria` \| `semanal` — [ADR 013](../docs/adr/013-alert-frequencies-daily-weekly-instant-diferido.md).
-- Decisión de cadencias: [ADR 020](../docs/adr/020-alertas-match-post-ingesta-y-digest-diario.md).
+- Orquestación + cadencias: [ADR 020](../docs/adr/020-alertas-match-post-ingesta-y-digest-diario.md).
 
 | Secret | Uso |
 |---|---|
 | `EFILICIT_DATABASE_URL` | Match `write` y digest `write-*` |
-| `RESEND_API_KEY` | Digest `write-resend` / cron |
+| `RESEND_API_KEY` | Digest `write-resend` / dispatch productivo |
 | `ALERT_FROM_EMAIL` | Remitente Resend |
 
 ## Protección de `main` — decisión del proyecto
@@ -104,13 +106,14 @@ Crear Environments (`preview`, `production`) cuando haga falta desplegar. **No**
 | Secret | Dónde / cuándo |
 |---|---|
 | `EFILICIT_DATABASE_URL` | Ingestas `fixture-db`/`live`; alerts-match / alerts-digest `write*` |
-| `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` | Upload RAW en ingestas (manual o cron) |
-| `RESEND_API_KEY` / `ALERT_FROM_EMAIL` | Alerts-digest `write-resend` / cron diario |
+| `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` | Upload RAW en ingestas |
+| `RESEND_API_KEY` / `ALERT_FROM_EMAIL` | Alerts-digest `write-resend` |
 | `SUPABASE_ACCESS_TOKEN` | Futuro (ops remotas) |
 | Tokens Vercel | Cuando haya deploy |
+| PAT del despertador | **Fuera del repo** (cron-job.org u otro); no es secret de Actions |
 
 Ahora mismo el **CI** (`ci.yml`) **no** necesita secretos.  
-Los workflows de ingesta y alertas exigen secrets en modos con escritura, envío real o **schedule**.
+Los workflows de ingesta y alertas exigen secrets del repo en modos con escritura o envío real. El PAT del cron externo vive solo en el servicio despertador.
 
 ## ADR
 

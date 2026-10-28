@@ -74,12 +74,16 @@ OK explícito de producto: se **descomentan / activan** los `schedule` en:
 
 La fila única de alertas del Paso 10 queda **sustituida en cadencia** por [ADR 020](020-alertas-match-post-ingesta-y-digest-diario.md):
 
-| Workflow | Cron (UTC) | Modo en schedule |
+| Workflow | Cadencia (UTC) | Modo productivo |
 |---|---|---|
-| `alerts-match.yml` | `0 8 * * 1` (lun) | `--phase match` (ventana sync/`updated_at`; sin `since_days`) |
-| `alerts-digest.yml` | `0 9 * * *` (diario) | `--phase send --send` (solo drenado Resend) |
+| `alerts-match.yml` | lun 08:00 | `--phase match` (ventana sync/`updated_at`; sin `since_days`) |
+| `alerts-digest.yml` | diario 09:00 | `--phase send --send` (solo drenado Resend) |
 
-Ingestas lunes 05–07 sin cambio. Este ADR 005 sigue siendo la historia manual-first → cron on; el detalle de alertas vive en 020.
+Ingestas lunes 05–07 sin cambio de horas de producto.
+
+### Enmienda — despertador externo (2026-10-28)
+
+[ADR 020](020-alertas-match-post-ingesta-y-digest-diario.md) fija que el **reloj** no es `on.schedule` de GitHub: un cron externo dispara `workflow_dispatch` (PAT). Los YAML de ingest/alertas **quitan** `schedule` para no duplicar. Este ADR 005 sigue siendo la historia manual-first → automatización on; el detalle de orquestación vive en 020 + [runbook](../runbooks/external-cron-dispatch.md).
 
 ## Verificación
 
