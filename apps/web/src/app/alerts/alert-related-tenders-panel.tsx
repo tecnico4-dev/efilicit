@@ -320,7 +320,7 @@ export function AlertRelatedTendersPanel({
                     No hay licitaciones en esta vista.
                   </p>
                 </div>
-              ) : showPager ? (
+              ) : (
                 <div className="relative z-0 flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg rounded-tl-none border border-border bg-surface/40">
                   <div
                     key={`${view}-${page}-${pageSize}`}
@@ -336,31 +336,21 @@ export function AlertRelatedTendersPanel({
                       ))}
                     </ul>
                   </div>
-                  <div className="shrink-0 border-t border-border bg-background px-4 py-3">
-                    <ListPager
-                      page={page}
-                      totalPages={totalPages}
-                      pageSize={pageSize}
-                      showing={pageItems.length}
-                      total={total}
-                      itemLabel="licitaciones"
-                      ariaPageSizeLabel="Licitaciones por página"
-                      onPageChange={setPage}
-                      onPageSizeChange={onPageSizeChange}
-                    />
-                  </div>
-                </div>
-              ) : (
-                <div className="relative z-0 overflow-hidden rounded-lg rounded-tl-none border border-border bg-surface/40">
-                  <ul className="divide-y divide-border">
-                    {pageItems.map((item) => (
-                      <RelatedItemRow
-                        key={item.queueId}
-                        item={item}
-                        onNavigate={onClose}
+                  {showPager ? (
+                    <div className="shrink-0 border-t border-border bg-background px-4 py-3">
+                      <ListPager
+                        page={page}
+                        totalPages={totalPages}
+                        pageSize={pageSize}
+                        showing={pageItems.length}
+                        total={total}
+                        itemLabel="licitaciones"
+                        ariaPageSizeLabel="Licitaciones por página"
+                        onPageChange={setPage}
+                        onPageSizeChange={onPageSizeChange}
                       />
-                    ))}
-                  </ul>
+                    </div>
+                  ) : null}
                 </div>
               )}
             </>
