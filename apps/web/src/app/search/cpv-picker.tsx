@@ -14,7 +14,7 @@ import { preloadCpvDictionary } from "@/lib/cpv-load";
 import type { CpvSuggestion } from "@/lib/cpv-dictionary";
 import {
   CLEAR_SEARCH_EVENT,
-  useSearchFeedback,
+  useOptionalSearchFeedback,
 } from "./search-feedback";
 
 const CpvDictionaryDialog = dynamic(
@@ -48,7 +48,8 @@ export function CpvPicker({
   const listId = useId();
   const selectedId = useId();
   const wrapRef = useRef<HTMLDivElement>(null);
-  const { clearFeedback } = useSearchFeedback();
+  const searchFeedback = useOptionalSearchFeedback();
+  const clearFeedback = searchFeedback?.clearFeedback ?? (() => {});
   const [draft, setDraft] = useState("");
   const [fieldMessage, setFieldMessage] = useState<{
     text: string;

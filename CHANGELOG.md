@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Alertas: `CpvPicker` ya no exige `SearchFeedbackProvider` (crash al abrir `/alerts` tras CriteriaFilters compartido).
 - RLS: `auth.uid()` → `(select auth.uid())` en políticas owner-only (advisor `auth_rls_initplan`); retirada `setup_rls_smoke` (andamiaje Fase 0).
 - Auth: `handle_new_user` sin `EXECUTE` para `anon`/`authenticated` (sigue el trigger; deja de exponerse como RPC SECURITY DEFINER).
 - CI/`next build`: `getSessionUser` y `AuthenticatedChrome` no exigen env Supabase en prerender (p. ej. `/_not-found`); sin sesión si faltan `NEXT_PUBLIC_*`.
