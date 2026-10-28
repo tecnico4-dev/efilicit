@@ -49,7 +49,7 @@ on:
 
 jobs:
   ingest:
-    name: Run ${{ matrix.syndication }} (${{ github.event_name == 'schedule' && 'live' || inputs.mode }})
+    name: Run ${{ matrix.syndication }} (${{ inputs.mode }})
     runs-on: ubuntu-latest
     # concurrency aquí (no a nivel workflow): `matrix` solo existe en el job
     concurrency:
@@ -58,7 +58,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        syndication: ${{ github.event_name == 'schedule' && fromJSON('["placsp","placsp_agregadas","placsp_menores"]') || fromJSON(format('["{0}"]', github.event.inputs.syndication || 'placsp')) }}
+        syndication: ${{ fromJSON(format('["{0}"]', github.event.inputs.syndication || 'placsp')) }}
     defaults:
       run:
         working-directory: ingestion
@@ -66,9 +66,8 @@ jobs:
       EFILICIT_DATABASE_URL: ${{ secrets.EFILICIT_DATABASE_URL }}
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-      MODE: ${{ github.event_name == 'schedule' && 'live' || inputs.mode }}
-      # Cron: subir RAW si hay secrets (fallará el step de guard si faltan)
-      UPLOAD_STORAGE: ${{ github.event_name == 'schedule' && 'true' || inputs.upload_storage }}
+      MODE: ${{ inputs.mode }}
+      UPLOAD_STORAGE: ${{ inputs.upload_storage }}
       FROM_MONTH: ${{ github.event.inputs.from_month || '' }}
       TO_MONTH: ${{ github.event.inputs.to_month || '' }}
       AS_OF: ${{ github.event.inputs.as_of || '' }}

@@ -43,7 +43,7 @@ concurrency:
 
 jobs:
   ingest:
-    name: Run catalunya (${{ github.event_name == 'schedule' && 'live' || inputs.mode }})
+    name: Run catalunya (${{ inputs.mode }})
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -52,12 +52,12 @@ jobs:
       EFILICIT_DATABASE_URL: ${{ secrets.EFILICIT_DATABASE_URL }}
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-      MODE: ${{ github.event_name == 'schedule' && 'live' || inputs.mode }}
-      PAGE_SIZE: ${{ github.event_name == 'schedule' && '1000' || inputs.page_size || '1000' }}
-      MAX_PAGES: ${{ github.event_name == 'schedule' && '10' || inputs.max_pages || '1' }}
-      START_OFFSET: ${{ github.event_name == 'schedule' && '0' || inputs.start_offset || '0' }}
+      MODE: ${{ inputs.mode }}
+      PAGE_SIZE: ${{ inputs.page_size || '1000' }}
+      MAX_PAGES: ${{ inputs.max_pages || '1' }}
+      START_OFFSET: ${{ inputs.start_offset || '0' }}
       RUN_ID: ${{ github.event.inputs.run_id || '' }}
-      UPLOAD_STORAGE: ${{ github.event_name == 'schedule' && 'true' || inputs.upload_storage }}
+      UPLOAD_STORAGE: ${{ inputs.upload_storage }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4

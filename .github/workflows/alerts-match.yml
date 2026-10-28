@@ -32,16 +32,16 @@ concurrency:
 
 jobs:
   match:
-    name: Run alerts match (${{ github.event_name == 'schedule' && 'write' || inputs.mode }})
+    name: Run alerts match (${{ inputs.mode }})
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: ingestion
     env:
       EFILICIT_DATABASE_URL: ${{ secrets.EFILICIT_DATABASE_URL }}
-      MODE: ${{ github.event_name == 'schedule' && 'write' || inputs.mode }}
-      DIGEST: ${{ github.event_name == 'schedule' && '' || inputs.digest }}
-      SYNC_DATE: ${{ github.event_name == 'schedule' && '' || inputs.sync_date }}
+      MODE: ${{ inputs.mode }}
+      DIGEST: ${{ inputs.digest }}
+      SYNC_DATE: ${{ inputs.sync_date }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
