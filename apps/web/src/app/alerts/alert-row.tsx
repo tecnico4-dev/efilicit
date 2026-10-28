@@ -22,6 +22,7 @@ import {
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { ownAlertNameTaken, updateOwnAlert } from "@/lib/queries";
 import type { Database } from "@efilicit/types";
+import { AlertRelatedTendersPanel } from "./alert-related-tenders-panel";
 import { RemoveAlertButton } from "./remove-alert-button";
 
 type AlertRow = Database["public"]["Tables"]["alerts"]["Row"];
@@ -29,9 +30,12 @@ type AlertRow = Database["public"]["Tables"]["alerts"]["Row"];
 export function AlertRowItem({
   alert,
   filterOptions,
+  hasRelatedTenders = false,
 }: {
   alert: AlertRow;
   filterOptions: CriteriaFilterOptionsProp;
+  /** Hay filas en notification_queue para esta alerta. */
+  hasRelatedTenders?: boolean;
 }) {
   const router = useRouter();
   const criteria = parseCriteria(alert.criteria);
@@ -43,6 +47,7 @@ export function AlertRowItem({
   const [editKey, setEditKey] = useState(0);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [relatedOpen, setRelatedOpen] = useState(false);
 
   async function toggleActive() {
     setPending(true);
@@ -144,6 +149,17 @@ export function AlertRowItem({
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          {hasRelatedTenders ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={pending || editing}
+              onClick={() => setRelatedOpen(true)}
+            >
+              Licitaciones relacionadas
+            </Button>
+          ) : null}
           <Button
             type="button"
             variant="outline"
@@ -170,6 +186,13 @@ export function AlertRowItem({
           <RemoveAlertButton alert={alert} disabled={editing} />
         </div>
       </div>
+
+      <AlertRelatedTendersPanel
+        alertId={alert.id}
+        alertName={alert.name}
+        open={relatedOpen}
+        onClose={() => setRelatedOpen(false)}
+      />
 
       {editing ? (
         <form

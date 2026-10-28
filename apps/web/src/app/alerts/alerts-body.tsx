@@ -3,7 +3,11 @@ import {
   getSessionProfile,
   getSupabaseServerClient,
 } from "@/lib/auth/session";
-import { listOwnAlerts, listSearchFilterOptions } from "@/lib/queries";
+import {
+  listOwnAlertIdsWithQueueItems,
+  listOwnAlerts,
+  listSearchFilterOptions,
+} from "@/lib/queries";
 import type { CriteriaFilterOptionsProp } from "@/components/criteria/criteria-filters";
 import { AlertRowItem } from "./alert-row";
 import { AlertsPanel } from "./alerts-panel";
@@ -42,6 +46,11 @@ export async function AlertsBody() {
 
   const digestFrequency =
     profileResult.data.digest_frequency === "semanal" ? "semanal" : "diaria";
+
+  const queueAlertIdsResult = await listOwnAlertIdsWithQueueItems(supabase, {
+    userId: profileResult.data.id,
+  });
+  const alertIdsWithQueue = queueAlertIdsResult.data;
 
   const filterOptions: CriteriaFilterOptionsProp = filterListed.error
     ? {
@@ -84,6 +93,7 @@ export async function AlertsBody() {
                 key={a.id}
                 alert={a}
                 filterOptions={filterOptions}
+                hasRelatedTenders={alertIdsWithQueue.has(a.id)}
               />
             ))}
           </ul>
