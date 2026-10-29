@@ -144,6 +144,19 @@ export function MunicipalityFilter({
     return () => form.removeEventListener("submit", onSubmit);
   }, [formId]);
 
+  /**
+   * El código va en un `<input type="hidden">` controlado por React: al elegir
+   * municipio en el desplegable no hay evento nativo `input`/`change`, y el
+   * marcador «guardar búsqueda» / Buscar no se enteraban del match.
+   */
+  useEffect(() => {
+    const form = document.getElementById(formId) as HTMLFormElement | null;
+    const codeInput = form?.elements.namedItem("municipality");
+    if (!(codeInput instanceof HTMLInputElement)) return;
+    codeInput.dispatchEvent(new Event("input", { bubbles: true }));
+    codeInput.dispatchEvent(new Event("change", { bubbles: true }));
+  }, [selectedCode, formId]);
+
   useEffect(() => {
     function onDocMouseDown(e: MouseEvent) {
       if (!wrapRef.current?.contains(e.target as Node)) {

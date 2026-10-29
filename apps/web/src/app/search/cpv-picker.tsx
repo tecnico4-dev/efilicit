@@ -67,6 +67,14 @@ export function CpvPicker({
   const [dict, setDict] = useState<CpvDictApi | null>(null);
   const [dictReady, setDictReady] = useState(false);
 
+  /** Hidden `name="cpv"` no dispara input/change nativo al añadir/quitar chips. */
+  useEffect(() => {
+    const form = wrapRef.current?.closest("form");
+    if (!form) return;
+    form.dispatchEvent(new Event("input", { bubbles: true }));
+    form.dispatchEvent(new Event("change", { bubbles: true }));
+  }, [codes]);
+
   useEffect(() => {
     let cancelled = false;
     const load = () => {
