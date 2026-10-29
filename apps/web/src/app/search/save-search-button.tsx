@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/cn";
 import { criteriaEqual, parseCriteria } from "@/lib/criteria-display";
 import { buildCriteriaFromSearchForm } from "@/lib/build-criteria-from-form";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
@@ -21,8 +22,30 @@ function buildCriteria(form: HTMLFormElement): SearchCriteria | null {
   return buildCriteriaFromSearchForm(form);
 }
 
+/** Icono clásico de guardar (disquete), misma escala que el corazón de favoritos. */
+function SaveIcon() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      width="20"
+      height="20"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+      <path d="M17 21v-8H7v8" />
+      <path d="M7 3v5h8" />
+    </svg>
+  );
+}
+
 /**
- * Guarda los criterios del formulario: pide nombre en modal.
+ * Guarda los criterios del formulario: icono tipo favoritos + modal de nombre.
  */
 export function SaveSearchButton({ userId }: { userId: string }) {
   const router = useRouter();
@@ -160,9 +183,20 @@ export function SaveSearchButton({ userId }: { userId: string }) {
 
   return (
     <>
-      <Button type="button" variant="outline" onClick={openDialog}>
-        Guardar búsqueda
-      </Button>
+      <button
+        type="button"
+        disabled={pending}
+        onClick={openDialog}
+        aria-label="Guardar búsqueda"
+        title="Guardar búsqueda"
+        className={cn(
+          "shrink-0 rounded-md p-1.5 transition-colors outline-none",
+          "text-foreground hover:bg-muted",
+          "focus-visible:ring-2 focus-visible:ring-ring/50 disabled:opacity-50",
+        )}
+      >
+        <SaveIcon />
+      </button>
       {dialogOpen && mounted
         ? createPortal(
             <div

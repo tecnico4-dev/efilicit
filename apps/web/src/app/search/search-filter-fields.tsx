@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import {
   listPlaceMunicipalities,
   listSearchFilterOptions,
@@ -21,6 +22,7 @@ function optionAllowed(
 type LoaderProps = {
   initial: CriteriaFilterInitial;
   queryOnlyNoise?: boolean;
+  textFieldAction?: ReactNode;
 };
 
 /**
@@ -30,6 +32,7 @@ type LoaderProps = {
 export async function SearchFilterFields({
   initial,
   queryOnlyNoise = false,
+  textFieldAction,
 }: LoaderProps) {
   let filterOptions = {
     statuses: [] as { value: string; label: string }[],
@@ -100,6 +103,7 @@ export async function SearchFilterFields({
       filterOptions={filterOptions}
       formId={SEARCH_FORM_ID}
       queryOnlyNoise={queryOnlyNoise}
+      textFieldAction={textFieldAction}
     />
   );
 }
@@ -107,12 +111,14 @@ export async function SearchFilterFields({
 export function SearchFilterFieldsFallback({
   initial,
   queryOnlyNoise = false,
+  textFieldAction,
 }: LoaderProps) {
   return (
     <CriteriaFiltersFallback
       initial={initial}
       formId={SEARCH_FORM_ID}
       queryOnlyNoise={queryOnlyNoise}
+      textFieldAction={textFieldAction}
     />
   );
 }

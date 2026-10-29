@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { SEARCH_CCAA_OPTIONS } from "@/lib/geo-ccaa";
 import type { CriteriaFilterInitial } from "@/lib/criteria-display";
 import type { SearchFilterOption } from "@/lib/queries";
@@ -38,6 +39,8 @@ type Props = {
   idPrefix?: string;
   /** Hint de keywords solo ruido (buscador). */
   queryOnlyNoise?: boolean;
+  /** Acción a la derecha del label «Texto» (p. ej. guardar búsqueda). */
+  textFieldAction?: ReactNode;
 };
 
 /**
@@ -50,6 +53,7 @@ export function CriteriaFilters({
   formId = SEARCH_FORM_ID,
   idPrefix = "",
   queryOnlyNoise = false,
+  textFieldAction,
 }: Props) {
   const ccaaWithData = new Set(filterOptions.ccaaCodesWithTenders);
   const statuses = withInitialOption(filterOptions.statuses, initial.status);
@@ -74,9 +78,17 @@ export function CriteriaFilters({
   return (
     <div className="space-y-4">
       <div>
-        <label htmlFor={qId} className="block text-sm font-medium text-foreground">
-          Texto
-        </label>
+        <div className="flex items-center justify-between gap-2">
+          <label
+            htmlFor={qId}
+            className="block text-sm font-medium text-foreground"
+          >
+            Texto
+          </label>
+          {textFieldAction ? (
+            <div className="-mr-1.5 shrink-0">{textFieldAction}</div>
+          ) : null}
+        </div>
         <input
           id={qId}
           name="q"
@@ -302,11 +314,13 @@ export function CriteriaFiltersFallback({
   formId = SEARCH_FORM_ID,
   idPrefix = "",
   queryOnlyNoise = false,
+  textFieldAction,
 }: {
   initial: CriteriaFilterInitial;
   formId?: string;
   idPrefix?: string;
   queryOnlyNoise?: boolean;
+  textFieldAction?: ReactNode;
 }) {
   return (
     <CriteriaFilters
@@ -314,6 +328,7 @@ export function CriteriaFiltersFallback({
       formId={formId}
       idPrefix={idPrefix}
       queryOnlyNoise={queryOnlyNoise}
+      textFieldAction={textFieldAction}
       filterOptions={{
         statuses: initial.status
           ? [{ value: initial.status, label: initial.status }]
