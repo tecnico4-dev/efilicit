@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { cn } from "@/lib/cn";
 import { CLEAR_SEARCH_EVENT, useSearchFeedback } from "./search-feedback";
 import { SEARCH_FORM_ID } from "./save-search-button";
 
@@ -81,7 +82,7 @@ function formHasValues(form: HTMLFormElement): boolean {
 
 /**
  * Solo vacía los inputs del formulario. No toca la URL ni los resultados.
- * Visible únicamente si algún campo tiene valor.
+ * Invisible (pero ocupa hueco) si no hay valores — evita saltos del botón Buscar.
  */
 export function ClearSearchFieldsButton() {
   const { clearFeedback } = useSearchFeedback();
@@ -101,9 +102,8 @@ export function ClearSearchFieldsButton() {
     };
   }, []);
 
-  if (!visible) return null;
-
   function onClear() {
+    if (!visible) return;
     clearFeedback();
     const form = document.getElementById(SEARCH_FORM_ID) as HTMLFormElement | null;
     if (form && formHasValues(form)) {
@@ -116,7 +116,13 @@ export function ClearSearchFieldsButton() {
     <button
       type="button"
       onClick={onClear}
-      className="text-xs text-muted-foreground hover:text-foreground hover:underline"
+      tabIndex={visible ? 0 : -1}
+      aria-hidden={!visible}
+      disabled={!visible}
+      className={cn(
+        "text-xs text-muted-foreground hover:text-foreground hover:underline",
+        !visible && "invisible pointer-events-none",
+      )}
     >
       Limpiar campos
     </button>
