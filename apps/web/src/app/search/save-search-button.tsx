@@ -5,16 +5,24 @@ import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useUndoToast } from "@/components/undo-toast";
 import { cn } from "@/lib/cn";
 import { criteriaEqual, parseCriteria } from "@/lib/criteria-display";
 import { buildCriteriaFromSearchForm } from "@/lib/build-criteria-from-form";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import {
   createOwnSavedSearch,
+  deleteOwnSavedSearch,
   listOwnSavedSearches,
 } from "@/lib/queries";
 import type { SearchCriteria } from "@efilicit/types";
 import { useSearchFeedback } from "./search-feedback";
+
+type MatchedSavedSearch = {
+  id: string;
+  name: string;
+  criteria: SearchCriteria;
+};
 
 const FORM_ID = "search-form";
 
@@ -51,14 +59,17 @@ function BookmarkIcon({ filled }: { filled: boolean }) {
 export function SaveSearchButton({ userId }: { userId: string }) {
   const router = useRouter();
   const { setFeedback } = useSearchFeedback();
+  const { showUndo, showStatus } = useUndoToast();
   const titleId = useId();
   const [pending, setPending] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const [saved, setSaved] = useState(false);
+  const [matched, setMatched] = useState<MatchedSavedSearch | null>(null);
   const [name, setName] = useState("");
   const [criteria, setCriteria] = useState<SearchCriteria | null>(null);
   const [dialogError, setDialogError] = useState<string | null>(null);
+
+  const saved = matched != null;
 
   useEffect(() => {
     setMounted(true);
@@ -68,21 +79,28 @@ export function SaveSearchButton({ userId }: { userId: string }) {
   async function syncSavedFromForm() {
     const form = document.getElementById(FORM_ID) as HTMLFormElement | null;
     if (!form) {
-      setSaved(false);
+      setMatched(null);
       return;
     }
     const built = buildCriteria(form);
     if (!built) {
-      setSaved(false);
+      setMatched(null);
       return;
     }
     const client = createSupabaseBrowserClient();
     const existing = await listOwnSavedSearches(client);
     if (existing.error) return;
-    setSaved(
-      existing.data.some((s) =>
-        criteriaEqual(built, parseCriteria(s.criteria)),
-      ),
+    const hit = existing.data.find((s) =>
+      criteriaEqual(built, parseCriteria(s.criteria)),
+    );
+    setMatched(
+      hit
+        ? {
+            id: hit.id,
+            name: hit.name,
+            criteria: parseCriteria(hit.criteria),
+          }
+        : null,
     );
   }
 
@@ -110,6 +128,33 @@ export function SaveSearchButton({ userId }: { userId: string }) {
       document.body.style.overflow = prev;
     };
   }, [dialogOpen]);
+
+  async function onUnsave() {
+    if (pending || !matched) return;
+    setPending(true);
+    const snapshot = matched;
+    const client = createSupabaseBrowserClient();
+    const { error } = await deleteOwnSavedSearch(client, {
+      searchId: snapshot.id,
+    });
+    setPending(false);
+    if (error) {
+      showStatus(`No se pudo eliminar: ${error.message}`);
+      return;
+    }
+    setMatched(null);
+    showUndo("Búsqueda eliminada.", async () => {
+      const c = createSupabaseBrowserClient();
+      await createOwnSavedSearch(c, {
+        userId,
+        name: snapshot.name,
+        criteria: snapshot.criteria,
+      });
+      await syncSavedFromForm();
+      router.refresh();
+    });
+    router.refresh();
+  }
 
   function openDialog() {
     const form = document.getElementById(FORM_ID) as HTMLFormElement | null;
@@ -162,6 +207,14 @@ export function SaveSearchButton({ userId }: { userId: string }) {
     setDialogOpen(true);
   }
 
+  function onBookmarkClick() {
+    if (saved) {
+      void onUnsave();
+      return;
+    }
+    openDialog();
+  }
+
   async function onConfirmSave() {
     if (!criteria) return;
     const trimmed = name.trim();
@@ -199,20 +252,24 @@ export function SaveSearchButton({ userId }: { userId: string }) {
       return;
     }
 
-    const { error } = await createOwnSavedSearch(client, {
+    const { data: created, error } = await createOwnSavedSearch(client, {
       userId,
       name: trimmed,
       criteria,
     });
     setPending(false);
 
-    if (error) {
-      setDialogError(error.message);
+    if (error || !created) {
+      setDialogError(error?.message ?? "No se pudo guardar.");
       return;
     }
 
     setDialogOpen(false);
-    setSaved(true);
+    setMatched({
+      id: created.id,
+      name: created.name,
+      criteria: parseCriteria(created.criteria),
+    });
     setFeedback({
       text: "Búsqueda guardada. Puedes verla en Favoritos.",
       isError: false,
@@ -227,9 +284,9 @@ export function SaveSearchButton({ userId }: { userId: string }) {
       <button
         type="button"
         disabled={pending}
-        onClick={openDialog}
-        aria-label={saved ? "Búsqueda guardada" : "Guardar búsqueda"}
-        title={saved ? "Búsqueda guardada" : "Guardar búsqueda"}
+        onClick={onBookmarkClick}
+        aria-label={saved ? "Quitar búsqueda guardada" : "Guardar búsqueda"}
+        title={saved ? "Quitar búsqueda guardada" : "Guardar búsqueda"}
         aria-pressed={saved}
         className={cn(
           "shrink-0 rounded-md p-1.5 transition-colors outline-none",
