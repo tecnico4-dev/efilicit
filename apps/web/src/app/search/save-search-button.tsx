@@ -22,24 +22,25 @@ function buildCriteria(form: HTMLFormElement): SearchCriteria | null {
   return buildCriteriaFromSearchForm(form);
 }
 
-/** Icono clásico de guardar (disquete), misma escala que el corazón de favoritos. */
-function SaveIcon() {
+/**
+ * Marcador (bookmark) estilo favoritos: outline gris / relleno azul eficen.
+ * Un solo path (sin sombra de fondo).
+ */
+function BookmarkIcon({ filled }: { filled: boolean }) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
       viewBox="0 0 24 24"
       width="20"
       height="20"
-      fill="none"
+      fill={filled ? "currentColor" : "none"}
       stroke="currentColor"
       strokeWidth="1.75"
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden
     >
-      <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
-      <path d="M17 21v-8H7v8" />
-      <path d="M7 3v5h8" />
+      <path d="M18.5 21.25 12 16.5l-6.5 4.75V5.25A2.25 2.25 0 0 1 7.75 3h8.5a2.25 2.25 0 0 1 2.25 2.25z" />
     </svg>
   );
 }
@@ -54,6 +55,7 @@ export function SaveSearchButton({ userId }: { userId: string }) {
   const [pending, setPending] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [saved, setSaved] = useState(false);
   const [name, setName] = useState("");
   const [criteria, setCriteria] = useState<SearchCriteria | null>(null);
   const [dialogError, setDialogError] = useState<string | null>(null);
@@ -61,6 +63,44 @@ export function SaveSearchButton({ userId }: { userId: string }) {
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  /** ¿Los criterios actuales del form ya están en una búsqueda guardada? */
+  async function syncSavedFromForm() {
+    const form = document.getElementById(FORM_ID) as HTMLFormElement | null;
+    if (!form) {
+      setSaved(false);
+      return;
+    }
+    const built = buildCriteria(form);
+    if (!built) {
+      setSaved(false);
+      return;
+    }
+    const client = createSupabaseBrowserClient();
+    const existing = await listOwnSavedSearches(client);
+    if (existing.error) return;
+    setSaved(
+      existing.data.some((s) =>
+        criteriaEqual(built, parseCriteria(s.criteria)),
+      ),
+    );
+  }
+
+  useEffect(() => {
+    void syncSavedFromForm();
+    const form = document.getElementById(FORM_ID);
+    if (!form) return;
+    const onChange = () => {
+      void syncSavedFromForm();
+    };
+    form.addEventListener("input", onChange);
+    form.addEventListener("change", onChange);
+    return () => {
+      form.removeEventListener("input", onChange);
+      form.removeEventListener("change", onChange);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- sync once + listeners
+  }, [userId]);
 
   useEffect(() => {
     if (!dialogOpen) return;
@@ -172,6 +212,7 @@ export function SaveSearchButton({ userId }: { userId: string }) {
     }
 
     setDialogOpen(false);
+    setSaved(true);
     setFeedback({
       text: "Búsqueda guardada. Puedes verla en Favoritos.",
       isError: false,
@@ -187,15 +228,18 @@ export function SaveSearchButton({ userId }: { userId: string }) {
         type="button"
         disabled={pending}
         onClick={openDialog}
-        aria-label="Guardar búsqueda"
-        title="Guardar búsqueda"
+        aria-label={saved ? "Búsqueda guardada" : "Guardar búsqueda"}
+        title={saved ? "Búsqueda guardada" : "Guardar búsqueda"}
+        aria-pressed={saved}
         className={cn(
           "shrink-0 rounded-md p-1.5 transition-colors outline-none",
-          "text-foreground hover:bg-muted",
           "focus-visible:ring-2 focus-visible:ring-ring/50 disabled:opacity-50",
+          saved
+            ? "text-primary hover:bg-primary/10"
+            : "text-muted-foreground hover:bg-muted hover:text-foreground",
         )}
       >
-        <SaveIcon />
+        <BookmarkIcon filled={saved} />
       </button>
       {dialogOpen && mounted
         ? createPortal(
