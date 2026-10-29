@@ -487,14 +487,6 @@ export default async function SearchPage({
 
       <SearchForm
         formKey={`${qInput}|${cpvCodes.join(",")}|${cpvMatch}|${minRaw}|${maxRaw}|${ccaa}|${municipalityRaw}|${statusRaw}|${procedureRaw}|${contractTypeRaw}|${pubFromValid}|${pubToValid}|${openForSubmission}|${from}`}
-        actions={
-          <button
-            type="submit"
-            className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary-dark"
-          >
-            Buscar
-          </button>
-        }
       >
         {from === "favorites" || from === "favorites-searches" ? (
           <input type="hidden" name="from" value={from} />

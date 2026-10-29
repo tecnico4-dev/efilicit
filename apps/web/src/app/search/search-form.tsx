@@ -1,7 +1,8 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { PAGE_TITLE_RULE } from "@/components/shell/page-width";
+import { cn } from "@/lib/cn";
 import { ClearSearchFieldsButton } from "./clear-search-fields";
 import {
   SearchFeedbackProvider,
@@ -68,13 +69,42 @@ function hasInvalidAmountRange(form: HTMLFormElement): boolean {
   return min > max;
 }
 
-function SearchFormInner({
-  children,
-  actions,
-}: {
-  children: ReactNode;
-  actions: ReactNode;
-}) {
+function SearchSubmitButton() {
+  const [canSearch, setCanSearch] = useState(false);
+
+  useEffect(() => {
+    const form = document.getElementById(
+      SEARCH_FORM_ID,
+    ) as HTMLFormElement | null;
+    if (!form) return;
+    const sync = () => setCanSearch(hasAnyCriterion(form));
+    sync();
+    form.addEventListener("input", sync);
+    form.addEventListener("change", sync);
+    return () => {
+      form.removeEventListener("input", sync);
+      form.removeEventListener("change", sync);
+    };
+  }, []);
+
+  return (
+    <button
+      type="submit"
+      disabled={!canSearch}
+      title={canSearch ? "Buscar" : "Indica algún criterio para buscar"}
+      className={cn(
+        "rounded-md px-4 py-2 text-sm font-medium transition-colors",
+        canSearch
+          ? "bg-primary text-primary-foreground hover:bg-primary-dark"
+          : "cursor-not-allowed bg-muted text-muted-foreground",
+      )}
+    >
+      Buscar
+    </button>
+  );
+}
+
+function SearchFormInner({ children }: { children: ReactNode }) {
   const { feedback, setFeedback, clearFeedback } = useSearchFeedback();
 
   return (
@@ -86,10 +116,6 @@ function SearchFormInner({
       onSubmit={(e) => {
         if (!hasAnyCriterion(e.currentTarget)) {
           e.preventDefault();
-          setFeedback({
-            text: "Indica al menos un criterio antes de buscar.",
-            isError: true,
-          });
           return;
         }
         if (hasInvalidAmountRange(e.currentTarget)) {
@@ -117,7 +143,7 @@ function SearchFormInner({
           <ClearSearchFieldsButton />
         </div>
         <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-          {actions}
+          <SearchSubmitButton />
           {feedback ? (
             <p
               className={`text-xs ${feedback.isError ? "text-destructive" : "text-muted-foreground"}`}
@@ -144,22 +170,19 @@ function SearchFormInner({
 }
 
 /**
- * Formulario GET de búsqueda; un solo hueco de feedback compartido
- * (Buscar / Guardar búsqueda se sustituyen entre sí).
+ * Formulario GET de búsqueda; feedback compartido para rangos inválidos, etc.
  */
 export function SearchForm({
   children,
-  actions,
   formKey,
 }: {
   children: ReactNode;
-  actions: ReactNode;
   /** Remonta el form al cambiar la URL (p. ej. nav Búsqueda limpia). */
   formKey?: string;
 }) {
   return (
     <SearchFeedbackProvider key={formKey}>
-      <SearchFormInner actions={actions}>{children}</SearchFormInner>
+      <SearchFormInner>{children}</SearchFormInner>
     </SearchFeedbackProvider>
   );
 }
