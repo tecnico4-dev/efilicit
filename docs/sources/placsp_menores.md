@@ -203,7 +203,7 @@ Misma estrategia que `placsp` / `placsp_agregadas`, con prefijo RAW distinto:
 
 1. **`discover`:** paquetes mensuales pendientes (`artifact_key` = nombre del ZIP).
 2. **`fetch`:** bytes + SHA-256 + timeout/retry/`max_bytes`.
-3. **RAW:** `raw/placsp_menores/AAAA/MM/DD/...` en Storage.
+3. **RAW (ADR 022):** entries Atom nuevas en `raw/placsp_menores/…/entries/{sha256}.atom.xml` (no el ZIP entero).
 4. **Parseo:** Atom/CODICE → `SourceRecord` (reutilizar parser; no contaminar DDL canónico).
 5. **Upsert:** `(placsp_menores, source_tender_id)`.
 6. **Checkpoint:** cursor en `source_sync` por este `source_code`.
@@ -238,7 +238,7 @@ Pedido explícito del corte MVP (`docs/04`): contratos menores cuando estén dis
 
 - **Reutilizar** el conector PLACSP parametrizando `PlacspSyndication` — no clonar el parser.
 - **Discover + fetch:** `PlacspConnector(syndication=PLACSP_MENORES)`; `fetch` reutiliza `download_bytes`. Tests con `fetch_transport` inyectado — **sin red en unit tests**.
-- **RAW:** `fetch_validate_and_store_raw` + `validate_artifact` (magic ZIP) → Storage `raw/placsp_menores/...` + `source_artifacts`.
+- **RAW (ADR 022):** expand ZIP → entries; Storage solo entries nuevas bajo `raw/placsp_menores/…/entries/…`.
 - **Parse:** reutilizar `parse_placsp_artifact`; ZIP base `contratosMenoresPerfilesContratantes.atom`.
 - **Normalize + identidad:** reutilizar etapas del pipeline común.
 - **Upsert:** unique `(placsp_menores, source_tender_id)`; `source_sync` con contadores.

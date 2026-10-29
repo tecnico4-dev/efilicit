@@ -91,11 +91,39 @@ class PostgresSyncRepository:
             started_at=started_at,
         )
 
+    def find_artifact_by_checksum(
+        self,
+        source_code: str,
+        checksum: str,
+    ) -> tuple[str, StoredArtifact] | None:
+        """Lookup content-addressed (ADR 022)."""
+        row = self._conn.execute(
+            """
+            select id, artifact_key, storage_path, checksum, byte_size,
+                   content_type, source_url
+            from public.source_artifacts
+            where source_code = %s and checksum = %s
+            """,
+            (source_code, checksum),
+        ).fetchone()
+        if row is None:
+            return None
+        stored = StoredArtifact(
+            artifact_key=row[1],
+            checksum=row[3],
+            storage_path=row[2] or "",
+            byte_size=int(row[4] or 0),
+            content_type=row[5],
+            source_url=row[6],
+        )
+        return str(row[0]), stored
+
     def register_artifact(self, run: SyncRun, stored: StoredArtifact) -> str | None:
         """Upsert de metadatos por ``(source_code, artifact_key)``.
 
         Reejecutar el mismo artefacto actualiza checksum/ruta y el ``sync_id``
         de la corrida actual (evidencia ligada al último run que lo bajó).
+        Si choca el unique de checksum (misma huella, otro key), reutiliza la fila.
         """
         if run.id is None:
             raise ValueError("sync run is missing database id")
@@ -104,40 +132,51 @@ class PostgresSyncRepository:
         run.last_artifact = stored.artifact_key
         run.checksum = stored.checksum
 
-        row = self._conn.execute(
-            """
-            insert into public.source_artifacts (
-              source_code,
-              sync_id,
-              artifact_key,
-              storage_path,
-              checksum,
-              byte_size,
-              content_type,
-              source_url
-            )
-            values (%s, %s::uuid, %s, %s, %s, %s, %s, %s)
-            on conflict (source_code, artifact_key) do update set
-              sync_id = excluded.sync_id,
-              storage_path = excluded.storage_path,
-              checksum = excluded.checksum,
-              byte_size = excluded.byte_size,
-              content_type = excluded.content_type,
-              source_url = excluded.source_url,
-              downloaded_at = now()
-            returning id
-            """,
-            (
-                run.source_code,
-                run.id,
-                stored.artifact_key,
-                stored.storage_path,
-                stored.checksum,
-                stored.byte_size,
-                stored.content_type,
-                stored.source_url,
-            ),
-        ).fetchone()
+        existing = self.find_artifact_by_checksum(run.source_code, stored.checksum)
+        if existing is not None:
+            return existing[0]
+
+        try:
+            row = self._conn.execute(
+                """
+                insert into public.source_artifacts (
+                  source_code,
+                  sync_id,
+                  artifact_key,
+                  storage_path,
+                  checksum,
+                  byte_size,
+                  content_type,
+                  source_url
+                )
+                values (%s, %s::uuid, %s, %s, %s, %s, %s, %s)
+                on conflict (source_code, artifact_key) do update set
+                  sync_id = excluded.sync_id,
+                  storage_path = excluded.storage_path,
+                  checksum = excluded.checksum,
+                  byte_size = excluded.byte_size,
+                  content_type = excluded.content_type,
+                  source_url = excluded.source_url,
+                  downloaded_at = now()
+                returning id
+                """,
+                (
+                    run.source_code,
+                    run.id,
+                    stored.artifact_key,
+                    stored.storage_path,
+                    stored.checksum,
+                    stored.byte_size,
+                    stored.content_type,
+                    stored.source_url,
+                ),
+            ).fetchone()
+        except psycopg.Error:
+            # Carrera / unique checksum: re-leer.
+            again = self.find_artifact_by_checksum(run.source_code, stored.checksum)
+            if again is not None:
+                return again[0]
+            raise
         assert row is not None
         return str(row[0])
 

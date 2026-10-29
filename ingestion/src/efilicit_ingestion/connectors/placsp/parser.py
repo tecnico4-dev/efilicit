@@ -78,6 +78,13 @@ def parse_placsp_artifact(
     yield from _keep_newest_by_source_record_id(records)
 
 
+def keep_newest_by_source_record_id(
+    records: list[SourceRecord],
+) -> list[SourceRecord]:
+    """Una fila por identidad: la de ``recorded_at`` (atom:updated) más nueva."""
+    return _keep_newest_by_source_record_id(records)
+
+
 def _keep_newest_by_source_record_id(
     records: list[SourceRecord],
 ) -> list[SourceRecord]:

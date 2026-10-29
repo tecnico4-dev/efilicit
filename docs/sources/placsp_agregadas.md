@@ -214,7 +214,7 @@ Misma estrategia que `placsp`, con prefijo RAW distinto:
 
 1. **`discover`:** paquetes mensuales pendientes (`artifact_key` = nombre del ZIP).
 2. **`fetch`:** bytes + SHA-256 + timeout/retry/`max_bytes`.
-3. **RAW:** `raw/placsp_agregadas/AAAA/MM/DD/...` en Storage.
+3. **RAW (ADR 022):** entries Atom nuevas en `raw/placsp_agregadas/…/entries/{sha256}.atom.xml` (no el ZIP entero).
 4. **Parseo:** Atom/CODICE → `SourceRecord` (reutilizar parser; no contaminar DDL canónico).
 5. **Upsert:** `(placsp_agregadas, source_tender_id)`.
 6. **Checkpoint:** cursor en `source_sync` por este `source_code`.
@@ -251,7 +251,7 @@ No garantiza el 100 % de todos los contratos locales de cada CCAA. Catalunya y E
 
 - **Reutilizar** el conector PLACSP de Semana 2 parametrizando `source_code`, base de sindicación y `FEED_BASE_NAME` — no clonar el parser.
 - **Discover + fetch:** `PlacspConnector(syndication=PLACSP_AGREGADAS)`; `fetch` reutiliza `download_bytes` con el `source_url` del artefacto (timeout, retry, `max_bytes`, checksum). Tests con `fetch_transport` inyectado — **sin red en unit tests**.
-- **RAW (Paso 4.1):** `fetch_validate_and_store_raw` + `validate_artifact` (magic ZIP) → Storage `raw/placsp_agregadas/AAAA/MM/DD/...` + `source_artifacts`.
+- **RAW (ADR 022):** expand ZIP → entries; Storage solo entries nuevas bajo `raw/placsp_agregadas/…/entries/…`.
 - **Parse (Paso 4.2):** reutilizar `parse_placsp_artifact` (Atom/CODICE); ZIP base `PlataformasAgregadasSinMenores.atom`.
 - **Normalize + identidad (Paso 4.3):** reutilizar `stages.normalize` / `stages.resolve_identity` (NIF/CIF prioritario; confidence HIGH/MEDIUM/LOW).
 - **Upsert (Paso 4.4):** reutilizar `CanonicalRepository` / `run_pipeline`; unique `(placsp_agregadas, source_tender_id)`; `artifact_id` en `tender_sources`; `source_sync` con contadores.

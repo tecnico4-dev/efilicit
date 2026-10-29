@@ -21,9 +21,7 @@ from efilicit_ingestion.connectors.placsp import PlacspConnector
 from efilicit_ingestion.connectors.placsp.urls import PLACSP, PlacspSyndication
 from efilicit_ingestion.models import SyncContext
 from efilicit_ingestion.pipeline.canonical_repo import InMemoryCanonicalRepository
-from efilicit_ingestion.pipeline.db_run import run_pipeline_postgres
 from efilicit_ingestion.pipeline.ports import InMemoryArtifactStore, InMemorySyncRepository
-from efilicit_ingestion.pipeline.runner import run_pipeline
 from efilicit_ingestion.pipeline.supabase_storage import (
     SupabaseStorageArtifactStore,
     default_service_role_key,
@@ -107,18 +105,23 @@ def run_placsp(config: PlacspRunConfig) -> PipelineResult:
     )
     context = SyncContext(source_code=connector.source_code, run_id=run_id)
 
+    # ADR 022: RAW = entries Atom nuevas (no ZIP entero en Storage).
+    from efilicit_ingestion.pipeline.placsp_incremental import (
+        run_pipeline_placsp_incremental,
+        run_pipeline_placsp_incremental_postgres,
+    )
+
     if config.dry_run:
         artifact_store = InMemoryArtifactStore()
         sync_repo = InMemorySyncRepository()
         canonical_repo = InMemoryCanonicalRepository()
-        result = run_pipeline(
+        return run_pipeline_placsp_incremental(
             connector,
             context,
             artifact_store=artifact_store,
             sync_repo=sync_repo,
             canonical_repo=canonical_repo,
         )
-        return result
 
     artifact_store: object
     if config.use_storage:
@@ -135,7 +138,7 @@ def run_placsp(config: PlacspRunConfig) -> PipelineResult:
     else:
         artifact_store = InMemoryArtifactStore()
 
-    return run_pipeline_postgres(
+    return run_pipeline_placsp_incremental_postgres(
         connector,
         context,
         artifact_store=artifact_store,  # type: ignore[arg-type]

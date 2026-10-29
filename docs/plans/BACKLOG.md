@@ -35,7 +35,7 @@ No son bugs olvidados ni el trabajo de la siguiente semana del roadmap. Son huec
 ## 2. Email / ops / CI
 
 - **Dominio `eficen.com` en Resend.** Verificación de dominio / envío desde correo corporativo (IT). Pruebas Semana 5 OK con correo personal.
-- ~~**ZIPs grandes en cron PLACSP / Storage.**~~ **Mitigado** ([ADR 021](../adr/021-raw-storage-tus-resumable-httpx.md)): timeout/reintentos PLACSP + Storage; TUS ≥6 MiB vía `httpx`; ZIP oficial intacto. Revisar si aún hay OOM → parse streaming (aplazado).
+- ~~**ZIPs grandes en cron PLACSP / Storage.**~~ **Mitigado** ([ADR 021](../adr/021-raw-storage-tus-resumable-httpx.md) + [ADR 022](../adr/022-placsp-raw-entry-incremental.md)): timeouts/TUS; RAW por entry Atom (sin ZIP entero); dedup checksum. Si Actions sigue a 6 h en expand/parse → paralelizar lotes (aplazado).
 - ~~Cron de producción — ingestas / alertas.~~ **Hecho** Semana 6 Paso 10 (schedules on; [ADR 005](../adr/005-ingesta-actions-manual-first-cron-off.md) enmienda).
 - **Environments / secrets de deploy.** Preview/production, Vercel, tokens — cablear cuando haya despliegue real (ver `.github/README.md`).
 - **CI ingestion sin Postgres en Actions (intencional).** Tests DB en skip en CI; integración local con `supabase start` ([ADR 004](../adr/004-ci-ingestion-sin-postgres.md)).
