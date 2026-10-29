@@ -249,6 +249,38 @@ export type Database = {
           },
         ]
       }
+      recent_searches: {
+        Row: {
+          criteria: Json
+          criteria_signature: string
+          id: string
+          searched_at: string
+          user_id: string
+        }
+        Insert: {
+          criteria: Json
+          criteria_signature: string
+          id?: string
+          searched_at?: string
+          user_id: string
+        }
+        Update: {
+          criteria?: Json
+          criteria_signature?: string
+          id?: string
+          searched_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recent_searches_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       digest_inbox_notifications: {
         Row: {
           created_at: string
@@ -970,6 +1002,13 @@ export type Database = {
           p_user_id: string
         }
         Returns: boolean
+      }
+      record_recent_search: {
+        Args: {
+          p_criteria: Json
+          p_signature: string
+        }
+        Returns: undefined
       }
       count_unread_favorite_status_notifications: {
         Args: {

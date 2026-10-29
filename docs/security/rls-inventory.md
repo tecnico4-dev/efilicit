@@ -22,7 +22,8 @@ pnpm --filter @efilicit/web verify:rls:favorites
 | Tabla | RLS | Acceso cliente | Notas |
 |---|---|---|---|
 | `users` | Sí | select/update/insert **own** | Perfil app ↔ `auth.users` |
-| `saved_searches` | Sí | CRUD **own** | |
+| `saved_searches` | Sí | CRUD **own** | Favoritos con nombre |
+| `recent_searches` | Sí | CRUD **own** | Historial auto (máx. 5); escritura vía `record_recent_search` |
 | `alerts` | Sí | CRUD **own** | |
 | `notification_queue` | Sí | select **own** | Escritura vía job (service) |
 | `digest_inbox_notifications` | Sí | select/update **own** | Insert vía job al enviar digest ([ADR 022](../adr/022-digest-email-inbox-in-app.md)) |

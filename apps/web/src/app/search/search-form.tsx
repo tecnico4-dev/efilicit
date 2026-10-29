@@ -68,7 +68,13 @@ function hasInvalidAmountRange(form: HTMLFormElement): boolean {
   return min > max;
 }
 
-function SearchFormInner({ children }: { children: ReactNode }) {
+function SearchFormInner({
+  children,
+  besideSubmit,
+}: {
+  children: ReactNode;
+  besideSubmit?: ReactNode;
+}) {
   const { feedback, setFeedback, clearFeedback } = useSearchFeedback();
 
   return (
@@ -108,32 +114,35 @@ function SearchFormInner({ children }: { children: ReactNode }) {
       {children}
       <div className="space-y-2">
         <ClearSearchFieldsButton />
-        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-          <button
-            type="submit"
-            className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary-dark"
-          >
-            Buscar
-          </button>
-          {feedback ? (
-            <p
-              className={`text-xs ${feedback.isError ? "text-destructive" : "text-muted-foreground"}`}
-              role={feedback.isError ? "alert" : "status"}
+        <div className="flex flex-wrap items-start gap-3 sm:gap-4">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+            <button
+              type="submit"
+              className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary-dark"
             >
-              {feedback.text}
-              {feedback.linkHref && feedback.linkLabel ? (
-                <>
-                  {" "}
-                  <a
-                    href={feedback.linkHref}
-                    className="font-medium text-link hover:underline"
-                  >
-                    {feedback.linkLabel}
-                  </a>
-                </>
-              ) : null}
-            </p>
-          ) : null}
+              Buscar
+            </button>
+            {feedback ? (
+              <p
+                className={`text-xs ${feedback.isError ? "text-destructive" : "text-muted-foreground"}`}
+                role={feedback.isError ? "alert" : "status"}
+              >
+                {feedback.text}
+                {feedback.linkHref && feedback.linkLabel ? (
+                  <>
+                    {" "}
+                    <a
+                      href={feedback.linkHref}
+                      className="font-medium text-link hover:underline"
+                    >
+                      {feedback.linkLabel}
+                    </a>
+                  </>
+                ) : null}
+              </p>
+            ) : null}
+          </div>
+          {besideSubmit}
         </div>
       </div>
     </form>
@@ -146,14 +155,17 @@ function SearchFormInner({ children }: { children: ReactNode }) {
 export function SearchForm({
   children,
   formKey,
+  besideSubmit,
 }: {
   children: ReactNode;
   /** Remonta el form al cambiar la URL (p. ej. nav Búsqueda limpia). */
   formKey?: string;
+  /** Contenido al lado de Buscar (p. ej. recientes). */
+  besideSubmit?: ReactNode;
 }) {
   return (
     <SearchFeedbackProvider key={formKey}>
-      <SearchFormInner>{children}</SearchFormInner>
+      <SearchFormInner besideSubmit={besideSubmit}>{children}</SearchFormInner>
     </SearchFeedbackProvider>
   );
 }

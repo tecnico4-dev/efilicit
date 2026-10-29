@@ -6,15 +6,19 @@ import { EmptyState, ErrorState } from "@/components/ui/state-message";
 import { getSessionProfile, getSupabaseServerClient } from "@/lib/auth/session";
 import {
   listOwnFavoriteTenderIds,
+  listOwnRecentSearches,
   listPlaceMunicipalities,
+  recordOwnRecentSearch,
   searchTenders,
+  type RecentSearch,
   type SearchTenderRow,
 } from "@/lib/queries";
 import { SEARCH_CCAA_OPTIONS } from "@/lib/geo-ccaa";
-import { normalizeSearchQuery } from "@/lib/keywords";
+import { normalizeSearchQuery, tokenizeKeywords } from "@/lib/keywords";
 import { formatTenderStatus } from "@/lib/tender-labels";
 import { formatCpvListPreview, normalizeCpvCode } from "@/lib/cpv";
 import type { CriteriaFilterInitial } from "@/lib/criteria-display";
+import { RecentSearchesList } from "./recent-searches";
 import { SaveSearchSlot } from "./save-search-slot";
 import {
   SearchFilterFields,
@@ -326,6 +330,7 @@ export default async function SearchPage({
   let profileUserId: string | null = null;
   let favoritedIds = new Set<string>();
   let municipalityValid = "";
+  let recentSearches: RecentSearch[] = [];
 
   let client;
   try {
@@ -349,6 +354,8 @@ export default async function SearchPage({
     openForSubmission;
   /** Stopwords solas → aviso y sin RPC (aunque haya otros filtros en la URL). */
   const shouldSearch = hasParams && !queryOnlyNoise;
+  /** Nueva búsqueda (no paginación): form no manda `tc`. */
+  const isFreshSearch = shouldSearch && page === 1 && knownTotal == null;
 
   if (client && shouldSearch && ccaaValid && municipalityRaw) {
     try {
@@ -378,49 +385,70 @@ export default async function SearchPage({
     openForSubmission,
   };
 
+  const keywordTokens = q ? tokenizeKeywords(q) : [];
+  const searchCriteria = {
+    version: 1 as const,
+    keywords: keywordTokens.length ? keywordTokens : undefined,
+    cpv_codes: cpvCodes.length ? cpvCodes : undefined,
+    cpv_match:
+      cpvCodes.length >= 2 && cpvMatch === "all"
+        ? ("all" as const)
+        : undefined,
+    estimated_value_min: min != null && !Number.isNaN(min) ? min : undefined,
+    estimated_value_max: max != null && !Number.isNaN(max) ? max : undefined,
+    statuses: statusValid ? [statusValid] : undefined,
+    procedure_types: procedureValid ? [procedureValid] : undefined,
+    contract_types: contractTypeValid ? [contractTypeValid] : undefined,
+    publication_date_from: pubFromValid || undefined,
+    publication_date_to: pubToValid || undefined,
+    open_for_submission: openForSubmission || undefined,
+    geography:
+      ccaaValid || municipalityValid
+        ? {
+            ccaa_codes: ccaaValid ? [ccaaValid] : undefined,
+            municipality_codes: municipalityValid
+              ? [municipalityValid]
+              : undefined,
+          }
+        : undefined,
+  };
+
+  if (client) {
+    try {
+      const profile = await getSessionProfile();
+      profileUserId = profile.data?.id ?? null;
+
+      if (isFreshSearch && profileUserId) {
+        // 0 resultados también cuentan; paginación (tc/page>1) no escribe.
+        await recordOwnRecentSearch(client, { criteria: searchCriteria });
+      }
+
+      if (profileUserId) {
+        const recent = await listOwnRecentSearches(client, {
+          userId: profileUserId,
+        });
+        if (!recent.error) recentSearches = recent.data;
+      }
+    } catch {
+      /* historial no bloquea la búsqueda */
+    }
+  }
+
   if (client && shouldSearch) {
+    // Historial guarda keywords; la RPC sigue usando `query` (comportamiento previo).
+    const { keywords: _keywords, ...rpcCriteria } = searchCriteria;
     const searchInput = {
       query: q || undefined,
-      criteria: {
-        version: 1 as const,
-        cpv_codes: cpvCodes.length ? cpvCodes : undefined,
-        cpv_match:
-          cpvCodes.length >= 2 && cpvMatch === "all"
-            ? ("all" as const)
-            : undefined,
-        estimated_value_min:
-          min != null && !Number.isNaN(min) ? min : undefined,
-        estimated_value_max:
-          max != null && !Number.isNaN(max) ? max : undefined,
-        statuses: statusValid ? [statusValid] : undefined,
-        procedure_types: procedureValid ? [procedureValid] : undefined,
-        contract_types: contractTypeValid ? [contractTypeValid] : undefined,
-        publication_date_from: pubFromValid || undefined,
-        publication_date_to: pubToValid || undefined,
-        open_for_submission: openForSubmission || undefined,
-        geography:
-          ccaaValid || municipalityValid
-            ? {
-                ccaa_codes: ccaaValid ? [ccaaValid] : undefined,
-                municipality_codes: municipalityValid
-                  ? [municipalityValid]
-                  : undefined,
-              }
-            : undefined,
-      },
+      criteria: rpcCriteria,
       knownTotal,
     };
 
     try {
-      const [result, profile] = await Promise.all([
-        searchTenders(client, {
-          ...searchInput,
-          limit: pageSize,
-          offset: (page - 1) * pageSize,
-        }),
-        getSessionProfile(),
-      ]);
-      profileUserId = profile.data?.id ?? null;
+      const result = await searchTenders(client, {
+        ...searchInput,
+        limit: pageSize,
+        offset: (page - 1) * pageSize,
+      });
 
       if (result.error) {
         error = result.error.message;
@@ -487,6 +515,7 @@ export default async function SearchPage({
 
       <SearchForm
         formKey={`${qInput}|${cpvCodes.join(",")}|${cpvMatch}|${minRaw}|${maxRaw}|${ccaa}|${municipalityRaw}|${statusRaw}|${procedureRaw}|${contractTypeRaw}|${pubFromValid}|${pubToValid}|${openForSubmission}|${from}`}
+        besideSubmit={<RecentSearchesList items={recentSearches} />}
       >
         {from === "favorites" || from === "favorites-searches" ? (
           <input type="hidden" name="from" value={from} />

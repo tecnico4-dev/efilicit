@@ -74,3 +74,8 @@ export {
   type DigestInboxNotification,
   type DigestTenderListItem,
 } from "./digest-inbox";
+export {
+  listOwnRecentSearches,
+  recordOwnRecentSearch,
+  type RecentSearch,
+} from "./recent-searches";
