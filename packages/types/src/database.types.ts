@@ -249,6 +249,53 @@ export type Database = {
           },
         ]
       }
+      digest_inbox_notifications: {
+        Row: {
+          created_at: string
+          digest_period: string
+          frequency: string
+          id: string
+          read_at: string | null
+          sent_at: string
+          tender_count: number
+          tender_ids: string[]
+          trashed_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          digest_period: string
+          frequency: string
+          id?: string
+          read_at?: string | null
+          sent_at: string
+          tender_count: number
+          tender_ids?: string[]
+          trashed_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          digest_period?: string
+          frequency?: string
+          id?: string
+          read_at?: string | null
+          sent_at?: string
+          tender_count?: number
+          tender_ids?: string[]
+          trashed_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "digest_inbox_notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notification_queue: {
         Row: {
           alert_id: string | null
@@ -918,7 +965,19 @@ export type Database = {
         }
         Returns: boolean
       }
+      has_unread_notifications: {
+        Args: {
+          p_user_id: string
+        }
+        Returns: boolean
+      }
       count_unread_favorite_status_notifications: {
+        Args: {
+          p_user_id: string
+        }
+        Returns: number
+      }
+      count_unread_notifications: {
         Args: {
           p_user_id: string
         }

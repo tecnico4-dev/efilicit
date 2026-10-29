@@ -25,6 +25,7 @@ pnpm --filter @efilicit/web verify:rls:favorites
 | `saved_searches` | Sí | CRUD **own** | |
 | `alerts` | Sí | CRUD **own** | |
 | `notification_queue` | Sí | select **own** | Escritura vía job (service) |
+| `digest_inbox_notifications` | Sí | select/update **own** | Insert vía job al enviar digest ([ADR 022](../adr/022-digest-email-inbox-in-app.md)) |
 | `notification_reads` | Sí | select/insert/delete **own** | |
 | `notification_trash` | Sí | CRUD **own** | |
 | `favorites` | Sí | select/insert/delete **own** | |

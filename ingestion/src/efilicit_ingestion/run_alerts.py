@@ -28,6 +28,7 @@ from efilicit_ingestion.alerts.digest import (
     drain_daily_digests,
 )
 from efilicit_ingestion.alerts.email import FakeEmailSender, ResendEmailSender
+from efilicit_ingestion.alerts.inbox import InMemoryDigestInbox, PostgresDigestInbox
 from efilicit_ingestion.alerts.models import AlertRule, BatchResult, TenderCandidate
 from efilicit_ingestion.alerts.postgres import (
     PostgresNotificationQueue,
@@ -180,6 +181,7 @@ def _run_dry(
             directory=directory,
             frequencies=frequencies,
             job_date=job_date,
+            inbox=InMemoryDigestInbox(),
         )
 
     return AlertsRunResult(
@@ -252,6 +254,7 @@ def _run_write(
                 directory=directory,
                 frequencies=frequencies,
                 job_date=job_date,
+                inbox=PostgresDigestInbox(conn),
             )
 
         conn.commit()

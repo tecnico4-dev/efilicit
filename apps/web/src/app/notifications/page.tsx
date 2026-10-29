@@ -10,8 +10,12 @@ import { EmptyState, ErrorState } from "@/components/ui/state-message";
 import {
   isNotificationInTrashWindow,
   listFavoriteStatusNotifications,
+  listOwnDigestInboxNotifications,
 } from "@/lib/queries";
-import { NotificationsList } from "./notifications-list";
+import {
+  NotificationsList,
+  type InboxItem,
+} from "./notifications-list";
 import type { NotificationsView } from "./notifications-folder-tabs";
 
 export const dynamic = "force-dynamic";
@@ -51,15 +55,40 @@ export default async function NotificationsPage({
     );
   }
 
-  const { data: notifications, error } = await listFavoriteStatusNotifications(
-    supabase,
-    { userId: profile.id },
-  );
+  const [favResult, digestResult] = await Promise.all([
+    listFavoriteStatusNotifications(supabase, { userId: profile.id }),
+    listOwnDigestInboxNotifications(supabase, { userId: profile.id }),
+  ]);
 
-  const hasActive = notifications.some((n) => n.trashedAt == null);
-  const hasTrash = notifications.some(
-    (n) => n.trashedAt != null && isNotificationInTrashWindow(n.trashedAt),
+  const error = favResult.error ?? digestResult.error;
+
+  const items: InboxItem[] = [
+    ...favResult.data.map(
+      (data): InboxItem => ({
+        kind: "favorite_status",
+        sortAt: data.detectedAt,
+        data,
+      }),
+    ),
+    ...digestResult.data.map(
+      (data): InboxItem => ({
+        kind: "digest",
+        sortAt: data.sentAt,
+        data,
+      }),
+    ),
+  ].sort((a, b) => (a.sortAt < b.sortAt ? 1 : -1));
+
+  const hasActive = items.some((n) =>
+    n.kind === "favorite_status"
+      ? n.data.trashedAt == null
+      : n.data.trashedAt == null,
   );
+  const hasTrash = items.some((n) => {
+    const trashedAt =
+      n.kind === "favorite_status" ? n.data.trashedAt : n.data.trashedAt;
+    return trashedAt != null && isNotificationInTrashWindow(trashedAt);
+  });
   const showList = hasActive || hasTrash || view === "trash";
 
   return (
@@ -77,7 +106,7 @@ export default async function NotificationsPage({
           <EmptyState>Aún no tienes notificaciones.</EmptyState>
         ) : (
           <NotificationsList
-            notifications={notifications}
+            items={items}
             initialView={view}
             userId={profile.id}
           />

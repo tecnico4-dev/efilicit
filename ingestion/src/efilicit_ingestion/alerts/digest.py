@@ -22,6 +22,7 @@ from datetime import date, datetime, timezone
 from typing import Callable
 
 from efilicit_ingestion.alerts.email import EmailMessage, EmailSender
+from efilicit_ingestion.alerts.inbox import DigestInbox, tender_ids_from_items
 from efilicit_ingestion.alerts.models import NotificationItem
 from efilicit_ingestion.alerts.queue import (
     NotificationQueue,
@@ -142,6 +143,7 @@ def drain_daily_digests(
     list_pending: Callable[[], list[NotificationItem]] | None = None,
     frequencies: Mapping[str, str] | None = None,
     job_date: date | datetime | None = None,
+    inbox: DigestInbox | None = None,
 ) -> DigestDrainResult:
     """Envía un digest por (usuario, periodo) cuando toca según la frecuencia.
 
@@ -149,6 +151,7 @@ def drain_daily_digests(
     - weekly: solo lunes UTC; el resto de días no envía.
     Reejecutar tras un envío OK no reenvía: los ítems ya no están drainable.
     Tras fallo: ``failed`` reintentable o ``cancelled`` si agota el umbral.
+    Si ``inbox`` está definido, materializa un aviso in-app (1 = 1 correo).
     """
     if list_pending is not None:
         pending_fn = list_pending
@@ -210,6 +213,16 @@ def drain_daily_digests(
                     sent_at=now,
                 )
                 result.items_marked_sent += 1
+            if inbox is not None:
+                tids = tender_ids_from_items(items)
+                if tids:
+                    inbox.record_sent_digest(
+                        user_id=user_id,
+                        frequency=freq,
+                        digest_period=digest,
+                        sent_at=now,
+                        tender_ids=tids,
+                    )
             result.digests_sent += 1
         else:
             err = send_result.error or "send_failed"

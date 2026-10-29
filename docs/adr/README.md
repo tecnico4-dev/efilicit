@@ -34,3 +34,4 @@ No uses un ADR para el estado de una fuente o un parser: eso va en `docs/sources
 | [019](019-tender-cpvs-multivalor.md) | CPV multivalor en `tender_cpvs` (sin columna en `tenders`) | Aceptado |
 | [020](020-alertas-match-post-ingesta-y-digest-diario.md) | Alertas: match post-ingesta + digest diario; despertador = cron externo → `workflow_dispatch` | Aceptado |
 | [021](021-raw-storage-tus-resumable-httpx.md) | RAW Storage: TUS resumable vía `httpx` (ZIP intacto; umbral 6 MiB) | Aceptado |
+| [022](022-digest-email-inbox-in-app.md) | Digest email → aviso in-app en el buzón (1 = 1 correo) | Aceptado |

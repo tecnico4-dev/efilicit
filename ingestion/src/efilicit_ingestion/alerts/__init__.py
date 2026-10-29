@@ -17,6 +17,10 @@ from efilicit_ingestion.alerts.digest import (
     drain_daily_digests,
 )
 from efilicit_ingestion.alerts.email import FakeEmailSender, ResendEmailSender
+from efilicit_ingestion.alerts.inbox import (
+    InMemoryDigestInbox,
+    tender_ids_from_items,
+)
 from efilicit_ingestion.alerts.match import evaluate_tender, match_alert_to_tenders
 from efilicit_ingestion.alerts.models import AlertMatch, AlertRule, TenderCandidate
 from efilicit_ingestion.alerts.postgres import PostgresNotificationQueue
@@ -33,6 +37,7 @@ __all__ = [
     "AlertRule",
     "CRITERIA_EXAMPLE_V1",
     "FakeEmailSender",
+    "InMemoryDigestInbox",
     "InMemoryNotificationQueue",
     "PostgresNotificationQueue",
     "ResendEmailSender",
@@ -47,4 +52,5 @@ __all__ = [
     "parse_criteria",
     "run_alert_batch",
     "should_send_digest",
+    "tender_ids_from_items",
 ]

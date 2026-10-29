@@ -51,9 +51,11 @@ export {
 } from "./favorites";
 export {
   countUnreadFavoriteStatusNotifications,
+  countUnreadNotifications,
   daysUntilNotificationTrashPurge,
   formatNotificationTrashExpiry,
   hasUnreadFavoriteStatusNotifications,
+  hasUnreadNotifications,
   isNotificationInTrashWindow,
   listFavoriteStatusNotifications,
   listRecentFavoriteStatusNotifications,
@@ -63,3 +65,12 @@ export {
   trashOwnNotification,
   type FavoriteStatusNotification,
 } from "./notifications";
+export {
+  listOwnDigestInboxNotifications,
+  listTendersForDigestInbox,
+  markOwnDigestInboxRead,
+  restoreOwnDigestInboxFromTrash,
+  trashOwnDigestInboxNotification,
+  type DigestInboxNotification,
+  type DigestTenderListItem,
+} from "./digest-inbox";

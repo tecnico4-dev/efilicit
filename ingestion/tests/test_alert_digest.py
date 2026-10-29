@@ -12,6 +12,7 @@ from efilicit_ingestion.alerts.digest import (
     drain_daily_digests,
 )
 from efilicit_ingestion.alerts.email import FakeEmailSender
+from efilicit_ingestion.alerts.inbox import InMemoryDigestInbox
 from efilicit_ingestion.alerts.models import AlertRule, TenderCandidate
 from efilicit_ingestion.alerts.queue import (
     InMemoryNotificationQueue,
@@ -102,6 +103,37 @@ def test_drain_sends_one_digest_and_marks_sent() -> None:
     assert len(sender.sent) == 1
     assert sender.sent[0].to == "alice@example.com"
     assert all(i.status == "sent" for i in queue.all_items())
+
+
+def test_drain_records_inbox_aviso_one_per_email() -> None:
+    queue = InMemoryNotificationQueue()
+    _enqueue_software_match(queue)
+    sender = FakeEmailSender()
+    directory = UserEmailDirectory(emails={"user-1": "alice@example.com"})
+    inbox = InMemoryDigestInbox()
+
+    result = drain_daily_digests(
+        queue=queue,
+        sender=sender,
+        directory=directory,
+        inbox=inbox,
+    )
+    assert result.digests_sent == 1
+    assert len(inbox.entries) == 1
+    entry = inbox.entries[0]
+    assert entry.user_id == "user-1"
+    assert entry.frequency == "diaria"
+    assert entry.digest_period == "2026-09-30"
+    assert set(entry.tender_ids) == {"t-soft", "t-soft-2"}
+
+    # Segundo drain no reenvía ni duplica el aviso.
+    drain_daily_digests(
+        queue=queue,
+        sender=sender,
+        directory=directory,
+        inbox=inbox,
+    )
+    assert len(inbox.entries) == 1
 
 
 def test_drain_twice_does_not_resend() -> None:

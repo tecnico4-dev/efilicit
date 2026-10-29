@@ -5,7 +5,7 @@ import {
 import { PAGE_MAIN_CLASS } from "@/components/shell/page-width";
 import { ErrorState } from "@/components/ui/state-message";
 import {
-  countUnreadFavoriteStatusNotifications,
+  countUnreadNotifications,
   listOwnAlerts,
   listOwnFavorites,
   listOwnSavedSearches,
@@ -54,7 +54,7 @@ export default async function Home() {
     listOwnAlerts(supabase),
     listOwnFavorites(supabase),
     listOwnSavedSearches(supabase),
-    countUnreadFavoriteStatusNotifications(supabase, { userId }),
+    countUnreadNotifications(supabase, { userId }),
     listRecentFavoriteStatusNotifications(supabase, {
       userId,
       limit: 3,

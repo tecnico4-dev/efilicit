@@ -207,6 +207,21 @@ export async function hasUnreadFavoriteStatusNotifications(
   return { data: Boolean(data), error: null };
 }
 
+/**
+ * Badge del nav: favoritos-estado O digest email sin leer.
+ * Prefiere RPC unificado; si no existe aún (migración pendiente), cae al de favoritos.
+ */
+export async function hasUnreadNotifications(
+  client: SupabaseClient<Database>,
+  input: { userId: string },
+): Promise<{ data: boolean; error: Error | null }> {
+  const { data, error } = await client.rpc("has_unread_notifications", {
+    p_user_id: input.userId,
+  });
+  if (!error) return { data: Boolean(data), error: null };
+  return hasUnreadFavoriteStatusNotifications(client, input);
+}
+
 /** Conteo de no leídas (métrica del home; sin montar el buzón). */
 export async function countUnreadFavoriteStatusNotifications(
   client: SupabaseClient<Database>,
@@ -218,6 +233,18 @@ export async function countUnreadFavoriteStatusNotifications(
   );
   if (error) return { data: 0, error: new Error(error.message) };
   return { data: Number(data ?? 0), error: null };
+}
+
+/** Home: favoritos + digests no leídos. */
+export async function countUnreadNotifications(
+  client: SupabaseClient<Database>,
+  input: { userId: string },
+): Promise<{ data: number; error: Error | null }> {
+  const { data, error } = await client.rpc("count_unread_notifications", {
+    p_user_id: input.userId,
+  });
+  if (!error) return { data: Number(data ?? 0), error: null };
+  return countUnreadFavoriteStatusNotifications(client, input);
 }
 
 /**

@@ -20,6 +20,7 @@
 begin;
 
 truncate table
+  public.digest_inbox_notifications,
   public.notification_reads,
   public.notification_trash,
   public.notification_queue,
@@ -60,4 +61,5 @@ union all select 'favorites', count(*) from public.favorites
 union all select 'notification_queue', count(*) from public.notification_queue
 union all select 'notification_reads', count(*) from public.notification_reads
 union all select 'notification_trash', count(*) from public.notification_trash
+union all select 'digest_inbox_notifications', count(*) from public.digest_inbox_notifications
 order by 1;
