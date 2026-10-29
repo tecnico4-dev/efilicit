@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Buscador: «Guardar búsqueda» es un marcador (estilo corazón): outline gris / relleno azul eficen si ya está guardada; arriba a la derecha del campo Texto. Si ya está guardada, el click la elimina (toast «Búsqueda eliminada.» + Revertir).
+- Buscador: «Guardar búsqueda» es un marcador (estilo corazón): desactivado si no hay criterios; outline gris / relleno azul eficen si ya está guardada; click elimina (toast «Búsqueda eliminada de favoritos.» + Revertir).
 - Alertas: crear/editar usan los mismos criterios que el buscador (`CriteriaFilters` compartido: texto, CPV multi, geo, estado/procedimiento/tipo, importes, fechas, solo en plazo); convertir búsqueda→alerta ya persistía el criteria completo.
 - PLACSP download: timeout 600 s, max 512 MiB, 4 reintentos; Storage RAW: timeout 600 s, reintentos 5xx, TUS resumable ≥6 MiB vía `httpx` (ZIP intacto) — [ADR 021](docs/adr/021-raw-storage-tus-resumable-httpx.md).
 - Despertador de ingest/alertas: cron externo → `workflow_dispatch` (sin `on.schedule` en GitHub). [ADR 020](docs/adr/020-alertas-match-post-ingesta-y-digest-diario.md) reescrito; runbook [external-cron-dispatch](docs/runbooks/external-cron-dispatch.md) + `scripts/dispatch-workflow.sh`. Cadencia estable: ingestas lun 05–07 UTC, match lun 08:00, digest diario 09:00. Prueba 2026-10-29 (Madrid): PLACSP 03:00×3 / Cat 05:00 / Euskadi 06:00 / match 07:00 / digest 07:30.

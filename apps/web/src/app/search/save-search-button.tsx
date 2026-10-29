@@ -55,6 +55,7 @@ function BookmarkIcon({ filled }: { filled: boolean }) {
 
 /**
  * Guarda los criterios del formulario: icono tipo favoritos + modal de nombre.
+ * Vacío → desactivado; guardada → click elimina (toast + Revertir).
  */
 export function SaveSearchButton({ userId }: { userId: string }) {
   const router = useRouter();
@@ -64,25 +65,29 @@ export function SaveSearchButton({ userId }: { userId: string }) {
   const [pending, setPending] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [hasCriteria, setHasCriteria] = useState(false);
   const [matched, setMatched] = useState<MatchedSavedSearch | null>(null);
   const [name, setName] = useState("");
   const [criteria, setCriteria] = useState<SearchCriteria | null>(null);
   const [dialogError, setDialogError] = useState<string | null>(null);
 
   const saved = matched != null;
+  const disabled = pending || (!saved && !hasCriteria);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  /** ¿Los criterios actuales del form ya están en una búsqueda guardada? */
-  async function syncSavedFromForm() {
+  /** Criterios del form + match con búsquedas guardadas. */
+  async function syncFromForm() {
     const form = document.getElementById(FORM_ID) as HTMLFormElement | null;
     if (!form) {
+      setHasCriteria(false);
       setMatched(null);
       return;
     }
     const built = buildCriteria(form);
+    setHasCriteria(built != null);
     if (!built) {
       setMatched(null);
       return;
@@ -105,11 +110,11 @@ export function SaveSearchButton({ userId }: { userId: string }) {
   }
 
   useEffect(() => {
-    void syncSavedFromForm();
+    void syncFromForm();
     const form = document.getElementById(FORM_ID);
     if (!form) return;
     const onChange = () => {
-      void syncSavedFromForm();
+      void syncFromForm();
     };
     form.addEventListener("input", onChange);
     form.addEventListener("change", onChange);
@@ -143,20 +148,22 @@ export function SaveSearchButton({ userId }: { userId: string }) {
       return;
     }
     setMatched(null);
-    showUndo("Búsqueda eliminada.", async () => {
+    showUndo("Búsqueda eliminada de favoritos.", async () => {
       const c = createSupabaseBrowserClient();
       await createOwnSavedSearch(c, {
         userId,
         name: snapshot.name,
         criteria: snapshot.criteria,
       });
-      await syncSavedFromForm();
+      await syncFromForm();
       router.refresh();
     });
     router.refresh();
   }
 
   function openDialog() {
+    if (!hasCriteria) return;
+
     const form = document.getElementById(FORM_ID) as HTMLFormElement | null;
     if (!form) {
       setFeedback({
@@ -167,13 +174,7 @@ export function SaveSearchButton({ userId }: { userId: string }) {
     }
 
     const built = buildCriteria(form);
-    if (!built) {
-      setFeedback({
-        text: "Indica al menos un criterio antes de guardar.",
-        isError: true,
-      });
-      return;
-    }
+    if (!built) return;
 
     const minVal = built.estimated_value_min;
     const maxVal = built.estimated_value_max;
@@ -208,6 +209,7 @@ export function SaveSearchButton({ userId }: { userId: string }) {
   }
 
   function onBookmarkClick() {
+    if (disabled) return;
     if (saved) {
       void onUnsave();
       return;
@@ -241,16 +243,6 @@ export function SaveSearchButton({ userId }: { userId: string }) {
       setDialogError("Ya existe una búsqueda guardada con este nombre.");
       return;
     }
-    const duplicate = existing.data.some((s) =>
-      criteriaEqual(criteria, parseCriteria(s.criteria)),
-    );
-    if (duplicate) {
-      setPending(false);
-      setDialogError(
-        "Ya tienes una búsqueda guardada con esos mismos parámetros.",
-      );
-      return;
-    }
 
     const { data: created, error } = await createOwnSavedSearch(client, {
       userId,
@@ -270,12 +262,6 @@ export function SaveSearchButton({ userId }: { userId: string }) {
       name: created.name,
       criteria: parseCriteria(created.criteria),
     });
-    setFeedback({
-      text: "Búsqueda guardada. Puedes verla en Favoritos.",
-      isError: false,
-      linkHref: "/favorites",
-      linkLabel: "Ir a Favoritos",
-    });
     router.refresh();
   }
 
@@ -283,14 +269,20 @@ export function SaveSearchButton({ userId }: { userId: string }) {
     <>
       <button
         type="button"
-        disabled={pending}
+        disabled={disabled}
         onClick={onBookmarkClick}
         aria-label={saved ? "Quitar búsqueda guardada" : "Guardar búsqueda"}
-        title={saved ? "Quitar búsqueda guardada" : "Guardar búsqueda"}
+        title={
+          disabled && !saved
+            ? "Indica algún criterio para guardar"
+            : saved
+              ? "Quitar búsqueda guardada"
+              : "Guardar búsqueda"
+        }
         aria-pressed={saved}
         className={cn(
           "shrink-0 rounded-md p-1.5 transition-colors outline-none",
-          "focus-visible:ring-2 focus-visible:ring-ring/50 disabled:opacity-50",
+          "focus-visible:ring-2 focus-visible:ring-ring/50 disabled:opacity-40 disabled:pointer-events-none",
           saved
             ? "text-primary hover:bg-primary/10"
             : "text-muted-foreground hover:bg-muted hover:text-foreground",
