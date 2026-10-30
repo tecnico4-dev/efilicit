@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { FavoriteToggle } from "@/components/favorites/favorite-toggle";
+import { BidCaseToggle } from "@/components/my-tenders/bid-case-toggle";
 import { PAGE_MAIN_CLASS } from "@/components/shell/page-width";
 import { ErrorState } from "@/components/ui/state-message";
 import { getSessionProfile, getSupabaseServerClient } from "@/lib/auth/session";
 import {
+  getBidCaseIdByTenderId,
   getTenderById,
   isOwnFavorite,
   listTenderStatusHistory,
@@ -58,6 +60,12 @@ function backLinkFromParams(
     return {
       href: "/favorites",
       label: "← Volver a la lista de favoritos",
+    };
+  }
+  if (from === "my-tenders") {
+    return {
+      href: "/my-tenders",
+      label: "← Volver a Mis licitaciones",
     };
   }
 
@@ -257,18 +265,25 @@ export default async function TenderDetailPage({
     if (!history.error) statusHistory = history.data;
   }
 
-  // Favoritos solo con sesión (mismo criterio que Alertas en la nav).
+  // Favoritos / Mis licitaciones solo con sesión.
   let favoriteUserId: string | null = null;
+  let displayName: string | null = null;
   let initiallyFavorited = false;
+  let existingBidCaseId: string | null = null;
   try {
     const profile = await getSessionProfile();
     if (profile.data) {
       favoriteUserId = profile.data.id;
-      const fav = await isOwnFavorite(supabase, {
-        userId: profile.data.id,
-        tenderId: tender.id,
-      });
+      displayName = profile.data.display_name;
+      const [fav, bid] = await Promise.all([
+        isOwnFavorite(supabase, {
+          userId: profile.data.id,
+          tenderId: tender.id,
+        }),
+        getBidCaseIdByTenderId(supabase, tender.id),
+      ]);
       initiallyFavorited = fav.data;
+      existingBidCaseId = bid.data;
     }
   } catch {
     favoriteUserId = null;
@@ -287,11 +302,19 @@ export default async function TenderDetailPage({
           {tender.title}
         </h1>
         {favoriteUserId ? (
-          <FavoriteToggle
-            userId={favoriteUserId}
-            tenderId={tender.id}
-            initiallyFavorited={initiallyFavorited}
-          />
+          <div className="flex flex-wrap items-center gap-2">
+            <BidCaseToggle
+              userId={favoriteUserId}
+              displayName={displayName}
+              tenderId={tender.id}
+              existingCaseId={existingBidCaseId}
+            />
+            <FavoriteToggle
+              userId={favoriteUserId}
+              tenderId={tender.id}
+              initiallyFavorited={initiallyFavorited}
+            />
+          </div>
         ) : null}
       </div>
 

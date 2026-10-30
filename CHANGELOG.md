@@ -32,6 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Mis licitaciones: pipeline compartido de presentación Eficen (`/my-tenders`) — etapas, responsable, fechas, checklist con cuenta atrás, novedades, documentación reutilizable (URL+tags) e histórico por años; nav a la izquierda del buzón; alta desde la ficha. [ADR 023](docs/adr/023-mis-licitaciones-pipeline-compartido.md).
 - Buscador: hover en chip de recientes previsualiza el formulario completo (texto, importes, fechas, selects, en plazo, CCAA, municipio, CPV) en estilo fantasma; al salir se restaura. Click en el chip sigue buscando de verdad.
 - Buscador: historial `recent_searches` (máx. 5/cuenta, dedupe sube al repetir; chips «Recientes» junto a Buscar). Distinto de favoritos guardados.
 - Notificaciones: al enviar un digest email, aviso in-app en el buzón («Se ha enviado tu email diario/semanal: N licitaciones…» + día); al pulsar, modal con la lista plana de ese correo (scroll/paginado); badge unificado. [ADR 022](docs/adr/022-digest-email-inbox-in-app.md).

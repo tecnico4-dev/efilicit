@@ -249,6 +249,217 @@ export type Database = {
           },
         ]
       }
+      bid_cases: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          notes: string | null
+          outcome_on: string | null
+          owner_name: string | null
+          preparation_started_on: string | null
+          presented_on: string | null
+          stage: string
+          tender_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          outcome_on?: string | null
+          owner_name?: string | null
+          preparation_started_on?: string | null
+          presented_on?: string | null
+          stage?: string
+          tender_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          outcome_on?: string | null
+          owner_name?: string | null
+          preparation_started_on?: string | null
+          presented_on?: string | null
+          stage?: string
+          tender_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bid_cases_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bid_cases_tender_id_fkey"
+            columns: ["tender_id"]
+            isOneToOne: true
+            referencedRelation: "tenders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bid_case_checklist_items: {
+        Row: {
+          bid_case_id: string
+          created_at: string
+          done_at: string | null
+          due_at: string | null
+          id: string
+          sort_order: number
+          title: string
+        }
+        Insert: {
+          bid_case_id: string
+          created_at?: string
+          done_at?: string | null
+          due_at?: string | null
+          id?: string
+          sort_order?: number
+          title: string
+        }
+        Update: {
+          bid_case_id?: string
+          created_at?: string
+          done_at?: string | null
+          due_at?: string | null
+          id?: string
+          sort_order?: number
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bid_case_checklist_items_bid_case_id_fkey"
+            columns: ["bid_case_id"]
+            isOneToOne: false
+            referencedRelation: "bid_cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bid_case_updates: {
+        Row: {
+          bid_case_id: string
+          body: string
+          created_at: string
+          created_by: string | null
+          happened_on: string
+          id: string
+        }
+        Insert: {
+          bid_case_id: string
+          body: string
+          created_at?: string
+          created_by?: string | null
+          happened_on?: string
+          id?: string
+        }
+        Update: {
+          bid_case_id?: string
+          body?: string
+          created_at?: string
+          created_by?: string | null
+          happened_on?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bid_case_updates_bid_case_id_fkey"
+            columns: ["bid_case_id"]
+            isOneToOne: false
+            referencedRelation: "bid_cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bid_case_updates_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bid_documents: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          notes: string | null
+          tags: string[]
+          title: string
+          updated_at: string
+          url: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          tags?: string[]
+          title: string
+          updated_at?: string
+          url?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          tags?: string[]
+          title?: string
+          updated_at?: string
+          url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bid_documents_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bid_case_documents: {
+        Row: {
+          bid_case_id: string
+          document_id: string
+          linked_at: string
+        }
+        Insert: {
+          bid_case_id: string
+          document_id: string
+          linked_at?: string
+        }
+        Update: {
+          bid_case_id?: string
+          document_id?: string
+          linked_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bid_case_documents_bid_case_id_fkey"
+            columns: ["bid_case_id"]
+            isOneToOne: false
+            referencedRelation: "bid_cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bid_case_documents_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "bid_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       recent_searches: {
         Row: {
           criteria: Json
@@ -924,6 +1135,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      is_app_user: { Args: Record<PropertyKey, never>; Returns: boolean }
       search_tenders: {
         Args: {
           p_authority_ids?: string[]

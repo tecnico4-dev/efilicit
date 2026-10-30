@@ -66,6 +66,12 @@ export function AppHeader({
         </nav>
 
         <div className="flex items-center gap-2">
+          <Link
+            href="/my-tenders"
+            className={navClass(pathname.startsWith("/my-tenders"))}
+          >
+            Mis licitaciones
+          </Link>
           {notifications}
           {userId ? (
             <AccountMenu

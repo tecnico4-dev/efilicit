@@ -36,3 +36,4 @@ No uses un ADR para el estado de una fuente o un parser: eso va en `docs/sources
 | [021](021-raw-storage-tus-resumable-httpx.md) | RAW Storage: TUS resumable vía `httpx` (ZIP intacto; umbral 6 MiB) | Aceptado |
 | [022](022-placsp-raw-entry-incremental.md) | PLACSP RAW incremental por entry Atom (sin ZIP entero en Storage) | Aceptado |
 | [022](022-digest-email-inbox-in-app.md) | Digest email → aviso in-app en el buzón (1 = 1 correo) | Aceptado |
+| [023](023-mis-licitaciones-pipeline-compartido.md) | Mis licitaciones: pipeline de presentación compartido (Eficen) | Aceptado |
