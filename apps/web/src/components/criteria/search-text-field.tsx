@@ -7,7 +7,8 @@ import { useOptionalSearchFormPreview } from "@/app/search/search-form-preview";
 
 const MAX_LINES = 5;
 
-function resizeToContent(el: HTMLTextAreaElement) {
+/** Ajusta altura al contenido (también tras pintar preview de recientes). */
+export function resizeSearchTextToContent(el: HTMLTextAreaElement) {
   el.style.height = "0px";
   const cs = getComputedStyle(el);
   const lineHeight = Number.parseFloat(cs.lineHeight) || 20;
@@ -43,13 +44,25 @@ export function SearchTextField({
   const preview = useOptionalSearchFormPreview()?.preview ?? null;
 
   useLayoutEffect(() => {
-    if (ref.current) resizeToContent(ref.current);
-  }, [defaultValue, preview]);
+    if (ref.current) resizeSearchTextToContent(ref.current);
+  }, [defaultValue]);
+
+  /**
+   * El valor fantasma lo pinta `useSimpleFieldsPreview` en un effect de
+   * ancestro (después de los effects de este hijo). Un rAF asegura resize
+   * con el texto ya aplicado (y al salir del preview).
+   */
+  useEffect(() => {
+    const id = requestAnimationFrame(() => {
+      if (ref.current) resizeSearchTextToContent(ref.current);
+    });
+    return () => cancelAnimationFrame(id);
+  }, [preview]);
 
   useEffect(() => {
     const onClear = () => {
       requestAnimationFrame(() => {
-        if (ref.current) resizeToContent(ref.current);
+        if (ref.current) resizeSearchTextToContent(ref.current);
       });
     };
     window.addEventListener(CLEAR_SEARCH_EVENT, onClear);
@@ -65,7 +78,7 @@ export function SearchTextField({
       defaultValue={defaultValue}
       aria-invalid={aria["aria-invalid"]}
       aria-describedby={aria["aria-describedby"]}
-      onInput={(e) => resizeToContent(e.currentTarget)}
+      onInput={(e) => resizeSearchTextToContent(e.currentTarget)}
       onKeyDown={(e) => {
         if (e.key === "Enter" && !e.shiftKey) {
           e.preventDefault();

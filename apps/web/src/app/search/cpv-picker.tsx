@@ -54,8 +54,6 @@ export function CpvPicker({
   const listId = useId();
   const selectedId = useId();
   const wrapRef = useRef<HTMLDivElement>(null);
-  const selectedBoxRef = useRef<HTMLDivElement>(null);
-  const committedBoxHeightRef = useRef<number | null>(null);
   const searchFeedback = useOptionalSearchFeedback();
   const clearFeedback = searchFeedback?.clearFeedback ?? (() => {});
   const formPreview = useOptionalSearchFormPreview();
@@ -80,14 +78,6 @@ export function CpvPicker({
   const displayMatch: CpvMatchMode = isPreviewing
     ? previewInitial.cpvMatch
     : matchMode;
-
-  /** Evita que el preview de CPV cambie la altura del form (salto de layout). */
-  useEffect(() => {
-    if (isPreviewing) return;
-    const el = selectedBoxRef.current;
-    if (!el) return;
-    committedBoxHeightRef.current = el.offsetHeight;
-  }, [isPreviewing, codes, matchMode]);
   const [dictOpen, setDictOpen] = useState(false);
   const [suggestOpen, setSuggestOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
@@ -492,16 +482,7 @@ export function CpvPicker({
             <input type="hidden" name="cpv_match" value={matchMode} />
           ) : null}
           <div
-            ref={selectedBoxRef}
             id={selectedId}
-            style={
-              isPreviewing && committedBoxHeightRef.current
-                ? {
-                    height: committedBoxHeightRef.current,
-                    overflowY: "auto",
-                  }
-                : undefined
-            }
             className={
               displayCodes.length >= 2
                 ? "min-h-[2.5rem] rounded-md rounded-tr-none border border-border bg-muted/30 px-3 py-2 text-sm"
