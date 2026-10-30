@@ -36,7 +36,11 @@ function blankNamedFields(form: HTMLFormElement, name: string) {
     }
     return;
   }
-  if (el instanceof HTMLInputElement || el instanceof HTMLSelectElement) {
+  if (
+    el instanceof HTMLInputElement ||
+    el instanceof HTMLSelectElement ||
+    el instanceof HTMLTextAreaElement
+  ) {
     if (el instanceof HTMLInputElement && el.type === "checkbox") {
       el.checked = false;
       return;
@@ -44,6 +48,9 @@ function blankNamedFields(form: HTMLFormElement, name: string) {
     el.value = "";
     if (el instanceof HTMLSelectElement) {
       el.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+    if (el instanceof HTMLTextAreaElement) {
+      el.dispatchEvent(new Event("input", { bubbles: true }));
     }
   }
 }
@@ -72,7 +79,9 @@ function fieldHasValue(form: HTMLFormElement, name: string): boolean {
     return el.checked;
   }
   return (
-    (el instanceof HTMLInputElement || el instanceof HTMLSelectElement) &&
+    (el instanceof HTMLInputElement ||
+      el instanceof HTMLSelectElement ||
+      el instanceof HTMLTextAreaElement) &&
     el.value.trim() !== ""
   );
 }

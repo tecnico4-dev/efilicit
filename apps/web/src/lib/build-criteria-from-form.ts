@@ -14,7 +14,7 @@ function readField(form: HTMLFormElement, name: string): string {
     if (el.type === "checkbox") return el.checked ? el.value.trim() || "1" : "";
     return el.value.trim();
   }
-  if (el instanceof HTMLSelectElement) {
+  if (el instanceof HTMLSelectElement || el instanceof HTMLTextAreaElement) {
     return el.value.trim();
   }
   return "";

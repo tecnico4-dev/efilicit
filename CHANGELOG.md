@@ -9,7 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Buscador / favoritos / alertas: resumen de criteria con formato `Campo: valor` separado por ` ~ ` (texto entrecomillado, Lugar con nombre de municipio, Importe/Fecha con rangos tipados).
+- Buscador: publicación en un solo control (atajos 7 días/mes/año + personalizado con calendario de rango e Inicio/Fin); junto a importes en pantallas grandes.
+- Buscador: campo Texto multilínea que crece hasta ~5 líneas y luego hace scroll.
+- Buscador / favoritos / alertas: resumen de criteria con formato `Campo: valor` separado por ` ~ ` (texto ≤3 palabras, CPV ≤2 códigos, Lugar con nombre de municipio, Importe/Fecha tipados).
 - Buscador: en desplegables de estado/procedimiento/tipo, «Otro» va al final (resto alfabético; «Todos» sigue primero).
 - Buscador: «Búsquedas recientes» junto al marcador de guardar (fila del campo Texto), no al lado de Buscar.
 - Buscador: municipio (y CPV) notifican `input`/`change` al form al elegir valor en controles ocultos — el marcador detecta búsquedas ya guardadas con CCAA+municipio.

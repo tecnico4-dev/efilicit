@@ -65,9 +65,13 @@ function setPreviewingFlag(form: HTMLFormElement, on: boolean) {
 function resolveField(
   form: HTMLFormElement,
   name: SimpleFieldName,
-): HTMLInputElement | HTMLSelectElement | null {
+): HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement | null {
   const el = form.elements.namedItem(name);
-  if (el instanceof HTMLInputElement || el instanceof HTMLSelectElement) {
+  if (
+    el instanceof HTMLInputElement ||
+    el instanceof HTMLSelectElement ||
+    el instanceof HTMLTextAreaElement
+  ) {
     return el;
   }
   return null;

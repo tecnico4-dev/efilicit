@@ -62,7 +62,10 @@ export function formatCriteriaSummary(
   const munNames = options?.municipalityNames ?? {};
 
   if (criteria.keywords?.length) {
-    parts.push(`Texto: "${criteria.keywords.join(" ")}"`);
+    const words = criteria.keywords;
+    const shown = words.slice(0, 3).join(" ");
+    const text = words.length > 3 ? `${shown}…` : shown;
+    parts.push(`Texto: "${text}"`);
   }
   if (criteria.cpv_codes?.length) {
     const mode =
@@ -71,8 +74,10 @@ export function formatCriteriaSummary(
         : criteria.cpv_codes.length >= 2
           ? "cualquiera"
           : null;
-    const codes = criteria.cpv_codes.join(", ");
-    parts.push(mode ? `CPV (${mode}): ${codes}` : `CPV: ${codes}`);
+    const codes = criteria.cpv_codes;
+    const shown = codes.slice(0, 2).join(", ");
+    const codesStr = codes.length > 2 ? `${shown}…` : shown;
+    parts.push(mode ? `CPV (${mode}): ${codesStr}` : `CPV: ${codesStr}`);
   }
 
   const ccaaCodes = criteria.geography?.ccaa_codes?.filter(Boolean) ?? [];

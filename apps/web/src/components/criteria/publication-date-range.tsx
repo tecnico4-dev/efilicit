@@ -125,9 +125,13 @@ export function PublicationDateRange({
   );
   const [draftStart, setDraftStart] = useState<string | null>(null);
   const [hoverDay, setHoverDay] = useState<string | null>(null);
+  /** Casillas Inicio/Fin: ambas = rango; una = solo ese extremo; ninguna = días bloqueados. */
+  const [pickInicio, setPickInicio] = useState(true);
+  const [pickFin, setPickFin] = useState(true);
 
   const displayFrom = isPreviewing ? previewInitial.pubFrom : from;
   const displayTo = isPreviewing ? previewInitial.pubTo : to;
+  const pickingEnabled = pickInicio || pickFin;
 
   useEffect(() => {
     const onClear = () => {
@@ -135,6 +139,8 @@ export function PublicationDateRange({
       setTo("");
       setDraftStart(null);
       setHoverDay(null);
+      setPickInicio(true);
+      setPickFin(true);
       setPanel("menu");
       setOpen(false);
     };
@@ -150,18 +156,37 @@ export function PublicationDateRange({
     form.dispatchEvent(new Event("change", { bubbles: true }));
   }, [from, to, isPreviewing]);
 
+  /** Si solo Inicio o solo Fin está activo, vacía el extremo que no se está eligiendo. */
+  function clearInactiveBound(nextInicio: boolean, nextFin: boolean) {
+    if (nextInicio && !nextFin) setTo("");
+    else if (nextFin && !nextInicio) setFrom("");
+  }
+
+  function leaveCalendar(closePopover: boolean) {
+    clearInactiveBound(pickInicio, pickFin);
+    setDraftStart(null);
+    setHoverDay(null);
+    setPanel("menu");
+    if (closePopover) setOpen(false);
+  }
+
   useEffect(() => {
     function onDoc(e: MouseEvent) {
       if (!wrapRef.current?.contains(e.target as Node)) {
-        setOpen(false);
-        setPanel("menu");
-        setDraftStart(null);
-        setHoverDay(null);
+        if (panel === "calendar") {
+          leaveCalendar(true);
+        } else {
+          setOpen(false);
+          setPanel("menu");
+          setDraftStart(null);
+          setHoverDay(null);
+        }
       }
     }
     document.addEventListener("mousedown", onDoc);
     return () => document.removeEventListener("mousedown", onDoc);
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- leaveCalendar usa pickInicio/Fin/panel
+  }, [panel, pickInicio, pickFin]);
 
   function applyRange(nextFrom: string, nextTo: string) {
     clearFeedback();
@@ -197,26 +222,54 @@ export function PublicationDateRange({
     setPanel("calendar");
     setDraftStart(null);
     setHoverDay(null);
+    setPickInicio(true);
+    setPickFin(true);
     setViewMonth(
       startOfMonth(parseIso(from) ?? parseIso(to) ?? today()),
     );
   }
 
+  function togglePickInicio() {
+    setPickInicio((v) => !v);
+    setDraftStart(null);
+    setHoverDay(null);
+  }
+
+  function togglePickFin() {
+    setPickFin((v) => !v);
+    setDraftStart(null);
+    setHoverDay(null);
+  }
+
   function onPickDay(iso: string) {
     if (iso > toIso(today())) return;
-    if (!draftStart) {
-      setDraftStart(iso);
-      setHoverDay(null);
+    if (!pickingEnabled) return;
+
+    if (pickInicio && pickFin) {
+      if (!draftStart) {
+        setDraftStart(iso);
+        setHoverDay(null);
+        return;
+      }
+      let a = draftStart;
+      let b = iso;
+      if (compareIso(a, b) > 0) [a, b] = [b, a];
+      applyRange(a, b);
       return;
     }
-    let a = draftStart;
-    let b = iso;
-    if (compareIso(a, b) > 0) [a, b] = [b, a];
-    applyRange(a, b);
+
+    if (pickInicio) {
+      // Solo inicio: la fecha fin no rellenada se borra.
+      applyRange(iso, "");
+      return;
+    }
+
+    // Solo fin: la fecha inicio no rellenada se borra.
+    applyRange("", iso);
   }
 
   const rangeForPaint = useMemo(() => {
-    if (panel === "calendar" && draftStart) {
+    if (panel === "calendar" && pickInicio && pickFin && draftStart) {
       const end = hoverDay ?? draftStart;
       return compareIso(draftStart, end) <= 0
         ? { start: draftStart, end }
@@ -228,7 +281,15 @@ export function PublicationDateRange({
     if (displayFrom) return { start: displayFrom, end: displayFrom };
     if (displayTo) return { start: displayTo, end: displayTo };
     return null;
-  }, [panel, draftStart, hoverDay, displayFrom, displayTo]);
+  }, [
+    panel,
+    pickInicio,
+    pickFin,
+    draftStart,
+    hoverDay,
+    displayFrom,
+    displayTo,
+  ]);
 
   const cells = useMemo(() => buildMonthCells(viewMonth), [viewMonth]);
 
@@ -253,6 +314,9 @@ export function PublicationDateRange({
           setOpen((v) => {
             const next = !v;
             if (!next) {
+              if (panel === "calendar") {
+                clearInactiveBound(pickInicio, pickFin);
+              }
               setPanel("menu");
               setDraftStart(null);
               setHoverDay(null);
@@ -298,11 +362,7 @@ export function PublicationDateRange({
                 <button
                   type="button"
                   className="text-xs font-medium text-muted-foreground hover:text-foreground"
-                  onClick={() => {
-                    setPanel("menu");
-                    setDraftStart(null);
-                    setHoverDay(null);
-                  }}
+                  onClick={() => leaveCalendar(false)}
                 >
                   ← Opciones
                 </button>
@@ -326,6 +386,15 @@ export function PublicationDateRange({
                   </p>
                   <IconButton
                     label="Mes siguiente"
+                    disabled={
+                      toIso(
+                        new Date(
+                          viewMonth.getFullYear(),
+                          viewMonth.getMonth() + 1,
+                          1,
+                        ),
+                      ) > toIso(today())
+                    }
                     onClick={() =>
                       setViewMonth(
                         new Date(
@@ -352,7 +421,8 @@ export function PublicationDateRange({
                 ))}
                 {cells.map((cell) => {
                   const iso = toIso(cell.date);
-                  const disabled = iso > toIso(today());
+                  const future = iso > toIso(today());
+                  const disabled = future || !pickingEnabled;
                   const outside = cell.outside;
                   const selected =
                     rangeForPaint != null &&
@@ -375,13 +445,21 @@ export function PublicationDateRange({
                       type="button"
                       disabled={disabled}
                       onMouseEnter={() => {
-                        if (draftStart && !disabled) setHoverDay(iso);
+                        if (
+                          pickInicio &&
+                          pickFin &&
+                          draftStart &&
+                          !disabled
+                        ) {
+                          setHoverDay(iso);
+                        }
                       }}
                       onMouseLeave={() => setHoverDay(null)}
                       onClick={() => onPickDay(iso)}
                       className={cn(
                         "relative h-9 text-sm tabular-nums transition-colors",
                         disabled && "cursor-not-allowed opacity-35",
+                        !pickingEnabled && "opacity-40",
                         !disabled && "hover:bg-primary/10",
                         outside && !selected && !inMiddle
                           ? "text-muted-foreground/50"
@@ -399,11 +477,20 @@ export function PublicationDateRange({
                   );
                 })}
               </div>
-              <p className="px-1 text-xs text-muted-foreground">
-                {draftStart
-                  ? "Elige la fecha final del rango."
-                  : "Elige la fecha inicial del rango."}
-              </p>
+              <div className="flex gap-2 px-0.5 pt-1">
+                <ModeChip
+                  label="Inicio"
+                  active={pickInicio}
+                  value={from ? formatEs(from) : null}
+                  onClick={togglePickInicio}
+                />
+                <ModeChip
+                  label="Fin"
+                  active={pickFin}
+                  value={to ? formatEs(to) : null}
+                  onClick={togglePickFin}
+                />
+              </div>
             </div>
           )}
         </div>
@@ -428,6 +515,37 @@ function buildMonthCells(viewMonth: Date): { date: Date; outside: boolean }[] {
     });
   }
   return cells;
+}
+
+function ModeChip({
+  label,
+  active,
+  value,
+  onClick,
+}: {
+  label: string;
+  active: boolean;
+  value: string | null;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      aria-pressed={active}
+      onClick={onClick}
+      className={cn(
+        "flex min-w-0 flex-1 flex-col items-start rounded-md border px-2.5 py-1.5 text-left transition-colors",
+        active
+          ? "border-primary/50 bg-primary/10 text-foreground"
+          : "border-border bg-muted/30 text-muted-foreground",
+      )}
+    >
+      <span className="text-xs font-semibold">{label}</span>
+      <span className="w-full truncate text-[11px] tabular-nums opacity-80">
+        {value ?? "—"}
+      </span>
+    </button>
+  );
 }
 
 function MenuItem({
@@ -459,17 +577,23 @@ function IconButton({
   children,
   label,
   onClick,
+  disabled = false,
 }: {
   children: ReactNode;
   label: string;
   onClick: () => void;
+  disabled?: boolean;
 }) {
   return (
     <button
       type="button"
       aria-label={label}
+      disabled={disabled}
       onClick={onClick}
-      className="inline-flex h-7 w-7 items-center justify-center rounded-md text-base text-muted-foreground hover:bg-muted hover:text-foreground"
+      className={cn(
+        "inline-flex h-7 w-7 items-center justify-center rounded-md text-base text-muted-foreground hover:bg-muted hover:text-foreground",
+        disabled && "cursor-not-allowed opacity-35 hover:bg-transparent",
+      )}
     >
       {children}
     </button>

@@ -11,6 +11,7 @@ import { CpvPicker } from "@/app/search/cpv-picker";
 import { MunicipalityFilter } from "@/app/search/municipality-filter";
 import { SEARCH_FORM_ID } from "@/app/search/save-search-button";
 import { PublicationDateRange } from "./publication-date-range";
+import { SearchTextField } from "./search-text-field";
 
 const selectClass =
   "mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring";
@@ -88,10 +89,9 @@ export function CriteriaFilters({
         >
           Texto
         </label>
-        <input
+        <SearchTextField
           id={qId}
           name="q"
-          type="search"
           defaultValue={initial.q}
           aria-invalid={queryOnlyNoise || undefined}
           aria-describedby={queryOnlyNoise ? `${qId}-noise-hint` : undefined}
@@ -218,7 +218,7 @@ export function CriteriaFilters({
         </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <div>
           <label
             htmlFor={minId}
@@ -253,13 +253,14 @@ export function CriteriaFilters({
             className={inputClass}
           />
         </div>
+        <div className="sm:col-span-2 lg:col-span-1">
+          <PublicationDateRange
+            idPrefix={idPrefix}
+            initialFrom={initial.pubFrom}
+            initialTo={initial.pubTo}
+          />
+        </div>
       </div>
-
-      <PublicationDateRange
-        idPrefix={idPrefix}
-        initialFrom={initial.pubFrom}
-        initialTo={initial.pubTo}
-      />
 
       <CpvPicker
         initialCodes={initial.cpvCodes}

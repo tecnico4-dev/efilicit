@@ -23,7 +23,11 @@ function readField(form: HTMLFormElement, name: string): string {
     }
     return "";
   }
-  if (el instanceof HTMLInputElement || el instanceof HTMLSelectElement) {
+  if (
+    el instanceof HTMLInputElement ||
+    el instanceof HTMLSelectElement ||
+    el instanceof HTMLTextAreaElement
+  ) {
     return el.value.trim();
   }
   return "";
