@@ -64,17 +64,20 @@ export default async function FavoritesPage() {
         Favoritos
       </h1>
 
-      <div className={PAGE_TITLE_RULE}>
+      <div
+        className={`${PAGE_TITLE_RULE} grid grid-cols-1 items-stretch gap-8 lg:grid-cols-2 lg:gap-6`}
+      >
         <PreviewSection
           title="Licitaciones favoritas"
           emptyMessage={<EmptyFavoritesTendersHint />}
           error={favoritesResult.error?.message ?? null}
           totalCount={favorites.length}
           moreHref="/favorites/tenders"
-          className="mt-0"
+          className="mt-0 flex h-full min-h-0 flex-col rounded-lg border border-border bg-surface/40 px-4 py-4 sm:px-5"
         >
           <FavoriteTenderList
             favorites={favorites.slice(0, FAVORITES_PREVIEW_LIMIT)}
+            bordered={false}
           />
         </PreviewSection>
 
@@ -84,6 +87,7 @@ export default async function FavoritesPage() {
           error={searchesResult.error?.message ?? null}
           totalCount={searches.length}
           moreHref="/favorites/searches"
+          className="mt-0 flex h-full min-h-0 flex-col rounded-lg border border-border bg-surface/40 px-4 py-4 sm:px-5"
         >
           <SavedSearchList
             searches={searches.slice(0, FAVORITES_PREVIEW_LIMIT)}
@@ -91,6 +95,7 @@ export default async function FavoritesPage() {
             digestFrequency={digestFrequency}
             searchFrom="favorites"
             municipalityNames={municipalityNames}
+            bordered={false}
           />
         </PreviewSection>
       </div>
