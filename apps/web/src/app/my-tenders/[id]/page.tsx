@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
   getSessionProfile,
@@ -6,6 +5,7 @@ import {
 } from "@/lib/auth/session";
 import {
   getBidCaseById,
+  getTenderById,
   listBidDocuments,
 } from "@/lib/queries";
 import { formatCountdown } from "@/lib/bid-countdown";
@@ -17,6 +17,7 @@ import {
 } from "@/components/shell/page-width";
 import { ErrorState } from "@/components/ui/state-message";
 import { CaseStageBadge } from "@/components/my-tenders/case-stage-badge";
+import { TenderFichaModalButton } from "@/components/my-tenders/tender-ficha-modal";
 import {
   CaseMetaForm,
   ChecklistPanel,
@@ -73,25 +74,21 @@ export default async function MyTenderDetailPage({ params }: PageProps) {
   }
   if (!bidCase) notFound();
 
-  const tender = bidCase.tenders;
+  const tenderSummary = bidCase.tenders;
+  const tenderDetailResult = tenderSummary
+    ? await getTenderById(supabase, tenderSummary.id)
+    : { data: null, error: null };
+  const tenderFull = tenderDetailResult.data;
+
   const due =
     bidCase.checklist.find((c) => !c.done_at && c.due_at)?.due_at ??
-    tender?.deadline_at ??
+    tenderSummary?.deadline_at ??
     null;
   const cd = formatCountdown(due);
 
   return (
     <main className={PAGE_MAIN_CLASS}>
-      <p className="text-sm">
-        <Link
-          href="/my-tenders"
-          className="font-medium text-link hover:underline"
-        >
-          ← Mis licitaciones
-        </Link>
-      </p>
-
-      <div className="mt-4 flex flex-wrap items-start justify-between gap-3">
+      <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <CaseStageBadge stage={bidCase.stage} />
@@ -109,28 +106,24 @@ export default async function MyTenderDetailPage({ params }: PageProps) {
             ) : null}
           </div>
           <h1 className="mt-2 text-2xl font-semibold tracking-tight text-foreground">
-            {tender?.title ?? "Licitación eliminada"}
+            {tenderSummary?.title ?? "Licitación eliminada"}
           </h1>
-          {tender ? (
+          {tenderSummary ? (
             <p className="mt-2 text-sm text-muted-foreground">
-              {formatMoney(tender.estimated_value, tender.currency)}
-              {tender.status
-                ? ` · ${formatTenderStatus(tender.status)}`
+              {formatMoney(
+                tenderSummary.estimated_value,
+                tenderSummary.currency,
+              )}
+              {tenderSummary.status
+                ? ` · ${formatTenderStatus(tenderSummary.status)}`
                 : null}
-              {tender.deadline_at
-                ? ` · Plazo oferta ${formatDateTimeMadrid(tender.deadline_at)}`
+              {tenderSummary.deadline_at
+                ? ` · Plazo oferta ${formatDateTimeMadrid(tenderSummary.deadline_at)}`
                 : null}
             </p>
           ) : null}
         </div>
-        {tender ? (
-          <Link
-            href={`/tenders/${tender.id}?from=my-tenders`}
-            className="text-sm font-medium text-link hover:underline"
-          >
-            Ver ficha pública →
-          </Link>
-        ) : null}
+        {tenderFull ? <TenderFichaModalButton tender={tenderFull} /> : null}
       </div>
 
       <div className={cn(PAGE_TITLE_RULE, "space-y-10")}>
@@ -192,8 +185,7 @@ export default async function MyTenderDetailPage({ params }: PageProps) {
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
             Enlaces a Drive/SharePoint con tags para reutilizar en licitaciones
-            parecidas. Creado:{" "}
-            {formatDateMadrid(bidCase.created_at)}.
+            parecidas. Creado: {formatDateMadrid(bidCase.created_at)}.
           </p>
           <div className="mt-4">
             <DocumentsPanel
