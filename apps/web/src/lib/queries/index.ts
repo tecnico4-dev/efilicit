@@ -75,6 +75,7 @@ export {
   type DigestTenderListItem,
 } from "./digest-inbox";
 export {
+  deleteOwnRecentSearch,
   listOwnRecentSearches,
   recordOwnRecentSearch,
   type RecentSearch,

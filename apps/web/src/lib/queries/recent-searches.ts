@@ -58,3 +58,16 @@ export async function recordOwnRecentSearch(
   if (error) return { error: new Error(error.message) };
   return { error: null };
 }
+
+/** Quita una entrada del historial (RLS own). */
+export async function deleteOwnRecentSearch(
+  client: SupabaseClient<Database>,
+  input: { recentId: string },
+): Promise<{ error: Error | null }> {
+  const { error } = await client
+    .from("recent_searches")
+    .delete()
+    .eq("id", input.recentId);
+  if (error) return { error: new Error(error.message) };
+  return { error: null };
+}
