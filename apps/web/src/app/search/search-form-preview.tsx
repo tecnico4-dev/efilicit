@@ -26,8 +26,6 @@ const SIMPLE_FIELD_NAMES = [
   "status",
   "procedure",
   "contract_type",
-  "pub_from",
-  "pub_to",
   "en_plazo",
 ] as const;
 
@@ -100,8 +98,6 @@ function paintSimpleFields(form: HTMLFormElement, criteria: SearchCriteria) {
     status: initial.status,
     procedure: initial.procedure,
     contract_type: initial.contractType,
-    pub_from: initial.pubFrom,
-    pub_to: initial.pubTo,
   };
 
   for (const name of SIMPLE_FIELD_NAMES) {

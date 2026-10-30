@@ -10,6 +10,7 @@ import {
 import { CpvPicker } from "@/app/search/cpv-picker";
 import { MunicipalityFilter } from "@/app/search/municipality-filter";
 import { SEARCH_FORM_ID } from "@/app/search/save-search-button";
+import { PublicationDateRange } from "./publication-date-range";
 
 const selectClass =
   "mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring";
@@ -75,9 +76,6 @@ export function CriteriaFilters({
   const statusId = `${idPrefix}status`;
   const procedureId = `${idPrefix}procedure`;
   const contractId = `${idPrefix}contract_type`;
-  const pubFromId = `${idPrefix}pub_from`;
-  const pubToId = `${idPrefix}pub_to`;
-
   return (
     <div className="space-y-4">
       <div>
@@ -257,38 +255,11 @@ export function CriteriaFilters({
         </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div>
-          <label
-            htmlFor={pubFromId}
-            className="block text-sm font-medium text-foreground"
-          >
-            Publicación desde
-          </label>
-          <input
-            id={pubFromId}
-            name="pub_from"
-            type="date"
-            defaultValue={initial.pubFrom}
-            className={inputClass}
-          />
-        </div>
-        <div>
-          <label
-            htmlFor={pubToId}
-            className="block text-sm font-medium text-foreground"
-          >
-            Publicación hasta
-          </label>
-          <input
-            id={pubToId}
-            name="pub_to"
-            type="date"
-            defaultValue={initial.pubTo}
-            className={inputClass}
-          />
-        </div>
-      </div>
+      <PublicationDateRange
+        idPrefix={idPrefix}
+        initialFrom={initial.pubFrom}
+        initialTo={initial.pubTo}
+      />
 
       <CpvPicker
         initialCodes={initial.cpvCodes}
