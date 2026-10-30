@@ -31,6 +31,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CI/`next build`: `getSessionUser` y `AuthenticatedChrome` no exigen env Supabase en prerender (p. ej. `/_not-found`); sin sesión si faltan `NEXT_PUBLIC_*`.
 - Prefijo CPV de 1 dígito: `3` busca `3%` (no forzaba `30%`); mismo criterio en alertas batch.
 
+### Fixed
+
+- Mis licitaciones: rollback en remoto de tablas `bid_*` aplicadas por error (`20261030130100`); el pipeline queda solo en local hasta decisión explícita de remoto.
+
 ### Added
 
 - Mis licitaciones: pipeline compartido de presentación Eficen (`/my-tenders`) — etapas, responsable, fechas, checklist con cuenta atrás, novedades, documentación reutilizable (URL+tags) e histórico por años; nav a la izquierda del buzón; alta desde la ficha. [ADR 023](docs/adr/023-mis-licitaciones-pipeline-compartido.md).

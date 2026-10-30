@@ -62,3 +62,7 @@ No es un favorito privado: es un **tablero operativo compartido** entre cuentas 
 - [016](016-auth-invite-only-sin-registro-publico.md) — invite-only (tenant = org)
 - Favoritos Semana 6 — contraste owner-only
 - Reglas: RLS en tablas expuestas; sin `service_role` en web
+
+## Nota operativa (2026-10-30)
+
+La migración `20261030120000` se aplicó por error al remoto enlazado. Se revirtió con `20261030130100_rollback_…`. En **local** de desarrollo las tablas `bid_*` deben existir (crear con `migration up` de `120000`; **no** ejecutar el DROP del rollback — marcar `20261030130100` como `applied` con `migration repair --local` si hace falta). No volver a `db push --linked` del pipeline sin OK explícito.
