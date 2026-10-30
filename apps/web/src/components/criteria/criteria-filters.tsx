@@ -3,7 +3,10 @@
 import type { ReactNode } from "react";
 import { SEARCH_CCAA_OPTIONS } from "@/lib/geo-ccaa";
 import type { CriteriaFilterInitial } from "@/lib/criteria-display";
-import type { SearchFilterOption } from "@/lib/queries";
+import {
+  sortSearchFilterOptions,
+  type SearchFilterOption,
+} from "@/lib/queries";
 import { CpvPicker } from "@/app/search/cpv-picker";
 import { MunicipalityFilter } from "@/app/search/municipality-filter";
 import { SEARCH_FORM_ID } from "@/app/search/save-search-button";
@@ -56,14 +59,14 @@ export function CriteriaFilters({
   textFieldAction,
 }: Props) {
   const ccaaWithData = new Set(filterOptions.ccaaCodesWithTenders);
-  const statuses = withInitialOption(filterOptions.statuses, initial.status);
-  const procedureTypes = withInitialOption(
-    filterOptions.procedureTypes,
-    initial.procedure,
+  const statuses = sortSearchFilterOptions(
+    withInitialOption(filterOptions.statuses, initial.status),
   );
-  const contractTypes = withInitialOption(
-    filterOptions.contractTypes,
-    initial.contractType,
+  const procedureTypes = sortSearchFilterOptions(
+    withInitialOption(filterOptions.procedureTypes, initial.procedure),
+  );
+  const contractTypes = sortSearchFilterOptions(
+    withInitialOption(filterOptions.contractTypes, initial.contractType),
   );
   const qId = `${idPrefix}q`;
   const minId = `${idPrefix}min`;
@@ -78,17 +81,15 @@ export function CriteriaFilters({
   return (
     <div className="space-y-4">
       <div>
-        <div className="flex items-center justify-between gap-2">
-          <label
-            htmlFor={qId}
-            className="block text-sm font-medium text-foreground"
-          >
-            Texto
-          </label>
-          {textFieldAction ? (
-            <div className="-mr-1.5 shrink-0">{textFieldAction}</div>
-          ) : null}
-        </div>
+        {textFieldAction ? (
+          <div className="-mr-1.5 mb-1.5 w-full min-w-0">{textFieldAction}</div>
+        ) : null}
+        <label
+          htmlFor={qId}
+          className="block text-sm font-medium text-foreground"
+        >
+          Texto
+        </label>
         <input
           id={qId}
           name="q"

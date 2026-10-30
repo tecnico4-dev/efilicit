@@ -20,12 +20,49 @@ function ccaaLabel(code: string): string {
   return SEARCH_CCAA_OPTIONS.find((o) => o.code === code)?.name ?? code;
 }
 
-/** Resumen legible de criteria v1 (keywords, CPV, importes, geografía). */
-export function formatCriteriaSummary(criteria: SearchCriteria): string {
+/** `YYYY-MM-DD` → `DD/MM/YYYY`. */
+function formatDateEs(iso: string): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso.trim());
+  if (!m) return iso.trim();
+  return `${m[3]}/${m[2]}/${m[1]}`;
+}
+
+function formatImportePart(criteria: SearchCriteria): string | null {
+  const min = criteria.estimated_value_min;
+  const max = criteria.estimated_value_max;
+  if (min == null && max == null) return null;
+  if (min != null && max != null) return `Importe: [${min}-${max}]€`;
+  if (max != null) return `Importe<${max}€`;
+  return `Importe>${min!}€`;
+}
+
+function formatFechaPart(criteria: SearchCriteria): string | null {
+  const from = criteria.publication_date_from?.trim() || "";
+  const to = criteria.publication_date_to?.trim() || "";
+  if (!from && !to) return null;
+  const left = from ? formatDateEs(from) : "...";
+  const right = to ? formatDateEs(to) : "...";
+  return `Fecha: [${left}-${right}]`;
+}
+
+export type FormatCriteriaSummaryOptions = {
+  /** Nombres de municipio por código INE (sin esto no se muestra el municipio). */
+  municipalityNames?: Readonly<Record<string, string>>;
+};
+
+/**
+ * Resumen legible de criteria v1 para chips / listados.
+ * Formato: `Campo: valor(es)` separados por ` ~ `.
+ */
+export function formatCriteriaSummary(
+  criteria: SearchCriteria,
+  options?: FormatCriteriaSummaryOptions,
+): string {
   const parts: string[] = [];
+  const munNames = options?.municipalityNames ?? {};
 
   if (criteria.keywords?.length) {
-    parts.push(criteria.keywords.join(", "));
+    parts.push(`Texto: "${criteria.keywords.join(" ")}"`);
   }
   if (criteria.cpv_codes?.length) {
     const mode =
@@ -34,60 +71,51 @@ export function formatCriteriaSummary(criteria: SearchCriteria): string {
         : criteria.cpv_codes.length >= 2
           ? "cualquiera"
           : null;
-    parts.push(
-      mode
-        ? `CPV (${mode}) ${criteria.cpv_codes.join(", ")}`
-        : `CPV ${criteria.cpv_codes.join(", ")}`,
-    );
+    const codes = criteria.cpv_codes.join(", ");
+    parts.push(mode ? `CPV (${mode}): ${codes}` : `CPV: ${codes}`);
   }
-  if (
-    criteria.estimated_value_min != null ||
-    criteria.estimated_value_max != null
-  ) {
-    const min =
-      criteria.estimated_value_min != null
-        ? String(criteria.estimated_value_min)
-        : "—";
-    const max =
-      criteria.estimated_value_max != null
-        ? String(criteria.estimated_value_max)
-        : "—";
-    parts.push(`importe sin IVA ${min}–${max}`);
-  }
+
   const ccaaCodes = criteria.geography?.ccaa_codes?.filter(Boolean) ?? [];
-  if (ccaaCodes.length) {
-    parts.push(`CCAA ${ccaaCodes.map(ccaaLabel).join(", ")}`);
-  }
   const munCodes =
     criteria.geography?.municipality_codes?.filter(Boolean) ?? [];
-  if (munCodes.length) {
-    parts.push(`Municipio ${munCodes.join(", ")}`);
+  const munLabels = munCodes
+    .map((code) => munNames[code]?.trim())
+    .filter((n): n is string => Boolean(n));
+  if (ccaaCodes.length || munLabels.length) {
+    const placeBits = [
+      ...ccaaCodes.map(ccaaLabel),
+      ...munLabels,
+    ];
+    parts.push(`Lugar: ${placeBits.join(", ")}`);
   }
+
   if (criteria.statuses?.length) {
     parts.push(
-      `Estado ${criteria.statuses.map(formatTenderStatus).join(", ")}`,
+      `Estado: ${criteria.statuses.map(formatTenderStatus).join(", ")}`,
     );
   }
   if (criteria.procedure_types?.length) {
     parts.push(
-      `Procedimiento ${criteria.procedure_types.map(formatProcedureType).join(", ")}`,
+      `Procedimiento: ${criteria.procedure_types.map(formatProcedureType).join(", ")}`,
     );
   }
   if (criteria.contract_types?.length) {
     parts.push(
-      `Tipo ${criteria.contract_types.map(formatContractType).join(", ")}`,
+      `Tipo: ${criteria.contract_types.map(formatContractType).join(", ")}`,
     );
-  }
-  if (criteria.publication_date_from || criteria.publication_date_to) {
-    parts.push(
-      `Publicación ${criteria.publication_date_from ?? "—"}–${criteria.publication_date_to ?? "—"}`,
-    );
-  }
-  if (criteria.open_for_submission === true) {
-    parts.push("Solo en plazo");
   }
 
-  return parts.length ? parts.join(" · ") : "Sin criterios";
+  const importe = formatImportePart(criteria);
+  if (importe) parts.push(importe);
+
+  const fecha = formatFechaPart(criteria);
+  if (fecha) parts.push(fecha);
+
+  if (criteria.open_for_submission === true) {
+    parts.push("Solo en plazo: sí");
+  }
+
+  return parts.length ? parts.join(" ~ ") : "Sin criterios";
 }
 
 /** Valores iniciales del bloque compartido de filtros (búsqueda / alertas). */

@@ -17,6 +17,7 @@ import {
 } from "@/lib/queries";
 import type { SearchCriteria } from "@efilicit/types";
 import { useSearchFeedback } from "./search-feedback";
+import { isSearchFormPreviewing } from "./search-form-preview";
 
 type MatchedSavedSearch = {
   id: string;
@@ -111,9 +112,10 @@ export function SaveSearchButton({ userId }: { userId: string }) {
 
   useEffect(() => {
     void syncFromForm();
-    const form = document.getElementById(FORM_ID);
+    const form = document.getElementById(FORM_ID) as HTMLFormElement | null;
     if (!form) return;
     const onChange = () => {
+      if (isSearchFormPreviewing(form)) return;
       void syncFromForm();
     };
     form.addEventListener("input", onChange);

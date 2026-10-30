@@ -3,7 +3,13 @@
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { listPlaceMunicipalities } from "@/lib/queries/list-place-municipalities";
+import { criteriaToFilterInitial } from "@/lib/criteria-display";
+import { cn } from "@/lib/cn";
 import { SEARCH_FORM_ID } from "./save-search-button";
+import {
+  SEARCH_PREVIEW_GHOST_CLASS,
+  useOptionalSearchFormPreview,
+} from "./search-form-preview";
 
 type Option = { code: string; name: string };
 
@@ -41,18 +47,30 @@ export function MunicipalityFilter({
   formId = SEARCH_FORM_ID,
 }: Props) {
   const listId = useId();
+  const formPreview = useOptionalSearchFormPreview();
+  const previewInitial = formPreview?.preview
+    ? criteriaToFilterInitial(formPreview.preview)
+    : null;
+  const isPreviewing = previewInitial != null;
+  const previewCcaa = previewInitial?.ccaa ?? "";
+  const previewCode = previewInitial?.municipalityCode ?? "";
+
   const [ccaa, setCcaa] = useState(initialCcaa);
   const [options, setOptions] = useState<Option[]>([]);
   const [loading, setLoading] = useState(false);
   const [text, setText] = useState(initialMunicipalityName);
   const [selectedCode, setSelectedCode] = useState(initialMunicipalityCode);
   const [open, setOpen] = useState(false);
+  const [previewName, setPreviewName] = useState("");
+  const [previewLoading, setPreviewLoading] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
 
   const enabled = ccaa !== "";
   /** CCAA elegida pero sin municipios con licitaciones → mismo bloqueo que sin CCAA. */
   const noMunicipalities = enabled && !loading && options.length === 0;
   const inputDisabled = !enabled || noMunicipalities;
+  /** Durante preview no se edita; el input sigue habilitado para mostrar el fantasma. */
+  const interactionLocked = inputDisabled || isPreviewing;
 
   useEffect(() => {
     const form = document.getElementById(formId) as HTMLFormElement | null;
@@ -98,6 +116,33 @@ export function MunicipalityFilter({
     // Solo al cambiar CCAA (no al teclear).
     // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional
   }, [ccaa]);
+
+  /** Nombre de municipio solo para preview (no toca estado committed). */
+  useEffect(() => {
+    if (!isPreviewing) {
+      setPreviewName("");
+      setPreviewLoading(false);
+      return;
+    }
+    setOpen(false);
+    if (!previewCcaa || !previewCode) {
+      setPreviewName("");
+      setPreviewLoading(false);
+      return;
+    }
+    let cancelled = false;
+    setPreviewLoading(true);
+    const client = createSupabaseBrowserClient();
+    void listPlaceMunicipalities(client, previewCcaa).then((res) => {
+      if (cancelled) return;
+      setPreviewLoading(false);
+      const hit = res.data.find((o) => o.code === previewCode);
+      setPreviewName(hit?.name ?? previewCode);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [isPreviewing, previewCcaa, previewCode]);
 
   const filtered = useMemo(
     () => options.filter((o) => startsWithFold(o.name, text)),
@@ -150,12 +195,13 @@ export function MunicipalityFilter({
    * marcador «guardar búsqueda» / Buscar no se enteraban del match.
    */
   useEffect(() => {
+    if (isPreviewing) return;
     const form = document.getElementById(formId) as HTMLFormElement | null;
     const codeInput = form?.elements.namedItem("municipality");
     if (!(codeInput instanceof HTMLInputElement)) return;
     codeInput.dispatchEvent(new Event("input", { bubbles: true }));
     codeInput.dispatchEvent(new Event("change", { bubbles: true }));
-  }, [selectedCode, formId]);
+  }, [selectedCode, formId, isPreviewing]);
 
   useEffect(() => {
     function onDocMouseDown(e: MouseEvent) {
@@ -167,6 +213,34 @@ export function MunicipalityFilter({
     document.addEventListener("mousedown", onDocMouseDown);
     return () => document.removeEventListener("mousedown", onDocMouseDown);
   });
+
+  const previewDisplayText = !previewCcaa
+    ? ""
+    : !previewCode
+      ? ""
+      : previewLoading
+        ? ""
+        : previewName;
+
+  const previewPlaceholder = !previewCcaa
+    ? "Selecciona antes una CCAA"
+    : previewLoading
+      ? "Cargando…"
+      : !previewCode
+        ? "Escribe para filtrar…"
+        : "Escribe para filtrar…";
+
+  const committedValue = inputDisabled ? "" : text;
+  const displayValue = isPreviewing ? previewDisplayText : committedValue;
+  const displayPlaceholder = isPreviewing
+    ? previewPlaceholder
+    : !enabled
+      ? "Selecciona antes una CCAA"
+      : loading
+        ? "Cargando…"
+        : options.length === 0
+          ? "Sin municipios con licitaciones"
+          : "Escribe para filtrar…";
 
   return (
     <div ref={wrapRef} className="relative">
@@ -181,22 +255,16 @@ export function MunicipalityFilter({
         id="municipality-text"
         type="text"
         autoComplete="off"
-        disabled={inputDisabled}
-        value={inputDisabled ? "" : text}
-        placeholder={
-          !enabled
-            ? "Selecciona antes una CCAA"
-            : loading
-              ? "Cargando…"
-              : options.length === 0
-                ? "Sin municipios con licitaciones"
-                : "Escribe para filtrar…"
-        }
+        disabled={!isPreviewing && inputDisabled}
+        readOnly={isPreviewing}
+        value={displayValue}
+        placeholder={displayPlaceholder}
         onFocus={() => {
-          if (!inputDisabled) setOpen(true);
+          if (interactionLocked) return;
+          setOpen(true);
         }}
         onChange={(e) => {
-          if (inputDisabled) return;
+          if (interactionLocked) return;
           const next = e.target.value;
           setText(next);
           setOpen(true);
@@ -204,7 +272,7 @@ export function MunicipalityFilter({
           setSelectedCode(match ? match.code : "");
         }}
         onKeyDown={(e) => {
-          if (inputDisabled) return;
+          if (interactionLocked) return;
           if (e.key === "Escape") {
             setText("");
             setSelectedCode("");
@@ -226,13 +294,16 @@ export function MunicipalityFilter({
             }
           }, 120);
         }}
-        className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
+        className={cn(
+          "mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-60",
+          isPreviewing && SEARCH_PREVIEW_GHOST_CLASS,
+        )}
         aria-controls={listId}
-        aria-expanded={open && !inputDisabled}
+        aria-expanded={open && !interactionLocked}
         aria-autocomplete="list"
         role="combobox"
       />
-      {!inputDisabled && open && filtered.length > 0 ? (
+      {!interactionLocked && open && filtered.length > 0 ? (
         <ul
           id={listId}
           role="listbox"
@@ -256,7 +327,7 @@ export function MunicipalityFilter({
           ))}
         </ul>
       ) : null}
-      {!inputDisabled && open && !loading && text !== "" && filtered.length === 0 ? (
+      {!interactionLocked && open && !loading && text !== "" && filtered.length === 0 ? (
         <p className="absolute z-20 mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-xs text-muted-foreground shadow-md">
           Ningún municipio coincide
         </p>

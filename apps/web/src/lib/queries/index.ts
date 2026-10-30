@@ -9,9 +9,11 @@ export {
 } from "./list-place-municipalities";
 export {
   listSearchFilterOptions,
+  sortSearchFilterOptions,
   type SearchFilterOption,
   type SearchFilterOptions,
 } from "./list-search-filter-options";
+export { listMunicipalityNamesByCodes } from "./list-municipality-names";
 export {
   getTenderById,
   type TenderDetail,

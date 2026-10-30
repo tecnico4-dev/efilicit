@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Buscador / favoritos / alertas: resumen de criteria con formato `Campo: valor` separado por ` ~ ` (texto entrecomillado, Lugar con nombre de municipio, Importe/Fecha con rangos tipados).
+- Buscador: en desplegables de estado/procedimiento/tipo, «Otro» va al final (resto alfabético; «Todos» sigue primero).
+- Buscador: «Búsquedas recientes» junto al marcador de guardar (fila del campo Texto), no al lado de Buscar.
 - Buscador: municipio (y CPV) notifican `input`/`change` al form al elegir valor en controles ocultos — el marcador detecta búsquedas ya guardadas con CCAA+municipio.
 - Buscador: «Limpiar campos» reserva altura aunque esté oculto (el botón Buscar no salta).
 - Buscador: «Guardar búsqueda» es un marcador (estilo corazón): desactivado si no hay criterios; outline gris / relleno azul eficen si ya está guardada; click elimina (toast «Búsqueda eliminada de favoritos.» + Revertir).
@@ -27,6 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Buscador: hover en chip de recientes previsualiza el formulario completo (texto, importes, fechas, selects, en plazo, CCAA, municipio, CPV) en estilo fantasma; al salir se restaura. Click en el chip sigue buscando de verdad.
 - Buscador: historial `recent_searches` (máx. 5/cuenta, dedupe sube al repetir; chips «Recientes» junto a Buscar). Distinto de favoritos guardados.
 - Notificaciones: al enviar un digest email, aviso in-app en el buzón («Se ha enviado tu email diario/semanal: N licitaciones…» + día); al pulsar, modal con la lista plana de ese correo (scroll/paginado); badge unificado. [ADR 022](docs/adr/022-digest-email-inbox-in-app.md).
 - Alertas: «Licitaciones relacionadas» (cola `notification_queue` por alerta) — modal con carpetas Todas (default) / Enviadas / Pendientes; paginación 10/50/100 como favoritos; `failed`/`cancelled` con marca «Error al enviar»; orden por `created_at`.

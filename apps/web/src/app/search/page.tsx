@@ -6,6 +6,7 @@ import { EmptyState, ErrorState } from "@/components/ui/state-message";
 import { getSessionProfile, getSupabaseServerClient } from "@/lib/auth/session";
 import {
   listOwnFavoriteTenderIds,
+  listMunicipalityNamesByCodes,
   listOwnRecentSearches,
   listPlaceMunicipalities,
   recordOwnRecentSearch,
@@ -331,6 +332,7 @@ export default async function SearchPage({
   let favoritedIds = new Set<string>();
   let municipalityValid = "";
   let recentSearches: RecentSearch[] = [];
+  let recentMunicipalityNames: Record<string, string> = {};
 
   let client;
   try {
@@ -427,7 +429,16 @@ export default async function SearchPage({
         const recent = await listOwnRecentSearches(client, {
           userId: profileUserId,
         });
-        if (!recent.error) recentSearches = recent.data;
+        if (!recent.error) {
+          recentSearches = recent.data;
+          const munCodes = recentSearches.flatMap(
+            (r) => r.criteria.geography?.municipality_codes ?? [],
+          );
+          recentMunicipalityNames = await listMunicipalityNamesByCodes(
+            client,
+            munCodes,
+          );
+        }
       }
     } catch {
       /* historial no bloquea la búsqueda */
@@ -515,7 +526,6 @@ export default async function SearchPage({
 
       <SearchForm
         formKey={`${qInput}|${cpvCodes.join(",")}|${cpvMatch}|${minRaw}|${maxRaw}|${ccaa}|${municipalityRaw}|${statusRaw}|${procedureRaw}|${contractTypeRaw}|${pubFromValid}|${pubToValid}|${openForSubmission}|${from}`}
-        besideSubmit={<RecentSearchesList items={recentSearches} />}
       >
         {from === "favorites" || from === "favorites-searches" ? (
           <input type="hidden" name="from" value={from} />
@@ -526,9 +536,15 @@ export default async function SearchPage({
               initial={filterInitial}
               queryOnlyNoise={queryOnlyNoise}
               textFieldAction={
-                <Suspense fallback={null}>
-                  <SaveSearchSlot />
-                </Suspense>
+                <RecentSearchesList
+                  items={recentSearches}
+                  municipalityNames={recentMunicipalityNames}
+                  trailing={
+                    <Suspense fallback={null}>
+                      <SaveSearchSlot />
+                    </Suspense>
+                  }
+                />
               }
             />
           }
@@ -537,9 +553,15 @@ export default async function SearchPage({
             initial={filterInitial}
             queryOnlyNoise={queryOnlyNoise}
             textFieldAction={
-              <Suspense fallback={null}>
-                <SaveSearchSlot />
-              </Suspense>
+              <RecentSearchesList
+                items={recentSearches}
+                municipalityNames={recentMunicipalityNames}
+                trailing={
+                  <Suspense fallback={null}>
+                    <SaveSearchSlot />
+                  </Suspense>
+                }
+              />
             }
           />
         </Suspense>

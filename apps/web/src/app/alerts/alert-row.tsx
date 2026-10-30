@@ -31,11 +31,13 @@ export function AlertRowItem({
   alert,
   filterOptions,
   hasRelatedTenders = false,
+  municipalityNames = {},
 }: {
   alert: AlertRow;
   filterOptions: CriteriaFilterOptionsProp;
   /** Hay filas en notification_queue para esta alerta. */
   hasRelatedTenders?: boolean;
+  municipalityNames?: Readonly<Record<string, string>>;
 }) {
   const router = useRouter();
   const criteria = parseCriteria(alert.criteria);
@@ -134,7 +136,7 @@ export function AlertRowItem({
         <div className="min-w-0 flex-1">
           <p className="font-medium text-foreground">{alert.name}</p>
           <p className="mt-1 text-sm text-muted-foreground">
-            {formatCriteriaSummary(criteria)}
+            {formatCriteriaSummary(criteria, { municipalityNames })}
           </p>
           <p className="mt-2">
             {alert.is_active ? (

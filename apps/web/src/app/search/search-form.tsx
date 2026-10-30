@@ -7,6 +7,10 @@ import {
   SearchFeedbackProvider,
   useSearchFeedback,
 } from "./search-feedback";
+import {
+  SearchFormPreviewProvider,
+  useSimpleFieldsPreview,
+} from "./search-form-preview";
 import { SEARCH_FORM_ID } from "./save-search-button";
 
 function readField(form: HTMLFormElement, name: string): string {
@@ -68,14 +72,9 @@ function hasInvalidAmountRange(form: HTMLFormElement): boolean {
   return min > max;
 }
 
-function SearchFormInner({
-  children,
-  besideSubmit,
-}: {
-  children: ReactNode;
-  besideSubmit?: ReactNode;
-}) {
+function SearchFormInner({ children }: { children: ReactNode }) {
   const { feedback, setFeedback, clearFeedback } = useSearchFeedback();
+  useSimpleFieldsPreview();
 
   return (
     <form
@@ -114,35 +113,32 @@ function SearchFormInner({
       {children}
       <div className="space-y-2">
         <ClearSearchFieldsButton />
-        <div className="flex flex-wrap items-start gap-3 sm:gap-4">
-          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-            <button
-              type="submit"
-              className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary-dark"
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+          <button
+            type="submit"
+            className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary-dark"
+          >
+            Buscar
+          </button>
+          {feedback ? (
+            <p
+              className={`text-xs ${feedback.isError ? "text-destructive" : "text-muted-foreground"}`}
+              role={feedback.isError ? "alert" : "status"}
             >
-              Buscar
-            </button>
-            {feedback ? (
-              <p
-                className={`text-xs ${feedback.isError ? "text-destructive" : "text-muted-foreground"}`}
-                role={feedback.isError ? "alert" : "status"}
-              >
-                {feedback.text}
-                {feedback.linkHref && feedback.linkLabel ? (
-                  <>
-                    {" "}
-                    <a
-                      href={feedback.linkHref}
-                      className="font-medium text-link hover:underline"
-                    >
-                      {feedback.linkLabel}
-                    </a>
-                  </>
-                ) : null}
-              </p>
-            ) : null}
-          </div>
-          {besideSubmit}
+              {feedback.text}
+              {feedback.linkHref && feedback.linkLabel ? (
+                <>
+                  {" "}
+                  <a
+                    href={feedback.linkHref}
+                    className="font-medium text-link hover:underline"
+                  >
+                    {feedback.linkLabel}
+                  </a>
+                </>
+              ) : null}
+            </p>
+          ) : null}
         </div>
       </div>
     </form>
@@ -155,17 +151,16 @@ function SearchFormInner({
 export function SearchForm({
   children,
   formKey,
-  besideSubmit,
 }: {
   children: ReactNode;
   /** Remonta el form al cambiar la URL (p. ej. nav Búsqueda limpia). */
   formKey?: string;
-  /** Contenido al lado de Buscar (p. ej. recientes). */
-  besideSubmit?: ReactNode;
 }) {
   return (
     <SearchFeedbackProvider key={formKey}>
-      <SearchFormInner besideSubmit={besideSubmit}>{children}</SearchFormInner>
+      <SearchFormPreviewProvider>
+        <SearchFormInner>{children}</SearchFormInner>
+      </SearchFormPreviewProvider>
     </SearchFeedbackProvider>
   );
 }

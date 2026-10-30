@@ -9,9 +9,11 @@ import {
   getSupabaseServerClient,
 } from "@/lib/auth/session";
 import {
+  listMunicipalityNamesByCodes,
   listOwnSavedSearches,
   type DigestFrequency,
 } from "@/lib/queries";
+import { parseCriteria } from "@/lib/criteria-display";
 import { EmptySavedSearchesHint } from "../empty-hints";
 import { PaginatedSavedSearches } from "../paginated-saved-searches";
 
@@ -55,6 +57,12 @@ export default async function SavedSearchesPage({
     profile.data.digest_frequency === "semanal" ? "semanal" : "diaria";
 
   const { data: searches, error } = await listOwnSavedSearches(supabase);
+  const municipalityNames = await listMunicipalityNamesByCodes(
+    supabase,
+    searches.flatMap(
+      (s) => parseCriteria(s.criteria).geography?.municipality_codes ?? [],
+    ),
+  );
 
   return (
     <main className={PAGE_MAIN_CLASS}>
@@ -81,6 +89,7 @@ export default async function SavedSearchesPage({
             userId={profile.data.id}
             digestFrequency={digestFrequency}
             searchFrom="favorites-searches"
+            municipalityNames={municipalityNames}
           />
         )}
       </div>

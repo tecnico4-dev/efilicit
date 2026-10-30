@@ -23,14 +23,30 @@ export type SearchFilterOptions = {
   ccaaCodesWithTenders: Set<string>;
 };
 
+function isOtroLabel(label: string): boolean {
+  return label.trim().toLowerCase() === "otro";
+}
+
+/** Alfabético ES; «Otro» siempre al final (Tras «Todos» en el select). */
+export function sortSearchFilterOptions(
+  options: SearchFilterOption[],
+): SearchFilterOption[] {
+  return [...options].sort((a, b) => {
+    const aOtro = isOtroLabel(a.label);
+    const bOtro = isOtroLabel(b.label);
+    if (aOtro !== bOtro) return aOtro ? 1 : -1;
+    return a.label.localeCompare(b.label, "es");
+  });
+}
+
 function uniqSortedLabels(
   values: string[],
   format: (v: string) => string,
 ): SearchFilterOption[] {
   const set = new Set(values.map((v) => v.trim()).filter(Boolean));
-  return [...set]
-    .map((value) => ({ value, label: format(value) }))
-    .sort((a, b) => a.label.localeCompare(b.label, "es"));
+  return sortSearchFilterOptions(
+    [...set].map((value) => ({ value, label: format(value) })),
+  );
 }
 
 /**

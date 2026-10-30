@@ -3,10 +3,12 @@ import {
   getSupabaseServerClient,
 } from "@/lib/auth/session";
 import {
+  listMunicipalityNamesByCodes,
   listOwnFavorites,
   listOwnSavedSearches,
   type DigestFrequency,
 } from "@/lib/queries";
+import { parseCriteria } from "@/lib/criteria-display";
 import {
   EmptyFavoritesTendersHint,
   EmptySavedSearchesHint,
@@ -49,6 +51,12 @@ export default async function FavoritesPage() {
 
   const favorites = favoritesResult.data;
   const searches = searchesResult.data;
+  const municipalityNames = await listMunicipalityNamesByCodes(
+    supabase,
+    searches.flatMap(
+      (s) => parseCriteria(s.criteria).geography?.municipality_codes ?? [],
+    ),
+  );
 
   return (
     <main className={PAGE_MAIN_CLASS}>
@@ -82,6 +90,7 @@ export default async function FavoritesPage() {
             userId={profile.data.id}
             digestFrequency={digestFrequency}
             searchFrom="favorites"
+            municipalityNames={municipalityNames}
           />
         </PreviewSection>
       </div>

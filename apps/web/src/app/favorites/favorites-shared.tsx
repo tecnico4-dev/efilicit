@@ -152,6 +152,7 @@ export function SavedSearchList({
   digestFrequency,
   searchFrom = "favorites",
   bordered = true,
+  municipalityNames = {},
 }: {
   searches: SavedSearchRow[];
   userId: string;
@@ -160,6 +161,7 @@ export function SavedSearchList({
   searchFrom?: "favorites" | "favorites-searches";
   /** Línea superior (false dentro de un recuadro con borde propio). */
   bordered?: boolean;
+  municipalityNames?: Readonly<Record<string, string>>;
 }) {
   return (
     <ul
@@ -175,7 +177,7 @@ export function SavedSearchList({
           <li key={s.id} className="py-4 text-sm">
             <p className="font-medium text-foreground">{s.name}</p>
             <p className="mt-1 text-muted-foreground">
-              {formatCriteriaSummary(criteria)}
+              {formatCriteriaSummary(criteria, { municipalityNames })}
             </p>
             <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1">
               <Link

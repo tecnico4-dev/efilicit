@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/cn";
 import { CLEAR_SEARCH_EVENT, useSearchFeedback } from "./search-feedback";
+import { isSearchFormPreviewing } from "./search-form-preview";
 import { SEARCH_FORM_ID } from "./save-search-button";
 
 const FIELD_NAMES = [
@@ -92,7 +93,10 @@ export function ClearSearchFieldsButton() {
     const form = document.getElementById(SEARCH_FORM_ID) as HTMLFormElement | null;
     if (!form) return;
 
-    const sync = () => setVisible(formHasValues(form));
+    const sync = () => {
+      if (isSearchFormPreviewing(form)) return;
+      setVisible(formHasValues(form));
+    };
     sync();
     form.addEventListener("input", sync);
     form.addEventListener("change", sync);

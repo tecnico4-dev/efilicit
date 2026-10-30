@@ -24,11 +24,13 @@ export function PaginatedSavedSearches({
   userId,
   digestFrequency,
   searchFrom = "favorites-searches",
+  municipalityNames = {},
 }: {
   searches: SavedSearchRow[];
   userId: string;
   digestFrequency: DigestFrequency;
   searchFrom?: "favorites" | "favorites-searches";
+  municipalityNames?: Readonly<Record<string, string>>;
 }) {
   const total = searches.length;
   const showPager = total > SAVED_SEARCHES_PAGE_SIZE;
@@ -64,6 +66,7 @@ export function PaginatedSavedSearches({
           digestFrequency={digestFrequency}
           searchFrom={searchFrom}
           bordered={false}
+          municipalityNames={municipalityNames}
         />
       </div>
     );
@@ -84,6 +87,7 @@ export function PaginatedSavedSearches({
           digestFrequency={digestFrequency}
           searchFrom={searchFrom}
           bordered={false}
+          municipalityNames={municipalityNames}
         />
       </div>
       <div className="shrink-0 border-t border-border bg-background px-4 py-3">

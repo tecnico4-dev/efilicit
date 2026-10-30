@@ -4,10 +4,12 @@ import {
   getSupabaseServerClient,
 } from "@/lib/auth/session";
 import {
+  listMunicipalityNamesByCodes,
   listOwnAlertIdsWithQueueItems,
   listOwnAlerts,
   listSearchFilterOptions,
 } from "@/lib/queries";
+import { parseCriteria } from "@/lib/criteria-display";
 import type { CriteriaFilterOptionsProp } from "@/components/criteria/criteria-filters";
 import { AlertRowItem } from "./alert-row";
 import { AlertsPanel } from "./alerts-panel";
@@ -66,6 +68,15 @@ export async function AlertsBody() {
         ccaaCodesWithTenders: [...filterListed.data.ccaaCodesWithTenders],
       };
 
+  const alertMunCodes = (alertsResult.data ?? []).flatMap(
+    (a) =>
+      parseCriteria(a.criteria).geography?.municipality_codes ?? [],
+  );
+  const municipalityNames = await listMunicipalityNamesByCodes(
+    supabase,
+    alertMunCodes,
+  );
+
   return (
     <>
       <AlertsPanel
@@ -94,6 +105,7 @@ export async function AlertsBody() {
                 alert={a}
                 filterOptions={filterOptions}
                 hasRelatedTenders={alertIdsWithQueue.has(a.id)}
+                municipalityNames={municipalityNames}
               />
             ))}
           </ul>

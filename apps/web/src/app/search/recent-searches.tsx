@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { formatCriteriaSummary } from "@/lib/criteria-display";
 import { searchHrefFromCriteria } from "@/app/favorites/favorites-shared";
 import { cn } from "@/lib/cn";
@@ -10,12 +10,25 @@ import {
   deleteOwnRecentSearch,
   type RecentSearch,
 } from "@/lib/queries";
+import { useSearchFormPreview } from "./search-form-preview";
 
 /**
- * Historial discreto: texto «Búsquedas recientes» que despliega chips (máx. 5).
- * Cada chip tiene × para quitarla del historial.
+ * Historial discreto junto al marcador de guardar: «Búsquedas recientes»
+ * despliega chips (máx. 5). Hover = preview fantasma; click = buscar.
  */
-export function RecentSearchesList({ items }: { items: RecentSearch[] }) {
+export function RecentSearchesList({
+  items,
+  trailing,
+  municipalityNames = {},
+}: {
+  items: RecentSearch[];
+  /** p. ej. marcador de guardar, centrado en altura con el enlace. */
+  trailing?: ReactNode;
+  /** Nombres de municipio por código INE (para el resumen del chip). */
+  municipalityNames?: Readonly<Record<string, string>>;
+}) {
+  const { setPreview, clearPreview, scheduleClearPreview } =
+    useSearchFormPreview();
   const [open, setOpen] = useState(false);
   const [list, setList] = useState(items);
   const [pendingId, setPendingId] = useState<string | null>(null);
@@ -24,11 +37,20 @@ export function RecentSearchesList({ items }: { items: RecentSearch[] }) {
     setList(items);
   }, [items]);
 
-  if (list.length === 0) return null;
+  useEffect(() => {
+    if (!open) clearPreview();
+  }, [open, clearPreview]);
+
+  if (list.length === 0) {
+    return trailing ? (
+      <div className="flex w-full justify-end">{trailing}</div>
+    ) : null;
+  }
 
   async function onRemove(e: React.MouseEvent, recentId: string) {
     e.preventDefault();
     e.stopPropagation();
+    clearPreview();
     if (pendingId) return;
     setPendingId(recentId);
     const client = createSupabaseBrowserClient();
@@ -39,36 +61,44 @@ export function RecentSearchesList({ items }: { items: RecentSearch[] }) {
   }
 
   return (
-    <div className="min-w-0 flex-1 self-center">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        aria-expanded={open}
-        className="inline-flex items-center gap-1 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-      >
-        Búsquedas recientes
-        <Chevron open={open} />
-      </button>
+    <div className="flex w-full min-w-0 flex-col gap-1.5">
+      <div className="flex w-full items-center justify-end gap-2">
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          aria-expanded={open}
+          className="inline-flex items-center gap-1 text-sm font-medium leading-none text-muted-foreground transition-colors hover:text-foreground"
+        >
+          Búsquedas recientes
+          <Chevron open={open} />
+        </button>
+        {trailing}
+      </div>
       {open ? (
-        <ul className="mt-2 flex flex-wrap gap-1.5">
+        <ul className="flex w-full flex-wrap justify-end gap-1.5 pl-14">
           {list.map((item) => {
-            const summary = formatCriteriaSummary(item.criteria);
+            const summary = formatCriteriaSummary(item.criteria, {
+              municipalityNames,
+            });
             return (
-              <li key={item.id}>
-                <span className="inline-flex max-w-[18rem] items-center gap-0.5 rounded-md border border-border bg-muted/40 pl-2 text-xs text-foreground transition-colors hover:border-primary/40 hover:bg-primary/10">
+              <li key={item.id} className="max-w-full">
+                <span
+                  className="inline-flex max-w-full items-center gap-0.5 rounded-md border border-border bg-muted/40 pl-2 text-xs text-foreground transition-colors hover:border-primary/40 hover:bg-primary/10 sm:max-w-md"
+                  onMouseEnter={() => setPreview(item.criteria)}
+                  onMouseLeave={() => scheduleClearPreview()}
+                >
                   <Link
                     href={searchHrefFromCriteria(item.criteria)}
                     className="min-w-0 truncate py-1 hover:text-primary-dark"
-                    title={summary}
                   >
                     {summary}
                   </Link>
                   <button
                     type="button"
                     onClick={(e) => void onRemove(e, item.id)}
+                    onMouseEnter={() => scheduleClearPreview()}
                     disabled={pendingId === item.id}
                     aria-label={`Quitar «${summary}» del historial`}
-                    title="Quitar del historial"
                     className="shrink-0 rounded-r-md px-1.5 py-1 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive disabled:opacity-50"
                   >
                     ×
