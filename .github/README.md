@@ -69,6 +69,7 @@ Mismo patrón: manual dry-run + dispatch productivo vía cron externo (tabla arr
 | `EFILICIT_DATABASE_URL` | Match `write` y digest `write-*` |
 | `RESEND_API_KEY` | Digest `write-resend` / dispatch productivo |
 | `ALERT_FROM_EMAIL` | Remitente Resend |
+| `EFILICIT_APP_URL` (variable) | Base de la web en enlaces del digest (ficha, buzón, cuenta) |
 
 ## Protección de `main` — decisión del proyecto
 
@@ -108,6 +109,7 @@ Crear Environments (`preview`, `production`) cuando haga falta desplegar. **No**
 | `EFILICIT_DATABASE_URL` | Ingestas `fixture-db`/`live`; alerts-match / alerts-digest `write*` |
 | `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` | Upload RAW en ingestas |
 | `RESEND_API_KEY` / `ALERT_FROM_EMAIL` | Alerts-digest `write-resend` |
+| `EFILICIT_APP_URL` (variable) | Enlaces del HTML del digest |
 | `SUPABASE_ACCESS_TOKEN` | Futuro (ops remotas) |
 | Tokens Vercel | Cuando haya deploy |
 | PAT del despertador | **Fuera del repo** (cron-job.org u otro); no es secret de Actions |

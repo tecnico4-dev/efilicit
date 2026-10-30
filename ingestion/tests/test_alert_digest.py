@@ -83,12 +83,48 @@ def test_build_digest_message_groups_titles() -> None:
         to_email="alice@example.com",
         digest="2026-09-30",
         items=pending,
+        display_name="Alice",
+        base_url="https://app.example.com",
     )
     assert "alice@example.com" == msg.to
-    assert "2 nueva" in msg.subject
-    assert "diario" in msg.subject
+    assert msg.subject == "EfiLicit resumen diario: 2 oportunidades nuevas"
+    assert "Hola, Alice" in msg.text
+    assert "Tienes 2 nuevas coincidencias con tus alertas." in msg.text
     assert "Mantenimiento de software" in msg.text
     assert "Software de gestión" in msg.text
+    assert "50.000 €" in msg.text
+    assert "https://app.example.com/tenders/t-soft" in msg.text
+    assert "#52b9d8" in (msg.html or "")
+    assert "Hola, Alice" in (msg.html or "")
+    assert "Resumen diario" in (msg.html or "")
+    assert ">Efi</span>" in (msg.html or "")
+    assert ">Licit</span>" in (msg.html or "")
+
+
+def test_build_digest_message_weekly_singular() -> None:
+    queue = InMemoryNotificationQueue()
+    alert = AlertRule(
+        id="alert-1",
+        user_id="user-1",
+        name="Software",
+        criteria={"version": 1, "keywords": ["software"]},
+    )
+    run_alert_batch(
+        alerts=[alert],
+        tenders=[_tender("t-soft", "Mantenimiento de software")],
+        queue=queue,
+        digest="2026-09-30",
+        frequencies={"user-1": "semanal"},
+    )
+    msg = build_digest_message(
+        to_email="alice@example.com",
+        digest="2026-W40",
+        items=queue.pending_items(),
+        frequency="semanal",
+        display_name="Alice",
+    )
+    assert msg.subject == "EfiLicit resumen semanal: 1 oportunidad nueva"
+    assert "Resumen semanal" in (msg.html or "")
 
 
 def test_drain_sends_one_digest_and_marks_sent() -> None:

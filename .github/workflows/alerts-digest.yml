@@ -40,6 +40,7 @@ jobs:
       EFILICIT_DATABASE_URL: ${{ secrets.EFILICIT_DATABASE_URL }}
       RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
       ALERT_FROM_EMAIL: ${{ secrets.ALERT_FROM_EMAIL }}
+      EFILICIT_APP_URL: ${{ vars.EFILICIT_APP_URL }}
       MODE: ${{ inputs.mode }}
       DIGEST: ${{ inputs.digest }}
     steps:

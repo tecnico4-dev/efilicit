@@ -15,11 +15,13 @@ hasta agotar el umbral del error actual; luego ``cancelled``.
 
 from __future__ import annotations
 
+import os
 from collections import defaultdict
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from datetime import date, datetime, timezone
-from typing import Callable
+from decimal import Decimal, InvalidOperation
+from typing import Any, Callable
 
 from efilicit_ingestion.alerts.email import EmailMessage, EmailSender
 from efilicit_ingestion.alerts.inbox import DigestInbox, tender_ids_from_items
@@ -29,6 +31,37 @@ from efilicit_ingestion.alerts.queue import (
     digest_day,
     should_send_digest,
 )
+
+# Marca EfiLicit (email: tablas + CSS inline; sin Geist embebido).
+_BRAND = "#52b9d8"
+_BRAND_BORDER = "#b3e3f0"
+_BG = "#f7fbfd"
+_TEXT = "#1a2b33"
+_MUTED = "#5a6f78"
+_MAX_VISIBLE = 10
+
+# Códigos INE de CCAA → nombre (geo_ccaa; castellano).
+_CCAA_NAMES: dict[str, str] = {
+    "01": "Andalucía",
+    "02": "Aragón",
+    "03": "Principado de Asturias",
+    "04": "Islas Baleares",
+    "05": "Canarias",
+    "06": "Cantabria",
+    "07": "Castilla y León",
+    "08": "Castilla-La Mancha",
+    "09": "Cataluña",
+    "10": "Comunidad Valenciana",
+    "11": "Extremadura",
+    "12": "Galicia",
+    "13": "Comunidad de Madrid",
+    "14": "Región de Murcia",
+    "15": "Comunidad Foral de Navarra",
+    "16": "País Vasco",
+    "17": "La Rioja",
+    "18": "Ciudad Autónoma de Ceuta",
+    "19": "Ciudad Autónoma de Melilla",
+}
 
 
 @dataclass
@@ -47,12 +80,28 @@ class DigestDrainResult:
 
 @dataclass
 class UserEmailDirectory:
-    """Resuelve ``public.users.id`` → email de Auth (solo procesos trusted)."""
+    """Resuelve ``public.users.id`` → email / display_name (solo trusted)."""
 
     emails: dict[str, str] = field(default_factory=dict)
+    display_names: dict[str, str] = field(default_factory=dict)
 
     def email_for(self, user_id: str) -> str | None:
         return self.emails.get(user_id)
+
+    def display_name_for(self, user_id: str, *, email: str | None = None) -> str:
+        name = (self.display_names.get(user_id) or "").strip()
+        if name:
+            return name
+        if email and "@" in email:
+            local = email.split("@", 1)[0].strip()
+            if local:
+                return local
+        return "usuario"
+
+
+def app_base_url() -> str:
+    """Base de la web para deep-links (``EFILICIT_APP_URL``)."""
+    return (os.environ.get("EFILICIT_APP_URL") or "").strip().rstrip("/")
 
 
 def build_digest_message(
@@ -61,33 +110,34 @@ def build_digest_message(
     digest: str,
     items: list[NotificationItem],
     frequency: str = "diaria",
+    display_name: str = "usuario",
+    base_url: str | None = None,
 ) -> EmailMessage:
-    """Plantilla mínima texto/HTML del resumen (MVP; sin deep-links aún)."""
+    """Plantilla branded texto/HTML del resumen (Resend)."""
     from efilicit_ingestion.alerts.queue import normalize_digest_frequency
-
-    titles = []
-    for item in items:
-        title = str(item.payload.get("title") or item.payload.get("tender_id") or "licitación")
-        titles.append(f"- {title}")
 
     count = len(items)
     freq = normalize_digest_frequency(frequency)
     label = "semanal" if freq == "semanal" else "diario"
-    subject = (
-        f"Resumen {label} EfiLicit — {count} nueva{'s' if count != 1 else ''} "
-        f"oportunidad{'es' if count != 1 else ''}"
+    subject = _subject_line(label=label, count=count)
+    base = (base_url if base_url is not None else app_base_url()).rstrip("/")
+    name = (display_name or "usuario").strip() or "usuario"
+
+    text = _build_text(
+        name=name,
+        label=label,
+        digest=digest,
+        count=count,
+        items=items,
+        base=base,
     )
-    text = (
-        f"EfiLicit — digest {label} {digest}\n\n"
-        f"Tienes {count} coincidencia(s) con tus alertas:\n\n"
-        + "\n".join(titles)
-        + "\n\n(Semana 5 — digest batch; no es un email por cada INSERT.)\n"
-    )
-    html_items = "".join(f"<li>{_escape(t[2:])}</li>" for t in titles)
-    html = (
-        f"<p><strong>EfiLicit</strong> — digest {label} {digest}</p>"
-        f"<p>Tienes {count} coincidencia(s) con tus alertas:</p>"
-        f"<ul>{html_items}</ul>"
+    html = _build_html(
+        name=name,
+        label=label,
+        digest=digest,
+        count=count,
+        items=items,
+        base=base,
     )
     return EmailMessage(
         to=to_email,
@@ -96,6 +146,246 @@ def build_digest_message(
         html=html,
         tags=("digest", freq, digest),
     )
+
+
+def _subject_line(*, label: str, count: int) -> str:
+    if count == 1:
+        return f"EfiLicit resumen {label}: 1 oportunidad nueva"
+    return f"EfiLicit resumen {label}: {count} oportunidades nuevas"
+
+
+def _build_text(
+    *,
+    name: str,
+    label: str,
+    digest: str,
+    count: int,
+    items: list[NotificationItem],
+    base: str,
+) -> str:
+    lines = [
+        f"EfiLicit — Resumen {label}",
+        "",
+        f"Hola, {name}",
+        f"Tienes {count} nuevas coincidencias con tus alertas.",
+        "",
+    ]
+    visible = items[:_MAX_VISIBLE]
+    for item in visible:
+        meta = _item_meta_parts(item.payload)
+        title = _item_title(item.payload)
+        lines.append(f"- {title}")
+        if meta:
+            lines.append(f"  {' · '.join(meta)}")
+        tid = str(item.payload.get("tender_id") or "").strip()
+        if base and tid:
+            lines.append(f"  {base}/tenders/{tid}")
+        lines.append("")
+    remaining = count - len(visible)
+    if remaining > 0:
+        lines.append(f"… y {remaining} más.")
+        lines.append("")
+    if base:
+        lines.append(f"Ver todas en el buzón: {base}/notifications")
+        lines.append(f"Preferencias: {base}/account")
+        lines.append("")
+    lines.append("Eficen · Este correo es automático; no respondas a este mensaje.")
+    lines.append(f"(periodo {digest})")
+    return "\n".join(lines)
+
+
+def _build_html(
+    *,
+    name: str,
+    label: str,
+    digest: str,
+    count: int,
+    items: list[NotificationItem],
+    base: str,
+) -> str:
+    cards = "".join(
+        _item_card(item.payload, base=base) for item in items[:_MAX_VISIBLE]
+    )
+    remaining = count - min(count, _MAX_VISIBLE)
+    more_html = ""
+    if remaining > 0:
+        more_html = (
+            f'<p style="margin:16px 0 0;font-size:14px;color:{_MUTED};">'
+            f"… y {_escape(str(remaining))} más."
+            f"</p>"
+        )
+
+    inbox_cta = ""
+    if base:
+        inbox_cta = (
+            f'<p style="margin:24px 0 0;text-align:center;">'
+            f'<a href="{_escape(base)}/notifications" '
+            f'style="display:inline-block;padding:10px 18px;background:{_BRAND};'
+            f'color:#ffffff;text-decoration:none;border-radius:6px;'
+            f'font-size:14px;font-weight:600;">Ver todas en el buzón</a>'
+            f"</p>"
+        )
+
+    prefs_link = (
+        f'<a href="{_escape(base)}/account" style="color:{_BRAND};text-decoration:none;">'
+        f"Preferencias de alerta</a>"
+        if base
+        else "Preferencias de alerta"
+    )
+
+    greeting = (
+        f'<p style="margin:0 0 8px;font-size:16px;color:{_TEXT};">'
+        f"Hola, {_escape(name)}</p>"
+        f'<p style="margin:0 0 20px;font-size:15px;color:{_TEXT};line-height:1.45;">'
+        f"Tienes <strong>{count}</strong> nuevas coincidencias con tus alertas."
+        f"</p>"
+    )
+
+    return f"""<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width"></head>
+<body style="margin:0;padding:0;background:{_BG};">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:{_BG};">
+  <tr>
+    <td align="center" style="padding:24px 12px;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border:1px solid {_BRAND_BORDER};border-radius:10px;overflow:hidden;">
+        <tr>
+          <td style="background:{_BRAND};padding:18px 24px;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+              <tr>
+                <td style="font-family:Arial,Helvetica,sans-serif;font-size:20px;font-weight:700;letter-spacing:-0.02em;">
+                  <span style="color:#ffffff;">Efi</span><span style="color:#d9eef5;">Licit</span>
+                </td>
+                <td align="right" style="font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#ffffff;opacity:0.95;">
+                  Resumen {label}
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:24px;font-family:Arial,Helvetica,sans-serif;background:{_BG};">
+            {greeting}
+            {cards}
+            {more_html}
+            {inbox_cta}
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:16px 24px 20px;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:{_MUTED};border-top:1px solid {_BRAND_BORDER};background:#ffffff;">
+            Eficen · {prefs_link}<br>
+            Este correo es automático; no respondas a este mensaje.
+            <span style="color:#9aadb5;"> · periodo {_escape(digest)}</span>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
+</body>
+</html>"""
+
+
+def _item_card(payload: Mapping[str, Any], *, base: str) -> str:
+    title = _escape(_item_title(payload))
+    meta = _item_meta_parts(payload)
+    meta_html = ""
+    if meta:
+        meta_html = (
+            f'<p style="margin:6px 0 0;font-size:13px;color:{_MUTED};line-height:1.4;">'
+            f"{_escape(' · '.join(meta))}</p>"
+        )
+    cpv = _format_cpv(payload)
+    cpv_html = ""
+    if cpv:
+        cpv_html = (
+            f'<p style="margin:4px 0 0;font-size:12px;color:{_MUTED};">'
+            f"{_escape(cpv)}</p>"
+        )
+
+    tid = str(payload.get("tender_id") or "").strip()
+    button = ""
+    if base and tid:
+        href = f"{base}/tenders/{tid}"
+        button = (
+            f'<p style="margin:12px 0 0;">'
+            f'<a href="{_escape(href)}" '
+            f'style="display:inline-block;padding:8px 14px;background:{_BRAND};'
+            f'color:#ffffff;text-decoration:none;border-radius:6px;'
+            f'font-size:13px;font-weight:600;">Ver licitación</a>'
+            f"</p>"
+        )
+
+    return (
+        f'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" '
+        f'style="margin:0 0 12px;background:#ffffff;border:1px solid {_BRAND_BORDER};'
+        f'border-radius:8px;">'
+        f"<tr><td style=\"padding:14px 16px;\">"
+        f'<p style="margin:0;font-size:15px;font-weight:600;color:{_TEXT};'
+        f'line-height:1.35;">{title}</p>'
+        f"{meta_html}{cpv_html}{button}"
+        f"</td></tr></table>"
+    )
+
+
+def _item_title(payload: Mapping[str, Any]) -> str:
+    return str(payload.get("title") or payload.get("tender_id") or "licitación")
+
+
+def _item_meta_parts(payload: Mapping[str, Any]) -> list[str]:
+    parts: list[str] = []
+    authority = str(payload.get("authority_name") or "").strip()
+    if authority:
+        parts.append(authority)
+    ccaa = _ccaa_label(payload.get("place_ccaa_code"))
+    if ccaa:
+        parts.append(ccaa)
+    value = _format_euro(payload.get("estimated_value"))
+    if value:
+        parts.append(value)
+    return parts
+
+
+def _format_cpv(payload: Mapping[str, Any]) -> str:
+    raw = payload.get("cpv_codes")
+    if not isinstance(raw, (list, tuple)) or not raw:
+        return ""
+    codes = [str(c).strip() for c in raw if str(c).strip()]
+    if not codes:
+        return ""
+    if len(codes) == 1:
+        return f"CPV {codes[0]}"
+    return f"CPV {codes[0]} +{len(codes) - 1}"
+
+
+def _ccaa_label(code: Any) -> str | None:
+    if code is None:
+        return None
+    key = str(code).strip().zfill(2) if str(code).strip().isdigit() else str(code).strip()
+    if not key:
+        return None
+    return _CCAA_NAMES.get(key) or key
+
+
+def _format_euro(value: Any) -> str | None:
+    if value is None or value == "":
+        return None
+    try:
+        amount = Decimal(str(value))
+    except (InvalidOperation, ValueError):
+        return None
+    # Formato ES: 45.000 € / 12.345,67 €
+    if amount == amount.to_integral_value():
+        return f"{int(amount):,}".replace(",", ".") + " €"
+    quantized = amount.quantize(Decimal("0.01"))
+    s = f"{quantized:f}"
+    left, _, right = s.partition(".")
+    neg = left.startswith("-")
+    digits = left.lstrip("-")
+    grouped = f"{int(digits):,}".replace(",", ".")
+    if neg:
+        grouped = f"-{grouped}"
+    return f"{grouped},{right[:2].ljust(2, '0')} €"
 
 
 def _escape(value: str) -> str:
@@ -172,6 +462,7 @@ def drain_daily_digests(
     drainable = list(pending_fn())
     groups = group_drainable_by_user_digest(drainable)
     result = DigestDrainResult()
+    base = app_base_url()
 
     for (user_id, digest), items in sorted(groups.items(), key=lambda x: (x[0][0], x[0][1])):
         freq = normalize_digest_frequency(
@@ -201,6 +492,8 @@ def drain_daily_digests(
             digest=digest,
             items=items,
             frequency=freq,
+            display_name=directory.display_name_for(user_id, email=to_email),
+            base_url=base,
         )
         send_result = sender.send(message)
         now = datetime.now(timezone.utc)

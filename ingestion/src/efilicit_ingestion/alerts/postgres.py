@@ -385,13 +385,26 @@ def load_user_emails(
     user_ids: list[str],
 ) -> dict[str, str]:
     """``public.users.id`` → ``auth.users.email`` (conexión trusted / service)."""
+    return load_user_email_directory(conn, user_ids).emails
+
+
+def load_user_email_directory(
+    conn: psycopg.Connection,
+    user_ids: list[str],
+):
+    """Emails + ``display_name`` para el digest branded (trusted / service)."""
+    from efilicit_ingestion.alerts.digest import UserEmailDirectory
+
     if not user_ids:
-        return {}
+        return UserEmailDirectory()
     ids = [UUID(u) for u in user_ids]
     with conn.cursor(row_factory=dict_row) as cur:
         cur.execute(
             """
-            select u.id::text as user_id, au.email
+            select
+              u.id::text as user_id,
+              au.email,
+              nullif(trim(both from u.display_name), '') as display_name
             from public.users u
             join auth.users au on au.id = u.auth_user_id
             where u.id = any(%s)
@@ -401,7 +414,14 @@ def load_user_emails(
             (ids,),
         )
         rows = cur.fetchall()
-    return {row["user_id"]: row["email"] for row in rows}
+    emails: dict[str, str] = {}
+    display_names: dict[str, str] = {}
+    for row in rows:
+        uid = row["user_id"]
+        emails[uid] = row["email"]
+        if row["display_name"]:
+            display_names[uid] = row["display_name"]
+    return UserEmailDirectory(emails=emails, display_names=display_names)
 
 
 def load_user_digest_frequencies(

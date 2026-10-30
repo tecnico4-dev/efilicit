@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Digest email (Resend): plantilla branded EfiLicit — asunto `EfiLicit resumen diario/semanal: N oportunidad(es) nueva(s)`, cabecera cian con Efi/Licit, saludo con nombre, tarjetas con organismo/CCAA/importe/CPV y CTA a la ficha (`EFILICIT_APP_URL`).
 - Buscador: publicación en un solo control (atajos 7 días/mes/año + personalizado con calendario de rango e Inicio/Fin); junto a importes en pantallas grandes.
 - Buscador: campo Texto multilínea que crece hasta ~5 líneas y luego hace scroll.
 - Buscador / favoritos / alertas: resumen de criteria con formato `Campo: valor` separado por ` ~ ` (texto ≤3 palabras, CPV ≤2 códigos, Lugar con nombre de municipio, Importe/Fecha tipados).

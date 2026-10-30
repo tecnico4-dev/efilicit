@@ -93,6 +93,7 @@ def match_to_notification(
         tender_id=match.tender_id,
         digest=digest,
     )
+    value = tender.estimated_value
     return NotificationItem(
         user_id=match.user_id,
         alert_id=match.alert_id,
@@ -101,6 +102,10 @@ def match_to_notification(
             "tender_id": match.tender_id,
             "alert_id": match.alert_id,
             "title": tender.title,
+            "authority_name": tender.authority_name,
+            "estimated_value": str(value) if value is not None else None,
+            "place_ccaa_code": tender.place_ccaa_code,
+            "cpv_codes": list(tender.cpv_codes[:8]),
             "score": match.score,
             "priority": match.priority,
             "reasons": list(match.reasons),

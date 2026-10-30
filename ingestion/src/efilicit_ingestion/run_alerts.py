@@ -36,7 +36,7 @@ from efilicit_ingestion.alerts.postgres import (
     load_active_alerts,
     load_tender_candidates_for_sync_day,
     load_user_digest_frequencies,
-    load_user_emails,
+    load_user_email_directory,
 )
 from efilicit_ingestion.alerts.queue import InMemoryNotificationQueue, digest_day
 from efilicit_ingestion.pipeline.postgres import connect
@@ -114,8 +114,10 @@ def _fixture_tenders() -> list[TenderCandidate]:
 
 
 def _fixture_directory() -> UserEmailDirectory:
+    uid = "00000000-0000-4000-8000-0000000000u1"
     return UserEmailDirectory(
-        emails={"00000000-0000-4000-8000-0000000000u1": "dry-run@example.com"}
+        emails={uid: "dry-run@example.com"},
+        display_names={uid: "Demo"},
     )
 
 
@@ -247,7 +249,7 @@ def _run_write(
                     **frequencies,
                     **load_user_digest_frequencies(conn, user_ids),
                 }
-            directory = UserEmailDirectory(emails=load_user_emails(conn, user_ids))
+            directory = load_user_email_directory(conn, user_ids)
             drain = drain_daily_digests(
                 queue=queue,
                 sender=sender,
