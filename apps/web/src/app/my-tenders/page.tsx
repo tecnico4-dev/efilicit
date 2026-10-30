@@ -78,23 +78,9 @@ export default async function MyTendersPage({ searchParams }: PageProps) {
 
   return (
     <main className={PAGE_MAIN_CLASS}>
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-            Mis licitaciones
-          </h1>
-          <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-            Pipeline compartido de Eficen: preparación, presentación e
-            histórico. Añade una licitación desde su ficha.
-          </p>
-        </div>
-        <Link
-          href="/search"
-          className="text-sm font-medium text-link hover:underline"
-        >
-          Ir a búsqueda →
-        </Link>
-      </div>
+      <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+        Mis licitaciones
+      </h1>
 
       <div className={PAGE_TITLE_RULE}>
         <div className="flex flex-wrap items-center gap-2 border-b border-border pb-3">
