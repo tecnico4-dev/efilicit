@@ -339,7 +339,7 @@ export default async function TenderDetailPage({
       ) : null}
 
       {showRating && favoriteUserId ? (
-        <div className={`flex justify-center ${back ? "mt-4" : ""}`}>
+        <div className={`w-full ${back ? "mt-4" : ""}`}>
           <TenderDetailRating
             userId={favoriteUserId}
             tenderId={tender.id}

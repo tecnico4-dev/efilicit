@@ -40,8 +40,13 @@ export function TenderDetailRating({
   }
 
   return (
-    <div className="flex flex-col items-center text-center">
-      <TenderStarRating score={score} onChange={onChange} />
+    <div className="flex w-full flex-col items-center justify-center text-center">
+      <p className="mb-1.5 text-sm font-medium text-foreground">
+        Tu valoración
+      </p>
+      <div className="flex w-full justify-center">
+        <TenderStarRating score={score} onChange={onChange} />
+      </div>
       {error ? (
         <p className="mt-1 text-xs text-destructive" role="alert">
           {error}
