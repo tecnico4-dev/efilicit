@@ -42,7 +42,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Alertas «Licitaciones relacionadas»: carpetas Valoradas / Sin valorar (además de Todas / Enviadas / Pendientes).
+- Alertas «Licitaciones relacionadas»: carpetas Valoradas / Sin valorar / Último envío (además de Todas / Enviadas / Pendientes); Último envío = ítems `sent` del periodo digest más reciente de esa alerta.
 - Ficha (from buzón/alertas/email): al salir sin valorar, diálogo «¿Te ha parecido interesante…?» con estrellas y «Valorar más tarde.»
 - Ficha: valoración 1–5 centrada sobre el título solo con `from=notifications|alerts|email` (sin «volver»); el digest enlaza `?from=email`.
 - Buzón (modal de digest) y Alertas «Licitaciones relacionadas»: puntuación 1–5 con estrellas doradas por licitación; compacto `N★` al reabrir; tabla `tender_ratings` (RLS own). Modales ensanchados para las estrellas.

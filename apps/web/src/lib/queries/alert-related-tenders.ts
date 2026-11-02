@@ -18,6 +18,8 @@ export type AlertRelatedQueueItem = {
   tenderId: string;
   /** Título de fallback si la licitación ya no está en BD. */
   payloadTitle: string | null;
+  /** Periodo de digest del payload (`YYYY-MM-DD` o `YYYY-Www`). */
+  digestPeriod: string | null;
   tender: {
     id: string;
     title: string;
@@ -64,6 +66,11 @@ function tenderIdFromPayload(payload: Json): string | null {
 function titleFromPayload(payload: Json): string | null {
   const title = asRecord(payload).title;
   return typeof title === "string" && title.trim() ? title.trim() : null;
+}
+
+function digestFromPayload(payload: Json): string | null {
+  const digest = asRecord(payload).digest;
+  return typeof digest === "string" && digest.trim() ? digest.trim() : null;
 }
 
 /**
@@ -169,6 +176,7 @@ export async function listOwnAlertRelatedQueueItems(
       lastError: row.last_error,
       tenderId,
       payloadTitle: titleFromPayload(row.payload),
+      digestPeriod: digestFromPayload(row.payload),
       tender: tenderById.get(tenderId) ?? null,
     });
   }

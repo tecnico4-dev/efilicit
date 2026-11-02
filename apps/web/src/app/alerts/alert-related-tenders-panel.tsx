@@ -28,8 +28,35 @@ export type RelatedTendersView =
   | "all"
   | "sent"
   | "pending"
+  | "last_send"
   | "rated"
   | "unrated";
+
+/**
+ * Ítems `sent` del último lote de esta alerta: ancla por `sent_at` máximo
+ * y agrupa por `digestPeriod` (fallback: mismo `sent_at`).
+ */
+function itemsFromLastSend(
+  items: AlertRelatedQueueItem[],
+): AlertRelatedQueueItem[] {
+  const sent = items.filter((i) => i.status === "sent" && i.sentAt != null);
+  if (sent.length === 0) return [];
+
+  let latestAt = sent[0]!.sentAt!;
+  let anchor = sent[0]!;
+  for (const i of sent) {
+    if (i.sentAt != null && i.sentAt > latestAt) {
+      latestAt = i.sentAt;
+      anchor = i;
+    }
+  }
+
+  const period = anchor.digestPeriod;
+  if (period) {
+    return sent.filter((i) => i.digestPeriod === period);
+  }
+  return sent.filter((i) => i.sentAt === latestAt);
+}
 
 function formatWhen(iso: string): string {
   try {
@@ -171,7 +198,7 @@ function RelatedItemRow({
 
 /**
  * Modal: licitaciones de notification_queue para una alerta.
- * Carpetas Todas / Enviadas / Pendientes / Valoradas / Sin valorar
+ * Carpetas Todas / Enviadas / Último envío / Pendientes / Valoradas / Sin valorar
  * (las condicionales solo si tienen ítems). Default: Todas.
  * Paginación estilo favoritos (10 / 50 / 100).
  * Estrellas 1–5 (misma tabla `tender_ratings` que el buzón).
@@ -284,28 +311,32 @@ export function AlertRelatedTendersPanel({
     [ratings, userId],
   );
 
+  const lastSendItems = useMemo(() => itemsFromLastSend(items), [items]);
+
   const counts = useMemo(() => {
     const all = items.length;
     const sent = items.filter((i) => i.status === "sent").length;
     const pending = items.filter((i) => i.status === "pending").length;
+    const lastSend = lastSendItems.length;
     let rated = 0;
     let unrated = 0;
     for (const i of items) {
       if (ratings[i.tenderId] != null) rated += 1;
       else unrated += 1;
     }
-    return { all, sent, pending, rated, unrated };
-  }, [items, ratings]);
+    return { all, sent, pending, lastSend, rated, unrated };
+  }, [items, ratings, lastSendItems]);
 
   const visible = useMemo(() => {
     if (view === "sent") return items.filter((i) => i.status === "sent");
     if (view === "pending") return items.filter((i) => i.status === "pending");
+    if (view === "last_send") return lastSendItems;
     if (view === "rated")
       return items.filter((i) => ratings[i.tenderId] != null);
     if (view === "unrated")
       return items.filter((i) => ratings[i.tenderId] == null);
     return items;
-  }, [items, view, ratings]);
+  }, [items, view, ratings, lastSendItems]);
 
   const total = visible.length;
   const showPager = total > DEFAULT_PAGE_SIZE;
@@ -330,6 +361,9 @@ export function AlertRelatedTendersPanel({
     } else if (view === "pending" && counts.pending === 0) {
       setView("all");
       setPage(1);
+    } else if (view === "last_send" && counts.lastSend === 0) {
+      setView("all");
+      setPage(1);
     } else if (view === "rated" && counts.rated === 0) {
       setView("all");
       setPage(1);
@@ -337,7 +371,14 @@ export function AlertRelatedTendersPanel({
       setView("all");
       setPage(1);
     }
-  }, [view, counts.sent, counts.pending, counts.rated, counts.unrated]);
+  }, [
+    view,
+    counts.sent,
+    counts.pending,
+    counts.lastSend,
+    counts.rated,
+    counts.unrated,
+  ]);
 
   function selectView(next: RelatedTendersView) {
     setView(next);
@@ -412,6 +453,14 @@ export function AlertRelatedTendersPanel({
                     label="Enviadas"
                     count={counts.sent}
                     onSelect={() => selectView("sent")}
+                  />
+                ) : null}
+                {counts.lastSend > 0 ? (
+                  <FolderTab
+                    active={view === "last_send"}
+                    label="Último envío"
+                    count={counts.lastSend}
+                    onSelect={() => selectView("last_send")}
                   />
                 ) : null}
                 {counts.pending > 0 ? (
