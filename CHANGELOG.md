@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Digest email: sin pie «Eficen / Preferencias / correo automático»; el cuerpo termina en las tarjetas (y CTA al buzón si hay `EFILICIT_APP_URL`).
 - Favoritos: en escritorio, licitaciones favoritas y búsquedas guardadas en dos paneles 50/50 a la misma altura; en pantallas estrechas siguen apiladas.
 - Digest email (Resend): plantilla branded EfiLicit — asunto `EfiLicit resumen diario/semanal: N oportunidad(es) nueva(s)`, cabecera cian con Efi/Licit, saludo con nombre, tarjetas con organismo/CCAA/importe/CPV y CTA a la ficha (`EFILICIT_APP_URL`).
 - Buscador: publicación en un solo control (atajos 7 días/mes/año + personalizado con calendario de rango e Inicio/Fin); junto a importes en pantallas grandes.

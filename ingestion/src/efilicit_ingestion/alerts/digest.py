@@ -126,7 +126,6 @@ def build_digest_message(
     text = _build_text(
         name=name,
         label=label,
-        digest=digest,
         count=count,
         items=items,
         base=base,
@@ -134,7 +133,6 @@ def build_digest_message(
     html = _build_html(
         name=name,
         label=label,
-        digest=digest,
         count=count,
         items=items,
         base=base,
@@ -158,7 +156,6 @@ def _build_text(
     *,
     name: str,
     label: str,
-    digest: str,
     count: int,
     items: list[NotificationItem],
     base: str,
@@ -187,18 +184,13 @@ def _build_text(
         lines.append("")
     if base:
         lines.append(f"Ver todas en el buzón: {base}/notifications")
-        lines.append(f"Preferencias: {base}/account")
-        lines.append("")
-    lines.append("Eficen · Este correo es automático; no respondas a este mensaje.")
-    lines.append(f"(periodo {digest})")
-    return "\n".join(lines)
+    return "\n".join(lines).rstrip() + "\n"
 
 
 def _build_html(
     *,
     name: str,
     label: str,
-    digest: str,
     count: int,
     items: list[NotificationItem],
     base: str,
@@ -225,13 +217,6 @@ def _build_html(
             f'font-size:14px;font-weight:600;">Ver todas en el buzón</a>'
             f"</p>"
         )
-
-    prefs_link = (
-        f'<a href="{_escape(base)}/account" style="color:{_BRAND};text-decoration:none;">'
-        f"Preferencias de alerta</a>"
-        if base
-        else "Preferencias de alerta"
-    )
 
     greeting = (
         f'<p style="margin:0 0 8px;font-size:16px;color:{_TEXT};">'
@@ -269,13 +254,6 @@ def _build_html(
             {cards}
             {more_html}
             {inbox_cta}
-          </td>
-        </tr>
-        <tr>
-          <td style="padding:16px 24px 20px;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:{_MUTED};border-top:1px solid {_BRAND_BORDER};background:#ffffff;">
-            Eficen · {prefs_link}<br>
-            Este correo es automático; no respondas a este mensaje.
-            <span style="color:#9aadb5;"> · periodo {_escape(digest)}</span>
           </td>
         </tr>
       </table>
