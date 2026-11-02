@@ -24,7 +24,12 @@ import {
   type PageSize,
 } from "@/app/favorites/list-pager";
 
-export type RelatedTendersView = "all" | "sent" | "pending";
+export type RelatedTendersView =
+  | "all"
+  | "sent"
+  | "pending"
+  | "rated"
+  | "unrated";
 
 function formatWhen(iso: string): string {
   try {
@@ -166,8 +171,9 @@ function RelatedItemRow({
 
 /**
  * Modal: licitaciones de notification_queue para una alerta.
- * Carpetas Todas / Enviadas / Pendientes (estas dos solo si tienen ítems).
- * Default: Todas. Paginación estilo favoritos (10 / 50 / 100).
+ * Carpetas Todas / Enviadas / Pendientes / Valoradas / Sin valorar
+ * (las condicionales solo si tienen ítems). Default: Todas.
+ * Paginación estilo favoritos (10 / 50 / 100).
  * Estrellas 1–5 (misma tabla `tender_ratings` que el buzón).
  */
 export function AlertRelatedTendersPanel({
@@ -282,14 +288,24 @@ export function AlertRelatedTendersPanel({
     const all = items.length;
     const sent = items.filter((i) => i.status === "sent").length;
     const pending = items.filter((i) => i.status === "pending").length;
-    return { all, sent, pending };
-  }, [items]);
+    let rated = 0;
+    let unrated = 0;
+    for (const i of items) {
+      if (ratings[i.tenderId] != null) rated += 1;
+      else unrated += 1;
+    }
+    return { all, sent, pending, rated, unrated };
+  }, [items, ratings]);
 
   const visible = useMemo(() => {
     if (view === "sent") return items.filter((i) => i.status === "sent");
     if (view === "pending") return items.filter((i) => i.status === "pending");
+    if (view === "rated")
+      return items.filter((i) => ratings[i.tenderId] != null);
+    if (view === "unrated")
+      return items.filter((i) => ratings[i.tenderId] == null);
     return items;
-  }, [items, view]);
+  }, [items, view, ratings]);
 
   const total = visible.length;
   const showPager = total > DEFAULT_PAGE_SIZE;
@@ -304,6 +320,24 @@ export function AlertRelatedTendersPanel({
   useEffect(() => {
     if (page > totalPages) setPage(totalPages);
   }, [page, totalPages]);
+
+  // Si la pestaña activa deja de tener ítems (p. ej. valoras la última de «Sin valorar»),
+  // volver a Todas para no quedarte en una vista vacía sin tab visible.
+  useEffect(() => {
+    if (view === "sent" && counts.sent === 0) {
+      setView("all");
+      setPage(1);
+    } else if (view === "pending" && counts.pending === 0) {
+      setView("all");
+      setPage(1);
+    } else if (view === "rated" && counts.rated === 0) {
+      setView("all");
+      setPage(1);
+    } else if (view === "unrated" && counts.unrated === 0) {
+      setView("all");
+      setPage(1);
+    }
+  }, [view, counts.sent, counts.pending, counts.rated, counts.unrated]);
 
   function selectView(next: RelatedTendersView) {
     setView(next);
@@ -364,7 +398,7 @@ export function AlertRelatedTendersPanel({
               <div
                 className="flex shrink-0 flex-wrap items-end gap-1 px-1"
                 role="tablist"
-                aria-label="Filtro de envíos"
+                aria-label="Filtro de licitaciones"
               >
                 <FolderTab
                   active={view === "all"}
@@ -386,6 +420,22 @@ export function AlertRelatedTendersPanel({
                     label="Pendientes de enviar"
                     count={counts.pending}
                     onSelect={() => selectView("pending")}
+                  />
+                ) : null}
+                {counts.rated > 0 ? (
+                  <FolderTab
+                    active={view === "rated"}
+                    label="Valoradas"
+                    count={counts.rated}
+                    onSelect={() => selectView("rated")}
+                  />
+                ) : null}
+                {counts.unrated > 0 ? (
+                  <FolderTab
+                    active={view === "unrated"}
+                    label="Sin valorar"
+                    count={counts.unrated}
+                    onSelect={() => selectView("unrated")}
                   />
                 ) : null}
               </div>
