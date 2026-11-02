@@ -192,6 +192,7 @@ export function AlertRowItem({
       <AlertRelatedTendersPanel
         alertId={alert.id}
         alertName={alert.name}
+        userId={alert.user_id}
         open={relatedOpen}
         onClose={() => setRelatedOpen(false)}
       />

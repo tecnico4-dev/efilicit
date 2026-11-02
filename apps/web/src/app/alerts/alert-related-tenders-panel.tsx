@@ -1,15 +1,20 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/button";
+import { TenderStarRating } from "@/components/tenders/tender-star-rating";
 import { cn } from "@/lib/cn";
 import { formatCpvListPreview } from "@/lib/cpv";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import {
+  deleteOwnTenderRating,
   listOwnAlertRelatedQueueItems,
+  listOwnTenderRatings,
+  upsertOwnTenderRating,
   type AlertRelatedQueueItem,
+  type TenderScore,
 } from "@/lib/queries";
 import { formatTenderStatus } from "@/lib/tender-labels";
 import { formatMoney } from "@/app/favorites/favorites-shared";
@@ -78,68 +83,83 @@ function FolderTab({
 
 function RelatedItemRow({
   item,
+  score,
+  onScoreChange,
   onNavigate,
 }: {
   item: AlertRelatedQueueItem;
+  score: TenderScore | null;
+  onScoreChange: (tenderId: string, next: TenderScore | null) => Promise<void>;
   onNavigate: () => void;
 }) {
   const title =
     item.tender?.title?.trim() || item.payloadTitle || "Licitación";
   const showError = isSendError(item.status);
+  const canRate = Boolean(item.tender);
 
   return (
-    <li className="px-4 py-4">
-      <div className="flex items-start justify-between gap-3">
-        <Link
-          href={`/tenders/${item.tenderId}?from=alerts`}
-          className="min-w-0 flex-1 text-base font-medium text-foreground hover:text-link hover:underline"
-          onClick={onNavigate}
-        >
-          {title}
-        </Link>
-        {showError ? (
-          <span
-            className="shrink-0 rounded-full border border-destructive/40 bg-destructive/10 px-2 py-0.5 text-[11px] font-semibold text-destructive"
-            title={item.lastError ?? undefined}
+    <li className="flex items-start gap-3 px-4 py-4">
+      <div className="min-w-0 flex-1">
+        <div className="flex items-start justify-between gap-3">
+          <Link
+            href={`/tenders/${item.tenderId}?from=alerts`}
+            className="min-w-0 flex-1 text-base font-medium text-foreground hover:text-link hover:underline"
+            onClick={onNavigate}
           >
-            Error al enviar
-          </span>
-        ) : null}
-      </div>
-      {item.tender ? (
-        <dl className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
-          <div>
-            <dt className="inline">Importe: </dt>
-            <dd className="inline">
-              {formatMoney(
-                item.tender.estimated_value,
-                item.tender.currency,
-              )}
-            </dd>
-          </div>
-          <div>
-            <dt className="inline">CPV: </dt>
-            <dd className="inline font-mono">
-              {formatCpvListPreview(item.tender.cpv_codes)}
-            </dd>
-          </div>
-          <div>
-            <dt className="inline">Estado: </dt>
-            <dd className="inline">{formatTenderStatus(item.tender.status)}</dd>
-          </div>
-        </dl>
-      ) : (
-        <p className="mt-2 text-sm text-muted-foreground">
-          Licitación no disponible en el catálogo
+            {title}
+          </Link>
+          {showError ? (
+            <span
+              className="shrink-0 rounded-full border border-destructive/40 bg-destructive/10 px-2 py-0.5 text-[11px] font-semibold text-destructive"
+              title={item.lastError ?? undefined}
+            >
+              Error al enviar
+            </span>
+          ) : null}
+        </div>
+        {item.tender ? (
+          <dl className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
+            <div>
+              <dt className="inline">Importe: </dt>
+              <dd className="inline">
+                {formatMoney(
+                  item.tender.estimated_value,
+                  item.tender.currency,
+                )}
+              </dd>
+            </div>
+            <div>
+              <dt className="inline">CPV: </dt>
+              <dd className="inline font-mono">
+                {formatCpvListPreview(item.tender.cpv_codes)}
+              </dd>
+            </div>
+            <div>
+              <dt className="inline">Estado: </dt>
+              <dd className="inline">{formatTenderStatus(item.tender.status)}</dd>
+            </div>
+          </dl>
+        ) : (
+          <p className="mt-2 text-sm text-muted-foreground">
+            Licitación no disponible en el catálogo
+          </p>
+        )}
+        <p className="mt-2 text-xs text-muted-foreground">
+          {item.status === "sent" && item.sentAt
+            ? `Enviada · ${formatWhen(item.sentAt)}`
+            : item.status === "pending"
+              ? `Pendiente · detectada ${formatWhen(item.createdAt)}`
+              : `En cola · ${formatWhen(item.createdAt)}`}
         </p>
-      )}
-      <p className="mt-2 text-xs text-muted-foreground">
-        {item.status === "sent" && item.sentAt
-          ? `Enviada · ${formatWhen(item.sentAt)}`
-          : item.status === "pending"
-            ? `Pendiente · detectada ${formatWhen(item.createdAt)}`
-            : `En cola · ${formatWhen(item.createdAt)}`}
-      </p>
+      </div>
+      {canRate ? (
+        <div className="shrink-0 pt-0.5">
+          <TenderStarRating
+            score={score}
+            onChange={(next) => onScoreChange(item.tenderId, next)}
+          />
+        </div>
+      ) : null}
     </li>
   );
 }
@@ -148,15 +168,18 @@ function RelatedItemRow({
  * Modal: licitaciones de notification_queue para una alerta.
  * Carpetas Todas / Enviadas / Pendientes (estas dos solo si tienen ítems).
  * Default: Todas. Paginación estilo favoritos (10 / 50 / 100).
+ * Estrellas 1–5 (misma tabla `tender_ratings` que el buzón).
  */
 export function AlertRelatedTendersPanel({
   alertId,
   alertName,
+  userId,
   open,
   onClose,
 }: {
   alertId: string;
   alertName: string;
+  userId: string;
   open: boolean;
   onClose: () => void;
 }) {
@@ -164,6 +187,7 @@ export function AlertRelatedTendersPanel({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [items, setItems] = useState<AlertRelatedQueueItem[]>([]);
+  const [ratings, setRatings] = useState<Record<string, TenderScore>>({});
   const [view, setView] = useState<RelatedTendersView>("all");
   const [pageSize, setPageSize] = useState<PageSize>(DEFAULT_PAGE_SIZE);
   const [page, setPage] = useState(1);
@@ -186,21 +210,73 @@ export function AlertRelatedTendersPanel({
     setError(null);
     setView("all");
     setPage(1);
+    setRatings({});
     const client = createSupabaseBrowserClient();
-    void listOwnAlertRelatedQueueItems(client, { alertId }).then((result) => {
+
+    void (async () => {
+      const queueResult = await listOwnAlertRelatedQueueItems(client, {
+        alertId,
+      });
       if (cancelled) return;
-      setLoading(false);
-      if (result.error) {
-        setError(result.error.message);
+      if (queueResult.error) {
+        setLoading(false);
+        setError(queueResult.error.message);
         setItems([]);
         return;
       }
-      setItems(result.data);
-    });
+      setItems(queueResult.data);
+
+      const tenderIds = [
+        ...new Set(queueResult.data.map((i) => i.tenderId).filter(Boolean)),
+      ];
+      const ratingsResult = await listOwnTenderRatings(client, {
+        userId,
+        tenderIds,
+      });
+      if (cancelled) return;
+      setLoading(false);
+      if (ratingsResult.error) {
+        setError(ratingsResult.error.message);
+        return;
+      }
+      setRatings(ratingsResult.data);
+    })();
+
     return () => {
       cancelled = true;
     };
-  }, [open, alertId]);
+  }, [open, alertId, userId]);
+
+  const onScoreChange = useCallback(
+    async (tenderId: string, next: TenderScore | null) => {
+      const client = createSupabaseBrowserClient();
+      const prev = ratings[tenderId] ?? null;
+      setRatings((r) => {
+        const copy = { ...r };
+        if (next == null) delete copy[tenderId];
+        else copy[tenderId] = next;
+        return copy;
+      });
+      const result =
+        next == null
+          ? await deleteOwnTenderRating(client, { userId, tenderId })
+          : await upsertOwnTenderRating(client, {
+              userId,
+              tenderId,
+              score: next,
+            });
+      if (result.error) {
+        setRatings((r) => {
+          const copy = { ...r };
+          if (prev == null) delete copy[tenderId];
+          else copy[tenderId] = prev;
+          return copy;
+        });
+        setError(result.error.message);
+      }
+    },
+    [ratings, userId],
+  );
 
   const counts = useMemo(() => {
     const all = items.length;
@@ -250,7 +326,7 @@ export function AlertRelatedTendersPanel({
         role="dialog"
         aria-modal="true"
         aria-labelledby={`alert-related-title-${alertId}`}
-        className="flex max-h-[min(90vh,720px)] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-border bg-background shadow-xl"
+        className="flex max-h-[min(90vh,720px)] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-border bg-background shadow-xl sm:max-w-4xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex shrink-0 items-start justify-between gap-3 border-b border-border px-5 py-4">
@@ -331,6 +407,8 @@ export function AlertRelatedTendersPanel({
                         <RelatedItemRow
                           key={item.queueId}
                           item={item}
+                          score={ratings[item.tenderId] ?? null}
+                          onScoreChange={onScoreChange}
                           onNavigate={onClose}
                         />
                       ))}
