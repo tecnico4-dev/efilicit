@@ -157,7 +157,7 @@ def _build_text(
         tid = _item_tender_id(item.payload)
         lines.append(f"- {title}")
         if base and tid:
-            lines.append(f"  Ver en EfiLicit: {base}/tenders/{tid}")
+            lines.append(f"  Ver en EfiLicit: {base}/tenders/{tid}?from=email")
         src = source_urls.get(tid) if tid else None
         if src:
             lines.append(f"  Fuente oficial: {src}")
@@ -265,7 +265,7 @@ def _item_card(
 
     actions: list[str] = []
     if base and tid:
-        href = f"{base}/tenders/{tid}"
+        href = f"{base}/tenders/{tid}?from=email"
         actions.append(
             f'<a href="{_escape(href)}" '
             f'style="display:inline-block;padding:8px 14px;background:{_BRAND};'

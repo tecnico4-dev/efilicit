@@ -43,12 +43,20 @@ function allParam(value: string | string[] | undefined): string[] {
   return raw.map((v) => v.trim()).filter(Boolean);
 }
 
+/** Orígenes donde se muestra valoración 1–5 (y sin «volver a búsqueda»). */
+function showRatingFromParams(
+  params: Record<string, string | string[] | undefined>,
+): boolean {
+  const from = first(params.from);
+  return from === "notifications" || from === "alerts" || from === "email";
+}
+
 function backLinkFromParams(
   params: Record<string, string | string[] | undefined>,
 ): { href: string; label: string } | null {
   const from = first(params.from);
-  // Desde buzón / alertas: sin enlace «volver» (el modal ya no está).
-  if (from === "notifications" || from === "alerts") {
+  // Buzón / alertas / correo digest: sin enlace «volver».
+  if (from === "notifications" || from === "alerts" || from === "email") {
     return null;
   }
   if (from === "home") {
@@ -240,6 +248,7 @@ export default async function TenderDetailPage({
   const { id } = await params;
   const query = await searchParams;
   const back = backLinkFromParams(query);
+  const showRating = showRatingFromParams(query);
   const supabase = await getSupabaseServerClient();
   const { data: tender, error } = await getTenderById(supabase, id);
 
@@ -277,7 +286,7 @@ export default async function TenderDetailPage({
     if (!history.error) statusHistory = history.data;
   }
 
-  // Favoritos / Mis licitaciones / valoración solo con sesión.
+  // Favoritos / Mis licitaciones solo con sesión; valoración solo en from rating.
   let favoriteUserId: string | null = null;
   let displayName: string | null = null;
   let initiallyFavorited = false;
@@ -288,20 +297,27 @@ export default async function TenderDetailPage({
     if (profile.data) {
       favoriteUserId = profile.data.id;
       displayName = profile.data.display_name;
-      const [fav, bid, ratings] = await Promise.all([
+      const tasks: [
+        ReturnType<typeof isOwnFavorite>,
+        ReturnType<typeof getBidCaseIdByTenderId>,
+        ReturnType<typeof listOwnTenderRatings> | Promise<null>,
+      ] = [
         isOwnFavorite(supabase, {
           userId: profile.data.id,
           tenderId: tender.id,
         }),
         getBidCaseIdByTenderId(supabase, tender.id),
-        listOwnTenderRatings(supabase, {
-          userId: profile.data.id,
-          tenderIds: [tender.id],
-        }),
-      ]);
+        showRating
+          ? listOwnTenderRatings(supabase, {
+              userId: profile.data.id,
+              tenderIds: [tender.id],
+            })
+          : Promise.resolve(null),
+      ];
+      const [fav, bid, ratings] = await Promise.all(tasks);
       initiallyFavorited = fav.data;
       existingBidCaseId = bid.data;
-      if (!ratings.error) {
+      if (ratings && !ratings.error) {
         initialScore = ratings.data[tender.id] ?? null;
       }
     }
@@ -322,34 +338,37 @@ export default async function TenderDetailPage({
         </p>
       ) : null}
 
+      {showRating && favoriteUserId ? (
+        <div className={`flex justify-center ${back ? "mt-4" : ""}`}>
+          <TenderDetailRating
+            userId={favoriteUserId}
+            tenderId={tender.id}
+            initialScore={initialScore}
+          />
+        </div>
+      ) : null}
+
       <div
-        className={`flex flex-wrap items-start justify-between gap-3 ${back ? "mt-4" : ""}`}
+        className={`flex flex-wrap items-start justify-between gap-3 ${
+          back || (showRating && favoriteUserId) ? "mt-4" : ""
+        }`}
       >
         <h1 className="min-w-0 flex-1 text-2xl font-semibold tracking-tight text-foreground">
           {tender.title}
         </h1>
         {favoriteUserId ? (
-          <div className="flex w-full flex-col items-stretch gap-1 sm:w-auto sm:items-end">
-            <div className="flex flex-wrap items-center justify-end gap-2">
-              <BidCaseToggle
-                userId={favoriteUserId}
-                displayName={displayName}
-                tenderId={tender.id}
-                existingCaseId={existingBidCaseId}
-              />
-              <FavoriteToggle
-                userId={favoriteUserId}
-                tenderId={tender.id}
-                initiallyFavorited={initiallyFavorited}
-              />
-            </div>
-            <div className="flex justify-end">
-              <TenderDetailRating
-                userId={favoriteUserId}
-                tenderId={tender.id}
-                initialScore={initialScore}
-              />
-            </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <BidCaseToggle
+              userId={favoriteUserId}
+              displayName={displayName}
+              tenderId={tender.id}
+              existingCaseId={existingBidCaseId}
+            />
+            <FavoriteToggle
+              userId={favoriteUserId}
+              tenderId={tender.id}
+              initiallyFavorited={initiallyFavorited}
+            />
           </div>
         ) : null}
       </div>

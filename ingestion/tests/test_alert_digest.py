@@ -97,7 +97,10 @@ def test_build_digest_message_groups_titles() -> None:
     assert "Mantenimiento de software" in msg.text
     assert "Software de gestión" in msg.text
     assert "50.000 €" not in msg.text
-    assert "Ver en EfiLicit: https://app.example.com/tenders/t-soft" in msg.text
+    assert (
+        "Ver en EfiLicit: https://app.example.com/tenders/t-soft?from=email"
+        in msg.text
+    )
     assert "Fuente oficial: https://contratacion.example/soft" in msg.text
     assert "#52b9d8" in (msg.html or "")
     assert "Hola, Alice" in (msg.html or "")
