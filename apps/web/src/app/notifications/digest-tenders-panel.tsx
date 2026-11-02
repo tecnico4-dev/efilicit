@@ -1,15 +1,20 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/button";
+import { TenderStarRating } from "@/components/tenders/tender-star-rating";
 import { formatCpvListPreview } from "@/lib/cpv";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import {
+  deleteOwnTenderRating,
+  listOwnTenderRatings,
   listTendersForDigestInbox,
   markOwnDigestInboxRead,
+  upsertOwnTenderRating,
   type DigestTenderListItem,
+  type TenderScore,
 } from "@/lib/queries";
 import { formatTenderStatus } from "@/lib/tender-labels";
 import { formatMoney } from "@/app/favorites/favorites-shared";
@@ -21,51 +26,67 @@ import {
 
 function TenderRow({
   item,
+  score,
+  onScoreChange,
   onNavigate,
 }: {
   item: DigestTenderListItem;
+  score: TenderScore | null;
+  onScoreChange: (tenderId: string, next: TenderScore | null) => Promise<void>;
   onNavigate: () => void;
 }) {
   return (
-    <li className="px-4 py-4">
-      {!item.available ? (
-        <p className="text-base font-medium text-muted-foreground">{item.title}</p>
-      ) : (
-        <>
-          <Link
-            href={`/tenders/${item.tenderId}?from=notifications`}
-            className="text-base font-medium text-foreground hover:text-link hover:underline"
-            onClick={onNavigate}
-          >
+    <li className="flex items-start gap-3 px-4 py-4">
+      <div className="min-w-0 flex-1">
+        {!item.available ? (
+          <p className="text-base font-medium text-muted-foreground">
             {item.title}
-          </Link>
-          <dl className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
-            <div>
-              <dt className="inline">Importe: </dt>
-              <dd className="inline">
-                {formatMoney(item.estimated_value, item.currency)}
-              </dd>
-            </div>
-            <div>
-              <dt className="inline">CPV: </dt>
-              <dd className="inline font-mono">
-                {formatCpvListPreview(item.cpv_codes)}
-              </dd>
-            </div>
-            <div>
-              <dt className="inline">Estado: </dt>
-              <dd className="inline">{formatTenderStatus(item.status)}</dd>
-            </div>
-          </dl>
-        </>
-      )}
+          </p>
+        ) : (
+          <>
+            <Link
+              href={`/tenders/${item.tenderId}?from=notifications`}
+              className="text-base font-medium text-foreground hover:text-link hover:underline"
+              onClick={onNavigate}
+            >
+              {item.title}
+            </Link>
+            <dl className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
+              <div>
+                <dt className="inline">Importe: </dt>
+                <dd className="inline">
+                  {formatMoney(item.estimated_value, item.currency)}
+                </dd>
+              </div>
+              <div>
+                <dt className="inline">CPV: </dt>
+                <dd className="inline font-mono">
+                  {formatCpvListPreview(item.cpv_codes)}
+                </dd>
+              </div>
+              <div>
+                <dt className="inline">Estado: </dt>
+                <dd className="inline">{formatTenderStatus(item.status)}</dd>
+              </div>
+            </dl>
+          </>
+        )}
+      </div>
+      {item.available ? (
+        <div className="shrink-0 pt-0.5">
+          <TenderStarRating
+            score={score}
+            onChange={(next) => onScoreChange(item.tenderId, next)}
+          />
+        </div>
+      ) : null}
     </li>
   );
 }
 
 /**
  * Modal: licitaciones incluidas en un digest email (lista plana, sin carpetas).
- * Paginación 10/50/100 cuando toca; scroll siempre.
+ * Paginación 10/50/100 cuando toca; scroll siempre. Estrellas 1–5 por ítem.
  */
 export function DigestTendersPanel({
   digestId,
@@ -88,6 +109,7 @@ export function DigestTendersPanel({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [items, setItems] = useState<DigestTenderListItem[]>([]);
+  const [ratings, setRatings] = useState<Record<string, TenderScore>>({});
   const [pageSize, setPageSize] = useState<PageSize>(DEFAULT_PAGE_SIZE);
   const [page, setPage] = useState(1);
 
@@ -110,25 +132,69 @@ export function DigestTendersPanel({
     setLoading(true);
     setError(null);
     setPage(1);
+    setRatings({});
     const ids = tenderIdsKey ? tenderIdsKey.split(",") : [];
     const client = createSupabaseBrowserClient();
     void markOwnDigestInboxRead(client, { userId, digestId }).then(() => {
       /* badge se refresca al cerrar / router.refresh desde el padre */
     });
-    void listTendersForDigestInbox(client, { tenderIds: ids }).then((result) => {
+
+    void (async () => {
+      const [tendersResult, ratingsResult] = await Promise.all([
+        listTendersForDigestInbox(client, { tenderIds: ids }),
+        listOwnTenderRatings(client, { userId, tenderIds: ids }),
+      ]);
       if (cancelled) return;
       setLoading(false);
-      if (result.error) {
-        setError(result.error.message);
+      if (tendersResult.error) {
+        setError(tendersResult.error.message);
         setItems([]);
         return;
       }
-      setItems(result.data);
-    });
+      setItems(tendersResult.data);
+      if (ratingsResult.error) {
+        setError(ratingsResult.error.message);
+        return;
+      }
+      setRatings(ratingsResult.data);
+    })();
+
     return () => {
       cancelled = true;
     };
   }, [open, digestId, userId, tenderIdsKey]);
+
+  const onScoreChange = useCallback(
+    async (tenderId: string, next: TenderScore | null) => {
+      const client = createSupabaseBrowserClient();
+      const prev = ratings[tenderId] ?? null;
+      // Optimistic
+      setRatings((r) => {
+        const copy = { ...r };
+        if (next == null) delete copy[tenderId];
+        else copy[tenderId] = next;
+        return copy;
+      });
+      const result =
+        next == null
+          ? await deleteOwnTenderRating(client, { userId, tenderId })
+          : await upsertOwnTenderRating(client, {
+              userId,
+              tenderId,
+              score: next,
+            });
+      if (result.error) {
+        setRatings((r) => {
+          const copy = { ...r };
+          if (prev == null) delete copy[tenderId];
+          else copy[tenderId] = prev;
+          return copy;
+        });
+        setError(result.error.message);
+      }
+    },
+    [ratings, userId],
+  );
 
   const total = items.length;
   const showPager = total > DEFAULT_PAGE_SIZE;
@@ -160,7 +226,7 @@ export function DigestTendersPanel({
         role="dialog"
         aria-modal="true"
         aria-labelledby={`digest-tenders-title-${digestId}`}
-        className="flex max-h-[min(90vh,720px)] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-border bg-background shadow-xl"
+        className="flex max-h-[min(90vh,720px)] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-border bg-background shadow-xl sm:max-w-4xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex shrink-0 items-start justify-between gap-3 border-b border-border px-5 py-4">
@@ -202,6 +268,8 @@ export function DigestTendersPanel({
                     <TenderRow
                       key={item.tenderId}
                       item={item}
+                      score={ratings[item.tenderId] ?? null}
+                      onScoreChange={onScoreChange}
                       onNavigate={onClose}
                     />
                   ))}

@@ -25,6 +25,7 @@ truncate table
   public.notification_reads,
   public.notification_trash,
   public.notification_queue,
+  public.tender_ratings,
   public.favorites,
   public.alerts,
   public.saved_searches,
@@ -59,6 +60,7 @@ union all select 'errors', count(*) from public.errors
 union all select 'alerts', count(*) from public.alerts
 union all select 'saved_searches', count(*) from public.saved_searches
 union all select 'favorites', count(*) from public.favorites
+union all select 'tender_ratings', count(*) from public.tender_ratings
 union all select 'notification_queue', count(*) from public.notification_queue
 union all select 'notification_reads', count(*) from public.notification_reads
 union all select 'notification_trash', count(*) from public.notification_trash

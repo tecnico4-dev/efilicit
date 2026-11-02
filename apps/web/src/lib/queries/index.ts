@@ -77,6 +77,12 @@ export {
   type DigestTenderListItem,
 } from "./digest-inbox";
 export {
+  deleteOwnTenderRating,
+  listOwnTenderRatings,
+  upsertOwnTenderRating,
+  type TenderScore,
+} from "./tender-ratings";
+export {
   deleteOwnRecentSearch,
   listOwnRecentSearches,
   recordOwnRecentSearch,

@@ -30,6 +30,7 @@ pnpm --filter @efilicit/web verify:rls:favorites
 | `notification_reads` | Sí | select/insert/delete **own** | |
 | `notification_trash` | Sí | CRUD **own** | |
 | `favorites` | Sí | select/insert/delete **own** | |
+| `tender_ratings` | Sí | select/insert/update/delete **own** | Nota 1–5 por licitación (buzón) |
 | `tenders` | Sí | select **public** | Canónico lectura |
 | `tender_sources` | Sí | select **public** | |
 | `tender_events` | Sí | select **public** | |
