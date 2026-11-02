@@ -132,20 +132,17 @@ export type DigestTenderListItem = {
   available: boolean;
 };
 
+/**
+ * PostgREST mete el `.in()` en la query string; ~100 UUIDs evita 400 Bad Request
+ * en digests grandes (p. ej. 900+ licitaciones).
+ */
+const DIGEST_TENDER_ID_CHUNK = 100;
+
 export async function listTendersForDigestInbox(
   client: SupabaseClient<Database>,
   input: { tenderIds: string[] },
 ): Promise<{ data: DigestTenderListItem[]; error: Error | null }> {
   if (input.tenderIds.length === 0) return { data: [], error: null };
-
-  const { data, error } = await client
-    .from("tenders")
-    .select(
-      "id, title, status, estimated_value, currency, tender_cpvs ( cpv_code )",
-    )
-    .in("id", input.tenderIds);
-
-  if (error) return { data: [], error: new Error(error.message) };
 
   type TenderRow = {
     id: string;
@@ -156,10 +153,21 @@ export async function listTendersForDigestInbox(
     tender_cpvs: { cpv_code: string }[] | null;
   };
 
-  const byId = new Map(
-    ((data as TenderRow[] | null) ?? []).map((t) => [
-      t.id,
-      {
+  const byId = new Map<string, DigestTenderListItem>();
+  const select =
+    "id, title, status, estimated_value, currency, tender_cpvs ( cpv_code )";
+
+  for (let i = 0; i < input.tenderIds.length; i += DIGEST_TENDER_ID_CHUNK) {
+    const chunk = input.tenderIds.slice(i, i + DIGEST_TENDER_ID_CHUNK);
+    const { data, error } = await client
+      .from("tenders")
+      .select(select)
+      .in("id", chunk);
+
+    if (error) return { data: [], error: new Error(error.message) };
+
+    for (const t of (data as TenderRow[] | null) ?? []) {
+      byId.set(t.id, {
         tenderId: t.id,
         title: t.title?.trim() || "Licitación",
         status: t.status,
@@ -167,9 +175,9 @@ export async function listTendersForDigestInbox(
         currency: t.currency || "EUR",
         cpv_codes: (t.tender_cpvs ?? []).map((c) => c.cpv_code),
         available: true,
-      } satisfies DigestTenderListItem,
-    ]),
-  );
+      });
+    }
+  }
 
   // Conservar orden del correo.
   const ordered: DigestTenderListItem[] = input.tenderIds.map((id) => {
