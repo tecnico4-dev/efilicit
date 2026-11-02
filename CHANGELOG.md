@@ -42,6 +42,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Ficha (from buzón/alertas/email): al salir sin valorar, diálogo «¿Te ha parecido interesante…?» con estrellas y «Valorar más tarde.»
 - Ficha: valoración 1–5 centrada sobre el título solo con `from=notifications|alerts|email` (sin «volver»); el digest enlaza `?from=email`.
 - Buzón (modal de digest) y Alertas «Licitaciones relacionadas»: puntuación 1–5 con estrellas doradas por licitación; compacto `N★` al reabrir; tabla `tender_ratings` (RLS own). Modales ensanchados para las estrellas.
 - Mis licitaciones: pipeline compartido de presentación Eficen (`/my-tenders`) — etapas, responsable, fechas, checklist con cuenta atrás, novedades, documentación reutilizable (URL+tags) e histórico por años; nav a la izquierda del buzón; alta desde la ficha. [ADR 023](docs/adr/023-mis-licitaciones-pipeline-compartido.md).
