@@ -9,7 +9,9 @@ import {
   getBidCaseIdByTenderId,
   getTenderById,
   isOwnFavorite,
+  listOwnTenderRatings,
   listTenderStatusHistory,
+  type TenderScore,
   type TenderSourceSummary,
 } from "@/lib/queries";
 import { normalizeCpvCode } from "@/lib/cpv";
@@ -21,6 +23,7 @@ import {
   formatTenderStatus,
 } from "@/lib/tender-labels";
 import { StatusHistoryPopover } from "./status-history-popover";
+import { TenderDetailRating } from "./tender-detail-rating";
 
 export const dynamic = "force-dynamic";
 
@@ -42,8 +45,12 @@ function allParam(value: string | string[] | undefined): string[] {
 
 function backLinkFromParams(
   params: Record<string, string | string[] | undefined>,
-): { href: string; label: string } {
+): { href: string; label: string } | null {
   const from = first(params.from);
+  // Desde buzón / alertas: sin enlace «volver» (el modal ya no está).
+  if (from === "notifications" || from === "alerts") {
+    return null;
+  }
   if (from === "home") {
     return {
       href: "/",
@@ -242,11 +249,16 @@ export default async function TenderDetailPage({
         <ErrorState>
           No se pudo cargar la licitación: {error.message}
         </ErrorState>
-        <p className="mt-4 text-sm">
-          <Link href={back.href} className="font-medium text-link hover:underline">
-            {back.label.replace(/^←\s*/, "")}
-          </Link>
-        </p>
+        {back ? (
+          <p className="mt-4 text-sm">
+            <Link
+              href={back.href}
+              className="font-medium text-link hover:underline"
+            >
+              {back.label.replace(/^←\s*/, "")}
+            </Link>
+          </p>
+        ) : null}
       </main>
     );
   }
@@ -265,25 +277,33 @@ export default async function TenderDetailPage({
     if (!history.error) statusHistory = history.data;
   }
 
-  // Favoritos / Mis licitaciones solo con sesión.
+  // Favoritos / Mis licitaciones / valoración solo con sesión.
   let favoriteUserId: string | null = null;
   let displayName: string | null = null;
   let initiallyFavorited = false;
   let existingBidCaseId: string | null = null;
+  let initialScore: TenderScore | null = null;
   try {
     const profile = await getSessionProfile();
     if (profile.data) {
       favoriteUserId = profile.data.id;
       displayName = profile.data.display_name;
-      const [fav, bid] = await Promise.all([
+      const [fav, bid, ratings] = await Promise.all([
         isOwnFavorite(supabase, {
           userId: profile.data.id,
           tenderId: tender.id,
         }),
         getBidCaseIdByTenderId(supabase, tender.id),
+        listOwnTenderRatings(supabase, {
+          userId: profile.data.id,
+          tenderIds: [tender.id],
+        }),
       ]);
       initiallyFavorited = fav.data;
       existingBidCaseId = bid.data;
+      if (!ratings.error) {
+        initialScore = ratings.data[tender.id] ?? null;
+      }
     }
   } catch {
     favoriteUserId = null;
@@ -291,29 +311,45 @@ export default async function TenderDetailPage({
 
   return (
     <main className={PAGE_MAIN_CLASS}>
-      <p className="text-sm">
-        <Link href={back.href} className="font-medium text-link hover:underline">
-          {back.label}
-        </Link>
-      </p>
+      {back ? (
+        <p className="text-sm">
+          <Link
+            href={back.href}
+            className="font-medium text-link hover:underline"
+          >
+            {back.label}
+          </Link>
+        </p>
+      ) : null}
 
-      <div className="mt-4 flex flex-wrap items-start justify-between gap-3">
+      <div
+        className={`flex flex-wrap items-start justify-between gap-3 ${back ? "mt-4" : ""}`}
+      >
         <h1 className="min-w-0 flex-1 text-2xl font-semibold tracking-tight text-foreground">
           {tender.title}
         </h1>
         {favoriteUserId ? (
-          <div className="flex flex-wrap items-center gap-2">
-            <BidCaseToggle
-              userId={favoriteUserId}
-              displayName={displayName}
-              tenderId={tender.id}
-              existingCaseId={existingBidCaseId}
-            />
-            <FavoriteToggle
-              userId={favoriteUserId}
-              tenderId={tender.id}
-              initiallyFavorited={initiallyFavorited}
-            />
+          <div className="flex w-full flex-col items-stretch gap-1 sm:w-auto sm:items-end">
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              <BidCaseToggle
+                userId={favoriteUserId}
+                displayName={displayName}
+                tenderId={tender.id}
+                existingCaseId={existingBidCaseId}
+              />
+              <FavoriteToggle
+                userId={favoriteUserId}
+                tenderId={tender.id}
+                initiallyFavorited={initiallyFavorited}
+              />
+            </div>
+            <div className="flex justify-end">
+              <TenderDetailRating
+                userId={favoriteUserId}
+                tenderId={tender.id}
+                initialScore={initialScore}
+              />
+            </div>
           </div>
         ) : null}
       </div>

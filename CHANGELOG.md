@@ -42,6 +42,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Ficha de licitación: desde buzón/alertas (`from=notifications|alerts`) sin «Volver a la búsqueda»; valoración 1–5 bajo Mis licitaciones / Favoritos (misma `tender_ratings`).
 - Buzón (modal de digest) y Alertas «Licitaciones relacionadas»: puntuación 1–5 con estrellas doradas por licitación; compacto `N★` al reabrir; tabla `tender_ratings` (RLS own). Modales ensanchados para las estrellas.
 - Mis licitaciones: pipeline compartido de presentación Eficen (`/my-tenders`) — etapas, responsable, fechas, checklist con cuenta atrás, novedades, documentación reutilizable (URL+tags) e histórico por años; nav a la izquierda del buzón; alta desde la ficha. [ADR 023](docs/adr/023-mis-licitaciones-pipeline-compartido.md).
 - Buscador: hover en chip de recientes previsualiza el formulario completo (texto, importes, fechas, selects, en plazo, CCAA, municipio, CPV) en estilo fantasma; al salir se restaura. Click en el chip sigue buscando de verdad.
