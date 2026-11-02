@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/cn";
 
+/** Sobre cerrado (buzón de notificaciones). */
 function MailboxIcon({ className }: { className?: string }) {
   return (
     <svg
@@ -17,10 +18,10 @@ function MailboxIcon({ className }: { className?: string }) {
       className={className}
       aria-hidden
     >
-      <path d="M4 9h12a3 3 0 0 1 3 3v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V9z" />
-      <path d="M4 9V7a2 2 0 0 1 2-2h7" />
-      <path d="M16 4h3a1 1 0 0 1 1 1v4" />
-      <path d="M8 13h4" />
+      <rect x="2.5" y="5" width="19" height="14" rx="1.5" />
+      <path d="m2.5 7.5 8.7 5.6a1.4 1.4 0 0 0 1.6 0l8.7-5.6" />
+      <path d="m2.5 17.5 6.2-5" />
+      <path d="m21.5 17.5-6.2-5" />
     </svg>
   );
 }
