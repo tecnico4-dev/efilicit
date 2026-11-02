@@ -117,20 +117,23 @@ export async function listOwnAlertRelatedQueueItems(
   type TenderSummary = NonNullable<AlertRelatedQueueItem["tender"]>;
   const tenderById = new Map<string, TenderSummary>();
 
-  if (tenderIds.length > 0) {
-    const { data: tenders, error: tenderError } = await client
-      .from("tenders")
-      .select(
-        `
+  /** PostgREST pone `.in()` en la query string; trozos evitan 400 Bad Request. */
+  const TENDER_ID_CHUNK = 100;
+  const tenderSelect = `
         id,
         title,
         status,
         estimated_value,
         currency,
         tender_cpvs ( cpv_code )
-      `,
-      )
-      .in("id", tenderIds);
+      `;
+
+  for (let i = 0; i < tenderIds.length; i += TENDER_ID_CHUNK) {
+    const chunk = tenderIds.slice(i, i + TENDER_ID_CHUNK);
+    const { data: tenders, error: tenderError } = await client
+      .from("tenders")
+      .select(tenderSelect)
+      .in("id", chunk);
 
     if (tenderError) {
       return { data: [], error: new Error(tenderError.message) };
