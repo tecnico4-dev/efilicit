@@ -85,6 +85,10 @@ def test_build_digest_message_groups_titles() -> None:
         items=pending,
         display_name="Alice",
         base_url="https://app.example.com",
+        source_urls={
+            "t-soft": "https://contratacion.example/soft",
+            "t-soft-2": "https://contratacion.example/soft-2",
+        },
     )
     assert "alice@example.com" == msg.to
     assert msg.subject == "EfiLicit resumen diario: 2 oportunidades nuevas"
@@ -92,11 +96,15 @@ def test_build_digest_message_groups_titles() -> None:
     assert "Tienes 2 nuevas coincidencias con tus alertas." in msg.text
     assert "Mantenimiento de software" in msg.text
     assert "Software de gestión" in msg.text
-    assert "50.000 €" in msg.text
-    assert "https://app.example.com/tenders/t-soft" in msg.text
+    assert "50.000 €" not in msg.text
+    assert "Ver en EfiLicit: https://app.example.com/tenders/t-soft" in msg.text
+    assert "Fuente oficial: https://contratacion.example/soft" in msg.text
     assert "#52b9d8" in (msg.html or "")
     assert "Hola, Alice" in (msg.html or "")
     assert "Resumen diario" in (msg.html or "")
+    assert "Ver en EfiLicit" in (msg.html or "")
+    assert "Fuente oficial" in (msg.html or "")
+    assert "https://contratacion.example/soft" in (msg.html or "")
     assert ">Efi</span>" in (msg.html or "")
     assert ">Licit</span>" in (msg.html or "")
 

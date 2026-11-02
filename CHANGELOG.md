@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Digest email: tarjeta ligera — título + «Ver en EfiLicit» + «Fuente oficial» (`source_url` de `tender_sources` al enviar; sin meta duplicada en el payload).
 - Digest email: sin pie «Eficen / Preferencias / correo automático»; el cuerpo termina en las tarjetas (y CTA al buzón si hay `EFILICIT_APP_URL`).
 - Favoritos: en escritorio, licitaciones favoritas y búsquedas guardadas en dos paneles 50/50 a la misma altura; en pantallas estrechas siguen apiladas.
 - Digest email (Resend): plantilla branded EfiLicit — asunto `EfiLicit resumen diario/semanal: N oportunidad(es) nueva(s)`, cabecera cian con Efi/Licit, saludo con nombre, tarjetas con organismo/CCAA/importe/CPV y CTA a la ficha (`EFILICIT_APP_URL`).

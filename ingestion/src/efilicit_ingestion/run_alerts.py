@@ -35,6 +35,7 @@ from efilicit_ingestion.alerts.postgres import (
     list_success_sync_windows,
     load_active_alerts,
     load_tender_candidates_for_sync_day,
+    load_tender_source_urls,
     load_user_digest_frequencies,
     load_user_email_directory,
 )
@@ -257,6 +258,7 @@ def _run_write(
                 frequencies=frequencies,
                 job_date=job_date,
                 inbox=PostgresDigestInbox(conn),
+                resolve_source_urls=lambda ids: load_tender_source_urls(conn, ids),
             )
 
         conn.commit()

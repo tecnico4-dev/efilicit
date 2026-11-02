@@ -11,6 +11,9 @@ Frecuencias (ADR 013):
 
 Reintentos de cola (sin ADR): tras un fallo, ``failed`` sigue siendo drainable
 hasta agotar el umbral del error actual; luego ``cancelled``.
+
+Plantilla: título + «Ver en EfiLicit» + «Fuente oficial» (URL leída de
+``tender_sources`` al montar el correo; no se duplica en el payload de cola).
 """
 
 from __future__ import annotations
@@ -20,7 +23,6 @@ from collections import defaultdict
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from datetime import date, datetime, timezone
-from decimal import Decimal, InvalidOperation
 from typing import Any, Callable
 
 from efilicit_ingestion.alerts.email import EmailMessage, EmailSender
@@ -39,29 +41,6 @@ _BG = "#f7fbfd"
 _TEXT = "#1a2b33"
 _MUTED = "#5a6f78"
 _MAX_VISIBLE = 10
-
-# Códigos INE de CCAA → nombre (geo_ccaa; castellano).
-_CCAA_NAMES: dict[str, str] = {
-    "01": "Andalucía",
-    "02": "Aragón",
-    "03": "Principado de Asturias",
-    "04": "Islas Baleares",
-    "05": "Canarias",
-    "06": "Cantabria",
-    "07": "Castilla y León",
-    "08": "Castilla-La Mancha",
-    "09": "Cataluña",
-    "10": "Comunidad Valenciana",
-    "11": "Extremadura",
-    "12": "Galicia",
-    "13": "Comunidad de Madrid",
-    "14": "Región de Murcia",
-    "15": "Comunidad Foral de Navarra",
-    "16": "País Vasco",
-    "17": "La Rioja",
-    "18": "Ciudad Autónoma de Ceuta",
-    "19": "Ciudad Autónoma de Melilla",
-}
 
 
 @dataclass
@@ -112,8 +91,9 @@ def build_digest_message(
     frequency: str = "diaria",
     display_name: str = "usuario",
     base_url: str | None = None,
+    source_urls: Mapping[str, str] | None = None,
 ) -> EmailMessage:
-    """Plantilla branded texto/HTML del resumen (Resend)."""
+    """Plantilla branded: título + EfiLicit + fuente oficial (si hay URL)."""
     from efilicit_ingestion.alerts.queue import normalize_digest_frequency
 
     count = len(items)
@@ -122,6 +102,7 @@ def build_digest_message(
     subject = _subject_line(label=label, count=count)
     base = (base_url if base_url is not None else app_base_url()).rstrip("/")
     name = (display_name or "usuario").strip() or "usuario"
+    urls = dict(source_urls or {})
 
     text = _build_text(
         name=name,
@@ -129,6 +110,7 @@ def build_digest_message(
         count=count,
         items=items,
         base=base,
+        source_urls=urls,
     )
     html = _build_html(
         name=name,
@@ -136,6 +118,7 @@ def build_digest_message(
         count=count,
         items=items,
         base=base,
+        source_urls=urls,
     )
     return EmailMessage(
         to=to_email,
@@ -159,6 +142,7 @@ def _build_text(
     count: int,
     items: list[NotificationItem],
     base: str,
+    source_urls: Mapping[str, str],
 ) -> str:
     lines = [
         f"EfiLicit — Resumen {label}",
@@ -169,14 +153,14 @@ def _build_text(
     ]
     visible = items[:_MAX_VISIBLE]
     for item in visible:
-        meta = _item_meta_parts(item.payload)
         title = _item_title(item.payload)
+        tid = _item_tender_id(item.payload)
         lines.append(f"- {title}")
-        if meta:
-            lines.append(f"  {' · '.join(meta)}")
-        tid = str(item.payload.get("tender_id") or "").strip()
         if base and tid:
-            lines.append(f"  {base}/tenders/{tid}")
+            lines.append(f"  Ver en EfiLicit: {base}/tenders/{tid}")
+        src = source_urls.get(tid) if tid else None
+        if src:
+            lines.append(f"  Fuente oficial: {src}")
         lines.append("")
     remaining = count - len(visible)
     if remaining > 0:
@@ -194,9 +178,15 @@ def _build_html(
     count: int,
     items: list[NotificationItem],
     base: str,
+    source_urls: Mapping[str, str],
 ) -> str:
     cards = "".join(
-        _item_card(item.payload, base=base) for item in items[:_MAX_VISIBLE]
+        _item_card(
+            item.payload,
+            base=base,
+            source_url=source_urls.get(_item_tender_id(item.payload) or ""),
+        )
+        for item in items[:_MAX_VISIBLE]
     )
     remaining = count - min(count, _MAX_VISIBLE)
     more_html = ""
@@ -264,33 +254,37 @@ def _build_html(
 </html>"""
 
 
-def _item_card(payload: Mapping[str, Any], *, base: str) -> str:
+def _item_card(
+    payload: Mapping[str, Any],
+    *,
+    base: str,
+    source_url: str | None,
+) -> str:
     title = _escape(_item_title(payload))
-    meta = _item_meta_parts(payload)
-    meta_html = ""
-    if meta:
-        meta_html = (
-            f'<p style="margin:6px 0 0;font-size:13px;color:{_MUTED};line-height:1.4;">'
-            f"{_escape(' · '.join(meta))}</p>"
-        )
-    cpv = _format_cpv(payload)
-    cpv_html = ""
-    if cpv:
-        cpv_html = (
-            f'<p style="margin:4px 0 0;font-size:12px;color:{_MUTED};">'
-            f"{_escape(cpv)}</p>"
-        )
+    tid = _item_tender_id(payload)
 
-    tid = str(payload.get("tender_id") or "").strip()
-    button = ""
+    actions: list[str] = []
     if base and tid:
         href = f"{base}/tenders/{tid}"
-        button = (
-            f'<p style="margin:12px 0 0;">'
+        actions.append(
             f'<a href="{_escape(href)}" '
             f'style="display:inline-block;padding:8px 14px;background:{_BRAND};'
             f'color:#ffffff;text-decoration:none;border-radius:6px;'
-            f'font-size:13px;font-weight:600;">Ver licitación</a>'
+            f'font-size:13px;font-weight:600;">Ver en EfiLicit</a>'
+        )
+    if source_url:
+        actions.append(
+            f'<a href="{_escape(source_url)}" '
+            f'style="display:inline-block;padding:8px 4px;color:{_BRAND};'
+            f'text-decoration:underline;font-size:13px;font-weight:600;">'
+            f"Fuente oficial</a>"
+        )
+
+    actions_html = ""
+    if actions:
+        actions_html = (
+            f'<p style="margin:12px 0 0;line-height:1.6;">'
+            f'{"&nbsp;&nbsp;".join(actions)}'
             f"</p>"
         )
 
@@ -298,10 +292,10 @@ def _item_card(payload: Mapping[str, Any], *, base: str) -> str:
         f'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" '
         f'style="margin:0 0 12px;background:#ffffff;border:1px solid {_BRAND_BORDER};'
         f'border-radius:8px;">'
-        f"<tr><td style=\"padding:14px 16px;\">"
+        f'<tr><td style="padding:14px 16px;">'
         f'<p style="margin:0;font-size:15px;font-weight:600;color:{_TEXT};'
         f'line-height:1.35;">{title}</p>'
-        f"{meta_html}{cpv_html}{button}"
+        f"{actions_html}"
         f"</td></tr></table>"
     )
 
@@ -310,60 +304,8 @@ def _item_title(payload: Mapping[str, Any]) -> str:
     return str(payload.get("title") or payload.get("tender_id") or "licitación")
 
 
-def _item_meta_parts(payload: Mapping[str, Any]) -> list[str]:
-    parts: list[str] = []
-    authority = str(payload.get("authority_name") or "").strip()
-    if authority:
-        parts.append(authority)
-    ccaa = _ccaa_label(payload.get("place_ccaa_code"))
-    if ccaa:
-        parts.append(ccaa)
-    value = _format_euro(payload.get("estimated_value"))
-    if value:
-        parts.append(value)
-    return parts
-
-
-def _format_cpv(payload: Mapping[str, Any]) -> str:
-    raw = payload.get("cpv_codes")
-    if not isinstance(raw, (list, tuple)) or not raw:
-        return ""
-    codes = [str(c).strip() for c in raw if str(c).strip()]
-    if not codes:
-        return ""
-    if len(codes) == 1:
-        return f"CPV {codes[0]}"
-    return f"CPV {codes[0]} +{len(codes) - 1}"
-
-
-def _ccaa_label(code: Any) -> str | None:
-    if code is None:
-        return None
-    key = str(code).strip().zfill(2) if str(code).strip().isdigit() else str(code).strip()
-    if not key:
-        return None
-    return _CCAA_NAMES.get(key) or key
-
-
-def _format_euro(value: Any) -> str | None:
-    if value is None or value == "":
-        return None
-    try:
-        amount = Decimal(str(value))
-    except (InvalidOperation, ValueError):
-        return None
-    # Formato ES: 45.000 € / 12.345,67 €
-    if amount == amount.to_integral_value():
-        return f"{int(amount):,}".replace(",", ".") + " €"
-    quantized = amount.quantize(Decimal("0.01"))
-    s = f"{quantized:f}"
-    left, _, right = s.partition(".")
-    neg = left.startswith("-")
-    digits = left.lstrip("-")
-    grouped = f"{int(digits):,}".replace(",", ".")
-    if neg:
-        grouped = f"-{grouped}"
-    return f"{grouped},{right[:2].ljust(2, '0')} €"
+def _item_tender_id(payload: Mapping[str, Any]) -> str:
+    return str(payload.get("tender_id") or "").strip()
 
 
 def _escape(value: str) -> str:
@@ -403,6 +345,17 @@ def _record_failure_counts(
             result.items_marked_failed += 1
 
 
+def _tender_ids_for_items(items: list[NotificationItem]) -> list[str]:
+    ids: list[str] = []
+    seen: set[str] = set()
+    for item in items:
+        tid = _item_tender_id(item.payload)
+        if tid and tid not in seen:
+            seen.add(tid)
+            ids.append(tid)
+    return ids
+
+
 def drain_daily_digests(
     *,
     queue: NotificationQueue,
@@ -412,6 +365,7 @@ def drain_daily_digests(
     frequencies: Mapping[str, str] | None = None,
     job_date: date | datetime | None = None,
     inbox: DigestInbox | None = None,
+    resolve_source_urls: Callable[[list[str]], Mapping[str, str]] | None = None,
 ) -> DigestDrainResult:
     """Envía un digest por (usuario, periodo) cuando toca según la frecuencia.
 
@@ -420,6 +374,7 @@ def drain_daily_digests(
     Reejecutar tras un envío OK no reenvía: los ítems ya no están drainable.
     Tras fallo: ``failed`` reintentable o ``cancelled`` si agota el umbral.
     Si ``inbox`` está definido, materializa un aviso in-app (1 = 1 correo).
+    ``resolve_source_urls``: lookup puntual de URLs oficiales (``tender_sources``).
     """
     if list_pending is not None:
         pending_fn = list_pending
@@ -465,6 +420,10 @@ def drain_daily_digests(
             result.digests_failed += 1
             continue
 
+        source_urls: Mapping[str, str] = {}
+        if resolve_source_urls is not None:
+            source_urls = resolve_source_urls(_tender_ids_for_items(items))
+
         message = build_digest_message(
             to_email=to_email,
             digest=digest,
@@ -472,6 +431,7 @@ def drain_daily_digests(
             frequency=freq,
             display_name=directory.display_name_for(user_id, email=to_email),
             base_url=base,
+            source_urls=source_urls,
         )
         send_result = sender.send(message)
         now = datetime.now(timezone.utc)

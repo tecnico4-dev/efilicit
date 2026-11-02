@@ -380,6 +380,32 @@ def load_tender_candidates_for_sync_day(
     return collect_paginated_candidates(fetch_page, page_size=page_size)
 
 
+def load_tender_source_urls(
+    conn: psycopg.Connection,
+    tender_ids: list[str],
+) -> dict[str, str]:
+    """``tender_id`` → ``source_url`` (la más reciente con URL; trusted)."""
+    if not tender_ids:
+        return {}
+    ids = [UUID(t) for t in tender_ids]
+    with conn.cursor(row_factory=dict_row) as cur:
+        cur.execute(
+            """
+            select distinct on (ts.tender_id)
+              ts.tender_id::text as tender_id,
+              ts.source_url
+            from public.tender_sources ts
+            where ts.tender_id = any(%s)
+              and ts.source_url is not null
+              and trim(both from ts.source_url) <> ''
+            order by ts.tender_id, ts.last_seen_at desc nulls last
+            """,
+            (ids,),
+        )
+        rows = cur.fetchall()
+    return {row["tender_id"]: row["source_url"].strip() for row in rows}
+
+
 def load_user_emails(
     conn: psycopg.Connection,
     user_ids: list[str],
