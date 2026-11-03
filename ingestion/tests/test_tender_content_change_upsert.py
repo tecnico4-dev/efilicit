@@ -66,7 +66,7 @@ def test_inmemory_identical_reingest_skips_event_and_updated_counter() -> None:
     assert len(repo.events) == 1
     assert repo.events[0]["event_type"] == EVENT_TYPE_INGESTED
     assert repo.events[0]["event_status"] == "publicada"
-    assert repo.tender_sources[("placsp", "chg-1")].get("last_seen_at") is not None
+    assert ("placsp", "chg-1") in repo.tender_sources
 
 
 def test_inmemory_real_change_emits_updated_event() -> None:
@@ -98,7 +98,7 @@ def _db_available() -> bool:
 
 
 @pytest.mark.skipif(not _db_available(), reason="Local Supabase Postgres not reachable")
-def test_postgres_identical_reingest_keeps_updated_at_and_last_seen() -> None:
+def test_postgres_identical_reingest_keeps_updated_at() -> None:
     record = _record(source_record_id="pg-chg-1")
     source_tender_id = "pg-chg-1"
 
@@ -123,7 +123,7 @@ def test_postgres_identical_reingest_keeps_updated_at_and_last_seen() -> None:
         first = repo.upsert_records(source_code="placsp", records=[record])
         row1 = conn.execute(
             """
-            select t.updated_at, ts.last_seen_at
+            select t.updated_at
             from public.tenders t
             join public.tender_sources ts on ts.tender_id = t.id
             where ts.source_code = %s and ts.source_tender_id = %s
@@ -131,7 +131,7 @@ def test_postgres_identical_reingest_keeps_updated_at_and_last_seen() -> None:
             ("placsp", source_tender_id),
         ).fetchone()
         assert row1 is not None
-        updated_at_1, last_seen_1 = row1
+        updated_at_1 = row1[0]
 
         second = repo.upsert_records(source_code="placsp", records=[record])
         conn.commit()
@@ -141,7 +141,7 @@ def test_postgres_identical_reingest_keeps_updated_at_and_last_seen() -> None:
 
         row2 = conn.execute(
             """
-            select t.updated_at, ts.last_seen_at
+            select t.updated_at
             from public.tenders t
             join public.tender_sources ts on ts.tender_id = t.id
             where ts.source_code = %s and ts.source_tender_id = %s
@@ -149,9 +149,8 @@ def test_postgres_identical_reingest_keeps_updated_at_and_last_seen() -> None:
             ("placsp", source_tender_id),
         ).fetchone()
         assert row2 is not None
-        updated_at_2, last_seen_2 = row2
+        updated_at_2 = row2[0]
         assert updated_at_2 == updated_at_1
-        assert last_seen_2 >= last_seen_1
 
         events = conn.execute(
             """

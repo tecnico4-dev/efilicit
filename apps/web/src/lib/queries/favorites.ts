@@ -17,8 +17,6 @@ export type FavoriteWithTender = FavoriteRow & {
     cpv_codes: string[];
     publication_date: string | null;
     deadline_at: string | null;
-    /** max(`tender_sources.last_seen_at`): última vez que una fuente la vio. */
-    last_seen_at: string | null;
   } | null;
 };
 
@@ -86,32 +84,9 @@ export async function listOwnFavorites(
 
   if (error) return { data: [], error: new Error(error.message) };
 
-  const tenderIds = (data ?? [])
-    .map((row) => row.tender_id)
-    .filter(Boolean);
-
-  const lastSeenByTender = new Map<string, string>();
-  if (tenderIds.length > 0) {
-    const { data: seen, error: seenError } = await client.rpc(
-      "tender_max_last_seen",
-      { p_tender_ids: tenderIds },
-    );
-    if (seenError) {
-      return { data: [], error: new Error(seenError.message) };
-    }
-    for (const row of seen ?? []) {
-      if (row.tender_id && row.last_seen_at) {
-        lastSeenByTender.set(row.tender_id, row.last_seen_at);
-      }
-    }
-  }
-
   const rows = (data ?? []).map((row) => {
     const tender = row.tenders as
-      | (Omit<
-          NonNullable<FavoriteWithTender["tenders"]>,
-          "cpv_codes" | "last_seen_at"
-        > & {
+      | (Omit<NonNullable<FavoriteWithTender["tenders"]>, "cpv_codes"> & {
           tender_cpvs?: { cpv_code: string }[] | null;
         })
       | null;
@@ -124,7 +99,6 @@ export async function listOwnFavorites(
       tenders: {
         ...rest,
         cpv_codes: [...(tender_cpvs ?? []).map((r) => r.cpv_code)].sort(),
-        last_seen_at: lastSeenByTender.get(row.tender_id) ?? null,
       },
     } as FavoriteWithTender;
   });

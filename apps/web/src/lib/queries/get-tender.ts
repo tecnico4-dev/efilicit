@@ -10,13 +10,7 @@ type TenderSourceRow = Database["public"]["Tables"]["tender_sources"]["Row"];
 
 export type TenderSourceSummary = Pick<
   TenderSourceRow,
-  | "id"
-  | "source_code"
-  | "source_tender_id"
-  | "source_url"
-  | "last_seen_at"
-  | "review_status"
-  | "match_method"
+  "id" | "source_code" | "source_url" | "created_at"
 >;
 
 export type TenderDetail = TenderRow & {
@@ -75,11 +69,8 @@ export async function getTenderById(
       tender_sources!tender_sources_tender_id_fkey (
         id,
         source_code,
-        source_tender_id,
         source_url,
-        last_seen_at,
-        review_status,
-        match_method
+        created_at
       )
     `,
     )

@@ -246,7 +246,7 @@ def load_tender_candidates_sync_page(
     """Página de tenders cuyo touch cae en alguna ventana de sync (ADR 020).
 
     Criterio: ``coalesce(updated_at, created_at)`` ∈ [started_at, finished_at].
-    No usa ``last_seen_at`` (re-visita sin cambio de negocio no alerta).
+    No usa re-visitas de fuente sin cambio de negocio (ADR 024).
     """
     if not windows:
         return []
@@ -398,7 +398,7 @@ def load_tender_source_urls(
             where ts.tender_id = any(%s)
               and ts.source_url is not null
               and trim(both from ts.source_url) <> ''
-            order by ts.tender_id, ts.last_seen_at desc nulls last
+            order by ts.tender_id, ts.created_at desc
             """,
             (ids,),
         )

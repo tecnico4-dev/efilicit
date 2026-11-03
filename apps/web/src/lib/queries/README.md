@@ -40,12 +40,11 @@ Comprobación SQL directa: ver plan Semana 5 / checklist Paso 3.
 - `getTenderById(client, id)` → `tenders` + `contracting_authorities` + `tender_sources`
 - `listTenderStatusHistory(client, id)` → hitos de estado desde `tender_events` (compactados)
 - UI: `/tenders/[id]`; enlace desde resultados de `/search`; «Histórico registrado» junto al estado
-- Multi-fuente: lista de orígenes con badge “Canónica” si coincide `canonical_source_code`
+- Multi-fuente: lista de orígenes con badge “Canónica” si coincide `canonical_source_code`; fecha Creada/Actualizada + URL
 
 ## Favoritos (Semana 6 / Paso 5)
 
 - `addOwnFavorite` / `removeOwnFavorite` / `isOwnFavorite` / `listOwnFavorites`
-- `listOwnFavorites` incluye `last_seen_at` vía RPC `tender_max_last_seen` (sin embeber todas las sources)
 - Tabla `favorites` (RLS owner-only); UI: toggle en ficha (solo sesión) + `/favorites`
 - Prueba A≠B: `pnpm --filter @efilicit/web verify:rls:favorites`
 

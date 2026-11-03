@@ -11,9 +11,9 @@ ADR 015 — fuente ganadora: ``tenders`` es copia de una sola dueña
 (``canonical_source_code``). Ranking fijo PLACSP > CCAA; secundaria solo
 enlaza; promoción reemplaza la fila entera (sin mezcla campo a campo).
 
-Re-ingesta sin cambios de contenido: actualiza ``tender_sources.last_seen_at``
-(señal operativa “sigue viva”) pero **no** escribe ``tender_events`` ni mueve
-``tenders.updated_at``. ``stats.updated`` cuenta solo cambios reales.
+Re-ingesta sin cambios de contenido: **no** escribe ``tender_events`` ni mueve
+``tenders.updated_at`` (puede refrescar URL/artifact/match en ``tender_sources``).
+``stats.updated`` cuenta solo cambios reales. Sin heartbeat ``last_seen_at`` (ADR 024).
 
 ``tender_events.event_type`` = hecho de pipeline (``ingerida`` | ``actualizada``);
 ``event_status`` = snapshot del status de negocio en ese momento (mismo vocabulario
@@ -216,7 +216,6 @@ class InMemoryCanonicalRepository:
                 tender_id = existing["tender_id"]
                 existing["source_url"] = canonical.get("source_url")
                 existing["artifact_id"] = artifact_id
-                existing["last_seen_at"] = datetime.now().astimezone()
                 _apply_match_refresh_in_memory(existing, record.payload, self.tenders)
                 owner = self.tenders[tender_id].get("canonical_source_code")
                 if may_write_canonical_tender(source_code, owner):
@@ -402,7 +401,7 @@ class PostgresCanonicalRepository:
             left join public.contracting_authorities a
               on a.id = t.contracting_authority_id
             where {" AND ".join(clauses)}
-            order by t.id, ts.last_seen_at desc
+            order by t.id, ts.created_at desc
             limit %s
         """
         rows = self._conn.execute(sql, params).fetchall()
@@ -510,7 +509,7 @@ class PostgresCanonicalRepository:
                 stats.tender_ids.append(tender_id)
             else:
                 tender_id = str(existing[0])
-                # Siempre: last_seen_at (y metadata de fuente). Negocio solo si dueña/promoción.
+                # Metadata de fuente (URL/artifact/match). Negocio solo si dueña/promoción.
                 self._touch_tender_source(
                     source_code=source_code,
                     source_tender_id=source_tender_id,
@@ -874,14 +873,13 @@ class PostgresCanonicalRepository:
             tender_exists=self._tender_exists,
         )
         # Re-ingesta: actualizar pista pending / limpiar si ya no hay candidato.
-        # No tocamos review_status=auto ya fusionado (solo last_seen abajo).
+        # No tocamos review_status=auto ya fusionado.
         if link.review_status == REVIEW_PENDING:
             self._conn.execute(
                 """
                 update public.tender_sources set
                   source_url = coalesce(%s, source_url),
                   artifact_id = coalesce(%s::uuid, artifact_id),
-                  last_seen_at = now(),
                   review_status = %s,
                   match_method = %s,
                   match_score = %s,
@@ -911,7 +909,6 @@ class PostgresCanonicalRepository:
                 update public.tender_sources set
                   source_url = coalesce(%s, source_url),
                   artifact_id = coalesce(%s::uuid, artifact_id),
-                  last_seen_at = now(),
                   review_status = case
                     when review_status = 'pending' then 'unmatched'
                     else review_status
@@ -942,8 +939,7 @@ class PostgresCanonicalRepository:
             """
             update public.tender_sources set
               source_url = coalesce(%s, source_url),
-              artifact_id = coalesce(%s::uuid, artifact_id),
-              last_seen_at = now()
+              artifact_id = coalesce(%s::uuid, artifact_id)
             where source_code = %s and source_tender_id = %s
             """,
             (source_url, artifact_id, source_code, source_tender_id),

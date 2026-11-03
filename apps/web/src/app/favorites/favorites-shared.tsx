@@ -6,7 +6,6 @@ import {
   parseCriteria,
 } from "@/lib/criteria-display";
 import { formatCpvListPreview } from "@/lib/cpv";
-import { formatRelativeDayMadrid } from "@/lib/datetime";
 import type { DigestFrequency, FavoriteWithTender } from "@/lib/queries";
 import { formatTenderStatus } from "@/lib/tender-labels";
 import type { Database } from "@efilicit/types";
@@ -105,22 +104,12 @@ export function FavoriteTenderList({
         }
         return (
           <li key={fav.id} className="py-4">
-            <div className="flex items-baseline justify-between gap-3">
-              <Link
-                href={`/tenders/${tender.id}?from=${from}`}
-                className="min-w-0 text-base font-medium text-foreground hover:text-link hover:underline"
-              >
-                {tender.title}
-              </Link>
-              {tender.last_seen_at ? (
-                <p className="shrink-0 text-xs text-muted-foreground sm:text-sm">
-                  Datos actualizados:{" "}
-                  <span className="tabular-nums">
-                    {formatRelativeDayMadrid(tender.last_seen_at)}
-                  </span>
-                </p>
-              ) : null}
-            </div>
+            <Link
+              href={`/tenders/${tender.id}?from=${from}`}
+              className="text-base font-medium text-foreground hover:text-link hover:underline"
+            >
+              {tender.title}
+            </Link>
             <dl className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
               <div>
                 <dt className="inline text-muted-foreground">Importe: </dt>

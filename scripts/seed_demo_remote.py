@@ -638,10 +638,10 @@ def render_sql() -> str:
             dedent(
                 f"""\
                 insert into public.tender_sources (
-                  tender_id, source_code, source_tender_id, match_method, review_status, last_seen_at
+                  tender_id, source_code, source_tender_id, match_method, review_status
                 ) values (
                   {q(t.id)}, {q(t.source_code)}, {q(t.source_tender_id)},
-                  'auto', 'auto', now()
+                  'auto', 'auto'
                 );
                 """
             )
@@ -651,10 +651,10 @@ def render_sql() -> str:
                 dedent(
                     f"""\
                     insert into public.tender_sources (
-                      tender_id, source_code, source_tender_id, match_method, review_status, last_seen_at
+                      tender_id, source_code, source_tender_id, match_method, review_status
                     ) values (
                       {q(t.id)}, {q(extra_code)}, {q(extra_id)},
-                      'auto', 'auto', now()
+                      'auto', 'auto'
                     );
                     """
                 )

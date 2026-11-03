@@ -7,8 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Removed
+
+- Columna `tender_sources.last_seen_at` y RPC `tender_max_last_seen` — [ADR 024](docs/adr/024-drop-tender-sources-last-seen.md). Upsert ya no escribe heartbeat de re-visita.
+
 ### Changed
 
+- Ficha de licitación (fuentes): títulos legibles (`PlaCSP`, `PlaCSP (menores/agregadas)`, `Euskadi`, `Cataluña`); sin «Id en fuente» ni «Visto»; bajo el título/badge canónica solo «Creada» (alta) o «Actualizada» (cambio real en canónico) y la URL.
+- Favoritos: se quita «Datos actualizados» (`last_seen_at` / RPC `tender_max_last_seen`); ya no aporta frescura útil con ingesta incremental PLACSP.
 - Digest email: tarjeta ligera — título + «Ver en EfiLicit» + «Fuente oficial» (`source_url` de `tender_sources` al enviar; sin meta duplicada en el payload).
 - Digest email: sin pie «Eficen / Preferencias / correo automático»; el cuerpo termina en las tarjetas (y CTA al buzón si hay `EFILICIT_APP_URL`).
 - Favoritos: en escritorio, licitaciones favoritas y búsquedas guardadas en dos paneles 50/50 a la misma altura; en pantallas estrechas siguen apiladas.

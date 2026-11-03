@@ -20,6 +20,7 @@ import { formatDateMadrid, formatDateTimeMadrid } from "@/lib/datetime";
 import {
   formatContractType,
   formatProcedureType,
+  formatSourceCode,
   formatTenderStatus,
 } from "@/lib/tender-labels";
 import { StatusHistoryPopover } from "./status-history-popover";
@@ -160,12 +161,34 @@ function Field({
   );
 }
 
+/** Cambio real en canónico vs solo alta; si no hay update, fecha de enlace a la fuente. */
+function sourceFreshnessLabel(
+  sourceCreatedAt: string,
+  tenderCreatedAt: string,
+  tenderUpdatedAt: string,
+): { label: "Creada" | "Actualizada"; at: string } {
+  const createdMs = Date.parse(tenderCreatedAt);
+  const updatedMs = Date.parse(tenderUpdatedAt);
+  if (
+    Number.isFinite(createdMs) &&
+    Number.isFinite(updatedMs) &&
+    updatedMs > createdMs + 1000
+  ) {
+    return { label: "Actualizada", at: tenderUpdatedAt };
+  }
+  return { label: "Creada", at: sourceCreatedAt || tenderCreatedAt };
+}
+
 function SourcesList({
   sources,
   canonicalSourceCode,
+  tenderCreatedAt,
+  tenderUpdatedAt,
 }: {
   sources: TenderSourceSummary[];
   canonicalSourceCode: string;
+  tenderCreatedAt: string;
+  tenderUpdatedAt: string;
 }) {
   if (sources.length === 0) {
     return (
@@ -179,14 +202,19 @@ function SourcesList({
     <ul className="mt-3 space-y-3">
       {sources.map((source) => {
         const isCanonical = source.source_code === canonicalSourceCode;
+        const freshness = sourceFreshnessLabel(
+          source.created_at,
+          tenderCreatedAt,
+          tenderUpdatedAt,
+        );
         return (
           <li
             key={source.id}
             className="rounded-md border border-border bg-surface px-4 py-3 text-sm"
           >
             <div className="flex flex-wrap items-center gap-2">
-              <span className="font-mono font-medium text-foreground">
-                {source.source_code}
+              <span className="font-medium text-foreground">
+                {formatSourceCode(source.source_code)}
               </span>
               {isCanonical ? (
                 <span className="rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-xs font-semibold text-link">
@@ -196,31 +224,14 @@ function SourcesList({
             </div>
             <dl className="mt-2 space-y-1 text-muted-foreground">
               <div>
-                <dt className="inline">Id en fuente · </dt>
-                <dd className="inline font-mono text-foreground">
-                  {source.source_tender_id}
-                </dd>
-              </div>
-              <div>
-                <dt className="inline">Visto · </dt>
+                <dt className="inline">{freshness.label}: </dt>
                 <dd className="inline text-foreground">
-                  {formatDateMadrid(source.last_seen_at)}
+                  {formatDateMadrid(freshness.at)}
                 </dd>
               </div>
-              {source.match_method ? (
-                <div>
-                  <dt className="inline">Emparejado · </dt>
-                  <dd className="inline text-foreground">
-                    {source.match_method}
-                    {source.review_status
-                      ? ` · ${source.review_status}`
-                      : null}
-                  </dd>
-                </div>
-              ) : null}
               {source.source_url ? (
                 <div>
-                  <dt className="inline">URL · </dt>
+                  <dt className="inline">URL: </dt>
                   <dd className="inline">
                     <a
                       href={source.source_url}
@@ -449,6 +460,8 @@ export default async function TenderDetailPage({
         <SourcesList
           sources={tender.sources}
           canonicalSourceCode={tender.canonical_source_code}
+          tenderCreatedAt={tender.created_at}
+          tenderUpdatedAt={tender.updated_at}
         />
       </section>
     </main>

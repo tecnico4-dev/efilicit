@@ -91,13 +91,13 @@ begin
   delete from public.tender_sources where tender_id in (v_t1, v_t2, v_t3, v_t4, v_t5);
   insert into public.tender_sources (
     tender_id, source_code, source_tender_id, source_url,
-    match_method, review_status, last_seen_at
+    match_method, review_status
   ) values
-    (v_t1, 'demo_stars', 'DEMO-SOFT-001', 'https://example.invalid/demo/soft-001', 'auto', 'auto', now()),
-    (v_t2, 'demo_stars', 'DEMO-OFI-002', 'https://example.invalid/demo/ofi-002', 'auto', 'auto', now()),
-    (v_t3, 'demo_stars', 'DEMO-LIM-003', 'https://example.invalid/demo/lim-003', 'auto', 'auto', now()),
-    (v_t4, 'demo_stars', 'DEMO-WEB-004', 'https://example.invalid/demo/web-004', 'auto', 'auto', now()),
-    (v_t5, 'demo_stars', 'DEMO-CYB-005', 'https://example.invalid/demo/cyb-005', 'auto', 'auto', now());
+    (v_t1, 'demo_stars', 'DEMO-SOFT-001', 'https://example.invalid/demo/soft-001', 'auto', 'auto'),
+    (v_t2, 'demo_stars', 'DEMO-OFI-002', 'https://example.invalid/demo/ofi-002', 'auto', 'auto'),
+    (v_t3, 'demo_stars', 'DEMO-LIM-003', 'https://example.invalid/demo/lim-003', 'auto', 'auto'),
+    (v_t4, 'demo_stars', 'DEMO-WEB-004', 'https://example.invalid/demo/web-004', 'auto', 'auto'),
+    (v_t5, 'demo_stars', 'DEMO-CYB-005', 'https://example.invalid/demo/cyb-005', 'auto', 'auto');
 
   delete from public.tender_cpvs where tender_id in (v_t1, v_t2, v_t3, v_t4, v_t5);
   insert into public.tender_cpvs (tender_id, cpv_code) values

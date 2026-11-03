@@ -925,7 +925,6 @@ export type Database = {
           artifact_id: string | null
           created_at: string
           id: string
-          last_seen_at: string
           match_candidate_tender_id: string | null
           match_method: string | null
           match_score: number | null
@@ -940,7 +939,6 @@ export type Database = {
           artifact_id?: string | null
           created_at?: string
           id?: string
-          last_seen_at?: string
           match_candidate_tender_id?: string | null
           match_method?: string | null
           match_score?: number | null
@@ -955,7 +953,6 @@ export type Database = {
           artifact_id?: string | null
           created_at?: string
           id?: string
-          last_seen_at?: string
           match_candidate_tender_id?: string | null
           match_method?: string | null
           match_score?: number | null
@@ -1288,15 +1285,6 @@ export type Database = {
           tender_id: string
           title: string
           unread: boolean
-        }[]
-      }
-      tender_max_last_seen: {
-        Args: {
-          p_tender_ids: string[]
-        }
-        Returns: {
-          last_seen_at: string
-          tender_id: string
         }[]
       }
     }

@@ -118,6 +118,6 @@ Detalle por CCAA: [cobertura-ccaa.md](../sources/cobertura-ccaa.md). Checklist a
 - Upsert de organismos por `platform_id` / DIR3 sin NIF ([ADR 014](../adr/014-upsert-organismos-por-platform-id.md)).
 - Fuente ganadora canónica (`canonical_source_code` + ranking fijo; sin mezcla de campos) ([ADR 015](../adr/015-fuente-ganadora-canonica.md)).
 - Matching: si ambas fuentes traen expediente y difiere → nunca `auto` (como mucho `pending`); NIF + señales blandas sigue válido si falta expediente en un lado.
-- Re-ingesta: `tender_events` / `tenders.updated_at` solo si cambian campos canónicos; `tender_sources.last_seen_at` marca que la fuente la ha vuelto a ver.
+- Re-ingesta: `tender_events` / `tenders.updated_at` solo si cambian campos canónicos (sin `last_seen_at`; [ADR 024](../adr/024-drop-tender-sources-last-seen.md)).
 - Bitácora `source_sync` `failed` persistida tras rollback del upsert (refuerzo [ADR 003](../adr/003-acceso-canonico-publico-etl-privado.md)).
 - Paginación de resultados en `/search` (20 por página, `?page=`; Anterior / Siguiente).

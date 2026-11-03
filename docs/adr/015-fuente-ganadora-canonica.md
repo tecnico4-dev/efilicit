@@ -33,7 +33,7 @@ Alternativa “COALESCE campo a campo” (rellenar huecos) también mezclaría p
    | 1000 | cualquier otro (desconocido) |
 
 3. **Creación:** la fuente que crea el tender es la dueña.
-4. **Auto / re-ingesta de secundaria con menor prioridad:** solo `tender_sources` (+ `last_seen_at`); **no** `_update_tender`.
+4. **Auto / re-ingesta de secundaria con menor prioridad:** solo `tender_sources` (URL/artifact/match; sin heartbeat — [ADR 024](024-drop-tender-sources-last-seen.md)); **no** `_update_tender`.
 5. **Promoción:** si llega (o re-ingesta) una fuente con **mayor** prioridad que la dueña actual → sustituir **entera** la fila `tenders` con los datos de la nueva dueña y actualizar `canonical_source_code` (sin mezcla campo a campo).
 6. **Re-ingesta de la dueña:** sí actualiza `tenders` si cambian campos de negocio (comportamiento previo de contenido).
 
