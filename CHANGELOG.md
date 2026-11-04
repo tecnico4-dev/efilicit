@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Mis licitaciones: etapa histórica `subcontrata` (participación sin ser adjudicatario).
+- Script local `scripts/seed_import_eficen_local.py`: histórico Eficen → `import_eficen` + `bid_cases` (Excel/ADJ del Escritorio; sin versionar datos).
+
 ### Removed
 
 - Columna `tender_sources.last_seen_at` y RPC `tender_max_last_seen` — [ADR 024](docs/adr/024-drop-tender-sources-last-seen.md). Upsert ya no escribe heartbeat de re-visita.

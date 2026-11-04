@@ -24,7 +24,7 @@ No es un favorito privado: es un **tablero operativo compartido** entre cuentas 
    - `bid_case_updates` — novedades / hitos de texto.
    - `bid_documents` — biblioteca de documentos (URL externa en MVP; tags para reutilizar).
    - `bid_case_documents` — vínculo N:M caso ↔ documento.
-2. Etapas (`stage`): `interes` | `preparacion` | `presentada` | `adjudicada` | `no_adjudicada` | `descartada`. Activas = las tres primeras; histórico = las tres últimas (agrupable por año de `presented_on` / `outcome_on`).
+2. Etapas (`stage`): `interes` | `preparacion` | `presentada` | `adjudicada` | `no_adjudicada` | `descartada` | `subcontrata`. Activas = las tres primeras; histórico = las demás (agrupable por año de `presented_on` / `outcome_on`). `subcontrata` = participación en un expediente sin ser adjudicatario (p. ej. asistencia al ganador).
 3. **Compartido entre usuarios de la app** (invite-only): cualquier fila de `public.users` con sesión puede leer/escribir el pipeline. No es owner-only como favoritos/alertas.
 4. UI: ruta `/my-tenders` (+ detalle `/my-tenders/[id]`); entrada en cabecera a la **izquierda del buzón**. Desde la ficha de licitación: «Añadir a Mis licitaciones».
 5. Documentos MVP = título + URL + tags (sin bucket Storage todavía). Un documento de la biblioteca se puede enlazar a varios casos.

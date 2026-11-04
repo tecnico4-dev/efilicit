@@ -8,6 +8,7 @@ const TONE: Record<string, string> = {
   adjudicada: "border-emerald-300/60 bg-emerald-50 text-emerald-900",
   no_adjudicada: "border-border bg-muted text-muted-foreground",
   descartada: "border-border bg-muted text-muted-foreground",
+  subcontrata: "border-violet-300/60 bg-violet-50 text-violet-950",
 };
 
 function stageLabel(stage: string): string {

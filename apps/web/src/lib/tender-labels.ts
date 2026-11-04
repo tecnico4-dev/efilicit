@@ -96,6 +96,7 @@ const SOURCE_CODE_LABELS: Record<string, string> = {
   placsp_agregadas: "PlaCSP (agregadas)",
   euskadi: "Euskadi",
   catalunya: "Cataluña",
+  import_eficen: "Import Eficen",
 };
 
 /** Código de fuente (`source_code`) para mostrar al usuario. */

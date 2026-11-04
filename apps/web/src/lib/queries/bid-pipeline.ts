@@ -12,6 +12,7 @@ export const BID_STAGES = [
   "adjudicada",
   "no_adjudicada",
   "descartada",
+  "subcontrata",
 ] as const;
 
 export type BidStage = (typeof BID_STAGES)[number];
@@ -26,6 +27,7 @@ export const HISTORIC_BID_STAGES = [
   "adjudicada",
   "no_adjudicada",
   "descartada",
+  "subcontrata",
 ] as const satisfies readonly BidStage[];
 
 export const BID_STAGE_LABELS: Record<BidStage, string> = {
@@ -35,6 +37,7 @@ export const BID_STAGE_LABELS: Record<BidStage, string> = {
   adjudicada: "Adjudicada",
   no_adjudicada: "No adjudicada",
   descartada: "Descartada",
+  subcontrata: "Subcontrata",
 };
 
 export const DEFAULT_CHECKLIST_TITLES = [
