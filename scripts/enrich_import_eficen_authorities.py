@@ -4,6 +4,7 @@
 Organismos tomados de fichas PLACE/Navarra (scrape Mis Licitaciones).
 No toca title/description/estimated_value. Murillo II se deja como está.
 Marca Gemelo Digital como stage=subcontrata.
+Normaliza source_url PLACE !ut/p → deeplink idEvl (Navarra se deja).
 
 Uso::
 
@@ -20,6 +21,22 @@ import psycopg
 
 DB = "postgresql://postgres:postgres@127.0.0.1:54322/postgres"
 SOURCE = "import_eficen"
+DEEPLINK_BASE = (
+    "https://contrataciondelestado.es/wps/poc"
+    "?uri=deeplink:detalle_licitacion&idEvl="
+)
+
+# estimated_value → idEvl (solo filas que venían como !ut/p en el Excel)
+DEEPLINK_BY_VALUE: dict[str, str] = {
+    "13340.00": "BEVXDkVYR8WcCF8sV%2BqtYA%3D%3D",  # Ezcaray
+    "25439.00": "ogJyFL0ZB8CKeVWTb9Scog%3D%3D",  # Murillo TICs
+    "43707.00": "EjNgr5fnT7qExvMJXBMHHQ%3D%3D",  # Palma
+    "52219.00": "TFaMmHdJjrdLAIVZdUs8KA%3D%3D",  # Borja
+    "58450.00": "k2zCrEKTtNJrSd8H4b2soA%3D%3D",  # Ciempozuelos
+    "82467.00": "WG0Yp6nrnDGP%2Bo96UAV7cQ%3D%3D",  # Barakaldo
+    "190400.00": "opKNmewE8Dpq1DdmE7eaXg%3D%3D",  # Mairena
+    "216240.00": "6BIMMNqFEtI4NavIWzMcHA%3D%3D",  # Alberite
+}
 
 # Match por estimated_value Excel (clave estable en este seed) → (name, platform_id|None, confidence)
 BY_VALUE: dict[str, tuple[str, str | None, str]] = {
@@ -230,6 +247,30 @@ def main() -> int:
             (SOURCE, "%Gemelo Digital%"),
         ).rowcount
         print(f"Gemelo -> subcontrata: {n} fila(s)")
+
+        url_n = 0
+        for tid, title, value in rows:
+            idevl = DEEPLINK_BY_VALUE.get(value or "")
+            if not idevl:
+                continue
+            url = DEEPLINK_BASE + idevl
+            r = conn.execute(
+                """
+                update public.tender_sources
+                set source_url = %s
+                where tender_id = %s::uuid
+                  and source_code = %s
+                  and (
+                    position('!ut/p' in coalesce(source_url, '')) > 0
+                    or coalesce(source_url, '') <> %s
+                  )
+                """,
+                (url, tid, SOURCE, url),
+            )
+            if r.rowcount:
+                url_n += r.rowcount
+                print(f"URL deeplink | {title[:40]}")
+        print(f"URLs normalizadas a deeplink: {url_n}")
 
         conn.commit()
         print(f"=== linked authorities: {linked}/{len(rows)} ===")
