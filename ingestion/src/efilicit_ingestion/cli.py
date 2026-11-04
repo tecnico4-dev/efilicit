@@ -293,11 +293,19 @@ def _cmd_run_placsp(args: argparse.Namespace) -> int:
     try:
         result = run_placsp(config)
     except Exception as exc:  # noqa: BLE001 — superficie al CLI
-        print(f"error: {exc}", file=sys.stderr)
+        _print_cli_error(exc)
         return 1
 
     print(format_result(result))
     return 0 if result.sync.status == "success" else 1
+
+
+def _print_cli_error(exc: BaseException) -> None:
+    """Imprime el error y la causa encadenada (si la hay) para logs de Actions."""
+    print(f"error: {exc}", file=sys.stderr)
+    cause = exc.__cause__
+    if cause is not None and cause is not exc:
+        print(f"cause: {cause}", file=sys.stderr)
 
 
 def _cmd_run_catalunya(args: argparse.Namespace) -> int:
@@ -327,7 +335,7 @@ def _cmd_run_catalunya(args: argparse.Namespace) -> int:
     try:
         result = run_catalunya(config)
     except Exception as exc:  # noqa: BLE001 — superficie al CLI
-        print(f"error: {exc}", file=sys.stderr)
+        _print_cli_error(exc)
         return 1
 
     print(format_result(result))
@@ -360,7 +368,7 @@ def _cmd_run_euskadi(args: argparse.Namespace) -> int:
     try:
         result = run_euskadi(config)
     except Exception as exc:  # noqa: BLE001 — superficie al CLI
-        print(f"error: {exc}", file=sys.stderr)
+        _print_cli_error(exc)
         return 1
 
     print(format_result(result))
@@ -409,7 +417,7 @@ def _cmd_run_alerts(args: argparse.Namespace) -> int:
     try:
         result = run_alerts(config)
     except Exception as exc:  # noqa: BLE001 — superficie al CLI
-        print(f"error: {exc}", file=sys.stderr)
+        _print_cli_error(exc)
         return 1
 
     print(format_alerts_result(result))

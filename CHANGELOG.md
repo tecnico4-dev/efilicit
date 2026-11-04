@@ -40,6 +40,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Ingesta: si Postgres aborta la transacción a mitad, ya no se enmascara el error real con `current transaction is aborted` al llamar `finish_run`; el `source_sync` `failed` se sigue persistiendo tras rollback (ADR 003). `public.errors` sigue sin cablear.
 - Alertas «Licitaciones relacionadas»: misma carga por trozos de 100 ids (evita Bad Request con colas grandes).
 - Buzón: abrir un digest con muchas licitaciones (p. ej. 900+) ya no falla con Bad Request — carga de `tenders` por trozos de 100 ids.
 - Alertas: `CpvPicker` ya no exige `SearchFeedbackProvider` (crash al abrir `/alerts` tras CriteriaFilters compartido).

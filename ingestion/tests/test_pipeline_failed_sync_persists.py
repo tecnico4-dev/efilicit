@@ -72,6 +72,38 @@ def test_pipeline_run_error_keeps_failed_status_in_memory() -> None:
     assert "parse exploded" in run.error_message
 
 
+class _AbortingFinishSyncRepo(InMemorySyncRepository):
+    """Simula finish_run sobre transacción Postgres ya abortada."""
+
+    def finish_run(self, run, *, status, error_message=None):  # noqa: ANN001
+        if status == "failed":
+            raise RuntimeError(
+                "current transaction is aborted, commands ignored until end of transaction block"
+            )
+        return super().finish_run(run, status=status, error_message=error_message)
+
+
+def test_aborted_finish_run_still_raises_original_cause() -> None:
+    """No enmascarar el fallo real si finish_run peta (InFailedSqlTransaction)."""
+    connector = _BoomAfterFetchConnector()
+    sync_repo = _AbortingFinishSyncRepo()
+    with pytest.raises(PipelineRunError) as caught:
+        run_pipeline(
+            connector,
+            SyncContext(source_code=SOURCE_CODE, run_id="mem-fail-aborted"),
+            artifact_store=InMemoryArtifactStore(),
+            sync_repo=sync_repo,
+        )
+    assert "parse exploded" in str(caught.value)
+    assert "transaction is aborted" not in str(caught.value)
+    assert isinstance(caught.value.cause, RuntimeError)
+    assert "parse exploded" in str(caught.value.cause)
+    sync = caught.value.sync
+    assert sync.status == "failed"
+    assert sync.error_message is not None and "parse exploded" in sync.error_message
+    assert sync.records_failed >= 1
+
+
 @pytest.mark.skipif(not _db_available(), reason="Local Supabase Postgres not reachable")
 def test_failed_run_persists_after_transaction_rollback() -> None:
     run_id = f"fail-{uuid.uuid4()}"

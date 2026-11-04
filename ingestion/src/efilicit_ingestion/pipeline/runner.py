@@ -10,12 +10,14 @@ parse para no perder evidencia si el parser falla.
 
 from __future__ import annotations
 
+import sys
+
 from efilicit_ingestion.connectors.protocol import SourceConnector
 from efilicit_ingestion.models import SyncContext
 from efilicit_ingestion.pipeline import stages
 from efilicit_ingestion.pipeline.canonical_repo import CanonicalRepository
 from efilicit_ingestion.pipeline.ports import ArtifactStore, SyncRepository
-from efilicit_ingestion.pipeline.types import PipelineResult, SyncRun
+from efilicit_ingestion.pipeline.types import PipelineResult, SyncRun, utc_now
 
 
 class PipelineRunError(Exception):
@@ -29,6 +31,35 @@ class PipelineRunError(Exception):
         self.sync = sync
         self.cause = cause
         super().__init__(str(cause))
+
+
+def mark_run_failed(
+    sync_repo: SyncRepository,
+    run: SyncRun,
+    exc: BaseException,
+) -> None:
+    """Cierra el run como ``failed`` sin perder la causa original.
+
+    Si la conexión Postgres ya está abortada, ``finish_run`` puede lanzar
+    ``InFailedSqlTransaction`` y enmascarar el error real en logs/CLI. En ese
+    caso dejamos el ``SyncRun`` listo en memoria para ``persist_failed_sync_run``
+    tras el rollback (ADR 003). No escribe en ``public.errors``.
+    """
+    run.records_failed = max(run.records_failed, 0) + 1
+    message = str(exc)
+    print(f"pipeline failed: {message}", file=sys.stderr)
+    try:
+        sync_repo.finish_run(run, status="failed", error_message=message)
+    except Exception as finish_exc:  # noqa: BLE001 — no ocultar ``exc``
+        print(
+            f"pipeline note: finish_run skipped ({finish_exc}); "
+            "will persist source_sync failed after rollback",
+            file=sys.stderr,
+        )
+        run.status = "failed"
+        run.error_message = message
+        if run.finished_at is None:
+            run.finished_at = utc_now()
 
 
 def run_pipeline(
@@ -97,8 +128,7 @@ def run_pipeline(
     except PipelineRunError:
         raise
     except Exception as exc:  # noqa: BLE001 — clasificación más rica en semanas posteriores
-        run.records_failed += 1
-        sync_repo.finish_run(run, status="failed", error_message=str(exc))
+        mark_run_failed(sync_repo, run, exc)
         raise PipelineRunError(run, exc) from exc
 
     return PipelineResult(

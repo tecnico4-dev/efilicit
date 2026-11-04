@@ -16,7 +16,7 @@ from efilicit_ingestion.models import RemoteArtifact, SourceRecord, SyncContext
 from efilicit_ingestion.pipeline import stages
 from efilicit_ingestion.pipeline.canonical_repo import CanonicalRepository
 from efilicit_ingestion.pipeline.ports import ArtifactStore, SyncRepository
-from efilicit_ingestion.pipeline.runner import PipelineRunError
+from efilicit_ingestion.pipeline.runner import PipelineRunError, mark_run_failed
 from efilicit_ingestion.pipeline.types import PipelineResult, StoredArtifact
 
 
@@ -132,8 +132,7 @@ def run_pipeline_placsp_incremental(
     except PipelineRunError:
         raise
     except Exception as exc:  # noqa: BLE001
-        run.records_failed += 1
-        sync_repo.finish_run(run, status="failed", error_message=str(exc))
+        mark_run_failed(sync_repo, run, exc)
         raise PipelineRunError(run, exc) from exc
 
     return PipelineResult(
