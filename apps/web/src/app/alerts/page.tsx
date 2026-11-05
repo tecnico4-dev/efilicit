@@ -6,15 +6,12 @@ import { AlertsBodyFallback } from "./alerts-body-fallback";
 export const dynamic = "force-dynamic";
 
 /**
- * Título al instante; formulario + lista detrás de Suspense (perfil + query).
+ * Alertas: título + Crear alerta; bajo la raya, Mis alertas.
+ * El cuerpo (perfil + lista + modal) va en Suspense.
  */
 export default function AlertsPage() {
   return (
     <main className={PAGE_MAIN_CLASS}>
-      <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-        Alertas
-      </h1>
-
       <Suspense fallback={<AlertsBodyFallback />}>
         <AlertsBody />
       </Suspense>

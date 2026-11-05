@@ -5,9 +5,6 @@ import { AlertsBodyFallback } from "./alerts-body-fallback";
 export default function AlertsLoading() {
   return (
     <main className={PAGE_MAIN_CLASS}>
-      <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-        Alertas
-      </h1>
       <AlertsBodyFallback />
     </main>
   );

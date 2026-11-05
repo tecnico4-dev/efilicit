@@ -1,5 +1,8 @@
 import { EmptyState, ErrorState } from "@/components/ui/state-message";
 import {
+  PAGE_TITLE_RULE,
+} from "@/components/shell/page-width";
+import {
   getSessionProfile,
   getSupabaseServerClient,
 } from "@/lib/auth/session";
@@ -16,8 +19,8 @@ import { AlertsPanel } from "./alerts-panel";
 import { DigestFrequencyControl } from "./digest-frequency-control";
 
 /**
- * Perfil + lista de alertas. Pensado para `<Suspense>`: el `<h1>` de la
- * página pinta antes de este bloque.
+ * Cabecera (título + Crear alerta) + Mis alertas.
+ * Pensado para `<Suspense>`: el loading/fallback muestra el marco.
  */
 export async function AlertsBody() {
   let supabase;
@@ -79,38 +82,51 @@ export async function AlertsBody() {
 
   return (
     <>
-      <AlertsPanel
-        userId={profileResult.data.id}
-        digestFrequency={digestFrequency}
-        filterOptions={filterOptions}
-      />
-
-      <section className="mt-10">
-        <h2 className="text-base font-medium text-foreground">Mis alertas</h2>
-        <DigestFrequencyControl
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+          Alertas
+        </h1>
+        <AlertsPanel
           userId={profileResult.data.id}
-          initialFrequency={digestFrequency}
+          digestFrequency={digestFrequency}
+          filterOptions={filterOptions}
         />
-        {alertsResult.error ? (
-          <ErrorState className="mt-2">{alertsResult.error.message}</ErrorState>
-        ) : alertsResult.data.length === 0 ? (
-          <EmptyState className="mt-2">
-            Aún no tienes alertas. Crea una arriba.
-          </EmptyState>
-        ) : (
-          <ul className="mt-3 divide-y divide-border border-t border-border">
-            {alertsResult.data.map((a) => (
-              <AlertRowItem
-                key={a.id}
-                alert={a}
-                filterOptions={filterOptions}
-                hasRelatedTenders={alertIdsWithQueue.has(a.id)}
-                municipalityNames={municipalityNames}
-              />
-            ))}
-          </ul>
-        )}
-      </section>
+      </div>
+
+      <div className={PAGE_TITLE_RULE}>
+        <section>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 className="text-base font-medium text-foreground">
+              Mis alertas
+            </h2>
+            <DigestFrequencyControl
+              userId={profileResult.data.id}
+              initialFrequency={digestFrequency}
+            />
+          </div>
+          {alertsResult.error ? (
+            <ErrorState className="mt-3">
+              {alertsResult.error.message}
+            </ErrorState>
+          ) : alertsResult.data.length === 0 ? (
+            <EmptyState className="mt-3">
+              Aún no tienes alertas. Usa «Crear alerta» para añadir una.
+            </EmptyState>
+          ) : (
+            <ul className="mt-3 divide-y divide-border border-t border-border">
+              {alertsResult.data.map((a) => (
+                <AlertRowItem
+                  key={a.id}
+                  alert={a}
+                  filterOptions={filterOptions}
+                  hasRelatedTenders={alertIdsWithQueue.has(a.id)}
+                  municipalityNames={municipalityNames}
+                />
+              ))}
+            </ul>
+          )}
+        </section>
+      </div>
     </>
   );
 }
