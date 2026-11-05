@@ -9,11 +9,9 @@ import {
   type SearchSortDir,
 } from "./search-sort";
 
-const boxClass =
-  "inline-flex min-w-14 items-center justify-center rounded-md border border-border bg-background px-2 py-1 text-sm text-foreground";
-
 /**
- * «Ordenar por» + flecha asc/desc (menú hacia arriba, estilo pager).
+ * «Ordenar por» + flecha asc/desc: un solo rectángulo visual, dos zonas.
+ * Menú del campo hacia arriba.
  */
 export function SearchSortControl({
   sortBy,
@@ -47,17 +45,17 @@ export function SearchSortControl({
   return (
     <div className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-1 text-sm text-muted-foreground">
       <span>Ordenar por:</span>
-      <div className="relative" ref={menuRef}>
+      <div
+        className="relative inline-flex h-8 overflow-hidden rounded-md border border-border bg-background"
+        ref={menuRef}
+      >
         <button
           type="button"
           aria-label="Campo de ordenación"
           aria-expanded={open}
           aria-haspopup="listbox"
           onClick={() => setOpen((o) => !o)}
-          className={cn(
-            boxClass,
-            "min-w-36 max-w-[14rem] gap-1 hover:bg-muted focus:outline-none focus:ring-2 focus:ring-ring",
-          )}
+          className="inline-flex min-w-36 max-w-[14rem] items-center gap-1 px-2 text-sm hover:bg-muted focus:outline-none focus:ring-2 focus:ring-inset focus:ring-ring"
         >
           <span className="truncate font-medium text-foreground">
             {searchSortLabel(sortBy)}
@@ -66,10 +64,19 @@ export function SearchSortControl({
             ▴
           </span>
         </button>
+        <button
+          type="button"
+          aria-label={dirLabel}
+          title={dirLabel}
+          onClick={onSortDirToggle}
+          className="inline-flex w-6 shrink-0 items-center justify-center border-l border-border text-sm leading-none text-foreground hover:bg-muted focus:outline-none focus:ring-2 focus:ring-inset focus:ring-ring"
+        >
+          <span aria-hidden>{arrow}</span>
+        </button>
         {open ? (
           <ul
             role="listbox"
-            className="absolute bottom-full right-0 z-20 mb-1 max-h-64 min-w-full overflow-y-auto rounded-md border border-border bg-surface py-1 shadow-lg"
+            className="absolute bottom-full left-0 z-20 mb-1 max-h-64 min-w-full overflow-y-auto rounded-md border border-border bg-surface py-1 shadow-lg"
           >
             {SEARCH_SORT_OPTIONS.map((opt) => (
               <li
@@ -95,15 +102,6 @@ export function SearchSortControl({
           </ul>
         ) : null}
       </div>
-      <button
-        type="button"
-        aria-label={dirLabel}
-        title={dirLabel}
-        onClick={onSortDirToggle}
-        className="inline-flex h-8 w-6 shrink-0 items-center justify-center rounded-md border border-border bg-background px-0 text-sm leading-none text-foreground hover:bg-muted focus:outline-none focus:ring-2 focus:ring-ring"
-      >
-        <span aria-hidden>{arrow}</span>
-      </button>
     </div>
   );
 }
