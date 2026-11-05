@@ -207,7 +207,7 @@ export function AlertsPanel({
                 role="dialog"
                 aria-modal="true"
                 aria-labelledby={titleId}
-                className="flex max-h-[min(92vh,44rem)] w-full max-w-2xl flex-col overflow-hidden rounded-xl border border-border bg-surface shadow-xl"
+                className="flex max-h-[min(92vh,48rem)] w-full max-w-4xl flex-col overflow-hidden rounded-xl border border-border bg-surface shadow-xl"
                 onClick={(e) => e.stopPropagation()}
               >
                 <div className="flex items-start justify-between gap-3 border-b border-border px-4 py-3 sm:px-5">
@@ -220,7 +220,7 @@ export function AlertsPanel({
                   <button
                     type="button"
                     onClick={closeModal}
-                    className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                    className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-destructive text-destructive transition-colors hover:bg-destructive/10 hover:text-destructive"
                     aria-label="Cerrar"
                   >
                     <span aria-hidden className="text-xl leading-none">
@@ -265,7 +265,7 @@ export function AlertsPanel({
                   </form>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-2 border-t border-border px-4 py-3 sm:px-5">
+                <div className="flex flex-wrap items-center justify-end gap-2 border-t border-border px-4 py-3 sm:px-5">
                   <Button
                     type="button"
                     disabled={pending}
@@ -283,9 +283,10 @@ export function AlertsPanel({
                   </Button>
                   <Button
                     type="button"
-                    variant="ghost"
+                    variant="outline"
                     disabled={pending}
                     onClick={closeModal}
+                    className="border-destructive text-destructive hover:bg-destructive/10 hover:text-destructive"
                   >
                     Cancelar
                   </Button>
