@@ -100,10 +100,7 @@ export function SearchSortControl({
         aria-label={dirLabel}
         title={dirLabel}
         onClick={onSortDirToggle}
-        className={cn(
-          boxClass,
-          "min-w-0 w-7 px-0 text-base leading-none hover:bg-muted focus:outline-none focus:ring-2 focus:ring-ring",
-        )}
+        className="inline-flex h-8 w-6 shrink-0 items-center justify-center rounded-md border border-border bg-background px-0 text-sm leading-none text-foreground hover:bg-muted focus:outline-none focus:ring-2 focus:ring-ring"
       >
         <span aria-hidden>{arrow}</span>
       </button>
