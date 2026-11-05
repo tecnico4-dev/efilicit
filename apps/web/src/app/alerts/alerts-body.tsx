@@ -14,9 +14,9 @@ import {
 } from "@/lib/queries";
 import { parseCriteria } from "@/lib/criteria-display";
 import type { CriteriaFilterOptionsProp } from "@/components/criteria/criteria-filters";
-import { AlertRowItem } from "./alert-row";
 import { AlertsPanel } from "./alerts-panel";
 import { DigestFrequencyControl } from "./digest-frequency-control";
+import { PaginatedAlertsList } from "./paginated-alerts-list";
 
 /**
  * Cabecera (título + Crear alerta) + Mis alertas.
@@ -113,17 +113,12 @@ export async function AlertsBody() {
               Aún no tienes alertas. Usa «Crear alerta» para añadir una.
             </EmptyState>
           ) : (
-            <ul className="mt-3 divide-y divide-border border-t border-border">
-              {alertsResult.data.map((a) => (
-                <AlertRowItem
-                  key={a.id}
-                  alert={a}
-                  filterOptions={filterOptions}
-                  hasRelatedTenders={alertIdsWithQueue.has(a.id)}
-                  municipalityNames={municipalityNames}
-                />
-              ))}
-            </ul>
+            <PaginatedAlertsList
+              alerts={alertsResult.data}
+              filterOptions={filterOptions}
+              alertIdsWithQueue={[...alertIdsWithQueue]}
+              municipalityNames={municipalityNames}
+            />
           )}
         </section>
       </div>

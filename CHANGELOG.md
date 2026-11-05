@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Alertas: título + botón «Crear alerta» (modal con criterios; Crear / Guardar como búsqueda / Cancelar / ×); bajo la raya, Mis alertas con frecuencia a la derecha y el listado.
+- Alertas: paginación de Mis alertas (10/50/100, mismo pager que favoritos; controles solo si hay más de 10).
 - Ficha de licitación (fuentes): títulos legibles (`PlaCSP`, `PlaCSP (menores/agregadas)`, `Euskadi`, `Cataluña`); sin «Id en fuente» ni «Visto»; bajo el título/badge canónica solo «Creada» (alta) o «Actualizada» (cambio real en canónico) y la URL.
 - Favoritos: se quita «Datos actualizados» (`last_seen_at` / RPC `tender_max_last_seen`); ya no aporta frescura útil con ingesta incremental PLACSP.
 - Digest email: tarjeta ligera — título + «Ver en EfiLicit» + «Fuente oficial» (`source_url` de `tender_sources` al enviar; sin meta duplicada en el payload).
