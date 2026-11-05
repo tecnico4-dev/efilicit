@@ -83,11 +83,11 @@ export function PaginatedAlertsList({
     >
       <div
         key={`${page}-${pageSize}`}
-        className="min-h-0 flex-1 overflow-y-auto"
+        className="min-h-0 flex-1 overflow-y-auto px-4 sm:px-5"
       >
         {list}
       </div>
-      <div className="shrink-0 border-t border-border bg-background px-4 py-3">
+      <div className="shrink-0 border-t border-border bg-background px-4 py-3 sm:px-5">
         <ListPager
           page={page}
           totalPages={totalPages}
