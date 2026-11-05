@@ -1,9 +1,7 @@
-"""Ejecuta la ingesta Catalunya (Socrata) de punta a punta (Semana 3 Paso 8.4).
+"""Ejecuta la ingesta Catalunya (Socrata) de punta a punta (Semana 3 Paso 8).
 
-Monta el ``SocrataConnector`` + pipeline común (RAW → canónico). Sirve para:
-
-- dry-run / fixture local (sin red SODA ni writes);
-- corrida real contra Postgres + Storage (secrets).
+Monta el ``SocrataConnector`` + pipeline incremental por fila (ADR 025).
+Sirve para dry-run / fixture local y corrida real contra Postgres + Storage.
 
 El CLI ``run-catalunya`` y el workflow Actions delegan aquí.
 """
@@ -17,9 +15,11 @@ from pathlib import Path
 from efilicit_ingestion.connectors.socrata import CATALUNYA, SocrataConnector, SocrataDataset
 from efilicit_ingestion.models import SyncContext
 from efilicit_ingestion.pipeline.canonical_repo import InMemoryCanonicalRepository
-from efilicit_ingestion.pipeline.db_run import run_pipeline_postgres
+from efilicit_ingestion.pipeline.catalunya_incremental import (
+    run_pipeline_catalunya_incremental,
+    run_pipeline_catalunya_incremental_postgres,
+)
 from efilicit_ingestion.pipeline.ports import InMemoryArtifactStore, InMemorySyncRepository
-from efilicit_ingestion.pipeline.runner import run_pipeline
 from efilicit_ingestion.pipeline.supabase_storage import (
     SupabaseStorageArtifactStore,
     default_service_role_key,
@@ -36,18 +36,19 @@ __all__ = [
 ]
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class CatalunyaRunConfig:
     """Opciones de una corrida local / documentada del pipeline Catalunya.
 
-    ``page_size`` / ``max_pages`` / ``start_offset`` acotan el discover SODA
-    (en live empezar con 1 página). ``dry_run`` evita Postgres y Storage.
+    ``since_days`` acota el ``$where`` (ADR 025; ``0`` / ``None`` = sin filtro).
+    ``page_size`` / ``max_pages`` / ``start_offset`` paginan dentro de esa ventana.
     """
 
     fixture_path: Path | None = None
     page_size: int = 1000
     max_pages: int = 1
     start_offset: int = 0
+    since_days: int | None = 7
     dry_run: bool = False
     run_id: str | None = None
     use_storage: bool = True
@@ -65,11 +66,11 @@ def load_fixture_bytes(path: Path) -> bytes:
 
 
 def run_catalunya(config: CatalunyaRunConfig) -> PipelineResult:
-    """Ejecuta discover→…→upsert para páginas SODA de Catalunya.
+    """Ejecuta discover→expand filas→upsert (solo checksums nuevos).
 
     - ``fixture_path``: inventa un ``fetch_transport`` que siempre devuelve
       ese JSON (E2E offline; el discover sigue generando keys/URLs).
-    - sin fixture: discover/fetch live de ``max_pages`` desde ``start_offset``.
+    - sin fixture: discover/fetch live de la ventana ``since_days``.
     - ``dry_run``: sync/canónico/storage en memoria (sin writes).
     """
     dataset = config.dataset
@@ -90,12 +91,13 @@ def run_catalunya(config: CatalunyaRunConfig) -> PipelineResult:
         page_size=config.page_size,
         max_pages=config.max_pages,
         start_offset=config.start_offset,
+        since_days=config.since_days,
         fetch_transport=fetch_transport,
     )
     context = SyncContext(source_code=connector.source_code, run_id=run_id)
 
     if config.dry_run:
-        return run_pipeline(
+        return run_pipeline_catalunya_incremental(
             connector,
             context,
             artifact_store=InMemoryArtifactStore(),
@@ -117,7 +119,7 @@ def run_catalunya(config: CatalunyaRunConfig) -> PipelineResult:
     else:
         artifact_store = InMemoryArtifactStore()
 
-    return run_pipeline_postgres(
+    return run_pipeline_catalunya_incremental_postgres(
         connector,
         context,
         artifact_store=artifact_store,  # type: ignore[arg-type]

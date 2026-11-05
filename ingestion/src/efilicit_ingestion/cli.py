@@ -114,6 +114,15 @@ def build_parser() -> argparse.ArgumentParser:
         help="SODA $offset de la primera página (default: 0).",
     )
     catalunya.add_argument(
+        "--since-days",
+        type=int,
+        default=7,
+        help=(
+            "Ventana SoQL data_publicacio_anunci (default: 7; "
+            "0 = sin filtro de fecha, backfill)."
+        ),
+    )
+    catalunya.add_argument(
         "--dry-run",
         action="store_true",
         help="Solo memoria (sin writes a Postgres / Storage).",
@@ -321,12 +330,16 @@ def _cmd_run_catalunya(args: argparse.Namespace) -> int:
     if args.page_size < 1 or args.max_pages < 1 or args.start_offset < 0:
         print("error: invalid page-size / max-pages / start-offset", file=sys.stderr)
         return 2
+    if args.since_days < 0:
+        print("error: invalid since-days (use >= 0; 0 = no date filter)", file=sys.stderr)
+        return 2
 
     config = CatalunyaRunConfig(
         fixture_path=fixture,
         page_size=args.page_size,
         max_pages=args.max_pages,
         start_offset=args.start_offset,
+        since_days=args.since_days if args.since_days > 0 else None,
         dry_run=bool(args.dry_run),
         run_id=args.run_id,
         use_storage=not bool(args.no_storage),

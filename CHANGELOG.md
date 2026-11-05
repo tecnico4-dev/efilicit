@@ -19,6 +19,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Catalunya ingest: ventana SoQL `data_publicacio_anunci` (default 7 días) + RAW content-addressed por fila (`rows/{sha256}.json`) con skip por checksum — [ADR 025](docs/adr/025-catalunya-raw-row-incremental.md) (extiende [022](docs/adr/022-placsp-raw-entry-incremental.md)).
+- Favoritos web: se quitan los enlaces «Ir a / Volver a» en listados de licitaciones y búsquedas favoritas.
 - Favicon: marca «e» Eficen (`app/icon.png`); se retira el `favicon.ico` por defecto de Next.
 - Alertas: título + botón «Crear alerta» (modal con criterios; Crear / Guardar como búsqueda / Cancelar / ×); bajo la raya, Mis alertas con frecuencia a la derecha y el listado.
 - Alertas: paginación de Mis alertas (10/50/100, mismo pager que favoritos; controles solo si hay más de 10).

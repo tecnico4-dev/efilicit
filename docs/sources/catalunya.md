@@ -109,9 +109,9 @@ Fases/tipos/procedimientos no mapeados → `status` / `contract_type` / `procedu
 | Aspecto | Detalle |
 |---|---|
 | Actualización del dataset (portal) | Orden de magnitud semanal (Open Data); verificar en la ficha del portal |
-| Incremental EfiLicit (MVP) | Páginas por `offset` + cursor = último `artifact_key` |
-| Ventana discover | `start_offset` + `max_pages` × `page_size` (configurable) |
-| SoQL `$where` por fechas | Opcional; se valora en minipasos E2E si el volumen lo exige |
+| Incremental EfiLicit | Ventana SoQL `data_publicacio_anunci` (default **7 días**, medianoche Europe/Madrid) + RAW por fila con skip por checksum — [ADR 025](../adr/025-catalunya-raw-row-incremental.md) |
+| Orden SoQL | `data_publicacio_anunci DESC,:id DESC` |
+| Paginación dentro de la ventana | `start_offset` + `max_pages` × `page_size` (tope de seguridad; default workflow `max_pages=20`) |
 | Rate limit | Cuota anónima SODA; si hay 429 → documentar y considerar App Token en secrets |
 | Tamaño página | Default conector `page_size=1000`; `max_bytes` por página (JSON) |
 
@@ -132,23 +132,24 @@ Fases/tipos/procedimientos no mapeados → `status` / `contract_type` / `procedu
 ## 9. Pipeline EfiLicit (Paso 8)
 
 ```text
-discover (páginas) → fetch (JSON) → validate → RAW Storage
-→ parse → normalize / identidad → upsert → source_sync
+discover (páginas SoQL ventana) → fetch página → expand filas
+→ skip si checksum conocido → RAW fila → parse → normalize / identidad
+→ upsert → source_sync
 ```
 
 | Etapa | Estado / nota |
 |---|---|
-| Discover + fetch + parse | OK en Paso 7 (`SocrataConnector`) |
-| Normalize + identidad | OK en Paso 7 (reuso etapas comunes; tests fixture) |
-| RAW `raw/catalunya/…` + `source_artifacts` | OK (Paso 8.2) |
-| Upsert + `source_sync` + `artifact_id` | OK (Paso 8.3) |
-| CLI `--fixture` / `--dry-run` | OK (Paso 8.4) |
-| Workflow Actions manual | OK (Paso 8.5) |
-| Verificación live SODA + idempotencia | OK (Paso 8.6) → [docs/pruebas.md](../pruebas.md) Parte C |
+| Discover + fetch + parse | OK (`SocrataConnector` + ventana ADR 025) |
+| Normalize + identidad | OK (reuso etapas comunes; tests fixture) |
+| RAW `rows/{sha256}.json` + skip checksum | OK — [ADR 025](../adr/025-catalunya-raw-row-incremental.md) |
+| Upsert + `source_sync` + `artifact_id` | OK |
+| CLI `--fixture` / `--dry-run` / `--since-days` | OK |
+| Workflow Actions manual | OK |
+| Verificación live SODA + idempotencia | OK → [docs/pruebas.md](../pruebas.md) Parte C |
 
-**RAW:** cada página JSON es un artefacto inmutable; prefijo Storage `raw/catalunya/AAAA/MM/DD/…`.
+**RAW:** una fila SODA con `id_intern` = un artefacto content-addressed `rows/{checksum}.json` bajo `raw/catalunya/AAAA/MM/DD/…`. La página no se materializa en Storage.
 
-**Idempotencia:** reejecutar la misma página no duplica `(catalunya, id_intern)`.
+**Idempotencia:** misma fila sin cambio de contenido → mismo checksum → skip; upsert canónico sigue siendo unique `(catalunya, id_intern)`.
 
 ---
 
@@ -157,10 +158,10 @@ discover (páginas) → fetch (JSON) → validate → RAW Storage
 - **Familia:** `SocrataConnector` en `efilicit_ingestion.connectors.socrata`.
 - **Preset:** `CATALUNYA` (`source_code=catalunya`, dataset `ybgg-dgi6`).
 - **Fetch:** timeout / retry / `max_bytes` / checksum; `fetch_transport` inyectable — **sin red en unit tests**.
-- **RAW (Paso 8.2):** `fetch_validate_and_store_raw` + `validate_artifact` (JSON no vacío) → Storage `raw/catalunya/AAAA/MM/DD/...` + `source_artifacts`.
-- **Upsert (Paso 8.3):** reutilizar `CanonicalRepository` / `run_pipeline`; unique `(catalunya, id_intern)`; `artifact_id` en `tender_sources`; `source_sync` con contadores.
-- **CLI E2E (Paso 8.4):** `run-catalunya --fixture … --dry-run` (JSON SODA; sin red).
-- **Workflow (Paso 8.5):** [`.github/workflows/ingest-catalunya.yml`](../../.github/workflows/ingest-catalunya.yml); default `dry-run`; cron desactivado.
+- **RAW (ADR 025):** `expand_socrata_rows` + skip por checksum → Storage `rows/{sha}.json`; página solo en memoria de la corrida.
+- **Upsert:** `CanonicalRepository` vía `catalunya_incremental`; unique `(catalunya, id_intern)`; `artifact_id` en `tender_sources`; `source_sync` con contadores.
+- **CLI:** `run-catalunya --fixture … --dry-run --since-days 7` (JSON SODA; sin red).
+- **Workflow:** [`.github/workflows/ingest-catalunya.yml`](../../.github/workflows/ingest-catalunya.yml); default `dry-run`; cron desactivado (ADR 020).
 - **Live (Paso 8.6):** página SODA real + reejecución idempotente; resultados en [docs/pruebas.md](../pruebas.md) Parte C.
 - Fixtures: `ingestion/tests/fixtures/catalunya/`.
 - Stack aprobado: `httpx` + `tenacity` + Pydantic; RAW en Supabase Storage; sin Redis/colas.

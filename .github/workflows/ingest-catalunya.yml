@@ -1,5 +1,6 @@
 # Semana 3 + Semana 6 Paso 10 — ingesta Catalunya (Socrata) vía GitHub Actions.
 # Disparo: workflow_dispatch (default dry-run). Sin on.schedule (ADR 020: cron externo).
+# ADR 025: ventana SoQL + RAW por fila (checksum skip).
 name: Ingest Catalunya
 
 on:
@@ -21,13 +22,17 @@ on:
         required: false
         default: "1000"
       max_pages:
-        description: "Páginas a descubrir (default 1; en live mantener bajo)"
+        description: "Páginas dentro de la ventana (default 20; safety)"
         required: false
-        default: "1"
+        default: "20"
       start_offset:
         description: "SODA $offset inicial (default 0)"
         required: false
         default: "0"
+      since_days:
+        description: "Ventana data_publicacio_anunci en días (default 7; 0 = sin filtro)"
+        required: false
+        default: "7"
       run_id:
         description: "run_id opcional (fixture-db/live); vacío = UUID"
         required: false
@@ -54,8 +59,9 @@ jobs:
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
       MODE: ${{ inputs.mode }}
       PAGE_SIZE: ${{ inputs.page_size || '1000' }}
-      MAX_PAGES: ${{ inputs.max_pages || '1' }}
+      MAX_PAGES: ${{ inputs.max_pages || '20' }}
       START_OFFSET: ${{ inputs.start_offset || '0' }}
+      SINCE_DAYS: ${{ inputs.since_days || '7' }}
       RUN_ID: ${{ github.event.inputs.run_id || '' }}
       UPLOAD_STORAGE: ${{ inputs.upload_storage }}
     steps:
@@ -95,7 +101,7 @@ jobs:
       - name: Run Catalunya CLI
         run: |
           set -euo pipefail
-          EXTRA=(--page-size "$PAGE_SIZE" --max-pages "$MAX_PAGES" --start-offset "$START_OFFSET")
+          EXTRA=(--page-size "$PAGE_SIZE" --max-pages "$MAX_PAGES" --start-offset "$START_OFFSET" --since-days "$SINCE_DAYS")
           if [ -n "${RUN_ID:-}" ]; then
             EXTRA+=(--run-id "$RUN_ID")
           fi

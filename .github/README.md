@@ -24,8 +24,8 @@ Horarios de producto **UTC** (configurar en el servicio externo):
 | Workflow | Cadencia estable (UTC) | Inputs productivos |
 |---|---|---|
 | [ingest-placsp.yml](workflows/ingest-placsp.yml) ×3 | lun 05:00 | `mode=live`, `upload_storage=true`; un job por `syndication` |
-| [ingest-catalunya.yml](workflows/ingest-catalunya.yml) | lun 06:00 | `live`, `max_pages=10`, Storage on |
-| [ingest-euskadi.yml](workflows/ingest-euskadi.yml) | lun 07:00 | `live`, `max_pages=10`, Storage on |
+| [ingest-catalunya.yml](workflows/ingest-catalunya.yml) | (cron externo) | `live`, `since_days=7`, `max_pages=20`, Storage on |
+| [ingest-euskadi.yml](workflows/ingest-euskadi.yml) | (cron externo) | `live`, `max_pages=30`, Storage on |
 | [alerts-match.yml](workflows/alerts-match.yml) | lun 08:00 | `mode=write` (`--phase match`) |
 | [alerts-digest.yml](workflows/alerts-digest.yml) | diario 09:00 | `mode=write-resend` (`--phase send`) |
 
