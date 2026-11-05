@@ -1,3 +1,10 @@
+import {
+  DEFAULT_SEARCH_SORT_BY,
+  DEFAULT_SEARCH_SORT_DIR,
+  type SearchSortBy,
+  type SearchSortDir,
+} from "./search-sort";
+
 /** Ancla al inicio del listado (mantener scroll al cambiar de página). */
 export const SEARCH_RESULTS_ANCHOR = "resultados";
 
@@ -32,7 +39,7 @@ export type SearchHrefFilters = {
   openForSubmission: boolean;
 };
 
-/** Construye href de `/search` preservando filtros, página y tamaño. */
+/** Construye href de `/search` preservando filtros, página, tamaño y orden. */
 export function searchHref(
   filters: SearchHrefFilters,
   page: number,
@@ -46,6 +53,8 @@ export function searchHref(
      * El submit del formulario no lo envía → se recalcula al buscar de nuevo.
      */
     totalCount?: number;
+    sortBy?: SearchSortBy;
+    sortDir?: SearchSortDir;
   },
 ): string {
   const params = new URLSearchParams();
@@ -77,6 +86,10 @@ export function searchHref(
   if (tc != null && Number.isFinite(tc) && tc >= 0) {
     params.set("tc", String(Math.floor(tc)));
   }
+  const sortBy = options?.sortBy ?? DEFAULT_SEARCH_SORT_BY;
+  const sortDir = options?.sortDir ?? DEFAULT_SEARCH_SORT_DIR;
+  if (sortBy !== DEFAULT_SEARCH_SORT_BY) params.set("sort", sortBy);
+  if (sortDir !== DEFAULT_SEARCH_SORT_DIR) params.set("dir", sortDir);
   const qs = params.toString();
   const path = qs ? `/search?${qs}` : "/search";
   if (options?.withAnchor) {

@@ -46,6 +46,10 @@ export type SearchTendersInput = {
    * La RPC no recuenta el universo; `total_count` = este valor.
    */
   knownTotal?: number;
+  /** Campo de orden (`relevance` default). */
+  sortBy?: string;
+  /** `asc` | `desc` (default `desc`). */
+  sortDir?: "asc" | "desc" | string;
 };
 
 type SearchTendersArgs = Database["public"]["Functions"]["search_tenders"]["Args"];
@@ -92,6 +96,11 @@ function buildRpcArgs(input: SearchTendersInput): SearchTendersArgs {
       Number.isFinite(input.knownTotal) &&
       input.knownTotal >= 0
         ? Math.floor(input.knownTotal)
+        : undefined,
+    p_sort_by: input.sortBy?.trim() || undefined,
+    p_sort_dir:
+      input.sortDir === "asc" || input.sortDir === "desc"
+        ? input.sortDir
         : undefined,
   };
 }

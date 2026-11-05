@@ -1200,6 +1200,10 @@ export type Database = {
           p_publication_date_from?: string
           p_publication_date_to?: string
           p_query?: string
+          /** Campo de orden: relevance|title|status|… (default relevance). */
+          p_sort_by?: string
+          /** asc|desc (default desc). */
+          p_sort_dir?: string
           p_statuses?: string[]
         }
         Returns: {

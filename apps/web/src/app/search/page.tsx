@@ -32,6 +32,12 @@ import {
   SEARCH_RESULTS_ANCHOR,
   type SearchPageSize,
 } from "./search-pagination";
+import {
+  parseSearchSortBy,
+  parseSearchSortDir,
+  type SearchSortBy,
+  type SearchSortDir,
+} from "./search-sort";
 import { ScrollToSearchResults } from "./scroll-to-search-results";
 import { SearchResultsPager } from "./search-results-pager";
 
@@ -117,6 +123,8 @@ function tenderHrefFromSearch(
   filters: SearchFilters,
   page: number,
   pageSize: SearchPageSize,
+  sortBy: SearchSortBy,
+  sortDir: SearchSortDir,
 ): string {
   const params = new URLSearchParams({ from: "search" });
   if (filters.q) params.set("q", filters.q);
@@ -136,6 +144,8 @@ function tenderHrefFromSearch(
   if (filters.openForSubmission) params.set("en_plazo", "1");
   if (page > 1) params.set("page", String(page));
   if (pageSize !== SEARCH_PAGE_SIZE) params.set("ps", String(pageSize));
+  if (sortBy !== "relevance") params.set("sort", sortBy);
+  if (sortDir !== "desc") params.set("dir", sortDir);
   return `/tenders/${tenderId}?${params.toString()}`;
 }
 
@@ -150,6 +160,8 @@ function ResultsList({
   from,
   profileUserId,
   favoritedIds,
+  sortBy,
+  sortDir,
 }: {
   rows: SearchTenderRow[];
   error: string | null;
@@ -161,6 +173,8 @@ function ResultsList({
   from: string;
   profileUserId: string | null;
   favoritedIds: Set<string>;
+  sortBy: SearchSortBy;
+  sortDir: SearchSortDir;
 }) {
   if (error) {
     return (
@@ -191,7 +205,14 @@ function ResultsList({
               <div className="flex flex-wrap items-baseline gap-2">
                 <h2 className="text-base font-medium text-foreground">
                   <Link
-                    href={tenderHrefFromSearch(row.id, filters, page, pageSize)}
+                    href={tenderHrefFromSearch(
+                      row.id,
+                      filters,
+                      page,
+                      pageSize,
+                      sortBy,
+                      sortDir,
+                    )}
                     className="text-foreground hover:text-link hover:underline"
                   >
                     {row.title}
@@ -239,6 +260,8 @@ function ResultsList({
       total={totalCount}
       filters={filters}
       from={from}
+      sortBy={sortBy}
+      sortDir={sortDir}
     />
   );
 
@@ -259,7 +282,7 @@ function ResultsList({
         style={{ height: "calc(100dvh - 11.5rem)" }}
       >
         <div
-          key={`${page}-${pageSize}`}
+          key={`${page}-${pageSize}-${sortBy}-${sortDir}`}
           className="min-h-0 flex-1 overflow-y-auto px-4"
         >
           {rows.length === 0 ? (
@@ -308,6 +331,8 @@ export default async function SearchPage({
   const page =
     Number.isInteger(pageRaw) && pageRaw >= 1 ? pageRaw : 1;
   const pageSize = parseSearchPageSize(first(params.ps));
+  const sortBy = parseSearchSortBy(first(params.sort));
+  const sortDir = parseSearchSortDir(first(params.dir));
   const tcRaw = Number.parseInt(first(params.tc).trim(), 10);
   /** Total cacheado en URL tras la 1.ª página; la RPC no recuenta. */
   const knownTotal =
@@ -452,6 +477,8 @@ export default async function SearchPage({
       query: q || undefined,
       criteria: rpcCriteria,
       knownTotal,
+      sortBy,
+      sortDir,
     };
 
     try {
@@ -578,6 +605,8 @@ export default async function SearchPage({
         from={from}
         profileUserId={profileUserId}
         favoritedIds={favoritedIds}
+        sortBy={sortBy}
+        sortDir={sortDir}
       />
     </main>
   );

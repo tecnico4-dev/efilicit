@@ -8,12 +8,14 @@ import {
   type SearchHrefFilters,
   type SearchPageSize,
 } from "./search-pagination";
+import { SearchSortControl } from "./search-sort-control";
+import type { SearchSortBy, SearchSortDir } from "./search-sort";
 
 export { SEARCH_PAGE_SIZE, searchHref } from "./search-pagination";
 
 /**
- * Controles de paginación del buscador: mismo UI que favoritos (`ListPager`).
- * Navega por URL (`page` / `ps`) y ancla `#resultados`.
+ * Controles de paginación del buscador: mismo UI que favoritos (`ListPager`)
+ * + «Ordenar por» a la derecha. Navega por URL (`page` / `ps` / `sort` / `dir`).
  */
 export function SearchResultsPager({
   page,
@@ -22,6 +24,8 @@ export function SearchResultsPager({
   total,
   filters,
   from: searchFrom,
+  sortBy,
+  sortDir,
 }: {
   page: number;
   pageSize: SearchPageSize;
@@ -29,6 +33,8 @@ export function SearchResultsPager({
   total: number;
   filters: SearchHrefFilters;
   from?: string;
+  sortBy: SearchSortBy;
+  sortDir: SearchSortDir;
 }) {
   const router = useRouter();
   const totalPages = Math.max(1, Math.ceil(Math.max(total, 1) / pageSize));
@@ -36,28 +42,50 @@ export function SearchResultsPager({
   if (total <= 0 && page <= 1) return null;
   if (total <= pageSize && page <= 1) return null;
 
-  function go(nextPage: number, nextSize: SearchPageSize = pageSize) {
-    const href = searchHref(filters, nextPage, {
+  function go(opts: {
+    nextPage?: number;
+    nextSize?: SearchPageSize;
+    nextSortBy?: SearchSortBy;
+    nextSortDir?: SearchSortDir;
+  }) {
+    const href = searchHref(filters, opts.nextPage ?? page, {
       from: searchFrom,
-      pageSize: nextSize,
+      pageSize: opts.nextSize ?? pageSize,
       withAnchor: true,
       totalCount: total > 0 ? total : undefined,
+      sortBy: opts.nextSortBy ?? sortBy,
+      sortDir: opts.nextSortDir ?? sortDir,
     });
     router.push(href, { scroll: false });
   }
 
   return (
-    <ListPager
-      page={Math.min(Math.max(page, 1), totalPages)}
-      totalPages={totalPages}
-      pageSize={pageSize}
-      showing={showing}
-      total={total}
-      itemLabel="licitaciones"
-      ariaPageSizeLabel="Licitaciones por página"
-      pageSizeOptions={SEARCH_PAGE_SIZE_OPTIONS}
-      onPageChange={(p) => go(p)}
-      onPageSizeChange={(size) => go(1, size as SearchPageSize)}
-    />
+    <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+      <ListPager
+        page={Math.min(Math.max(page, 1), totalPages)}
+        totalPages={totalPages}
+        pageSize={pageSize}
+        showing={showing}
+        total={total}
+        itemLabel="licitaciones"
+        ariaPageSizeLabel="Licitaciones por página"
+        pageSizeOptions={SEARCH_PAGE_SIZE_OPTIONS}
+        onPageChange={(p) => go({ nextPage: p })}
+        onPageSizeChange={(size) =>
+          go({ nextPage: 1, nextSize: size as SearchPageSize })
+        }
+      />
+      <SearchSortControl
+        sortBy={sortBy}
+        sortDir={sortDir}
+        onSortByChange={(next) => go({ nextPage: 1, nextSortBy: next })}
+        onSortDirToggle={() =>
+          go({
+            nextPage: 1,
+            nextSortDir: sortDir === "asc" ? "desc" : "asc",
+          })
+        }
+      />
+    </div>
   );
 }
