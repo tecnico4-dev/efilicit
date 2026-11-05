@@ -102,7 +102,7 @@ export function SearchSortControl({
         onClick={onSortDirToggle}
         className={cn(
           boxClass,
-          "min-w-8 px-1.5 text-base leading-none hover:bg-muted focus:outline-none focus:ring-2 focus:ring-ring",
+          "min-w-0 w-7 px-0 text-base leading-none hover:bg-muted focus:outline-none focus:ring-2 focus:ring-ring",
         )}
       >
         <span aria-hidden>{arrow}</span>
