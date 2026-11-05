@@ -73,7 +73,9 @@ export function PaginatedAlertsList({
   );
 
   if (!showPager) {
-    return <div className="mt-3 border-t border-border">{list}</div>;
+    return (
+      <div className="mt-3 border-t border-border px-4 sm:px-5">{list}</div>
+    );
   }
 
   return (
