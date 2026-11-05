@@ -103,7 +103,7 @@ export function HomeDashboard({
     {
       label: "Favoritos",
       value: favorites.length,
-      href: "/favorites/tenders?from=home",
+      href: "/favorites/tenders",
       delay: "home-anim-delay-3",
     },
     {
@@ -116,7 +116,7 @@ export function HomeDashboard({
     {
       label: "Búsquedas",
       value: searches.length,
-      href: "/favorites/searches?from=home",
+      href: "/favorites/searches",
       delay: "home-anim-delay-5",
     },
   ] as const;
@@ -200,7 +200,7 @@ export function HomeDashboard({
               </h2>
               {favorites.length > 0 ? (
                 <Link
-                  href="/favorites/tenders?from=home"
+                  href="/favorites/tenders"
                   className="text-sm font-medium text-link hover:underline"
                 >
                   Ver favoritos

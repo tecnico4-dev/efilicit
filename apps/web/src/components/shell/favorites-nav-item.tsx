@@ -14,7 +14,7 @@ function canHoverFine(): boolean {
 
 /**
  * Favoritos en nav: hover (con retardo) abre un globo con atajos
- * a licitaciones / búsquedas (`?from=nav` → «Ir a…» en el listado).
+ * a licitaciones / búsquedas.
  * En táctil/sin hover fino: primer toque abre el menú; segundo va a /favorites.
  */
 export function FavoritesNavItem({ active }: { active: boolean }) {
@@ -105,7 +105,7 @@ export function FavoritesNavItem({ active }: { active: boolean }) {
         >
           <Link
             role="menuitem"
-            href="/favorites/tenders?from=nav"
+            href="/favorites/tenders"
             className="block px-3 py-2 text-sm text-foreground hover:bg-muted"
             onClick={() => setOpen(false)}
           >
@@ -113,7 +113,7 @@ export function FavoritesNavItem({ active }: { active: boolean }) {
           </Link>
           <Link
             role="menuitem"
-            href="/favorites/searches?from=nav"
+            href="/favorites/searches"
             className="block px-3 py-2 text-sm text-foreground hover:bg-muted"
             onClick={() => setOpen(false)}
           >
