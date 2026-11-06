@@ -8,7 +8,7 @@
 
 **Reemplazado por:** Ninguno
 
-**Extendido por:** [025](025-catalunya-raw-row-incremental.md) (mismo patrón content-addressed / skip-by-checksum para filas SODA de Catalunya)
+**Extendido por:** [025](025-catalunya-raw-row-incremental.md) (mismo patrón content-addressed / skip-by-checksum para unidades CCAA: Cat + Euskadi)
 
 ---
 
@@ -31,7 +31,7 @@ El producto sigue necesitando **trazabilidad** de cada licitación a bytes de or
    - `source_url` = URL del ZIP mensual de origen.
 3. **Dedup:** si `(source_code, checksum)` ya existe en `source_artifacts` → no re-subir; **no** re-parsear ni re-upsert esa entry en esa corrida (v1).
 4. **Parse/upsert:** solo entries **nuevas** (checksum desconocido). Varias versiones del mismo expediente en el lote nuevo → se conserva la de `atom:updated` más reciente (misma regla que el parser ZIP).
-5. Aplica a las tres sindicaciones PLACSP. Catalunya adopta el mismo patrón de RAW por unidad + skip por checksum en [025](025-catalunya-raw-row-incremental.md); Euskadi sigue sin ese modelo.
+5. Aplica a las tres sindicaciones PLACSP. Catalunya y Euskadi adoptan el mismo patrón de RAW por unidad + skip por checksum en [025](025-catalunya-raw-row-incremental.md).
 
 ### Alternativas descartadas
 

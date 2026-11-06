@@ -13,8 +13,10 @@ from efilicit_ingestion.models import RemoteArtifact, SyncContext
 from efilicit_ingestion.pipeline import (
     InMemoryArtifactStore,
     InMemorySyncRepository,
-    run_pipeline,
     stages,
+)
+from efilicit_ingestion.pipeline.euskadi_incremental import (
+    run_pipeline_euskadi_incremental,
 )
 from efilicit_ingestion.pipeline.canonical_repo import (
     InMemoryCanonicalRepository,
@@ -74,28 +76,33 @@ def test_euskadi_upsert_idempotent_and_pipeline_sync() -> None:
         max_pages=1,
         fetch_transport=lambda _u: (200, {"content-type": "application/json"}, body),
     )
+    store = InMemoryArtifactStore()
+    sync_repo = InMemorySyncRepository()
     canonical = InMemoryCanonicalRepository()
-    first = run_pipeline(
+    first = run_pipeline_euskadi_incremental(
         connector,
         SyncContext(source_code=SOURCE_CODE, run_id="eus-1"),
-        artifact_store=InMemoryArtifactStore(),
-        sync_repo=InMemorySyncRepository(),
+        artifact_store=store,
+        sync_repo=sync_repo,
         canonical_repo=canonical,
     )
     assert first.sync.status == "success"
     assert first.sync.records_seen == 2
     assert first.sync.records_new == 2
     assert first.stored_artifacts[0].storage_path.startswith("raw/euskadi/")
+    assert "rows/" in first.stored_artifacts[0].artifact_key
 
-    second = run_pipeline(
+    second = run_pipeline_euskadi_incremental(
         connector,
         SyncContext(source_code=SOURCE_CODE, run_id="eus-2"),
-        artifact_store=InMemoryArtifactStore(),
-        sync_repo=InMemorySyncRepository(),
+        artifact_store=store,
+        sync_repo=sync_repo,
         canonical_repo=canonical,
     )
+    assert second.sync.records_seen == 0
     assert second.sync.records_new == 0
     assert second.sync.records_updated == 0
+    assert second.stored_artifacts == []
     assert len(canonical.tender_sources) == 2
 
 

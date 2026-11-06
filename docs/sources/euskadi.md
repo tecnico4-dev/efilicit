@@ -109,10 +109,10 @@ Estados/tipos/procedimientos no mapeados → `status` / `contract_type` / `proce
 
 | Aspecto | Detalle |
 |---|---|
-| Incremental EfiLicit (MVP) | Páginas por `currentPage` + cursor = último `artifact_key` |
-| Ventana discover | `start_page` + `max_pages` (configurable; default 1) |
+| Incremental EfiLicit | Cabeza del listado (`start_page` + `max_pages`) + RAW por aviso con skip por checksum — [ADR 025](../adr/025-catalunya-raw-row-incremental.md) |
+| Ventana discover | `start_page` + `max_pages` (cron productivo típico: `max_pages=30`) |
 | Rate limit | Consumo razonable; si hay 429 → documentar y reintentar (fetch ya reintenta) |
-| Tamaño página | 10 ítems fijos por la API |
+| Tamaño página | 10 ítems fijos por la API (conector actual) |
 
 ---
 
@@ -131,23 +131,24 @@ Estados/tipos/procedimientos no mapeados → `status` / `contract_type` / `proce
 ## 9. Pipeline EfiLicit (Paso 9)
 
 ```text
-discover (páginas) → fetch (JSON) → validate → RAW Storage
-→ parse → normalize / identidad → upsert → source_sync
+discover (páginas cabeza) → fetch página → expand ítems
+→ skip si checksum conocido → RAW aviso → parse → normalize / identidad
+→ upsert → source_sync
 ```
 
 | Etapa | Estado / nota |
 |---|---|
 | Discover + fetch + parse | OK (`EuskadiConnector`) |
 | Normalize + identidad | OK (reuso etapas comunes; tests fixture) |
-| RAW `raw/euskadi/…` + `source_artifacts` | OK |
+| RAW `rows/{sha256}.json` + skip checksum | OK — [ADR 025](../adr/025-catalunya-raw-row-incremental.md) |
 | Upsert + `source_sync` + `artifact_id` | OK |
 | CLI `--fixture` / `--dry-run` | OK |
 | Workflow Actions manual | OK (`ingest-euskadi.yml`) |
 | Verificación live API + idempotencia | OK (Paso 9.5) → [docs/pruebas.md](../pruebas.md) Parte D |
 
-**RAW:** cada página JSON es un artefacto inmutable; prefijo Storage `raw/euskadi/AAAA/MM/DD/…`.
+**RAW:** un aviso con `id` = un artefacto content-addressed `rows/{checksum}.json` bajo `raw/euskadi/AAAA/MM/DD/…`. La página no se materializa en Storage.
 
-**Idempotencia:** reejecutar la misma página no duplica `(euskadi, id)`.
+**Idempotencia:** mismo aviso sin cambio de contenido → mismo checksum → skip; upsert canónico unique `(euskadi, id)`.
 
 ---
 
@@ -156,8 +157,9 @@ discover (páginas) → fetch (JSON) → validate → RAW Storage
 - **Familia:** `EuskadiConnector` en `efilicit_ingestion.connectors.euskadi`.
 - **Preset:** `EUSKADI` (`source_code=euskadi`, collection `contracting-notices`).
 - **Fetch:** timeout / retry / `max_bytes` / checksum; `fetch_transport` inyectable — **sin red en unit tests**.
+- **RAW (ADR 025):** `expand_euskadi_items` + skip por checksum → Storage `rows/{sha}.json`; página solo en memoria de la corrida.
 - **CLI E2E:** `run-euskadi --fixture … --dry-run` (JSON page; sin red).
-- **Workflow:** [`.github/workflows/ingest-euskadi.yml`](../../.github/workflows/ingest-euskadi.yml); default `dry-run`; cron desactivado.
+- **Workflow:** [`.github/workflows/ingest-euskadi.yml`](../../.github/workflows/ingest-euskadi.yml); default `dry-run`; cron desactivado (ADR 020).
 - **Live (Paso 9.5):** 1 página API real + reejecución idempotente; resultados en [docs/pruebas.md](../pruebas.md) Parte D.
 - Fixtures: `ingestion/tests/fixtures/euskadi/`.
 - Stack aprobado: `httpx` + `tenacity` + Pydantic; RAW en Supabase Storage; sin Redis/colas.
