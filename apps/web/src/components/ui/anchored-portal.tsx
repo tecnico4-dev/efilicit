@@ -28,6 +28,8 @@ export function AnchoredPortal({
   minWidth,
   maxWidth,
   maxHeight = 224,
+  /** `auto` = scroll en el panel; `hidden` = el hijo gestiona el scroll (cabecera fija). */
+  overflowY = "auto",
 }: {
   open: boolean;
   anchorRef: RefObject<HTMLElement | null>;
@@ -41,6 +43,7 @@ export function AnchoredPortal({
   maxWidth?: number;
   /** Altura máx. del panel (scroll interno). */
   maxHeight?: number;
+  overflowY?: "auto" | "hidden";
 }) {
   const [mounted, setMounted] = useState(false);
   const [style, setStyle] = useState<CSSProperties | null>(null);
@@ -78,7 +81,7 @@ export function AnchoredPortal({
       maxWidth: maxWidth,
       maxHeight,
       zIndex: 300,
-      overflowY: "auto",
+      overflowY,
     };
 
     if (placeAbove) {
@@ -90,7 +93,7 @@ export function AnchoredPortal({
     }
 
     setStyle(next);
-  }, [anchorRef, gap, matchAnchorWidth, minWidth, maxWidth, maxHeight]);
+  }, [anchorRef, gap, matchAnchorWidth, minWidth, maxWidth, maxHeight, overflowY]);
 
   useLayoutEffect(() => {
     if (!open) {

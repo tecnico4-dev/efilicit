@@ -224,10 +224,11 @@ export function CriteriaMultiSelect({
           open={open}
           anchorRef={triggerRef}
           onDismiss={closeMenu}
-          className="bg-surface py-1"
+          className="flex flex-col overflow-hidden bg-surface p-0"
           maxHeight={224}
+          overflowY="hidden"
         >
-          <div className="flex border-b border-border">
+          <div className="flex shrink-0 border-b border-border bg-surface">
             <button
               type="button"
               className={cn(
@@ -248,7 +249,11 @@ export function CriteriaMultiSelect({
               Limpiar
             </button>
           </div>
-          <ul role="listbox" aria-multiselectable>
+          <ul
+            role="listbox"
+            aria-multiselectable
+            className="min-h-0 flex-1 overflow-y-auto py-1"
+          >
             {options.map((opt) => {
               const checked = selected.includes(opt.value);
               return (
