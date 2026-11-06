@@ -81,6 +81,12 @@ function backLinkFromParams(
   if (from === "my-tenders") {
     return {
       href: "/my-tenders",
+      label: "← Volver a eliminar",
+    };
+  }
+  if (from === "mis-licitaciones") {
+    return {
+      href: "/mis-licitaciones",
       label: "← Volver a Mis licitaciones",
     };
   }

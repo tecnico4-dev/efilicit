@@ -64,6 +64,7 @@ export async function updateSession(request: NextRequest) {
     path.startsWith("/search") ||
     path.startsWith("/favorites") ||
     path.startsWith("/my-tenders") ||
+    path.startsWith("/mis-licitaciones") ||
     path.startsWith("/tenders");
 
   if (isProtected && !user) {

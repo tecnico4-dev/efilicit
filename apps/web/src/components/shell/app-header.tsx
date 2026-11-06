@@ -70,6 +70,12 @@ export function AppHeader({
             href="/my-tenders"
             className={navClass(pathname.startsWith("/my-tenders"))}
           >
+            eliminar
+          </Link>
+          <Link
+            href="/mis-licitaciones"
+            className={navClass(pathname.startsWith("/mis-licitaciones"))}
+          >
             Mis licitaciones
           </Link>
           {notifications}

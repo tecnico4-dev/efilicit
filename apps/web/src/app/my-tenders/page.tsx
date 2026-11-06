@@ -79,8 +79,15 @@ export default async function MyTendersPage({ searchParams }: PageProps) {
   return (
     <main className={PAGE_MAIN_CLASS}>
       <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-        Mis licitaciones
+        eliminar
       </h1>
+      <p className="mt-2 text-sm text-muted-foreground">
+        Pipeline antiguo (temporal). La experiencia nueva está en{" "}
+        <Link href="/mis-licitaciones" className="font-medium text-link hover:underline">
+          Mis licitaciones
+        </Link>
+        .
+      </p>
 
       <div className={PAGE_TITLE_RULE}>
         <div className="flex flex-wrap items-center gap-2 border-b border-border pb-3">

@@ -28,7 +28,7 @@ export function BidCaseToggle({
 
   async function onAdd() {
     if (caseId) {
-      router.push(`/my-tenders/${caseId}`);
+      router.push(`/mis-licitaciones/${caseId}`);
       return;
     }
     setPending(true);
@@ -46,7 +46,7 @@ export function BidCaseToggle({
       return;
     }
     setCaseId(data.id);
-    router.push(`/my-tenders/${data.id}`);
+    router.push(`/mis-licitaciones/${data.id}`);
     router.refresh();
   }
 

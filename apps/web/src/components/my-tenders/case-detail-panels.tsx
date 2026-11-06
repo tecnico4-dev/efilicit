@@ -35,6 +35,7 @@ type LibraryDoc = {
 export function CaseMetaForm({
   caseId,
   initial,
+  afterDeleteHref = "/my-tenders",
 }: {
   caseId: string;
   initial: Pick<
@@ -46,6 +47,8 @@ export function CaseMetaForm({
     | "outcome_on"
     | "notes"
   >;
+  /** Destino tras quitar el expediente del pipeline. */
+  afterDeleteHref?: string;
 }) {
   const router = useRouter();
   const [stage, setStage] = useState(initial.stage);
@@ -89,7 +92,7 @@ export function CaseMetaForm({
       setMsg(error.message);
       return;
     }
-    router.push("/my-tenders");
+    router.push(afterDeleteHref);
     router.refresh();
   }
 
