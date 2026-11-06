@@ -46,11 +46,17 @@ type FieldSnapshot = {
 
 type SearchFormPreviewApi = {
   preview: SearchCriteria | null;
+  /** Pinta al momento (p. ej. click aplicar). */
   setPreview: (criteria: SearchCriteria) => void;
+  /**
+   * Pinta tras un delay corto; se cancela si sales antes o entra clear.
+   * Evita pestañeos por hovers fugaces.
+   */
+  scheduleSetPreview: (criteria: SearchCriteria, delayMs?: number) => void;
   /** Limpia al momento (quitar chip, focus, etc.). */
   clearPreview: () => void;
   /**
-   * Limpia tras un delay; se cancela si entra otra chip (`setPreview`).
+   * Limpia tras un delay; se cancela si entra otra chip (`scheduleSetPreview`).
    * Evita el parpadeo form-real entre burbujas.
    */
   scheduleClearPreview: (delayMs?: number) => void;
@@ -146,7 +152,8 @@ function restoreSimpleFields(form: HTMLFormElement, snapshot: FieldSnapshot[]) {
   window.dispatchEvent(new Event(SEARCH_RESTORE_MULTI_EVENT));
 }
 
-const CLEAR_PREVIEW_DELAY_MS = 150;
+const SET_PREVIEW_DELAY_MS = 180;
+const CLEAR_PREVIEW_DELAY_MS = 280;
 
 export function SearchFormPreviewProvider({
   children,
@@ -154,7 +161,14 @@ export function SearchFormPreviewProvider({
   children: ReactNode;
 }) {
   const [preview, setPreviewState] = useState<SearchCriteria | null>(null);
+  const setTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const clearTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const cancelScheduledSet = useCallback(() => {
+    if (setTimerRef.current == null) return;
+    clearTimeout(setTimerRef.current);
+    setTimerRef.current = null;
+  }, []);
 
   const cancelScheduledClear = useCallback(() => {
     if (clearTimerRef.current == null) return;
@@ -164,33 +178,60 @@ export function SearchFormPreviewProvider({
 
   const setPreview = useCallback(
     (criteria: SearchCriteria) => {
+      cancelScheduledSet();
       cancelScheduledClear();
       setPreviewState(criteria);
     },
-    [cancelScheduledClear],
+    [cancelScheduledSet, cancelScheduledClear],
+  );
+
+  const scheduleSetPreview = useCallback(
+    (criteria: SearchCriteria, delayMs = SET_PREVIEW_DELAY_MS) => {
+      cancelScheduledClear();
+      cancelScheduledSet();
+      setTimerRef.current = setTimeout(() => {
+        setTimerRef.current = null;
+        setPreviewState(criteria);
+      }, delayMs);
+    },
+    [cancelScheduledSet, cancelScheduledClear],
   );
 
   const clearPreview = useCallback(() => {
+    cancelScheduledSet();
     cancelScheduledClear();
     setPreviewState(null);
-  }, [cancelScheduledClear]);
+  }, [cancelScheduledSet, cancelScheduledClear]);
 
   const scheduleClearPreview = useCallback(
     (delayMs = CLEAR_PREVIEW_DELAY_MS) => {
+      cancelScheduledSet();
       cancelScheduledClear();
       clearTimerRef.current = setTimeout(() => {
         clearTimerRef.current = null;
         setPreviewState(null);
       }, delayMs);
     },
-    [cancelScheduledClear],
+    [cancelScheduledSet, cancelScheduledClear],
   );
 
-  useEffect(() => () => cancelScheduledClear(), [cancelScheduledClear]);
+  useEffect(
+    () => () => {
+      cancelScheduledSet();
+      cancelScheduledClear();
+    },
+    [cancelScheduledSet, cancelScheduledClear],
+  );
 
   return (
     <SearchFormPreviewContext.Provider
-      value={{ preview, setPreview, clearPreview, scheduleClearPreview }}
+      value={{
+        preview,
+        setPreview,
+        scheduleSetPreview,
+        clearPreview,
+        scheduleClearPreview,
+      }}
     >
       {children}
     </SearchFormPreviewContext.Provider>

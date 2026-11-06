@@ -29,7 +29,7 @@ export function RecentSearchesList({
   municipalityNames?: Readonly<Record<string, string>>;
 }) {
   const router = useRouter();
-  const { setPreview, clearPreview, scheduleClearPreview } =
+  const { scheduleSetPreview, clearPreview, scheduleClearPreview } =
     useSearchFormPreview();
   const [open, setOpen] = useState(false);
   const [list, setList] = useState(items);
@@ -95,13 +95,13 @@ export function RecentSearchesList({
               <li key={item.id} className="max-w-full">
                 <span
                   className="inline-flex max-w-full items-center gap-0.5 rounded-md border border-border bg-muted/40 pl-2 text-xs text-foreground transition-colors hover:border-primary/40 hover:bg-primary/10 sm:max-w-md"
-                  onMouseEnter={() => setPreview(item.criteria)}
+                  onMouseEnter={() => scheduleSetPreview(item.criteria)}
                   onMouseLeave={() => scheduleClearPreview()}
                 >
                   <button
                     type="button"
                     onClick={() => onApply(item.criteria)}
-                    onMouseEnter={() => setPreview(item.criteria)}
+                    onMouseEnter={() => scheduleSetPreview(item.criteria)}
                     className="min-w-0 truncate py-1 text-left hover:text-primary-dark"
                   >
                     {summary}
