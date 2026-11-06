@@ -5,11 +5,11 @@ import {
   getSupabaseServerClient,
 } from "@/lib/auth/session";
 import {
-  BID_STAGE_LABELS,
-  HISTORIC_BID_STAGES,
-  getBidCaseById,
+  HISTORIC_OFFER_STAGES,
+  OFFER_STAGE_LABELS,
+  getOfferCaseById,
   getTenderById,
-  type BidStage,
+  type OfferStage,
 } from "@/lib/queries";
 import { formatCountdown } from "@/lib/bid-countdown";
 import { formatDateMadrid, formatDateTimeMadrid } from "@/lib/datetime";
@@ -41,8 +41,23 @@ function formatMoney(value: number | null, currency: string): string {
 }
 
 function isHistoric(stage: string): boolean {
-  return (HISTORIC_BID_STAGES as readonly string[]).includes(stage);
+  return (HISTORIC_OFFER_STAGES as readonly string[]).includes(stage);
 }
+
+const COMPLIANCE_LABEL: Record<string, string> = {
+  cumple: "cumple",
+  parcial: "parcial",
+  no_cumple: "no cumple",
+  sin_verificar: "sin verificar",
+  no_aplica: "no aplica",
+};
+
+const PREP_LABEL: Record<string, string> = {
+  pendiente: "pendiente",
+  en_curso: "en curso",
+  en_revision: "en revisión",
+  listo: "listo",
+};
 
 export default async function MisLicitacionDetailPage({ params }: PageProps) {
   const { id } = await params;
@@ -59,7 +74,7 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
     );
   }
 
-  const { data: bidCase, error } = await getBidCaseById(supabase, id);
+  const { data: offerCase, error } = await getOfferCaseById(supabase, id);
 
   if (error) {
     return (
@@ -68,49 +83,72 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
       </main>
     );
   }
-  if (!bidCase) notFound();
+  if (!offerCase) notFound();
 
-  const tenderSummary = bidCase.tenders;
+  const tenderSummary = offerCase.tenders;
   const tenderDetailResult = tenderSummary
     ? await getTenderById(supabase, tenderSummary.id)
     : { data: null, error: null };
   const tenderFull = tenderDetailResult.data;
 
-  const pendingChecklist = bidCase.checklist.filter((c) => !c.done_at);
+  const pendingReqs = offerCase.requirements.filter(
+    (r) => r.prep_status !== "listo",
+  );
   const due =
-    pendingChecklist.find((c) => c.due_at)?.due_at ??
+    pendingReqs.find((r) => r.internal_due_at)?.internal_due_at ??
+    offerCase.internal_deadline_at ??
     tenderSummary?.deadline_at ??
     null;
-  const historic = isHistoric(bidCase.stage);
+  const historic = isHistoric(offerCase.stage);
   const cd = formatCountdown(historic ? null : due);
-  const total = bidCase.checklist.length;
-  const done = bidCase.checklist.filter((c) => c.done_at).length;
-  const prepPct = total > 0 ? Math.round((done / total) * 100) : null;
+  const total = offerCase.requirements.length;
+  const ready = offerCase.requirements.filter(
+    (r) => r.prep_status === "listo",
+  ).length;
+  const prepPct = total > 0 ? Math.round((ready / total) * 100) : null;
+  const excl = offerCase.requirements.filter(
+    (r) => r.requirement_type === "excluyente",
+  );
+  const exclOk = excl.filter((r) => r.compliance_status === "cumple").length;
 
   const missing = [
-    ...pendingChecklist
-      .filter((c) => c.due_at && new Date(c.due_at).getTime() < Date.now())
-      .map((c) => ({
+    ...offerCase.requirements
+      .filter((r) => r.compliance_status === "no_cumple")
+      .map((r) => ({
         tone: "bad" as const,
-        title: c.title,
+        title: r.title,
+        detail: "Excluyente / no cumple",
+      })),
+    ...pendingReqs
+      .filter(
+        (r) =>
+          r.internal_due_at && new Date(r.internal_due_at).getTime() < Date.now(),
+      )
+      .map((r) => ({
+        tone: "bad" as const,
+        title: r.title,
         detail: "Vencido",
       })),
-    ...pendingChecklist
-      .filter((c) => !c.due_at || new Date(c.due_at).getTime() >= Date.now())
+    ...pendingReqs
+      .filter(
+        (r) =>
+          !r.internal_due_at ||
+          new Date(r.internal_due_at).getTime() >= Date.now(),
+      )
       .slice(0, 6)
-      .map((c) => ({
+      .map((r) => ({
         tone: "warn" as const,
-        title: c.title,
-        detail: c.due_at
-          ? `Vence ${formatDateMadrid(c.due_at)}`
+        title: r.title,
+        detail: r.internal_due_at
+          ? `Vence ${formatDateMadrid(r.internal_due_at)}`
           : "Pendiente de preparar",
       })),
   ];
 
   const stageLabel =
-    bidCase.stage in BID_STAGE_LABELS
-      ? BID_STAGE_LABELS[bidCase.stage as BidStage]
-      : bidCase.stage;
+    offerCase.stage in OFFER_STAGE_LABELS
+      ? OFFER_STAGE_LABELS[offerCase.stage as OfferStage]
+      : offerCase.stage;
 
   return (
     <main className={PAGE_MAIN_CLASS}>
@@ -125,7 +163,7 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
-              <CaseStageBadge stage={bidCase.stage} />
+              <CaseStageBadge stage={offerCase.stage} />
               {cd.tone !== "none" ? (
                 <span
                   className={cn(
@@ -159,11 +197,11 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
                   Plazo {formatDateTimeMadrid(tenderSummary.deadline_at)}
                 </span>
               ) : null}
-              {bidCase.owner_name ? (
-                <span>Resp. {bidCase.owner_name}</span>
+              {offerCase.owner_name ? (
+                <span>Resp. {offerCase.owner_name}</span>
               ) : null}
-              {bidCase.outcome_on ? (
-                <span>Outcome {formatDateMadrid(bidCase.outcome_on)}</span>
+              {offerCase.outcome_on ? (
+                <span>Outcome {formatDateMadrid(offerCase.outcome_on)}</span>
               ) : null}
             </div>
           </div>
@@ -172,8 +210,14 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
 
         <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
           <Kpi
-            label="Cumplimiento / checklist"
-            value={total > 0 ? `${done}/${total}` : "Sin requisitos aún"}
+            label="Cumplimiento excl."
+            value={
+              excl.length > 0
+                ? `${exclOk}/${excl.length}`
+                : total > 0
+                  ? `${ready}/${total} prep.`
+                  : "Sin requisitos"
+            }
           />
           <Kpi
             label="Preparación"
@@ -196,7 +240,7 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
           />
           <Kpi
             label="Responsable"
-            value={bidCase.owner_name?.trim() || "Sin asignar"}
+            value={offerCase.owner_name?.trim() || "Sin asignar"}
           />
         </div>
 
@@ -260,7 +304,7 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
                       <Fact label="Etapa pipeline" value={stageLabel} />
                       <Fact
                         label="Responsable"
-                        value={bidCase.owner_name?.trim() || "Sin asignar"}
+                        value={offerCase.owner_name?.trim() || "Sin asignar"}
                       />
                     </dl>
                   </div>
@@ -270,8 +314,13 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
                       Decisión go / no-go
                     </h3>
                     <p className="mt-2 text-muted-foreground">
-                      Aún no hay decisión registrada en el nuevo modelo. Se
-                      añadirá en el incremento de análisis.
+                      {offerCase.go_decision
+                        ? `${offerCase.go_decision}${
+                            offerCase.go_reason
+                              ? ` · ${offerCase.go_reason}`
+                              : ""
+                          }`
+                        : "Aún no hay decisión registrada."}
                     </p>
                   </div>
 
@@ -280,7 +329,7 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
                       Notas / estrategia
                     </h3>
                     <p className="mt-2 whitespace-pre-wrap text-foreground">
-                      {bidCase.notes?.trim() || "Sin notas."}
+                      {offerCase.notes?.trim() || "Sin notas."}
                     </p>
                   </div>
                 </div>
@@ -288,16 +337,16 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
               requisitos: (
                 <div className="space-y-3">
                   <p className="text-sm text-muted-foreground">
-                    Matriz provisional a partir del checklist legacy. Cada fila
-                    tendrá categoría, ¿cumplimos?, evidencia y ref. al pliego.
+                    Matriz en `offer_requirements` (ADR 026). Filas migradas del
+                    checklist legacy aparecen como categoría «otros».
                   </p>
-                  {bidCase.checklist.length === 0 ? (
+                  {offerCase.requirements.length === 0 ? (
                     <p className="rounded-lg border border-dashed border-border px-4 py-6 text-center text-sm text-muted-foreground">
                       Sin requisitos en este expediente.
                     </p>
                   ) : (
                     <div className="overflow-x-auto">
-                      <table className="w-full min-w-[640px] border-collapse text-sm">
+                      <table className="w-full min-w-[720px] border-collapse text-sm">
                         <thead>
                           <tr className="border-b border-border text-left text-[0.7rem] uppercase tracking-wide text-muted-foreground">
                             <th className="px-2 py-2 font-semibold">
@@ -316,42 +365,57 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
                           </tr>
                         </thead>
                         <tbody>
-                          {bidCase.checklist.map((item) => {
-                            const prep = item.done_at ? "listo" : "pendiente";
-                            return (
-                              <tr
-                                key={item.id}
-                                className="border-b border-border/80"
-                              >
-                                <td className="px-2 py-2.5 font-medium text-foreground">
-                                  {item.title}
-                                  <p className="text-xs font-normal text-muted-foreground">
-                                    Categoría: otros (legacy)
-                                  </p>
-                                </td>
-                                <td className="px-2 py-2.5 text-muted-foreground">
-                                  Informativo
-                                </td>
-                                <td className="px-2 py-2.5">
-                                  <StatusChip tone="muted">
-                                    sin verificar
-                                  </StatusChip>
-                                </td>
-                                <td className="px-2 py-2.5">
-                                  <StatusChip
-                                    tone={item.done_at ? "ok" : "warn"}
-                                  >
-                                    {prep}
-                                  </StatusChip>
-                                </td>
-                                <td className="px-2 py-2.5 text-muted-foreground">
-                                  {item.due_at
-                                    ? formatDateMadrid(item.due_at)
-                                    : "—"}
-                                </td>
-                              </tr>
-                            );
-                          })}
+                          {offerCase.requirements.map((item) => (
+                            <tr
+                              key={item.id}
+                              className="border-b border-border/80"
+                            >
+                              <td className="px-2 py-2.5 font-medium text-foreground">
+                                {item.title}
+                                <p className="text-xs font-normal text-muted-foreground">
+                                  {item.category}
+                                  {item.source_kind === "legacy_checklist"
+                                    ? " · legacy"
+                                    : ""}
+                                </p>
+                              </td>
+                              <td className="px-2 py-2.5 text-muted-foreground">
+                                {item.requirement_type}
+                              </td>
+                              <td className="px-2 py-2.5">
+                                <StatusChip
+                                  tone={
+                                    item.compliance_status === "cumple"
+                                      ? "ok"
+                                      : item.compliance_status === "no_cumple"
+                                        ? "bad"
+                                        : item.compliance_status ===
+                                            "sin_verificar"
+                                          ? "warn"
+                                          : "muted"
+                                  }
+                                >
+                                  {COMPLIANCE_LABEL[item.compliance_status] ??
+                                    item.compliance_status}
+                                </StatusChip>
+                              </td>
+                              <td className="px-2 py-2.5">
+                                <StatusChip
+                                  tone={
+                                    item.prep_status === "listo" ? "ok" : "warn"
+                                  }
+                                >
+                                  {PREP_LABEL[item.prep_status] ??
+                                    item.prep_status}
+                                </StatusChip>
+                              </td>
+                              <td className="px-2 py-2.5 text-muted-foreground">
+                                {item.internal_due_at
+                                  ? formatDateMadrid(item.internal_due_at)
+                                  : "—"}
+                              </td>
+                            </tr>
+                          ))}
                         </tbody>
                       </table>
                     </div>
@@ -363,12 +427,12 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
                   <SobreCard
                     title="Sobre A — Documentación administrativa"
                     progress={null}
-                    hint="DEUC, declaraciones, solvencia formal. Los entregables se vincularán a requisitos."
+                    hint="DEUC, declaraciones, solvencia formal."
                   />
                   <SobreCard
                     title="Sobre B — Criterios de juicio de valor"
                     progress={null}
-                    hint="Memoria técnica por criterio (puntos, responsable, fuentes)."
+                    hint="Memoria técnica por criterio."
                   />
                   <SobreCard
                     title="Sobre C — Criterios por fórmula"
@@ -380,45 +444,22 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
               pliegos: (
                 <div className="space-y-3 text-sm">
                   <p className="text-muted-foreground">
-                    Pliegos oficiales y fuentes usadas para preparar la oferta.
-                    En local no hay documentos enlazados todavía.
+                    Pliegos y fuentes (próximo incremento). Expediente en
+                    `offer_cases`.
                   </p>
                   <div className="rounded-lg border border-dashed border-border px-4 py-6 text-center text-muted-foreground">
                     Sin PCAP/PPT/anexos vinculados · sin fuentes registradas
                   </div>
-                  {bidCase.documents.length > 0 ? (
-                    <ul className="divide-y divide-border rounded-lg border border-border">
-                      {bidCase.documents.map((doc) => (
-                        <li key={doc.id} className="px-3 py-2">
-                          <p className="font-medium text-foreground">
-                            {doc.title}
-                          </p>
-                          {doc.url ? (
-                            <a
-                              href={doc.url}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="text-xs text-link hover:underline"
-                            >
-                              {doc.url}
-                            </a>
-                          ) : null}
-                        </li>
-                      ))}
-                    </ul>
-                  ) : null}
                 </div>
               ),
               equipo: (
                 <div className="space-y-3 text-sm">
                   <Fact
                     label="Responsable del expediente"
-                    value={bidCase.owner_name?.trim() || "Sin asignar"}
+                    value={offerCase.owner_name?.trim() || "Sin asignar"}
                   />
                   <p className="text-muted-foreground">
-                    Equipo (preparador / revisor / aprobador) y personal
-                    adscrito al contrato se modelarán cuando el responsable sea
-                    un usuario de la app.
+                    Equipo con roles llegará cuando `owner_user_id` esté en uso.
                   </p>
                 </div>
               ),
@@ -443,10 +484,19 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
                     kind="Oficial"
                   />
                   <CalRow
+                    label="Cierre interno"
+                    value={
+                      offerCase.internal_deadline_at
+                        ? formatDateTimeMadrid(offerCase.internal_deadline_at)
+                        : "—"
+                    }
+                    kind="Interno"
+                  />
+                  <CalRow
                     label="Inicio preparación"
                     value={
-                      bidCase.preparation_started_on
-                        ? formatDateMadrid(bidCase.preparation_started_on)
+                      offerCase.preparation_started_on
+                        ? formatDateMadrid(offerCase.preparation_started_on)
                         : "—"
                     }
                     kind="Interno"
@@ -454,8 +504,8 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
                   <CalRow
                     label="Presentada"
                     value={
-                      bidCase.presented_on
-                        ? formatDateMadrid(bidCase.presented_on)
+                      offerCase.presented_on
+                        ? formatDateMadrid(offerCase.presented_on)
                         : "—"
                     }
                     kind="Interno"
@@ -463,8 +513,8 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
                   <CalRow
                     label="Outcome"
                     value={
-                      bidCase.outcome_on
-                        ? formatDateMadrid(bidCase.outcome_on)
+                      offerCase.outcome_on
+                        ? formatDateMadrid(offerCase.outcome_on)
                         : "—"
                     }
                     kind="Oficial"
@@ -473,30 +523,9 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
               ),
               bitacora: (
                 <div className="space-y-3 text-sm">
-                  {bidCase.updates.length === 0 ? (
-                    <p className="rounded-lg border border-dashed border-border px-4 py-6 text-center text-muted-foreground">
-                      Sin entradas en la bitácora.
-                    </p>
-                  ) : (
-                    <ul className="space-y-2">
-                      {bidCase.updates.map((u) => (
-                        <li
-                          key={u.id}
-                          className="rounded-lg border border-border bg-muted/40 px-3 py-2"
-                        >
-                          <p className="text-xs text-muted-foreground">
-                            {formatDateMadrid(u.happened_on)}
-                          </p>
-                          <p className="mt-1 whitespace-pre-wrap text-foreground">
-                            {u.body}
-                          </p>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                  <p className="text-xs text-muted-foreground">
-                    Próximo: tipos (cambio de etapa, aclaración, go/no-go…) y
-                    autor.
+                  <p className="rounded-lg border border-dashed border-border px-4 py-6 text-center text-muted-foreground">
+                    Bitácora tipada en un incremento posterior. El expediente ya
+                    está en `offer_cases`.
                   </p>
                 </div>
               ),
@@ -580,7 +609,7 @@ function StatusChip({
   tone,
 }: {
   children: React.ReactNode;
-  tone: "ok" | "warn" | "muted";
+  tone: "ok" | "warn" | "bad" | "muted";
 }) {
   return (
     <span
@@ -589,6 +618,8 @@ function StatusChip({
         tone === "ok" &&
           "border-emerald-300/60 bg-emerald-50 text-emerald-900",
         tone === "warn" && "border-amber-300/60 bg-amber-50 text-amber-900",
+        tone === "bad" &&
+          "border-destructive/40 bg-destructive/10 text-destructive",
         tone === "muted" && "border-border bg-muted text-muted-foreground",
       )}
     >

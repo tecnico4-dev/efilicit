@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Mis licitaciones (nuevo): tablas `offer_cases` / `offer_requirements` (ADR 026), backfill desde `bid_cases` legacy; UI `/mis-licitaciones` sobre el expediente nuevo.
 - Buscador: en la franja de paginación, «Ordenar por» (desplegable ↑) + flecha asc/desc; URL `sort`/`dir` y RPC `p_sort_by`/`p_sort_dir`.
 - Mis licitaciones: etapa histórica `subcontrata` (participación sin ser adjudicatario).
 - Script local `scripts/seed_import_eficen_local.py`: histórico Eficen → `import_eficen` + `bid_cases` (Excel/ADJ del Escritorio; sin versionar datos).

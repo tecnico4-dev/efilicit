@@ -116,3 +116,18 @@ export {
   type BidCaseListItem,
   type BidStage,
 } from "./bid-pipeline";
+export {
+  ACTIVE_OFFER_STAGES,
+  HISTORIC_OFFER_STAGES,
+  OFFER_STAGE_LABELS,
+  OFFER_STAGES,
+  createOfferCase,
+  getOfferCaseById,
+  getOfferCaseIdByTenderId,
+  listOfferCaseHistoryYears,
+  listOfferCases,
+  offerCaseHistoryYear,
+  type OfferCaseDetail,
+  type OfferCaseListItem,
+  type OfferStage,
+} from "./offer-pipeline";

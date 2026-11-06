@@ -499,6 +499,185 @@ export type Database = {
           },
         ]
       }
+      offer_cases: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          discard_reason: string | null
+          go_decided_at: string | null
+          go_decided_by: string | null
+          go_decision: string | null
+          go_reason: string | null
+          id: string
+          internal_deadline_at: string | null
+          legacy_bid_case_id: string | null
+          notes: string | null
+          outcome_on: string | null
+          owner_name: string | null
+          owner_user_id: string | null
+          preparation_started_on: string | null
+          presented_on: string | null
+          stage: string
+          tender_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          discard_reason?: string | null
+          go_decided_at?: string | null
+          go_decided_by?: string | null
+          go_decision?: string | null
+          go_reason?: string | null
+          id?: string
+          internal_deadline_at?: string | null
+          legacy_bid_case_id?: string | null
+          notes?: string | null
+          outcome_on?: string | null
+          owner_name?: string | null
+          owner_user_id?: string | null
+          preparation_started_on?: string | null
+          presented_on?: string | null
+          stage?: string
+          tender_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          discard_reason?: string | null
+          go_decided_at?: string | null
+          go_decided_by?: string | null
+          go_decision?: string | null
+          go_reason?: string | null
+          id?: string
+          internal_deadline_at?: string | null
+          legacy_bid_case_id?: string | null
+          notes?: string | null
+          outcome_on?: string | null
+          owner_name?: string | null
+          owner_user_id?: string | null
+          preparation_started_on?: string | null
+          presented_on?: string | null
+          stage?: string
+          tender_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "offer_cases_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "offer_cases_go_decided_by_fkey"
+            columns: ["go_decided_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "offer_cases_owner_user_id_fkey"
+            columns: ["owner_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "offer_cases_tender_id_fkey"
+            columns: ["tender_id"]
+            isOneToOne: true
+            referencedRelation: "tenders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      offer_requirements: {
+        Row: {
+          category: string
+          compliance_status: string
+          created_at: string
+          envelope: string | null
+          id: string
+          internal_due_at: string | null
+          legacy_checklist_item_id: string | null
+          literal_text: string | null
+          offer_case_id: string
+          our_value: string | null
+          owner_name: string | null
+          owner_user_id: string | null
+          pliego_ref: string | null
+          prep_status: string
+          required_value: string | null
+          requirement_type: string
+          sort_order: number
+          source_kind: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string
+          compliance_status?: string
+          created_at?: string
+          envelope?: string | null
+          id?: string
+          internal_due_at?: string | null
+          legacy_checklist_item_id?: string | null
+          literal_text?: string | null
+          offer_case_id: string
+          our_value?: string | null
+          owner_name?: string | null
+          owner_user_id?: string | null
+          pliego_ref?: string | null
+          prep_status?: string
+          required_value?: string | null
+          requirement_type?: string
+          sort_order?: number
+          source_kind?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          compliance_status?: string
+          created_at?: string
+          envelope?: string | null
+          id?: string
+          internal_due_at?: string | null
+          legacy_checklist_item_id?: string | null
+          literal_text?: string | null
+          offer_case_id?: string
+          our_value?: string | null
+          owner_name?: string | null
+          owner_user_id?: string | null
+          pliego_ref?: string | null
+          prep_status?: string
+          required_value?: string | null
+          requirement_type?: string
+          sort_order?: number
+          source_kind?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "offer_requirements_offer_case_id_fkey"
+            columns: ["offer_case_id"]
+            isOneToOne: false
+            referencedRelation: "offer_cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "offer_requirements_owner_user_id_fkey"
+            columns: ["owner_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       recent_searches: {
         Row: {
           criteria: Json

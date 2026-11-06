@@ -39,3 +39,4 @@ No uses un ADR para el estado de una fuente o un parser: eso va en `docs/sources
 | [023](023-mis-licitaciones-pipeline-compartido.md) | Mis licitaciones: pipeline de presentación compartido (Eficen) | Aceptado |
 | [024](024-drop-tender-sources-last-seen.md) | Eliminar `tender_sources.last_seen_at` (+ RPC `tender_max_last_seen`) | Aceptado |
 | [025](025-catalunya-raw-row-incremental.md) | CCAA RAW incremental por unidad (Catalunya + Euskadi; extiende 022) | Aceptado |
+| [026](026-mis-licitaciones-offer-cases.md) | Mis licitaciones: expediente de oferta (`offer_*`; extiende 023) | Aceptado |

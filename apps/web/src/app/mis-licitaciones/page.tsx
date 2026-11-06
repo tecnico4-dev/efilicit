@@ -3,7 +3,10 @@ import {
   getSessionProfile,
   getSupabaseServerClient,
 } from "@/lib/auth/session";
-import { listBidCaseHistoryYears, listBidCases } from "@/lib/queries";
+import {
+  listOfferCaseHistoryYears,
+  listOfferCases,
+} from "@/lib/queries";
 import {
   PAGE_MAIN_CLASS,
   PAGE_TITLE_RULE,
@@ -43,11 +46,11 @@ export default async function MisLicitacionesPage({ searchParams }: PageProps) {
   }
 
   const [casesResult, yearsResult] = await Promise.all([
-    listBidCases(supabase, {
+    listOfferCases(supabase, {
       scope: tab,
       year: tab === "historic" && Number.isFinite(year) ? year : undefined,
     }),
-    listBidCaseHistoryYears(supabase),
+    listOfferCaseHistoryYears(supabase),
   ]);
 
   const cases = casesResult.data;
@@ -103,7 +106,7 @@ export default async function MisLicitacionesPage({ searchParams }: PageProps) {
             <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
               {tab === "active"
                 ? "Abre una licitación en el buscador y pulsa «Añadir a Mis licitaciones»."
-                : "Cuando un expediente pase a adjudicada, no adjudicada, descartada o subcontrata aparecerá aquí."}
+                : "Cuando un expediente pase a adjudicada, no adjudicada, descartada, subcontrata o desierta aparecerá aquí."}
             </p>
             {tab === "active" ? (
               <Link

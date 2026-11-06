@@ -4,10 +4,10 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
-import { createBidCase } from "@/lib/queries";
+import { createOfferCase } from "@/lib/queries";
 
 /**
- * Añade la licitación al pipeline compartido (Mis licitaciones).
+ * Añade la licitación al pipeline de oferta (Mis licitaciones / offer_cases).
  * Si ya existe, enlaza al expediente.
  */
 export function BidCaseToggle({
@@ -34,11 +34,10 @@ export function BidCaseToggle({
     setPending(true);
     setError(null);
     const client = createSupabaseBrowserClient();
-    const { data, error: createError } = await createBidCase(client, {
+    const { data, error: createError } = await createOfferCase(client, {
       tenderId,
       createdBy: userId,
       ownerName: displayName?.trim() || null,
-      withDefaultChecklist: true,
     });
     setPending(false);
     if (createError || !data) {

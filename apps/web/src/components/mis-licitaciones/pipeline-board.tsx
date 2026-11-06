@@ -3,9 +3,9 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import {
-  BID_STAGE_LABELS,
-  type BidCaseListItem,
-  type BidStage,
+  OFFER_STAGE_LABELS,
+  type OfferCaseListItem,
+  type OfferStage,
 } from "@/lib/queries";
 import { formatCountdown } from "@/lib/bid-countdown";
 import { formatDateMadrid } from "@/lib/datetime";
@@ -14,17 +14,18 @@ import { cn } from "@/lib/cn";
 
 type Scope = "active" | "historic";
 
-const ACTIVE_KANBAN: { label: string; stages: BidStage[] }[] = [
-  { label: "Interés", stages: ["interes"] },
+const ACTIVE_KANBAN: { label: string; stages: OfferStage[] }[] = [
+  { label: "Interés / Análisis", stages: ["interes", "analisis"] },
   { label: "En preparación", stages: ["preparacion"] },
-  { label: "Presentada", stages: ["presentada"] },
+  { label: "Presentada / Evaluación", stages: ["presentada", "en_evaluacion"] },
+  { label: "Requerimiento", stages: ["requerimiento"] },
 ];
 
-const HISTORIC_KANBAN: { label: string; stages: BidStage[] }[] = [
+const HISTORIC_KANBAN: { label: string; stages: OfferStage[] }[] = [
   { label: "Adjudicada", stages: ["adjudicada"] },
   { label: "No adjudicada", stages: ["no_adjudicada"] },
   { label: "Subcontrata", stages: ["subcontrata"] },
-  { label: "Descartada", stages: ["descartada"] },
+  { label: "Descartada / Desierta", stages: ["descartada", "desierta"] },
 ];
 
 function formatMoneySafe(
@@ -43,17 +44,23 @@ function formatMoneySafe(
   }
 }
 
-function prepPct(item: BidCaseListItem): number | null {
-  if (item.checklist_total <= 0) return null;
-  return Math.round((item.checklist_done / item.checklist_total) * 100);
+function prepPct(item: OfferCaseListItem): number | null {
+  if (item.requirements_total <= 0) return null;
+  return Math.round(
+    (item.requirements_ready / item.requirements_total) * 100,
+  );
 }
 
 function riskTone(
-  item: BidCaseListItem,
+  item: OfferCaseListItem,
   scope: Scope,
 ): { label: string; className: string } | null {
   if (scope === "historic") return null;
-  const due = item.next_due_at ?? item.tenders?.deadline_at ?? null;
+  const due =
+    item.next_due_at ??
+    item.internal_deadline_at ??
+    item.tenders?.deadline_at ??
+    null;
   const cd = formatCountdown(due);
   if (cd.tone === "overdue") {
     return {
@@ -81,17 +88,19 @@ export function PipelineBoard({
   cases,
 }: {
   scope: Scope;
-  cases: BidCaseListItem[];
+  cases: OfferCaseListItem[];
 }) {
   const [view, setView] = useState<"lista" | "kanban">("lista");
   const columns = scope === "historic" ? HISTORIC_KANBAN : ACTIVE_KANBAN;
 
   const byStage = useMemo(() => {
-    const map = new Map<string, BidCaseListItem[]>();
+    const map = new Map<string, OfferCaseListItem[]>();
     for (const col of columns) {
       map.set(
         col.label,
-        cases.filter((c) => (col.stages as readonly string[]).includes(c.stage)),
+        cases.filter((c) =>
+          (col.stages as readonly string[]).includes(c.stage),
+        ),
       );
     }
     return map;
@@ -132,10 +141,11 @@ export function PipelineBoard({
             const pct = prepPct(item);
             const risk = riskTone(item, scope);
             const due =
-              item.next_due_at ?? item.tenders?.deadline_at ?? null;
-            const cd = formatCountdown(
-              scope === "active" ? due : null,
-            );
+              item.next_due_at ??
+              item.internal_deadline_at ??
+              item.tenders?.deadline_at ??
+              null;
+            const cd = formatCountdown(scope === "active" ? due : null);
             return (
               <li key={item.id}>
                 <Link
@@ -185,9 +195,9 @@ export function PipelineBoard({
                           Prep. {pct}%
                         </span>
                       ) : null}
-                      {item.checklist_total > 0 ? (
+                      {item.requirements_total > 0 ? (
                         <span className="rounded-full border border-primary/30 bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-link">
-                          {item.checklist_done}/{item.checklist_total}
+                          {item.requirements_ready}/{item.requirements_total}
                         </span>
                       ) : null}
                       {risk ? (
@@ -243,7 +253,7 @@ export function PipelineBoard({
                           {item.owner_name ? ` · ${item.owner_name}` : ""}
                         </p>
                         <p className="mt-1 text-xs text-muted-foreground">
-                          {BID_STAGE_LABELS[item.stage as BidStage] ??
+                          {OFFER_STAGE_LABELS[item.stage as OfferStage] ??
                             item.stage}
                         </p>
                       </Link>

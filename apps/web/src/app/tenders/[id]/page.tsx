@@ -6,7 +6,7 @@ import { PAGE_MAIN_CLASS } from "@/components/shell/page-width";
 import { ErrorState } from "@/components/ui/state-message";
 import { getSessionProfile, getSupabaseServerClient } from "@/lib/auth/session";
 import {
-  getBidCaseIdByTenderId,
+  getOfferCaseIdByTenderId,
   getTenderById,
   isOwnFavorite,
   listOwnTenderRatings,
@@ -316,14 +316,14 @@ export default async function TenderDetailPage({
       displayName = profile.data.display_name;
       const tasks: [
         ReturnType<typeof isOwnFavorite>,
-        ReturnType<typeof getBidCaseIdByTenderId>,
+        ReturnType<typeof getOfferCaseIdByTenderId>,
         ReturnType<typeof listOwnTenderRatings> | Promise<null>,
       ] = [
         isOwnFavorite(supabase, {
           userId: profile.data.id,
           tenderId: tender.id,
         }),
-        getBidCaseIdByTenderId(supabase, tender.id),
+        getOfferCaseIdByTenderId(supabase, tender.id),
         showRating
           ? listOwnTenderRatings(supabase, {
               userId: profile.data.id,
