@@ -3,13 +3,16 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { CLEAR_SEARCH_EVENT } from "@/app/search/search-feedback";
 import {
+  SEARCH_APPLY_CRITERIA_EVENT,
   SEARCH_PREVIEW_GHOST_CLASS,
   SEARCH_PREVIEW_MULTI_EVENT,
   SEARCH_RESTORE_MULTI_EVENT,
   type SearchPreviewMultiDetail,
 } from "@/app/search/search-form-preview";
+import { criteriaToFilterInitial } from "@/lib/criteria-display";
 import { cn } from "@/lib/cn";
 import type { SearchFilterOption } from "@/lib/queries";
+import type { SearchCriteria } from "@efilicit/types";
 
 /**
  * Desplegable multi-valor con ticks (Estado / Procedimiento / Tipo).
@@ -59,6 +62,14 @@ export function CriteriaMultiSelect({
   }, []);
 
   useEffect(() => {
+    function valuesFromCriteria(criteria: SearchCriteria): string[] {
+      const initial = criteriaToFilterInitial(criteria);
+      if (name === "status") return initial.statuses;
+      if (name === "procedure") return initial.procedureTypes;
+      if (name === "contract_type") return initial.contractTypes;
+      return [];
+    }
+
     function onPreview(e: Event) {
       const detail = (e as CustomEvent<SearchPreviewMultiDetail>).detail;
       if (!detail || !(name in detail)) return;
@@ -76,11 +87,21 @@ export function CriteriaMultiSelect({
       }
       setPreviewing(false);
     }
+    function onApply(e: Event) {
+      const criteria = (e as CustomEvent<SearchCriteria>).detail;
+      if (!criteria) return;
+      snapshotRef.current = null;
+      setSelected(uniquePreserve(valuesFromCriteria(criteria)));
+      setPreviewing(false);
+      setOpen(false);
+    }
     window.addEventListener(SEARCH_PREVIEW_MULTI_EVENT, onPreview);
     window.addEventListener(SEARCH_RESTORE_MULTI_EVENT, onRestore);
+    window.addEventListener(SEARCH_APPLY_CRITERIA_EVENT, onApply);
     return () => {
       window.removeEventListener(SEARCH_PREVIEW_MULTI_EVENT, onPreview);
       window.removeEventListener(SEARCH_RESTORE_MULTI_EVENT, onRestore);
+      window.removeEventListener(SEARCH_APPLY_CRITERIA_EVENT, onApply);
     };
   }, [name]);
 

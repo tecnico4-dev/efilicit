@@ -3,7 +3,10 @@
 import { useEffect, useLayoutEffect, useRef } from "react";
 import { cn } from "@/lib/cn";
 import { CLEAR_SEARCH_EVENT } from "@/app/search/search-feedback";
-import { useOptionalSearchFormPreview } from "@/app/search/search-form-preview";
+import {
+  SEARCH_APPLY_CRITERIA_EVENT,
+  useOptionalSearchFormPreview,
+} from "@/app/search/search-form-preview";
 
 const MAX_LINES = 5;
 
@@ -60,13 +63,17 @@ export function SearchTextField({
   }, [preview]);
 
   useEffect(() => {
-    const onClear = () => {
+    const onResize = () => {
       requestAnimationFrame(() => {
         if (ref.current) resizeSearchTextToContent(ref.current);
       });
     };
-    window.addEventListener(CLEAR_SEARCH_EVENT, onClear);
-    return () => window.removeEventListener(CLEAR_SEARCH_EVENT, onClear);
+    window.addEventListener(CLEAR_SEARCH_EVENT, onResize);
+    window.addEventListener(SEARCH_APPLY_CRITERIA_EVENT, onResize);
+    return () => {
+      window.removeEventListener(CLEAR_SEARCH_EVENT, onResize);
+      window.removeEventListener(SEARCH_APPLY_CRITERIA_EVENT, onResize);
+    };
   }, []);
 
   return (

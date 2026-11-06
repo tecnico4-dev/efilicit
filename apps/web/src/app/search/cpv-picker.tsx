@@ -17,11 +17,13 @@ import {
   useOptionalSearchFeedback,
 } from "./search-feedback";
 import {
+  SEARCH_APPLY_CRITERIA_EVENT,
   SEARCH_PREVIEW_GHOST_CLASS,
   useOptionalSearchFormPreview,
 } from "./search-form-preview";
 import { criteriaToFilterInitial } from "@/lib/criteria-display";
 import { cn } from "@/lib/cn";
+import type { SearchCriteria } from "@efilicit/types";
 
 const CpvDictionaryDialog = dynamic(
   () =>
@@ -159,6 +161,23 @@ export function CpvPicker({
     window.addEventListener(CLEAR_SEARCH_EVENT, onClear);
     return () => window.removeEventListener(CLEAR_SEARCH_EVENT, onClear);
   }, [reset]);
+
+  useEffect(() => {
+    function onApply(e: Event) {
+      const criteria = (e as CustomEvent<SearchCriteria>).detail;
+      if (!criteria) return;
+      const initial = criteriaToFilterInitial(criteria);
+      setDraft("");
+      setFieldMessage(null);
+      setCodes(uniqueNormalized(initial.cpvCodes));
+      setMatchMode(initial.cpvMatch === "all" ? "all" : "any");
+      setDictOpen(false);
+      setSuggestOpen(false);
+      setActiveIndex(-1);
+    }
+    window.addEventListener(SEARCH_APPLY_CRITERIA_EVENT, onApply);
+    return () => window.removeEventListener(SEARCH_APPLY_CRITERIA_EVENT, onApply);
+  }, []);
 
   useEffect(() => {
     function onDocMouseDown(e: MouseEvent) {

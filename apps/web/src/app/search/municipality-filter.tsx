@@ -7,9 +7,11 @@ import { criteriaToFilterInitial } from "@/lib/criteria-display";
 import { cn } from "@/lib/cn";
 import { SEARCH_FORM_ID } from "./save-search-button";
 import {
+  SEARCH_APPLY_CRITERIA_EVENT,
   SEARCH_PREVIEW_GHOST_CLASS,
   useOptionalSearchFormPreview,
 } from "./search-form-preview";
+import type { SearchCriteria } from "@efilicit/types";
 
 type Option = { code: string; name: string };
 
@@ -143,6 +145,36 @@ export function MunicipalityFilter({
       cancelled = true;
     };
   }, [isPreviewing, previewCcaa, previewCode]);
+
+  useEffect(() => {
+    function onApply(e: Event) {
+      const criteria = (e as CustomEvent<SearchCriteria>).detail;
+      if (!criteria) return;
+      const initial = criteriaToFilterInitial(criteria);
+      setOpen(false);
+      setCcaa(initial.ccaa);
+      setSelectedCode(initial.municipalityCode);
+      if (!initial.municipalityCode) {
+        setText("");
+        return;
+      }
+      if (initial.municipalityName) {
+        setText(initial.municipalityName);
+        return;
+      }
+      // Nombre al cargar opciones (effect más abajo / carga CCAA).
+      setText("");
+    }
+    window.addEventListener(SEARCH_APPLY_CRITERIA_EVENT, onApply);
+    return () => window.removeEventListener(SEARCH_APPLY_CRITERIA_EVENT, onApply);
+  }, []);
+
+  /** Tras apply con código y sin nombre: rellenar etiqueta cuando lleguen opciones. */
+  useEffect(() => {
+    if (isPreviewing || !selectedCode || text) return;
+    const hit = options.find((o) => o.code === selectedCode);
+    if (hit) setText(hit.name);
+  }, [isPreviewing, selectedCode, text, options]);
 
   const filtered = useMemo(
     () => options.filter((o) => startsWithFold(o.name, text)),

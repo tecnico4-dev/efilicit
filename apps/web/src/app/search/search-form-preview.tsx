@@ -21,6 +21,8 @@ export const SEARCH_PREVIEW_GHOST_CLASS = "text-muted-foreground";
 /** Preview / restore de multi-select (estado / procedimiento / tipo). */
 export const SEARCH_PREVIEW_MULTI_EVENT = "efilicit:search-preview-multi";
 export const SEARCH_RESTORE_MULTI_EVENT = "efilicit:search-restore-multi";
+/** Click en reciente: fijar criterios en el form (sin navegar / buscar). */
+export const SEARCH_APPLY_CRITERIA_EVENT = "efilicit:search-apply-criteria";
 
 export type SearchPreviewMultiDetail = {
   status: string[];
@@ -53,6 +55,11 @@ type SearchFormPreviewApi = {
    * Evita pestañeos por hovers fugaces.
    */
   scheduleSetPreview: (criteria: SearchCriteria, delayMs?: number) => void;
+  /**
+   * Fija criterios en el formulario (valores reales, sin fantasma ni búsqueda).
+   * Descarta el snapshot de preview para no restaurar lo anterior.
+   */
+  applyCriteria: (criteria: SearchCriteria) => void;
   /** Limpia al momento (quitar chip, focus, etc.). */
   clearPreview: () => void;
   /**
@@ -105,7 +112,11 @@ function applyGhost(el: HTMLElement, on: boolean) {
   el.classList.toggle(SEARCH_PREVIEW_GHOST_CLASS, on);
 }
 
-function paintSimpleFields(form: HTMLFormElement, criteria: SearchCriteria) {
+function paintSimpleFields(
+  form: HTMLFormElement,
+  criteria: SearchCriteria,
+  opts: { ghost: boolean; notifyCcaa?: boolean },
+) {
   const initial = criteriaToFilterInitial(criteria);
   const values: Record<Exclude<SimpleFieldName, "en_plazo">, string> = {
     q: initial.q,
@@ -124,18 +135,27 @@ function paintSimpleFields(form: HTMLFormElement, criteria: SearchCriteria) {
     } else {
       el.value = values[name];
     }
-    applyGhost(el, true);
+    applyGhost(el, opts.ghost);
   }
 
-  window.dispatchEvent(
-    new CustomEvent<SearchPreviewMultiDetail>(SEARCH_PREVIEW_MULTI_EVENT, {
-      detail: {
-        status: initial.statuses,
-        procedure: initial.procedureTypes,
-        contract_type: initial.contractTypes,
-      },
-    }),
-  );
+  if (opts.notifyCcaa) {
+    const ccaaEl = resolveField(form, "ccaa");
+    if (ccaaEl instanceof HTMLSelectElement) {
+      ccaaEl.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+  }
+
+  if (opts.ghost) {
+    window.dispatchEvent(
+      new CustomEvent<SearchPreviewMultiDetail>(SEARCH_PREVIEW_MULTI_EVENT, {
+        detail: {
+          status: initial.statuses,
+          procedure: initial.procedureTypes,
+          contract_type: initial.contractTypes,
+        },
+      }),
+    );
+  }
 }
 
 function restoreSimpleFields(form: HTMLFormElement, snapshot: FieldSnapshot[]) {
@@ -203,6 +223,21 @@ export function SearchFormPreviewProvider({
     setPreviewState(null);
   }, [cancelScheduledSet, cancelScheduledClear]);
 
+  const applyCriteria = useCallback(
+    (criteria: SearchCriteria) => {
+      cancelScheduledSet();
+      cancelScheduledClear();
+      // Sync: widgets + campos simples fijan valores y descartan snapshot.
+      window.dispatchEvent(
+        new CustomEvent<SearchCriteria>(SEARCH_APPLY_CRITERIA_EVENT, {
+          detail: criteria,
+        }),
+      );
+      setPreviewState(null);
+    },
+    [cancelScheduledSet, cancelScheduledClear],
+  );
+
   const scheduleClearPreview = useCallback(
     (delayMs = CLEAR_PREVIEW_DELAY_MS) => {
       cancelScheduledSet();
@@ -229,6 +264,7 @@ export function SearchFormPreviewProvider({
         preview,
         setPreview,
         scheduleSetPreview,
+        applyCriteria,
         clearPreview,
         scheduleClearPreview,
       }}
@@ -262,6 +298,24 @@ export function useSimpleFieldsPreview() {
   const snapshotRef = useRef<FieldSnapshot[] | null>(null);
 
   useEffect(() => {
+    function onApply(e: Event) {
+      const criteria = (e as CustomEvent<SearchCriteria>).detail;
+      if (!criteria) return;
+      const form = document.getElementById(FORM_ID) as HTMLFormElement | null;
+      if (!form) return;
+      // Commit: no restaurar lo anterior.
+      snapshotRef.current = null;
+      // Sin `change` en CCAA: MunicipalityFilter aplica código en el mismo evento.
+      paintSimpleFields(form, criteria, { ghost: false });
+      setPreviewingFlag(form, false);
+      form.dispatchEvent(new Event("input", { bubbles: true }));
+      form.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+    window.addEventListener(SEARCH_APPLY_CRITERIA_EVENT, onApply);
+    return () => window.removeEventListener(SEARCH_APPLY_CRITERIA_EVENT, onApply);
+  }, []);
+
+  useEffect(() => {
     const form = document.getElementById(FORM_ID) as HTMLFormElement | null;
     if (!form) return;
 
@@ -278,7 +332,7 @@ export function useSimpleFieldsPreview() {
       snapshotRef.current = takeSnapshot(form);
     }
     setPreviewingFlag(form, true);
-    paintSimpleFields(form, preview);
+    paintSimpleFields(form, preview, { ghost: true });
   }, [preview]);
 
   useEffect(() => {
@@ -289,6 +343,8 @@ export function useSimpleFieldsPreview() {
       const target = e.target;
       if (!(target instanceof HTMLElement)) return;
       if (!form.contains(target)) return;
+      // Chips de recientes: focus no debe despintar (click = aplicar).
+      if (target.closest("[data-recent-searches]")) return;
       clearPreview();
     };
 

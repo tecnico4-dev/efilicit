@@ -1,10 +1,7 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
-import { flushSync } from "react-dom";
 import { formatCriteriaSummary } from "@/lib/criteria-display";
-import { searchHrefFromCriteria } from "@/app/favorites/favorites-shared";
 import { cn } from "@/lib/cn";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import {
@@ -15,7 +12,8 @@ import { useSearchFormPreview } from "./search-form-preview";
 
 /**
  * Historial discreto junto al marcador de guardar: «Búsquedas recientes»
- * despliega chips (máx. 5). Hover = preview fantasma; click = buscar.
+ * despliega chips (máx. 5). Hover = preview fantasma; click = rellenar form
+ * (sin buscar; el panel permanece abierto).
  */
 export function RecentSearchesList({
   items,
@@ -28,8 +26,7 @@ export function RecentSearchesList({
   /** Nombres de municipio por código INE (para el resumen del chip). */
   municipalityNames?: Readonly<Record<string, string>>;
 }) {
-  const router = useRouter();
-  const { scheduleSetPreview, clearPreview, scheduleClearPreview } =
+  const { scheduleSetPreview, applyCriteria, clearPreview, scheduleClearPreview } =
     useSearchFormPreview();
   const [open, setOpen] = useState(false);
   const [list, setList] = useState(items);
@@ -63,16 +60,11 @@ export function RecentSearchesList({
   }
 
   function onApply(criteria: RecentSearch["criteria"]) {
-    // Restaurar snapshot de forma síncrona antes de navegar; si no, el
-    // preview fantasma compite con el remount del form desde la URL.
-    flushSync(() => {
-      clearPreview();
-    });
-    router.push(searchHrefFromCriteria(criteria));
+    applyCriteria(criteria);
   }
 
   return (
-    <div className="flex w-full min-w-0 flex-col gap-1.5">
+    <div data-recent-searches className="flex w-full min-w-0 flex-col gap-1.5">
       <div className="flex w-full items-center justify-end gap-2">
         <button
           type="button"

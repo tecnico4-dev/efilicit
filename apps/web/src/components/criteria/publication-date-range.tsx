@@ -15,9 +15,11 @@ import {
   useOptionalSearchFeedback,
 } from "@/app/search/search-feedback";
 import {
+  SEARCH_APPLY_CRITERIA_EVENT,
   SEARCH_PREVIEW_GHOST_CLASS,
   useOptionalSearchFormPreview,
 } from "@/app/search/search-form-preview";
+import type { SearchCriteria } from "@efilicit/types";
 
 const WEEKDAYS = ["Lu", "Ma", "Mi", "Ju", "Vi", "Sa", "Do"] as const;
 
@@ -146,6 +148,27 @@ export function PublicationDateRange({
     };
     window.addEventListener(CLEAR_SEARCH_EVENT, onClear);
     return () => window.removeEventListener(CLEAR_SEARCH_EVENT, onClear);
+  }, []);
+
+  useEffect(() => {
+    function onApply(e: Event) {
+      const criteria = (e as CustomEvent<SearchCriteria>).detail;
+      if (!criteria) return;
+      const initial = criteriaToFilterInitial(criteria);
+      setFrom(initial.pubFrom);
+      setTo(initial.pubTo);
+      setDraftStart(null);
+      setHoverDay(null);
+      setPickInicio(true);
+      setPickFin(true);
+      setPanel("menu");
+      setOpen(false);
+      const anchor =
+        parseIso(initial.pubFrom) ?? parseIso(initial.pubTo) ?? today();
+      setViewMonth(startOfMonth(anchor));
+    }
+    window.addEventListener(SEARCH_APPLY_CRITERIA_EVENT, onApply);
+    return () => window.removeEventListener(SEARCH_APPLY_CRITERIA_EVENT, onApply);
   }, []);
 
   useEffect(() => {

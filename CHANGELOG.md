@@ -23,7 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Buscador: «Solo en plazo» marcado por defecto (desmarcable; URL `en_plazo=0` al buscar sin él).
 - Buscador: Estado / Procedimiento / Tipo de contrato pasan a multi-selección con ticks (Todos por defecto; varios valores = OR).
-- Buscador: click en chip de «Búsquedas recientes» aplica criterios y navega (ya no se queda solo el preview fantasma).
+- Buscador: click en chip de «Búsquedas recientes» rellena el formulario (sin buscar ni cerrar el panel); hover sigue siendo preview fantasma.
 - CCAA ingest (ADR 025): Catalunya ventana SoQL 7 días + Euskadi cabeza `max_pages`; ambas con RAW content-addressed por unidad (`rows/{sha256}.json`) y skip por checksum — [ADR 025](docs/adr/025-catalunya-raw-row-incremental.md) (extiende [022](docs/adr/022-placsp-raw-entry-incremental.md)).
 - Favoritos web: se quitan los enlaces «Ir a / Volver a» en listados de licitaciones y búsquedas favoritas.
 - Favicon: marca «e» Eficen (`app/icon.png`); se retira el `favicon.ico` por defecto de Next.
