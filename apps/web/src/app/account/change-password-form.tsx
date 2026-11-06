@@ -104,12 +104,15 @@ export function ChangePasswordForm({
   cancelLabel = "Cancelar",
   /** Si false, el tip «i» lo pone el contenedor (p. ej. modal). */
   showPolicyInfo = true,
+  /** Contraseña actual ya verificada (modal Cuenta); evita reutilizarla como nueva. */
+  previousPassword,
 }: {
   onDone?: () => void;
   onCancel?: () => void;
   submitLabel?: string;
   cancelLabel?: string;
   showPolicyInfo?: boolean;
+  previousPassword?: string;
 }) {
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -125,6 +128,14 @@ export function ChangePasswordForm({
 
     if (password !== confirm) {
       setError("Las contraseñas no coinciden.");
+      return;
+    }
+    if (
+      previousPassword != null &&
+      previousPassword !== "" &&
+      password === previousPassword
+    ) {
+      setError("La nueva contraseña es igual a la actual.");
       return;
     }
     const charsetError = passwordCharsetErrorMessage(password);
@@ -237,6 +248,8 @@ export function ChangePasswordModal({
   const [mounted, setMounted] = useState(false);
   const [step, setStep] = useState<ModalStep>("verify");
   const [currentPassword, setCurrentPassword] = useState("");
+  /** Conservada tras verificar, para comparar con la nueva en el paso 2. */
+  const [verifiedPassword, setVerifiedPassword] = useState("");
   const [verifyError, setVerifyError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const [forgotHint, setForgotHint] = useState(false);
@@ -249,6 +262,7 @@ export function ChangePasswordModal({
     if (!open) return;
     setStep("verify");
     setCurrentPassword("");
+    setVerifiedPassword("");
     setVerifyError(null);
     setPending(false);
     setForgotHint(false);
@@ -295,6 +309,7 @@ export function ChangePasswordModal({
       return;
     }
 
+    setVerifiedPassword(currentPassword);
     setCurrentPassword("");
     setStep("change");
   }
@@ -338,6 +353,23 @@ export function ChangePasswordModal({
                   value={currentPassword}
                   onChange={(e) => setCurrentPassword(e.target.value)}
                 />
+                <p className="mt-1.5 text-right">
+                  <button
+                    type="button"
+                    onClick={() => setForgotHint(true)}
+                    className="text-xs text-primary underline-offset-2 hover:text-primary-dark hover:underline"
+                  >
+                    ¿Has olvidado tu contraseña?
+                  </button>
+                </p>
+                {forgotHint ? (
+                  <p
+                    className="mt-2 rounded-lg border border-border bg-muted/50 px-3 py-2 text-xs text-muted-foreground"
+                    role="status"
+                  >
+                    Contacta con el administrador para restablecerla.
+                  </p>
+                ) : null}
               </div>
               {verifyError ? (
                 <p
@@ -360,20 +392,6 @@ export function ChangePasswordModal({
                   Cancelar
                 </Button>
               </div>
-              <div>
-                <button
-                  type="button"
-                  className="text-sm font-medium text-link hover:underline"
-                  onClick={() => setForgotHint((v) => !v)}
-                >
-                  ¿Has olvidado tu contraseña?
-                </button>
-                {forgotHint ? (
-                  <p className="mt-1.5 text-sm text-muted-foreground" role="status">
-                    Contacta con el administrador para restablecerla.
-                  </p>
-                ) : null}
-              </div>
             </form>
           </>
         ) : (
@@ -392,6 +410,7 @@ export function ChangePasswordModal({
                 onDone={onClose}
                 onCancel={onClose}
                 showPolicyInfo={false}
+                previousPassword={verifiedPassword}
               />
             </div>
           </>
