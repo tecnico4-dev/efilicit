@@ -210,17 +210,17 @@ export function AlertsPanel({
                 className="flex max-h-[min(92vh,48rem)] w-full max-w-4xl flex-col overflow-hidden rounded-xl border border-border bg-surface shadow-xl"
                 onClick={(e) => e.stopPropagation()}
               >
-                <div className="flex items-start justify-between gap-3 border-b border-border px-4 py-3 sm:px-5">
+                <div className="flex items-start justify-between gap-3 border-b border-primary-dark/30 bg-primary px-4 py-3 sm:px-5">
                   <h2
                     id={titleId}
-                    className="text-lg font-semibold tracking-tight text-foreground"
+                    className="text-lg font-semibold tracking-tight text-primary-foreground"
                   >
                     Crear alerta
                   </h2>
                   <button
                     type="button"
                     onClick={closeModal}
-                    className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-destructive text-destructive transition-colors hover:bg-destructive/10 hover:text-destructive"
+                    className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-primary-foreground/50 text-primary-foreground transition-colors hover:bg-primary-foreground/15"
                     aria-label="Cerrar"
                   >
                     <span aria-hidden className="text-xl leading-none">
