@@ -38,6 +38,19 @@ export type SearchCcaaSelectionDetail = {
   codes: string[];
 };
 
+/** Fijar códigos CCAA desde fuera (p. ej. estrechar al elegir municipio). */
+export const SEARCH_CCAA_SET_EVENT = "efilicit:search-ccaa-set";
+
+export type SearchCcaaSetDetail = {
+  codes: string[];
+};
+
+/**
+ * Se dispara al abrir el desplegable de CCAA.
+ * Municipio: si había snapshot pre-municipio, restaura CCAA y limpia el municipio.
+ */
+export const SEARCH_CCAA_MENU_OPEN_EVENT = "efilicit:search-ccaa-menu-open";
+
 const SIMPLE_FIELD_NAMES = [
   "q",
   "min",

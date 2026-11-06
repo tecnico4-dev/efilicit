@@ -7,12 +7,16 @@ import { criteriaToFilterInitial } from "@/lib/criteria-display";
 import { ccaaShortLabel } from "@/lib/geo-ccaa";
 import { cn } from "@/lib/cn";
 import { SEARCH_FORM_ID } from "./save-search-button";
+import { CLEAR_SEARCH_EVENT } from "./search-feedback";
 import {
   SEARCH_APPLY_CRITERIA_EVENT,
+  SEARCH_CCAA_MENU_OPEN_EVENT,
   SEARCH_CCAA_SELECTION_EVENT,
+  SEARCH_CCAA_SET_EVENT,
   SEARCH_PREVIEW_GHOST_CLASS,
   useOptionalSearchFormPreview,
   type SearchCcaaSelectionDetail,
+  type SearchCcaaSetDetail,
 } from "./search-form-preview";
 import { AnchoredPortal } from "@/components/ui/anchored-portal";
 import type { SearchCriteria } from "@efilicit/types";
@@ -43,7 +47,8 @@ type Props = {
 
 /**
  * Typeahead de municipio: deshabilitado sin CCAA; opciones = municipios
- * de todas las CCAA marcadas con ≥1 tender.
+ * de todas las CCAA marcadas. Al fijar un municipio, la CCAA se estrecha a
+ * la suya (guardando snapshot); al quitarlo o reabrir CCAA, se restauran.
  */
 export function MunicipalityFilter({
   initialCcaaCodes,
@@ -70,12 +75,49 @@ export function MunicipalityFilter({
   const [previewLoading, setPreviewLoading] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const ccaaCodesRef = useRef(ccaaCodes);
+  ccaaCodesRef.current = ccaaCodes;
+  const selectedCodeRef = useRef(selectedCode);
+  selectedCodeRef.current = selectedCode;
+  /** CCAA elegidas antes de estrechar al fijar municipio. */
+  const preMunicipalityCcaaRef = useRef<string[] | null>(null);
 
   const enabled = ccaaCodes.length > 0;
   const showCcaaHint = ccaaCodes.length >= 2;
   const noMunicipalities = enabled && !loading && options.length === 0;
   const inputDisabled = !enabled || noMunicipalities;
   const interactionLocked = inputDisabled || isPreviewing;
+
+  function setCcaaCodesExternal(codes: string[]) {
+    window.dispatchEvent(
+      new CustomEvent<SearchCcaaSetDetail>(SEARCH_CCAA_SET_EVENT, {
+        detail: { codes },
+      }),
+    );
+  }
+
+  function pinMunicipality(opt: Option) {
+    setSelectedCode(opt.code);
+    setText(opt.name);
+    setOpen(false);
+    if (preMunicipalityCcaaRef.current == null) {
+      preMunicipalityCcaaRef.current = [...ccaaCodesRef.current];
+    }
+    const current = ccaaCodesRef.current;
+    if (current.length !== 1 || current[0] !== opt.ccaaCode) {
+      setCcaaCodesExternal([opt.ccaaCode]);
+    }
+  }
+
+  function clearMunicipalityCommitted() {
+    setSelectedCode("");
+    setText("");
+    setOpen(false);
+    const snap = preMunicipalityCcaaRef.current;
+    if (!snap) return;
+    preMunicipalityCcaaRef.current = null;
+    setCcaaCodesExternal(snap);
+  }
 
   useEffect(() => {
     function onCcaaSelection(e: Event) {
@@ -84,9 +126,23 @@ export function MunicipalityFilter({
       setCcaaCodes(next);
       setOpen(false);
     }
+    function onCcaaMenuOpen() {
+      if (!selectedCodeRef.current) return;
+      const snap = preMunicipalityCcaaRef.current;
+      setSelectedCode("");
+      setText("");
+      setOpen(false);
+      if (snap) {
+        preMunicipalityCcaaRef.current = null;
+        setCcaaCodesExternal(snap);
+      }
+    }
     window.addEventListener(SEARCH_CCAA_SELECTION_EVENT, onCcaaSelection);
-    return () =>
+    window.addEventListener(SEARCH_CCAA_MENU_OPEN_EVENT, onCcaaMenuOpen);
+    return () => {
       window.removeEventListener(SEARCH_CCAA_SELECTION_EVENT, onCcaaSelection);
+      window.removeEventListener(SEARCH_CCAA_MENU_OPEN_EVENT, onCcaaMenuOpen);
+    };
   }, []);
 
   useEffect(() => {
@@ -103,13 +159,25 @@ export function MunicipalityFilter({
       if (cancelled) return;
       setLoading(false);
       setOptions(res.data);
-      if (selectedCode) {
-        const still = res.data.find((o) => o.code === selectedCode);
+      if (selectedCodeRef.current) {
+        const still = res.data.find((o) => o.code === selectedCodeRef.current);
         if (!still) {
+          // CCAA ya no cubre el municipio: limpiar sin restaurar snapshot
+          // (la selección de CCAA es la fuente de verdad).
           setSelectedCode("");
           setText("");
-        } else if (!text) {
-          setText(still.name);
+          preMunicipalityCcaaRef.current = null;
+        } else {
+          if (!text) setText(still.name);
+          // URL / apply con varias CCAA + municipio → estrechar CCAA a la del municipio.
+          const current = ccaaCodesRef.current;
+          if (
+            current.length > 1 &&
+            preMunicipalityCcaaRef.current == null
+          ) {
+            preMunicipalityCcaaRef.current = [...current];
+            setCcaaCodesExternal([still.ccaaCode]);
+          }
         }
       }
     });
@@ -153,6 +221,7 @@ export function MunicipalityFilter({
       if (!criteria) return;
       const initial = criteriaToFilterInitial(criteria);
       setOpen(false);
+      preMunicipalityCcaaRef.current = null;
       setCcaaCodes(initial.ccaaCodes);
       setSelectedCode(initial.municipalityCode);
       if (!initial.municipalityCode) {
@@ -165,8 +234,18 @@ export function MunicipalityFilter({
       }
       setText("");
     }
+    function onClear() {
+      preMunicipalityCcaaRef.current = null;
+      setSelectedCode("");
+      setText("");
+      setOpen(false);
+    }
     window.addEventListener(SEARCH_APPLY_CRITERIA_EVENT, onApply);
-    return () => window.removeEventListener(SEARCH_APPLY_CRITERIA_EVENT, onApply);
+    window.addEventListener(CLEAR_SEARCH_EVENT, onClear);
+    return () => {
+      window.removeEventListener(SEARCH_APPLY_CRITERIA_EVENT, onApply);
+      window.removeEventListener(CLEAR_SEARCH_EVENT, onClear);
+    };
   }, []);
 
   useEffect(() => {
@@ -185,20 +264,21 @@ export function MunicipalityFilter({
         startsWithFold(exact.name, text) &&
         fold(exact.name) === fold(text)
       ) {
-        setSelectedCode(exact.code);
-        setText(exact.name);
+        pinMunicipality(exact);
         return;
       }
-      setText("");
-      setSelectedCode("");
+      if (preMunicipalityCcaaRef.current || text) {
+        clearMunicipalityCommitted();
+      } else {
+        setText("");
+      }
       return;
     }
     const sel = options.find((o) => o.code === selectedCode);
     if (!sel || fold(text) !== fold(sel.name)) {
-      setText("");
-      setSelectedCode("");
+      clearMunicipalityCommitted();
     } else {
-      setText(sel.name);
+      pinMunicipality(sel);
     }
   }
 
@@ -209,8 +289,7 @@ export function MunicipalityFilter({
       const codeInput = form.elements.namedItem("municipality");
       if (!(codeInput instanceof HTMLInputElement)) return;
       if (!codeInput.value.trim()) {
-        setText("");
-        setSelectedCode("");
+        clearMunicipalityCommitted();
       }
     };
     form.addEventListener("submit", onSubmit);
@@ -292,15 +371,11 @@ export function MunicipalityFilter({
         onKeyDown={(e) => {
           if (interactionLocked) return;
           if (e.key === "Escape") {
-            setText("");
-            setSelectedCode("");
-            setOpen(false);
+            clearMunicipalityCommitted();
           }
           if (e.key === "Enter" && open && filtered.length === 1) {
             e.preventDefault();
-            setSelectedCode(filtered[0].code);
-            setText(filtered[0].name);
-            setOpen(false);
+            pinMunicipality(filtered[0]);
           }
         }}
         onBlur={() => {
@@ -346,11 +421,7 @@ export function MunicipalityFilter({
                 type="button"
                 className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-foreground hover:bg-muted"
                 onMouseDown={(e) => e.preventDefault()}
-                onClick={() => {
-                  setSelectedCode(opt.code);
-                  setText(opt.name);
-                  setOpen(false);
-                }}
+                onClick={() => pinMunicipality(opt)}
               >
                 <span className="min-w-0 flex-1 truncate">{opt.name}</span>
                 {showCcaaHint ? (

@@ -4,11 +4,14 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { CLEAR_SEARCH_EVENT } from "@/app/search/search-feedback";
 import {
   SEARCH_APPLY_CRITERIA_EVENT,
+  SEARCH_CCAA_MENU_OPEN_EVENT,
   SEARCH_CCAA_SELECTION_EVENT,
+  SEARCH_CCAA_SET_EVENT,
   SEARCH_PREVIEW_GHOST_CLASS,
   SEARCH_PREVIEW_MULTI_EVENT,
   SEARCH_RESTORE_MULTI_EVENT,
   type SearchCcaaSelectionDetail,
+  type SearchCcaaSetDetail,
   type SearchPreviewMultiDetail,
 } from "@/app/search/search-form-preview";
 import { AnchoredPortal } from "@/components/ui/anchored-portal";
@@ -110,13 +113,24 @@ export function CriteriaMultiSelect({
       setPreviewing(false);
       setOpen(false);
     }
+    function onCcaaSet(e: Event) {
+      if (name !== "ccaa") return;
+      const detail = (e as CustomEvent<SearchCcaaSetDetail>).detail;
+      if (!detail) return;
+      const next = toUiSelection(detail.codes, allValues);
+      selectedRef.current = next;
+      setSelected(next);
+      setPreviewing(false);
+    }
     window.addEventListener(SEARCH_PREVIEW_MULTI_EVENT, onPreview);
     window.addEventListener(SEARCH_RESTORE_MULTI_EVENT, onRestore);
     window.addEventListener(SEARCH_APPLY_CRITERIA_EVENT, onApply);
+    window.addEventListener(SEARCH_CCAA_SET_EVENT, onCcaaSet);
     return () => {
       window.removeEventListener(SEARCH_PREVIEW_MULTI_EVENT, onPreview);
       window.removeEventListener(SEARCH_RESTORE_MULTI_EVENT, onRestore);
       window.removeEventListener(SEARCH_APPLY_CRITERIA_EVENT, onApply);
+      window.removeEventListener(SEARCH_CCAA_SET_EVENT, onCcaaSet);
     };
   }, [name, allValues]);
 
@@ -155,6 +169,10 @@ export function CriteriaMultiSelect({
         : `${selected.length} seleccionados`;
 
   function openMenu() {
+    if (name === "ccaa") {
+      // Sync: municipio puede restaurar CCAA previas y limpiarse.
+      window.dispatchEvent(new Event(SEARCH_CCAA_MENU_OPEN_EVENT));
+    }
     openSnapshotRef.current = [...selectedRef.current];
     setOpen(true);
   }
