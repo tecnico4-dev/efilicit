@@ -4,6 +4,12 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/button";
 import { PasswordInput } from "@/components/ui/password-input";
+import {
+  PASSWORD_MIN_LENGTH,
+  PASSWORD_POLICY_HINT,
+  mapAuthPasswordError,
+  passwordPolicyErrorMessage,
+} from "@/lib/password-policy";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 const META_PASSWORD_CHANGED = "password_changed";
@@ -65,8 +71,9 @@ export function ChangePasswordForm({
     setError(null);
     setSaved(false);
 
-    if (password.length < 8) {
-      setError("La contraseña debe tener al menos 8 caracteres.");
+    const policyError = passwordPolicyErrorMessage(password);
+    if (policyError) {
+      setError(policyError);
       return;
     }
     if (password !== confirm) {
@@ -83,7 +90,7 @@ export function ChangePasswordForm({
     setPending(false);
 
     if (updateError) {
-      setError(updateError.message);
+      setError(mapAuthPasswordError(updateError.message));
       return;
     }
 
@@ -106,10 +113,13 @@ export function ChangePasswordForm({
           id="new_password"
           autoComplete="new-password"
           required
-          minLength={8}
+          minLength={PASSWORD_MIN_LENGTH}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
+        <p className="mt-1 text-xs text-muted-foreground">
+          {PASSWORD_POLICY_HINT}
+        </p>
       </div>
       <div>
         <label
@@ -122,7 +132,7 @@ export function ChangePasswordForm({
           id="confirm_password"
           autoComplete="new-password"
           required
-          minLength={8}
+          minLength={PASSWORD_MIN_LENGTH}
           value={confirm}
           onChange={(e) => setConfirm(e.target.value)}
         />
