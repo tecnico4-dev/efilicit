@@ -7,6 +7,8 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 export type PlaceMunicipalityOption = {
   code: string;
   name: string;
+  /** CCAA de la que se obtuvo el municipio (`geo_ccaa.code`). */
+  ccaaCode: string;
 };
 
 export async function listPlaceMunicipalities(
@@ -30,6 +32,7 @@ export async function listPlaceMunicipalities(
     data: (data ?? []).map((row) => ({
       code: row.code,
       name: row.name,
+      ccaaCode: code,
     })),
     error: null,
   };

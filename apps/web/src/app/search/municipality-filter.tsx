@@ -4,6 +4,7 @@ import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { listPlaceMunicipalitiesForCcaas } from "@/lib/queries/list-place-municipalities";
 import { criteriaToFilterInitial } from "@/lib/criteria-display";
+import { ccaaShortLabel } from "@/lib/geo-ccaa";
 import { cn } from "@/lib/cn";
 import { SEARCH_FORM_ID } from "./save-search-button";
 import {
@@ -16,7 +17,7 @@ import {
 import { AnchoredPortal } from "@/components/ui/anchored-portal";
 import type { SearchCriteria } from "@efilicit/types";
 
-type Option = { code: string; name: string };
+type Option = { code: string; name: string; ccaaCode: string };
 
 function fold(value: string): string {
   return value
@@ -71,6 +72,7 @@ export function MunicipalityFilter({
   const inputRef = useRef<HTMLInputElement>(null);
 
   const enabled = ccaaCodes.length > 0;
+  const showCcaaHint = ccaaCodes.length >= 2;
   const noMunicipalities = enabled && !loading && options.length === 0;
   const inputDisabled = !enabled || noMunicipalities;
   const interactionLocked = inputDisabled || isPreviewing;
@@ -342,7 +344,7 @@ export function MunicipalityFilter({
             >
               <button
                 type="button"
-                className="w-full px-3 py-1.5 text-left text-sm text-foreground hover:bg-muted"
+                className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-foreground hover:bg-muted"
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={() => {
                   setSelectedCode(opt.code);
@@ -350,7 +352,12 @@ export function MunicipalityFilter({
                   setOpen(false);
                 }}
               >
-                {opt.name}
+                <span className="min-w-0 flex-1 truncate">{opt.name}</span>
+                {showCcaaHint ? (
+                  <span className="shrink-0 text-xs text-muted-foreground/70">
+                    {ccaaShortLabel(opt.ccaaCode)}
+                  </span>
+                ) : null}
               </button>
             </li>
           ))}
