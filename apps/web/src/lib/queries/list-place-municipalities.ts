@@ -34,3 +34,29 @@ export async function listPlaceMunicipalities(
     error: null,
   };
 }
+
+/** Unión de municipios de varias CCAA (por código; orden alfabético por nombre). */
+export async function listPlaceMunicipalitiesForCcaas(
+  client: SupabaseClient<Database>,
+  ccaaCodes: string[],
+): Promise<{ data: PlaceMunicipalityOption[]; error: Error | null }> {
+  const codes = [...new Set(ccaaCodes.map((c) => c.trim()).filter(Boolean))];
+  if (codes.length === 0) {
+    return { data: [], error: null };
+  }
+
+  const results = await Promise.all(
+    codes.map((code) => listPlaceMunicipalities(client, code)),
+  );
+  const firstError = results.find((r) => r.error)?.error ?? null;
+  const byCode = new Map<string, PlaceMunicipalityOption>();
+  for (const res of results) {
+    for (const row of res.data) {
+      if (!byCode.has(row.code)) byCode.set(row.code, row);
+    }
+  }
+  const data = [...byCode.values()].sort((a, b) =>
+    a.name.localeCompare(b.name, "es"),
+  );
+  return { data, error: firstError };
+}

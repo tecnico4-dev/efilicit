@@ -130,7 +130,8 @@ export type CriteriaFilterInitial = {
   cpvMatch: "any" | "all";
   min: string;
   max: string;
-  ccaa: string;
+  /** Códigos INE de CCAA (vacío = Todas). */
+  ccaaCodes: string[];
   municipalityCode: string;
   municipalityName: string;
   /** Códigos de estado seleccionados (vacío = Todos). */
@@ -149,7 +150,7 @@ export function emptyCriteriaFilterInitial(): CriteriaFilterInitial {
     cpvMatch: "any",
     min: "",
     max: "",
-    ccaa: "",
+    ccaaCodes: [],
     municipalityCode: "",
     municipalityName: "",
     statuses: [],
@@ -185,7 +186,9 @@ export function criteriaToFilterInitial(
       criteria.estimated_value_max != null
         ? String(criteria.estimated_value_max)
         : "",
-    ccaa: criteria.geography?.ccaa_codes?.[0] ?? "",
+    ccaaCodes: criteria.geography?.ccaa_codes?.length
+      ? [...criteria.geography.ccaa_codes]
+      : [],
     municipalityCode: criteria.geography?.municipality_codes?.[0] ?? "",
     municipalityName: "",
     statuses: criteria.statuses?.length ? [...criteria.statuses] : [],

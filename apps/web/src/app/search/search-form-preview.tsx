@@ -28,13 +28,20 @@ export type SearchPreviewMultiDetail = {
   status: string[];
   procedure: string[];
   contract_type: string[];
+  ccaa: string[];
+};
+
+/** CCAA UI seleccionadas (incluye «Todas» = todos los códigos). Municipio escucha esto. */
+export const SEARCH_CCAA_SELECTION_EVENT = "efilicit:search-ccaa-selection";
+
+export type SearchCcaaSelectionDetail = {
+  codes: string[];
 };
 
 const SIMPLE_FIELD_NAMES = [
   "q",
   "min",
   "max",
-  "ccaa",
   "en_plazo",
 ] as const;
 
@@ -115,14 +122,13 @@ function applyGhost(el: HTMLElement, on: boolean) {
 function paintSimpleFields(
   form: HTMLFormElement,
   criteria: SearchCriteria,
-  opts: { ghost: boolean; notifyCcaa?: boolean },
+  opts: { ghost: boolean },
 ) {
   const initial = criteriaToFilterInitial(criteria);
   const values: Record<Exclude<SimpleFieldName, "en_plazo">, string> = {
     q: initial.q,
     min: initial.min,
     max: initial.max,
-    ccaa: initial.ccaa,
   };
 
   for (const name of SIMPLE_FIELD_NAMES) {
@@ -138,13 +144,6 @@ function paintSimpleFields(
     applyGhost(el, opts.ghost);
   }
 
-  if (opts.notifyCcaa) {
-    const ccaaEl = resolveField(form, "ccaa");
-    if (ccaaEl instanceof HTMLSelectElement) {
-      ccaaEl.dispatchEvent(new Event("change", { bubbles: true }));
-    }
-  }
-
   if (opts.ghost) {
     window.dispatchEvent(
       new CustomEvent<SearchPreviewMultiDetail>(SEARCH_PREVIEW_MULTI_EVENT, {
@@ -152,6 +151,7 @@ function paintSimpleFields(
           status: initial.statuses,
           procedure: initial.procedureTypes,
           contract_type: initial.contractTypes,
+          ccaa: initial.ccaaCodes,
         },
       }),
     );

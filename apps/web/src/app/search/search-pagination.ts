@@ -29,7 +29,7 @@ export type SearchHrefFilters = {
   cpvMatch: "any" | "all";
   minRaw: string;
   maxRaw: string;
-  ccaa: string;
+  ccaaCodes: string[];
   municipality: string;
   statuses: string[];
   procedures: string[];
@@ -65,7 +65,7 @@ export function searchHref(
   }
   if (filters.minRaw) params.set("min", filters.minRaw);
   if (filters.maxRaw) params.set("max", filters.maxRaw);
-  if (filters.ccaa) params.set("ccaa", filters.ccaa);
+  for (const c of filters.ccaaCodes) params.append("ccaa", c);
   if (filters.municipality) params.set("municipality", filters.municipality);
   for (const s of filters.statuses) params.append("status", s);
   for (const p of filters.procedures) params.append("procedure", p);

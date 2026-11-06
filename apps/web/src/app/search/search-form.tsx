@@ -52,6 +52,7 @@ function hasAnyCriterion(form: HTMLFormElement): boolean {
   ] as const;
   return names.some((name) => {
     if (
+      name === "ccaa" ||
       name === "status" ||
       name === "procedure" ||
       name === "contract_type"

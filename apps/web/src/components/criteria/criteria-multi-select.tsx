@@ -4,9 +4,11 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { CLEAR_SEARCH_EVENT } from "@/app/search/search-feedback";
 import {
   SEARCH_APPLY_CRITERIA_EVENT,
+  SEARCH_CCAA_SELECTION_EVENT,
   SEARCH_PREVIEW_GHOST_CLASS,
   SEARCH_PREVIEW_MULTI_EVENT,
   SEARCH_RESTORE_MULTI_EVENT,
+  type SearchCcaaSelectionDetail,
   type SearchPreviewMultiDetail,
 } from "@/app/search/search-form-preview";
 import { AnchoredPortal } from "@/components/ui/anchored-portal";
@@ -16,7 +18,7 @@ import type { SearchFilterOption } from "@/lib/queries";
 import type { SearchCriteria } from "@efilicit/types";
 
 /**
- * Desplegable multi-valor con ticks (Estado / Procedimiento / Tipo).
+ * Desplegable multi-valor con ticks (Estado / Procedimiento / Tipo / CCAA).
  * «Todos» = todas marcadas (no envía params). Parcial = OR en la RPC.
  * «Limpiar» deja 0 ticks; al cerrar sin selección se restaura lo anterior.
  */
@@ -26,12 +28,16 @@ export function CriteriaMultiSelect({
   label,
   options,
   initialSelected,
+  allLabel = "Todos",
+  noneLabel = "Ninguno",
 }: {
   id: string;
   name: string;
   label: string;
   options: SearchFilterOption[];
   initialSelected: string[];
+  allLabel?: string;
+  noneLabel?: string;
 }) {
   const allValues = useMemo(
     () => options.map((o) => o.value),
@@ -75,6 +81,7 @@ export function CriteriaMultiSelect({
       if (name === "status") return initial.statuses;
       if (name === "procedure") return initial.procedureTypes;
       if (name === "contract_type") return initial.contractTypes;
+      if (name === "ccaa") return initial.ccaaCodes;
       return [];
     }
 
@@ -113,6 +120,21 @@ export function CriteriaMultiSelect({
     };
   }, [name, allValues]);
 
+  useEffect(() => {
+    const form = triggerRef.current?.closest("form");
+    if (form) {
+      form.dispatchEvent(new Event("input", { bubbles: true }));
+      form.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+    if (name === "ccaa") {
+      window.dispatchEvent(
+        new CustomEvent<SearchCcaaSelectionDetail>(SEARCH_CCAA_SELECTION_EVENT, {
+          detail: { codes: selected },
+        }),
+      );
+    }
+  }, [name, selected]);
+
   const labelByValue = useMemo(() => {
     const m = new Map<string, string>();
     for (const o of options) m.set(o.value, o.label);
@@ -125,9 +147,9 @@ export function CriteriaMultiSelect({
   const formValues = isAll || selected.length === 0 ? [] : selected;
 
   const summary = isAll
-    ? "Todos"
+    ? allLabel
     : selected.length === 0
-      ? "Ninguno"
+      ? noneLabel
       : selected.length <= 2
         ? selected.map((v) => labelByValue.get(v) ?? v).join(", ")
         : `${selected.length} seleccionados`;
@@ -198,7 +220,7 @@ export function CriteriaMultiSelect({
               )}
               onClick={() => setSelected([...allValues])}
             >
-              Todos
+              {allLabel}
             </button>
             <button
               type="button"

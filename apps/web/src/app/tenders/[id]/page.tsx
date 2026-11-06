@@ -98,7 +98,7 @@ function backLinkFromParams(
     const cpvMatch = first(params.cpv_match).trim().toLowerCase();
     const min = first(params.min).trim();
     const max = first(params.max).trim();
-    const ccaa = first(params.ccaa).trim();
+    const ccaaCodes = allParam(params.ccaa);
     const municipality = first(params.municipality).trim();
     const statuses = allParam(params.status);
     const procedures = allParam(params.procedure);
@@ -113,7 +113,7 @@ function backLinkFromParams(
     }
     if (min) qs.set("min", min);
     if (max) qs.set("max", max);
-    if (ccaa) qs.set("ccaa", ccaa);
+    for (const c of ccaaCodes) qs.append("ccaa", c);
     if (municipality) qs.set("municipality", municipality);
     for (const s of statuses) qs.append("status", s);
     for (const p of procedures) qs.append("procedure", p);

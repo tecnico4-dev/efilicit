@@ -2,14 +2,16 @@
 
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
-import { listPlaceMunicipalities } from "@/lib/queries/list-place-municipalities";
+import { listPlaceMunicipalitiesForCcaas } from "@/lib/queries/list-place-municipalities";
 import { criteriaToFilterInitial } from "@/lib/criteria-display";
 import { cn } from "@/lib/cn";
 import { SEARCH_FORM_ID } from "./save-search-button";
 import {
   SEARCH_APPLY_CRITERIA_EVENT,
+  SEARCH_CCAA_SELECTION_EVENT,
   SEARCH_PREVIEW_GHOST_CLASS,
   useOptionalSearchFormPreview,
+  type SearchCcaaSelectionDetail,
 } from "./search-form-preview";
 import { AnchoredPortal } from "@/components/ui/anchored-portal";
 import type { SearchCriteria } from "@efilicit/types";
@@ -30,21 +32,20 @@ function startsWithFold(name: string, prefix: string): boolean {
 }
 
 type Props = {
-  /** CCAA inicial (URL). */
-  initialCcaa: string;
-  /** Código INE de municipio inicial (URL), si es válido para esa CCAA. */
+  /** CCAA iniciales (URL / criteria). */
+  initialCcaaCodes: string[];
+  /** Código INE de municipio inicial, si es válido para alguna CCAA. */
   initialMunicipalityCode: string;
   initialMunicipalityName?: string;
-  /** Formulario que contiene el `<select name="ccaa">` (búsqueda o alertas). */
   formId?: string;
 };
 
 /**
  * Typeahead de municipio: deshabilitado sin CCAA; opciones = municipios
- * de esa CCAA con ≥1 tender. Prefijo de texto; blur/submit sin match → cancela.
+ * de todas las CCAA marcadas con ≥1 tender.
  */
 export function MunicipalityFilter({
-  initialCcaa,
+  initialCcaaCodes,
   initialMunicipalityCode,
   initialMunicipalityName = "",
   formId = SEARCH_FORM_ID,
@@ -55,10 +56,10 @@ export function MunicipalityFilter({
     ? criteriaToFilterInitial(formPreview.preview)
     : null;
   const isPreviewing = previewInitial != null;
-  const previewCcaa = previewInitial?.ccaa ?? "";
+  const previewCcaaCodes = previewInitial?.ccaaCodes ?? [];
   const previewCode = previewInitial?.municipalityCode ?? "";
 
-  const [ccaa, setCcaa] = useState(initialCcaa);
+  const [ccaaCodes, setCcaaCodes] = useState<string[]>(initialCcaaCodes);
   const [options, setOptions] = useState<Option[]>([]);
   const [loading, setLoading] = useState(false);
   const [text, setText] = useState(initialMunicipalityName);
@@ -67,39 +68,36 @@ export function MunicipalityFilter({
   const [previewName, setPreviewName] = useState("");
   const [previewLoading, setPreviewLoading] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  const enabled = ccaa !== "";
-  /** CCAA elegida pero sin municipios con licitaciones → mismo bloqueo que sin CCAA. */
+  const enabled = ccaaCodes.length > 0;
   const noMunicipalities = enabled && !loading && options.length === 0;
   const inputDisabled = !enabled || noMunicipalities;
-  /** Durante preview no se edita; el input sigue habilitado para mostrar el fantasma. */
   const interactionLocked = inputDisabled || isPreviewing;
 
   useEffect(() => {
-    const form = document.getElementById(formId) as HTMLFormElement | null;
-    const select = form?.elements.namedItem("ccaa");
-    if (!(select instanceof HTMLSelectElement)) return;
-
-    const onCcaaChange = () => {
-      const next = select.value.trim();
-      setCcaa(next);
-      setText("");
-      setSelectedCode("");
+    function onCcaaSelection(e: Event) {
+      const detail = (e as CustomEvent<SearchCcaaSelectionDetail>).detail;
+      const next = detail?.codes ?? [];
+      setCcaaCodes(next);
       setOpen(false);
-    };
-    select.addEventListener("change", onCcaaChange);
-    return () => select.removeEventListener("change", onCcaaChange);
-  }, [formId]);
+    }
+    window.addEventListener(SEARCH_CCAA_SELECTION_EVENT, onCcaaSelection);
+    return () =>
+      window.removeEventListener(SEARCH_CCAA_SELECTION_EVENT, onCcaaSelection);
+  }, []);
 
   useEffect(() => {
-    if (!ccaa) {
+    if (ccaaCodes.length === 0) {
       setOptions([]);
+      setSelectedCode("");
+      setText("");
       return;
     }
     let cancelled = false;
     setLoading(true);
     const client = createSupabaseBrowserClient();
-    void listPlaceMunicipalities(client, ccaa).then((res) => {
+    void listPlaceMunicipalitiesForCcaas(client, ccaaCodes).then((res) => {
       if (cancelled) return;
       setLoading(false);
       setOptions(res.data);
@@ -116,11 +114,9 @@ export function MunicipalityFilter({
     return () => {
       cancelled = true;
     };
-    // Solo al cambiar CCAA (no al teclear).
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional
-  }, [ccaa]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- solo al cambiar CCAA
+  }, [ccaaCodes.join("\u0001")]);
 
-  /** Nombre de municipio solo para preview (no toca estado committed). */
   useEffect(() => {
     if (!isPreviewing) {
       setPreviewName("");
@@ -128,7 +124,7 @@ export function MunicipalityFilter({
       return;
     }
     setOpen(false);
-    if (!previewCcaa || !previewCode) {
+    if (previewCcaaCodes.length === 0 || !previewCode) {
       setPreviewName("");
       setPreviewLoading(false);
       return;
@@ -136,16 +132,18 @@ export function MunicipalityFilter({
     let cancelled = false;
     setPreviewLoading(true);
     const client = createSupabaseBrowserClient();
-    void listPlaceMunicipalities(client, previewCcaa).then((res) => {
-      if (cancelled) return;
-      setPreviewLoading(false);
-      const hit = res.data.find((o) => o.code === previewCode);
-      setPreviewName(hit?.name ?? previewCode);
-    });
+    void listPlaceMunicipalitiesForCcaas(client, previewCcaaCodes).then(
+      (res) => {
+        if (cancelled) return;
+        setPreviewLoading(false);
+        const hit = res.data.find((o) => o.code === previewCode);
+        setPreviewName(hit?.name ?? previewCode);
+      },
+    );
     return () => {
       cancelled = true;
     };
-  }, [isPreviewing, previewCcaa, previewCode]);
+  }, [isPreviewing, previewCcaaCodes.join("\u0001"), previewCode]);
 
   useEffect(() => {
     function onApply(e: Event) {
@@ -153,7 +151,7 @@ export function MunicipalityFilter({
       if (!criteria) return;
       const initial = criteriaToFilterInitial(criteria);
       setOpen(false);
-      setCcaa(initial.ccaa);
+      setCcaaCodes(initial.ccaaCodes);
       setSelectedCode(initial.municipalityCode);
       if (!initial.municipalityCode) {
         setText("");
@@ -163,32 +161,28 @@ export function MunicipalityFilter({
         setText(initial.municipalityName);
         return;
       }
-      // Nombre al cargar opciones (effect más abajo / carga CCAA).
       setText("");
     }
     window.addEventListener(SEARCH_APPLY_CRITERIA_EVENT, onApply);
     return () => window.removeEventListener(SEARCH_APPLY_CRITERIA_EVENT, onApply);
   }, []);
 
-  /** Tras apply con código y sin nombre: rellenar etiqueta cuando lleguen opciones. */
   useEffect(() => {
     if (isPreviewing || !selectedCode || text) return;
     const hit = options.find((o) => o.code === selectedCode);
     if (hit) setText(hit.name);
   }, [isPreviewing, selectedCode, text, options]);
 
-  const filtered = useMemo(
-    () => options.filter((o) => startsWithFold(o.name, text)),
-    [options, text],
-  );
-
   function commitOrCancel() {
     if (!selectedCode) {
-      // Texto suelto sin selección válida → cancelar.
       const exact = options.find(
         (o) => fold(o.name) === fold(text) && startsWithFold(o.name, text),
       );
-      if (exact && startsWithFold(exact.name, text) && fold(exact.name) === fold(text)) {
+      if (
+        exact &&
+        startsWithFold(exact.name, text) &&
+        fold(exact.name) === fold(text)
+      ) {
         setSelectedCode(exact.code);
         setText(exact.name);
         return;
@@ -210,7 +204,6 @@ export function MunicipalityFilter({
     const form = document.getElementById(formId) as HTMLFormElement | null;
     if (!form) return;
     const onSubmit = () => {
-      // Antes de enviar: si el texto no corresponde a un código válido, vaciar.
       const codeInput = form.elements.namedItem("municipality");
       if (!(codeInput instanceof HTMLInputElement)) return;
       if (!codeInput.value.trim()) {
@@ -222,11 +215,6 @@ export function MunicipalityFilter({
     return () => form.removeEventListener("submit", onSubmit);
   }, [formId]);
 
-  /**
-   * El código va en un `<input type="hidden">` controlado por React: al elegir
-   * municipio en el desplegable no hay evento nativo `input`/`change`, y el
-   * marcador «guardar búsqueda» / Buscar no se enteraban del match.
-   */
   useEffect(() => {
     if (isPreviewing) return;
     const form = document.getElementById(formId) as HTMLFormElement | null;
@@ -236,9 +224,12 @@ export function MunicipalityFilter({
     codeInput.dispatchEvent(new Event("change", { bubbles: true }));
   }, [selectedCode, formId, isPreviewing]);
 
-  const inputRef = useRef<HTMLInputElement>(null);
+  const filtered = useMemo(
+    () => options.filter((o) => startsWithFold(o.name, text)),
+    [options, text],
+  );
 
-  const previewDisplayText = !previewCcaa
+  const previewDisplayText = previewCcaaCodes.length === 0
     ? ""
     : !previewCode
       ? ""
@@ -246,12 +237,12 @@ export function MunicipalityFilter({
         ? ""
         : previewName;
 
-  const previewPlaceholder = !previewCcaa
-    ? "Selecciona antes una CCAA"
-    : previewLoading
-      ? "Cargando…"
-      : !previewCode
-        ? "Escribe para filtrar…"
+  const needCcaaHint = "Selecciona antes una o más CCAA";
+  const previewPlaceholder =
+    previewCcaaCodes.length === 0
+      ? needCcaaHint
+      : previewLoading
+        ? "Cargando…"
         : "Escribe para filtrar…";
 
   const committedValue = inputDisabled ? "" : text;
@@ -259,7 +250,7 @@ export function MunicipalityFilter({
   const displayPlaceholder = isPreviewing
     ? previewPlaceholder
     : !enabled
-      ? "Selecciona antes una CCAA"
+      ? needCcaaHint
       : loading
         ? "Cargando…"
         : options.length === 0
@@ -311,7 +302,6 @@ export function MunicipalityFilter({
           }
         }}
         onBlur={() => {
-          // blur puede ir antes del click en opción; delay corto.
           window.setTimeout(() => {
             const ae = document.activeElement;
             if (

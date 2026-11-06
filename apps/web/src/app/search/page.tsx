@@ -8,7 +8,7 @@ import {
   listOwnFavoriteTenderIds,
   listMunicipalityNamesByCodes,
   listOwnRecentSearches,
-  listPlaceMunicipalities,
+  listPlaceMunicipalitiesForCcaas,
   recordOwnRecentSearch,
   searchTenders,
   type RecentSearch,
@@ -120,7 +120,7 @@ type SearchFilters = {
   cpvMatch: "any" | "all";
   minRaw: string;
   maxRaw: string;
-  ccaa: string;
+  ccaaCodes: string[];
   municipality: string;
   statuses: string[];
   procedures: string[];
@@ -146,7 +146,7 @@ function tenderHrefFromSearch(
   }
   if (filters.minRaw) params.set("min", filters.minRaw);
   if (filters.maxRaw) params.set("max", filters.maxRaw);
-  if (filters.ccaa) params.set("ccaa", filters.ccaa);
+  for (const c of filters.ccaaCodes) params.append("ccaa", c);
   if (filters.municipality) params.set("municipality", filters.municipality);
   for (const s of filters.statuses) params.append("status", s);
   for (const p of filters.procedures) params.append("procedure", p);
@@ -329,7 +329,7 @@ export default async function SearchPage({
     cpvCodes.length >= 2 && cpvMatchRaw === "all" ? "all" : "any";
   const minRaw = first(params.min).trim();
   const maxRaw = first(params.max).trim();
-  const ccaa = first(params.ccaa).trim();
+  const ccaaRaw = allStringParam(params.ccaa);
   const municipalityRaw = first(params.municipality).trim();
   const statusesRaw = allStringParam(params.status);
   const proceduresRaw = allStringParam(params.procedure);
@@ -355,9 +355,8 @@ export default async function SearchPage({
   const max = maxRaw === "" ? undefined : Number(maxRaw);
 
   // Criterios de URL sin esperar DISTINCT de filtros (UI se rellena en Suspense).
-  const ccaaValid = SEARCH_CCAA_OPTIONS.some((o) => o.code === ccaa)
-    ? ccaa
-    : "";
+  const catalogCcaa = new Set(SEARCH_CCAA_OPTIONS.map((o) => o.code));
+  const ccaaValid = ccaaRaw.filter((c) => catalogCcaa.has(c));
   const statusesValid = statusesRaw;
   const proceduresValid = proceduresRaw;
   const contractTypesValid = contractTypesRaw;
@@ -386,7 +385,7 @@ export default async function SearchPage({
     cpvCodes.length > 0 ||
     (min != null && !Number.isNaN(min)) ||
     (max != null && !Number.isNaN(max)) ||
-    ccaaValid !== "" ||
+    ccaaValid.length > 0 ||
     municipalityRaw !== "" ||
     statusesValid.length > 0 ||
     proceduresValid.length > 0 ||
@@ -398,15 +397,15 @@ export default async function SearchPage({
   /** Nueva búsqueda (no paginación): form no manda `tc`. */
   const isFreshSearch = shouldSearch && page === 1 && knownTotal == null;
 
-  if (client && shouldSearch && ccaaValid && municipalityRaw) {
+  if (client && shouldSearch && ccaaValid.length > 0 && municipalityRaw) {
     try {
-      const listed = await listPlaceMunicipalities(client, ccaaValid);
+      const listed = await listPlaceMunicipalitiesForCcaas(client, ccaaValid);
       const hit = listed.data.find((m) => m.code === municipalityRaw);
       if (hit) municipalityValid = hit.code;
     } catch {
       municipalityValid = "";
     }
-  } else if (municipalityRaw && ccaaValid) {
+  } else if (municipalityRaw && ccaaValid.length > 0) {
     municipalityValid = municipalityRaw;
   }
 
@@ -416,7 +415,7 @@ export default async function SearchPage({
     cpvMatch,
     minRaw,
     maxRaw,
-    ccaa: ccaaValid,
+    ccaaCodes: ccaaValid,
     municipality: municipalityValid,
     statuses: statusesValid,
     procedures: proceduresValid,
@@ -444,9 +443,9 @@ export default async function SearchPage({
     publication_date_to: pubToValid || undefined,
     open_for_submission: openForSubmission,
     geography:
-      ccaaValid || municipalityValid
+      ccaaValid.length > 0 || municipalityValid
         ? {
-            ccaa_codes: ccaaValid ? [ccaaValid] : undefined,
+            ccaa_codes: ccaaValid.length ? ccaaValid : undefined,
             municipality_codes: municipalityValid
               ? [municipalityValid]
               : undefined,
@@ -541,7 +540,7 @@ export default async function SearchPage({
     cpvMatch,
     min: minRaw,
     max: maxRaw,
-    ccaa,
+    ccaaCodes: ccaaValid,
     municipalityCode: municipalityRaw,
     municipalityName: "",
     statuses: statusesRaw,
@@ -566,7 +565,7 @@ export default async function SearchPage({
       </h1>
 
       <SearchForm
-        formKey={`${qInput}|${cpvCodes.join(",")}|${cpvMatch}|${minRaw}|${maxRaw}|${ccaa}|${municipalityRaw}|${statusesRaw.join(",")}|${proceduresRaw.join(",")}|${contractTypesRaw.join(",")}|${pubFromValid}|${pubToValid}|${enPlazoRaw}|${from}`}
+        formKey={`${qInput}|${cpvCodes.join(",")}|${cpvMatch}|${minRaw}|${maxRaw}|${ccaaValid.join(",")}|${municipalityRaw}|${statusesRaw.join(",")}|${proceduresRaw.join(",")}|${contractTypesRaw.join(",")}|${pubFromValid}|${pubToValid}|${enPlazoRaw}|${from}`}
       >
         {from === "favorites" || from === "favorites-searches" ? (
           <input type="hidden" name="from" value={from} />

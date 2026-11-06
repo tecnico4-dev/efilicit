@@ -5,6 +5,7 @@ export {
 } from "./search-tenders";
 export {
   listPlaceMunicipalities,
+  listPlaceMunicipalitiesForCcaas,
   type PlaceMunicipalityOption,
 } from "./list-place-municipalities";
 export {

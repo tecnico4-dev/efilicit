@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import {
-  listPlaceMunicipalities,
+  listPlaceMunicipalitiesForCcaas,
   listSearchFilterOptions,
 } from "@/lib/queries";
 import { getSupabaseServerClient } from "@/lib/auth/session";
@@ -57,10 +57,8 @@ export async function SearchFilterFields({
     /* desplegables sin opciones distintas */
   }
 
-  const ccaaWithData = new Set(filterOptions.ccaaCodesWithTenders);
-  const ccaaInCatalog = SEARCH_CCAA_OPTIONS.some((o) => o.code === initial.ccaa);
-  const ccaaValid =
-    ccaaInCatalog && ccaaWithData.has(initial.ccaa) ? initial.ccaa : "";
+  const catalog = new Set(SEARCH_CCAA_OPTIONS.map((o) => o.code));
+  const ccaaValid = initial.ccaaCodes.filter((c) => catalog.has(c));
 
   const statusesValid = optionsAllowed(
     initial.statuses,
@@ -77,10 +75,10 @@ export async function SearchFilterFields({
 
   let municipalityValid = "";
   let municipalityName = "";
-  if (ccaaValid && initial.municipalityCode) {
+  if (ccaaValid.length > 0 && initial.municipalityCode) {
     try {
       const client = await getSupabaseServerClient();
-      const listed = await listPlaceMunicipalities(client, ccaaValid);
+      const listed = await listPlaceMunicipalitiesForCcaas(client, ccaaValid);
       const hit = listed.data.find((m) => m.code === initial.municipalityCode);
       if (hit) {
         municipalityValid = hit.code;
@@ -93,7 +91,7 @@ export async function SearchFilterFields({
 
   const resolved: CriteriaFilterInitial = {
     ...initial,
-    ccaa: ccaaValid,
+    ccaaCodes: ccaaValid,
     municipalityCode: municipalityValid,
     municipalityName,
     statuses: statusesValid,

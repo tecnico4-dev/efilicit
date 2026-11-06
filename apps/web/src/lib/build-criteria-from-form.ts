@@ -56,7 +56,7 @@ export function buildCriteriaFromSearchForm(
     cpvCodes.length >= 2 && cpvMatchRaw === "all" ? ("all" as const) : undefined;
   const minRaw = readField(form, "min");
   const maxRaw = readField(form, "max");
-  const ccaa = readField(form, "ccaa");
+  const ccaaCodes = readAllFields(form, "ccaa");
   const municipality = readField(form, "municipality");
   const statuses = readAllFields(form, "status");
   const procedureTypes = readAllFields(form, "procedure");
@@ -75,7 +75,7 @@ export function buildCriteriaFromSearchForm(
     cpvCodes.length > 0 ||
     (min != null && !Number.isNaN(min)) ||
     (max != null && !Number.isNaN(max)) ||
-    ccaa !== "" ||
+    ccaaCodes.length > 0 ||
     municipality !== "" ||
     statuses.length > 0 ||
     procedureTypes.length > 0 ||
@@ -99,9 +99,9 @@ export function buildCriteriaFromSearchForm(
     publication_date_to: pubTo || undefined,
     open_for_submission: openForSubmission,
     geography:
-      ccaa || municipality
+      ccaaCodes.length > 0 || municipality
         ? {
-            ccaa_codes: ccaa ? [ccaa] : undefined,
+            ccaa_codes: ccaaCodes.length ? ccaaCodes : undefined,
             municipality_codes: municipality ? [municipality] : undefined,
           }
         : undefined,

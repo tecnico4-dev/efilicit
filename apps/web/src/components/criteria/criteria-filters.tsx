@@ -14,9 +14,6 @@ import { CriteriaMultiSelect } from "./criteria-multi-select";
 import { PublicationDateRange } from "./publication-date-range";
 import { SearchTextField } from "./search-text-field";
 
-const selectClass =
-  "mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring";
-
 const inputClass =
   "mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring";
 
@@ -115,43 +112,21 @@ export function CriteriaFilters({
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <div>
-          <label
-            htmlFor={ccaaId}
-            className="block text-sm font-medium text-foreground"
-          >
-            Comunidad Autónoma
-          </label>
-          <select
-            id={ccaaId}
-            name="ccaa"
-            defaultValue={initial.ccaa}
-            className={selectClass}
-          >
-            <option value="">Todas</option>
-            {SEARCH_CCAA_OPTIONS.map((opt) => {
-              const hasTenders = ccaaWithData.has(opt.code);
-              const keepSelected = opt.code === initial.ccaa;
-              return (
-                <option
-                  key={opt.code}
-                  value={opt.code}
-                  disabled={!hasTenders && !keepSelected}
-                  className={
-                    hasTenders || keepSelected
-                      ? undefined
-                      : "text-muted-foreground/50"
-                  }
-                >
-                  {opt.name}
-                </option>
-              );
-            })}
-          </select>
-        </div>
+        <CriteriaMultiSelect
+          id={ccaaId}
+          name="ccaa"
+          label="Comunidad Autónoma"
+          allLabel="Todas"
+          options={SEARCH_CCAA_OPTIONS.filter(
+            (opt) =>
+              ccaaWithData.has(opt.code) ||
+              initial.ccaaCodes.includes(opt.code),
+          ).map((opt) => ({ value: opt.code, label: opt.name }))}
+          initialSelected={initial.ccaaCodes}
+        />
         <MunicipalityFilter
           formId={formId}
-          initialCcaa={initial.ccaa}
+          initialCcaaCodes={initial.ccaaCodes}
           initialMunicipalityCode={initial.municipalityCode}
           initialMunicipalityName={initial.municipalityName}
         />
@@ -275,7 +250,7 @@ export function CriteriaFiltersFallback({
           value,
           label: value,
         })),
-        ccaaCodesWithTenders: initial.ccaa ? [initial.ccaa] : [],
+        ccaaCodesWithTenders: initial.ccaaCodes,
       }}
     />
   );
