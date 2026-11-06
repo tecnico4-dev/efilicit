@@ -11,6 +11,7 @@ import {
   SEARCH_PREVIEW_GHOST_CLASS,
   useOptionalSearchFormPreview,
 } from "./search-form-preview";
+import { AnchoredPortal } from "@/components/ui/anchored-portal";
 import type { SearchCriteria } from "@efilicit/types";
 
 type Option = { code: string; name: string };
@@ -235,16 +236,7 @@ export function MunicipalityFilter({
     codeInput.dispatchEvent(new Event("change", { bubbles: true }));
   }, [selectedCode, formId, isPreviewing]);
 
-  useEffect(() => {
-    function onDocMouseDown(e: MouseEvent) {
-      if (!wrapRef.current?.contains(e.target as Node)) {
-        setOpen(false);
-        commitOrCancel();
-      }
-    }
-    document.addEventListener("mousedown", onDocMouseDown);
-    return () => document.removeEventListener("mousedown", onDocMouseDown);
-  });
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const previewDisplayText = !previewCcaa
     ? ""
@@ -284,6 +276,7 @@ export function MunicipalityFilter({
       </label>
       <input type="hidden" name="municipality" value={selectedCode} />
       <input
+        ref={inputRef}
         id="municipality-text"
         type="text"
         autoComplete="off"
@@ -320,10 +313,15 @@ export function MunicipalityFilter({
         onBlur={() => {
           // blur puede ir antes del click en opción; delay corto.
           window.setTimeout(() => {
-            if (!wrapRef.current?.contains(document.activeElement)) {
-              setOpen(false);
-              commitOrCancel();
+            const ae = document.activeElement;
+            if (
+              wrapRef.current?.contains(ae) ||
+              ae?.closest?.("[data-anchored-portal]")
+            ) {
+              return;
             }
+            setOpen(false);
+            commitOrCancel();
           }, 120);
         }}
         className={cn(
@@ -335,14 +333,23 @@ export function MunicipalityFilter({
         aria-autocomplete="list"
         role="combobox"
       />
-      {!interactionLocked && open && filtered.length > 0 ? (
-        <ul
-          id={listId}
-          role="listbox"
-          className="absolute z-20 mt-1 max-h-56 w-full overflow-auto rounded-md border border-border bg-background py-1 shadow-md"
-        >
+      <AnchoredPortal
+        open={!interactionLocked && open && filtered.length > 0}
+        anchorRef={inputRef}
+        onDismiss={() => {
+          setOpen(false);
+          commitOrCancel();
+        }}
+        className="bg-background py-1"
+        maxHeight={224}
+      >
+        <ul id={listId} role="listbox">
           {filtered.map((opt) => (
-            <li key={opt.code} role="option" aria-selected={opt.code === selectedCode}>
+            <li
+              key={opt.code}
+              role="option"
+              aria-selected={opt.code === selectedCode}
+            >
               <button
                 type="button"
                 className="w-full px-3 py-1.5 text-left text-sm text-foreground hover:bg-muted"
@@ -358,12 +365,27 @@ export function MunicipalityFilter({
             </li>
           ))}
         </ul>
-      ) : null}
-      {!interactionLocked && open && !loading && text !== "" && filtered.length === 0 ? (
-        <p className="absolute z-20 mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-xs text-muted-foreground shadow-md">
+      </AnchoredPortal>
+      <AnchoredPortal
+        open={
+          !interactionLocked &&
+          open &&
+          !loading &&
+          text !== "" &&
+          filtered.length === 0
+        }
+        anchorRef={inputRef}
+        onDismiss={() => {
+          setOpen(false);
+          commitOrCancel();
+        }}
+        className="bg-background px-3 py-2"
+        maxHeight={80}
+      >
+        <p className="text-xs text-muted-foreground">
           Ningún municipio coincide
         </p>
-      ) : null}
+      </AnchoredPortal>
     </div>
   );
 }

@@ -9,6 +9,7 @@ import {
   SEARCH_RESTORE_MULTI_EVENT,
   type SearchPreviewMultiDetail,
 } from "@/app/search/search-form-preview";
+import { AnchoredPortal } from "@/components/ui/anchored-portal";
 import { criteriaToFilterInitial } from "@/lib/criteria-display";
 import { cn } from "@/lib/cn";
 import type { SearchFilterOption } from "@/lib/queries";
@@ -17,6 +18,7 @@ import type { SearchCriteria } from "@efilicit/types";
 /**
  * Desplegable multi-valor con ticks (Estado / Procedimiento / Tipo).
  * Sin selección = «Todos» (no envía params). Con ticks = OR en la RPC.
+ * Menú en portal fijo para escapar overflow de modales.
  */
 export function CriteriaMultiSelect({
   id,
@@ -40,7 +42,7 @@ export function CriteriaMultiSelect({
   const snapshotRef = useRef<string[] | null>(null);
   const selectedRef = useRef(selected);
   selectedRef.current = selected;
-  const rootRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     setSelected(uniquePreserve(initialSelected));
@@ -105,17 +107,6 @@ export function CriteriaMultiSelect({
     };
   }, [name]);
 
-  useEffect(() => {
-    if (!open) return;
-    function onDoc(e: MouseEvent) {
-      if (rootRef.current && !rootRef.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", onDoc);
-    return () => document.removeEventListener("mousedown", onDoc);
-  }, [open]);
-
   const labelByValue = useMemo(() => {
     const m = new Map<string, string>();
     for (const o of options) m.set(o.value, o.label);
@@ -137,12 +128,13 @@ export function CriteriaMultiSelect({
   }
 
   return (
-    <div ref={rootRef}>
+    <div>
       <label htmlFor={id} className="block text-sm font-medium text-foreground">
         {label}
       </label>
       <div className="relative mt-1">
         <button
+          ref={triggerRef}
           type="button"
           id={id}
           aria-expanded={open}
@@ -161,12 +153,14 @@ export function CriteriaMultiSelect({
         {selected.map((value) => (
           <input key={value} type="hidden" name={name} value={value} />
         ))}
-        {open ? (
-          <ul
-            role="listbox"
-            aria-multiselectable
-            className="absolute left-0 right-0 z-30 mt-1 max-h-56 overflow-y-auto rounded-md border border-border bg-surface py-1 shadow-lg"
-          >
+        <AnchoredPortal
+          open={open}
+          anchorRef={triggerRef}
+          onDismiss={() => setOpen(false)}
+          className="bg-surface py-1"
+          maxHeight={224}
+        >
+          <ul role="listbox" aria-multiselectable>
             <li className="border-b border-border px-3 py-1.5">
               <button
                 type="button"
@@ -193,7 +187,7 @@ export function CriteriaMultiSelect({
               );
             })}
           </ul>
-        ) : null}
+        </AnchoredPortal>
       </div>
     </div>
   );

@@ -21,6 +21,7 @@ import {
   SEARCH_PREVIEW_GHOST_CLASS,
   useOptionalSearchFormPreview,
 } from "./search-form-preview";
+import { AnchoredPortal } from "@/components/ui/anchored-portal";
 import { criteriaToFilterInitial } from "@/lib/criteria-display";
 import { cn } from "@/lib/cn";
 import type { SearchCriteria } from "@efilicit/types";
@@ -56,6 +57,7 @@ export function CpvPicker({
   const listId = useId();
   const selectedId = useId();
   const wrapRef = useRef<HTMLDivElement>(null);
+  const draftInputRef = useRef<HTMLInputElement>(null);
   const searchFeedback = useOptionalSearchFeedback();
   const clearFeedback = searchFeedback?.clearFeedback ?? (() => {});
   const formPreview = useOptionalSearchFormPreview();
@@ -179,16 +181,6 @@ export function CpvPicker({
     return () => window.removeEventListener(SEARCH_APPLY_CRITERIA_EVENT, onApply);
   }, []);
 
-  useEffect(() => {
-    function onDocMouseDown(e: MouseEvent) {
-      if (!wrapRef.current?.contains(e.target as Node)) {
-        setSuggestOpen(false);
-        setActiveIndex(-1);
-      }
-    }
-    document.addEventListener("mousedown", onDocMouseDown);
-    return () => document.removeEventListener("mousedown", onDocMouseDown);
-  }, []);
 
   useEffect(() => {
     setActiveIndex(-1);
@@ -284,6 +276,7 @@ export function CpvPicker({
         <div className="mt-1 flex gap-2">
           <div ref={wrapRef} className="relative min-w-0 flex-1">
             <input
+              ref={draftInputRef}
               id={draftId}
               name="cpv_draft"
               type="text"
@@ -356,12 +349,17 @@ export function CpvPicker({
             >
               i
             </button>
-            {showSuggestions ? (
-              <ul
-                id={listId}
-                role="listbox"
-                className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-md border border-border bg-background py-1 shadow-md"
-              >
+            <AnchoredPortal
+              open={showSuggestions}
+              anchorRef={draftInputRef}
+              onDismiss={() => {
+                setSuggestOpen(false);
+                setActiveIndex(-1);
+              }}
+              className="bg-background py-1"
+              maxHeight={240}
+            >
+              <ul id={listId} role="listbox">
                 {!dictReady ? (
                   <li className="px-3 py-2 text-sm text-muted-foreground">
                     Cargando diccionario CPV…
@@ -399,7 +397,7 @@ export function CpvPicker({
                   })
                 )}
               </ul>
-            ) : null}
+            </AnchoredPortal>
           </div>
           <button
             type="button"

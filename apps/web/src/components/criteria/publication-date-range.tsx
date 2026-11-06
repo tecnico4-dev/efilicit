@@ -19,6 +19,7 @@ import {
   SEARCH_PREVIEW_GHOST_CLASS,
   useOptionalSearchFormPreview,
 } from "@/app/search/search-form-preview";
+import { AnchoredPortal } from "@/components/ui/anchored-portal";
 import type { SearchCriteria } from "@efilicit/types";
 
 const WEEKDAYS = ["Lu", "Ma", "Mi", "Ju", "Vi", "Sa", "Do"] as const;
@@ -193,23 +194,16 @@ export function PublicationDateRange({
     if (closePopover) setOpen(false);
   }
 
-  useEffect(() => {
-    function onDoc(e: MouseEvent) {
-      if (!wrapRef.current?.contains(e.target as Node)) {
-        if (panel === "calendar") {
-          leaveCalendar(true);
-        } else {
-          setOpen(false);
-          setPanel("menu");
-          setDraftStart(null);
-          setHoverDay(null);
-        }
-      }
+  function dismissPopover() {
+    if (panel === "calendar") {
+      leaveCalendar(true);
+    } else {
+      setOpen(false);
+      setPanel("menu");
+      setDraftStart(null);
+      setHoverDay(null);
     }
-    document.addEventListener("mousedown", onDoc);
-    return () => document.removeEventListener("mousedown", onDoc);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- leaveCalendar usa pickInicio/Fin/panel
-  }, [panel, pickInicio, pickFin]);
+  }
 
   function applyRange(nextFrom: string, nextTo: string) {
     clearFeedback();
@@ -315,6 +309,7 @@ export function PublicationDateRange({
   ]);
 
   const cells = useMemo(() => buildMonthCells(viewMonth), [viewMonth]);
+  const triggerRef = useRef<HTMLButtonElement>(null);
 
   return (
     <div ref={wrapRef} className="relative">
@@ -327,6 +322,7 @@ export function PublicationDateRange({
       <input type="hidden" name="pub_from" value={from} />
       <input type="hidden" name="pub_to" value={to} />
       <button
+        ref={triggerRef}
         id={triggerId}
         type="button"
         disabled={isPreviewing}
@@ -363,12 +359,17 @@ export function PublicationDateRange({
         <ChevronDown />
       </button>
 
-      {open && !isPreviewing ? (
-        <div
-          role="dialog"
-          aria-label="Rango de publicación"
-          className="absolute z-30 mt-1 w-full min-w-[18rem] max-w-sm rounded-md border border-border bg-background p-2 shadow-md sm:w-[20rem]"
-        >
+      <AnchoredPortal
+        open={open && !isPreviewing}
+        anchorRef={triggerRef}
+        onDismiss={dismissPopover}
+        matchAnchorWidth={false}
+        minWidth={288}
+        maxWidth={320}
+        maxHeight={420}
+        className="bg-background p-2"
+      >
+        <div role="dialog" aria-label="Rango de publicación">
           {panel === "menu" ? (
             <ul className="py-0.5">
               <MenuItem onClick={onPresetLast7}>Últimos 7 días</MenuItem>
@@ -517,7 +518,7 @@ export function PublicationDateRange({
             </div>
           )}
         </div>
-      ) : null}
+      </AnchoredPortal>
     </div>
   );
 }

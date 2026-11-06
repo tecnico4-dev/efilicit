@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Alertas / buscador: desplegables (estado, municipio, fechas, CPV…) en portal fijo para que no queden atrapados ni generen scroll dentro del modal «Crear alerta».
 - Buscador: «Solo en plazo» marcado por defecto (desmarcable; URL `en_plazo=0` al buscar sin él).
 - Buscador: Estado / Procedimiento / Tipo de contrato pasan a multi-selección con ticks (Todos por defecto; varios valores = OR).
 - Buscador: click en chip de «Búsquedas recientes» rellena el formulario (sin buscar ni cerrar el panel); hover sigue siendo preview fantasma.
