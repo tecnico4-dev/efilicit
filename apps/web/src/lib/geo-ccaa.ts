@@ -17,7 +17,7 @@ export const SEARCH_CCAA_OPTIONS: ReadonlyArray<{
   { code: "07", name: "Castilla y León", shortName: "Castilla y León" },
   { code: "08", name: "Castilla La Mancha", shortName: "Castilla La Mancha" },
   { code: "09", name: "Cataluña", shortName: "Cataluña" },
-  { code: "10", name: "Comunidad Valenciana", shortName: "Valenciana" },
+  { code: "10", name: "Comunidad Valenciana", shortName: "Valencia" },
   { code: "11", name: "Extremadura", shortName: "Extremadura" },
   { code: "12", name: "Galicia", shortName: "Galicia" },
   { code: "13", name: "Comunidad de Madrid", shortName: "Madrid" },

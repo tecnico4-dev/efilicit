@@ -210,10 +210,10 @@ export function AlertsPanel({
                 className="flex max-h-[min(92vh,48rem)] w-full max-w-4xl flex-col overflow-hidden rounded-xl border border-border bg-surface shadow-xl"
                 onClick={(e) => e.stopPropagation()}
               >
-                <div className="flex items-center justify-between gap-3 border-b border-primary-dark/30 bg-primary px-4 py-3 sm:px-5">
+                <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3 sm:px-5">
                   <h2
                     id={titleId}
-                    className="text-lg font-semibold leading-none tracking-tight text-primary-foreground"
+                    className="text-lg font-semibold leading-none tracking-tight text-foreground"
                   >
                     Crear alerta
                   </h2>
