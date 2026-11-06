@@ -339,7 +339,6 @@ export default async function SearchPage({
   const enPlazoRaw = first(params.en_plazo).trim();
   /** Ausente o `1` → en plazo; solo `0` desactiva (default marcado). */
   const openForSubmission = enPlazoRaw !== "0";
-  const enPlazoExplicitOn = enPlazoRaw === "1";
   const from = first(params.from).trim();
   const back = backFromSavedSearch(from);
   const pageRaw = Number.parseInt(first(params.page).trim(), 10);
