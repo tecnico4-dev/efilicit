@@ -8,7 +8,7 @@ import {
   PASSWORD_MIN_LENGTH,
   PASSWORD_POLICY_HINT,
   mapAuthPasswordError,
-  passwordPolicyErrorMessage,
+  passwordCharsetErrorMessage,
 } from "@/lib/password-policy";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/cn";
@@ -118,17 +118,18 @@ export function ChangePasswordForm({
   const [pending, setPending] = useState(false);
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
+    // Vacío / minLength: el navegador ya validó (bocadillos) antes de este evento.
     event.preventDefault();
     setError(null);
     setSaved(false);
 
-    const policyError = passwordPolicyErrorMessage(password);
-    if (policyError) {
-      setError(policyError);
-      return;
-    }
     if (password !== confirm) {
       setError("Las contraseñas no coinciden.");
+      return;
+    }
+    const charsetError = passwordCharsetErrorMessage(password);
+    if (charsetError) {
+      setError(charsetError);
       return;
     }
 
