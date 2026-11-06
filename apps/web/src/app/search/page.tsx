@@ -381,6 +381,7 @@ export default async function SearchPage({
     client = null;
   }
 
+  /** «Solo en plazo» por defecto: no dispara búsqueda por sí solo. */
   const hasParams =
     q !== "" ||
     cpvCodes.length > 0 ||
@@ -392,8 +393,7 @@ export default async function SearchPage({
     proceduresValid.length > 0 ||
     contractTypesValid.length > 0 ||
     pubFromValid !== "" ||
-    pubToValid !== "" ||
-    enPlazoExplicitOn;
+    pubToValid !== "";
   /** Stopwords solas → aviso y sin RPC (aunque haya otros filtros en la URL). */
   const shouldSearch = hasParams && !queryOnlyNoise;
   /** Nueva búsqueda (no paginación): form no manda `tc`. */

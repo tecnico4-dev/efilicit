@@ -33,6 +33,9 @@ function readField(form: HTMLFormElement, name: string): string {
   return "";
 }
 
+/**
+ * «Solo en plazo» va marcado por defecto: no cuenta como criterio por sí solo.
+ */
 function hasAnyCriterion(form: HTMLFormElement): boolean {
   const names = [
     "q",
@@ -46,13 +49,8 @@ function hasAnyCriterion(form: HTMLFormElement): boolean {
     "contract_type",
     "pub_from",
     "pub_to",
-    "en_plazo",
   ] as const;
   return names.some((name) => {
-    if (name === "en_plazo") {
-      const el = form.elements.namedItem(name);
-      return el instanceof HTMLInputElement && el.checked;
-    }
     if (
       name === "status" ||
       name === "procedure" ||

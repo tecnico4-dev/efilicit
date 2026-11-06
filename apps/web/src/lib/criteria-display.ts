@@ -213,8 +213,7 @@ export function criteriaHasFilters(criteria: SearchCriteria): boolean {
       criteria.procedure_types?.length ||
       criteria.statuses?.length ||
       criteria.publication_date_from ||
-      criteria.publication_date_to ||
-      criteria.open_for_submission === true,
+      criteria.publication_date_to,
   );
 }
 

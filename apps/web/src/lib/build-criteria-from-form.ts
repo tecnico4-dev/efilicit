@@ -69,6 +69,7 @@ export function buildCriteriaFromSearchForm(
 
   const keywords = q ? tokenizeKeywords(q) : undefined;
 
+  // «Solo en plazo» es default: no basta para guardar / considerar criterios.
   const hasSomething =
     (keywords && keywords.length > 0) ||
     cpvCodes.length > 0 ||
@@ -80,8 +81,7 @@ export function buildCriteriaFromSearchForm(
     procedureTypes.length > 0 ||
     contractTypes.length > 0 ||
     pubFrom !== "" ||
-    pubTo !== "" ||
-    openForSubmission;
+    pubTo !== "";
 
   if (!hasSomething) return null;
 
