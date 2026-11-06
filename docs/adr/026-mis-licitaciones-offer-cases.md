@@ -12,48 +12,64 @@
 
 ## Contexto
 
-El espacio de oferta acordado (matriz requisito→evidencia, sobres, go/no-go, KPIs) no cabe bien en el checklist plano de `bid_case_checklist_items`. La UI nueva vive en `/mis-licitaciones` y no debe seguir escribiendo el modelo legacy. Hace falta un expediente propio y **migrar** los casos ya existentes (sobre todo el histórico Eficen en local) sin duplicar licitaciones canónicas.
+El espacio de oferta acordado (matriz requisito→evidencia, sobres, go/no-go, KPIs, equipo, calendario, biblioteca, fuentes) no cabe en el checklist plano de `bid_*`. La UI nueva vive en `/mis-licitaciones` y necesita un esquema propio, con backfill del histórico Eficen ya presente en `bid_cases`.
 
 ## Decisión
 
-1. Tablas nuevas (mismo tenant compartido `is_app_user()` que el 023):
-   - `offer_cases` — una fila por `tenders.id` en el pipeline de oferta (única por `tender_id`).
-   - `offer_requirements` — matriz de requisitos (categoría, tipo, cumplimiento, preparación, sobre, fechas, ref. pliego).
-2. Etapas iniciales (compatibles con el histórico migrado + huecos del producto):  
-   `interes` | `analisis` | `preparacion` | `presentada` | `en_evaluacion` | `requerimiento` | `adjudicada` | `no_adjudicada` | `descartada` | `subcontrata` | `desierta`.  
-   Activas = no terminales; histórico = `adjudicada` | `no_adjudicada` | `descartada` | `subcontrata` | `desierta`.
-3. Migración one-shot en la misma migración SQL: copiar `bid_cases` → `offer_cases` **preservando `id`**, y checklist → `offer_requirements` (categoría `otros`, preparación según `done_at`, cumplimiento `sin_verificar`).
-4. UI `/mis-licitaciones` lee/escribe solo `offer_*`. `/my-tenders` (label «eliminar») sigue en `bid_*` hasta que se retire.
-5. `legacy_bid_case_id` en `offer_cases` apunta al origen cuando exista (misma uuid en el backfill).
+1. **Expediente y matriz**
+   - `offer_cases` — una fila por `tenders.id` (etapa, go/no-go, lotes, plazos, responsable).
+   - `offer_requirements` — matriz (categoría, tipo, cumplimiento, preparación, sobre, validación).
+2. **Sobres y vínculos**
+   - `offer_deliverables` (+ `parent_id` para secciones de memoria).
+   - `offer_requirement_deliverables` — N:M requisito ↔ entregable.
+   - `offer_requirement_evidence` — evidencias (doc / persona / referencia / financiero / URL).
+3. **Equipo y tareas**
+   - `offer_case_members` — roles preparador/revisor/aprobador.
+   - `offer_tasks` — tareas sueltas.
+   - `offer_assigned_people` — adscripción de medios (≠ equipo preparador).
+4. **Plazos y bitácora**
+   - `offer_milestones` — hitos oficiales/internos.
+   - `offer_case_log` — bitácora tipada.
+5. **Pliegos y fuentes**
+   - `offer_case_pliegos` — PCAP/PPT/anexos enlazados al expediente.
+   - `offer_sources` + `offer_source_links` — trazabilidad de fuentes.
+6. **Biblioteca de empresa**
+   - `company_documents` (tipo, emisión, caducidad, url/`storage_path`).
+   - `company_people`, `company_references`, `company_financials`.
+7. Etapas: `interes` | `analisis` | `preparacion` | `presentada` | `en_evaluacion` | `requerimiento` | `adjudicada` | `no_adjudicada` | `descartada` | `subcontrata` | `desierta`.
+8. RLS: `is_app_user()` (mismo tenant compartido que 023).
+9. Backfill one-shot: `bid_cases` → `offer_cases` (mismo `id`); checklist → `offer_requirements`.
+10. **Storage de ficheros** (bucket privado): aplazado; columnas `url` / `storage_path` listas.
+11. UI `/mis-licitaciones` usa solo este esquema; `/my-tenders` (eliminar) sigue en `bid_*` hasta retirada.
 
 ### Alternativas descartadas
 
-- **ALTER in-place de `bid_cases`.** Rompe la pestaña legacy aún visible y mezcla dos UIs en un esquema a medias.
-- **No preservar `id`.** Rompería bookmarks y forzaría remap en la UI.
-- **Tabla solo histórica.** El producto es un único pipeline; el histórico es filtro de etapa.
+- **ALTER in-place de `bid_cases`.** Mezcla legacy y producto nuevo.
+- **Reutilizar `bid_documents` como biblioteca.** Contrato distinto (caducidad, tipos); mejor `company_*`.
+- **Bucket Storage en este ADR.** Reabre el aplazamiento del 023 en un ADR/migración posterior cuando haya copia de evidencias.
 
 ## Consecuencias
 
 ### Positivas
 
-- Separación clara legacy vs espacio de oferta.
-- Histórico Eficen disponible en el modelo nuevo sin re-importar desde Excel.
-- Base para Incremento 1 (matriz, KPIs) sin Storage ni IA.
+- Esquema completo para Incrementos 1–4 sin reinventar tablas a cada paso.
+- Histórico Eficen ya en `offer_cases`.
+- Separación clara legacy `bid_*` vs oferta `offer_*` / `company_*`.
 
 ### Negativas / riesgos
 
-- Dos pipelines en paralelo hasta borrar `bid_*` (riesgo de altas solo en uno). Mitigación: «Añadir a Mis licitaciones» escribe en `offer_cases`.
-- Campos de Incrementos 2–5 (equipo, hitos tipados, biblioteca con caducidad) aún no están; se añaden en migraciones posteriores.
+- Dos pipelines en paralelo hasta borrar `bid_*`.
+- UI aún no cubre todas las tablas (esquema adelantado a la interfaz).
 
 ## Riesgos
 
 | Riesgo | Mitigación |
 |---|---|
-| Desalineación `bid_cases` ↔ `offer_cases` tras el backfill | No sync continuo; retirar `bid_*` pronto |
-| Etapas nuevas vacías en UI | Labels + Kanban las contemplan; datos migrados usan etapas 023 |
+| Esquema amplio sin UI | Migraciones versionadas; tablas vacías OK; cablear por incremento |
+| Desalineación bid ↔ offer | Altas nuevas solo en `offer_cases`; retirar `bid_*` pronto |
 
 ## Referencias
 
 - [023](023-mis-licitaciones-pipeline-compartido.md)
-- Requisitos producto: espacio de preparación de oferta (2026-11-04)
-- Reglas: RLS; sin `service_role` en web; cambios de DB = migraciones versionadas
+- Requisitos producto: espacio de preparación de oferta (2026-11-04) §12
+- Reglas: RLS; sin `service_role` en web; migraciones versionadas

@@ -518,6 +518,7 @@ export type Database = {
           preparation_started_on: string | null
           presented_on: string | null
           stage: string
+          target_lots: Json
           tender_id: string
           updated_at: string
         }
@@ -539,6 +540,7 @@ export type Database = {
           preparation_started_on?: string | null
           presented_on?: string | null
           stage?: string
+          target_lots?: Json
           tender_id: string
           updated_at?: string
         }
@@ -560,6 +562,7 @@ export type Database = {
           preparation_started_on?: string | null
           presented_on?: string | null
           stage?: string
+          target_lots?: Json
           tender_id?: string
           updated_at?: string
         }
@@ -616,6 +619,8 @@ export type Database = {
           source_kind: string
           title: string
           updated_at: string
+          validated_at: string | null
+          validated_by: string | null
         }
         Insert: {
           category?: string
@@ -638,6 +643,8 @@ export type Database = {
           source_kind?: string
           title: string
           updated_at?: string
+          validated_at?: string | null
+          validated_by?: string | null
         }
         Update: {
           category?: string
@@ -660,6 +667,8 @@ export type Database = {
           source_kind?: string
           title?: string
           updated_at?: string
+          validated_at?: string | null
+          validated_by?: string | null
         }
         Relationships: [
           {
@@ -674,6 +683,731 @@ export type Database = {
             columns: ["owner_user_id"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "offer_requirements_validated_by_fkey"
+            columns: ["validated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      offer_deliverables: {
+        Row: {
+          created_at: string
+          due_at: string | null
+          envelope: string | null
+          final_copy_url: string | null
+          id: string
+          notes: string | null
+          offer_case_id: string
+          owner_name: string | null
+          owner_user_id: string | null
+          page_limit: number | null
+          parent_id: string | null
+          points_max: number | null
+          sort_order: number
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          due_at?: string | null
+          envelope?: string | null
+          final_copy_url?: string | null
+          id?: string
+          notes?: string | null
+          offer_case_id: string
+          owner_name?: string | null
+          owner_user_id?: string | null
+          page_limit?: number | null
+          parent_id?: string | null
+          points_max?: number | null
+          sort_order?: number
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          due_at?: string | null
+          envelope?: string | null
+          final_copy_url?: string | null
+          id?: string
+          notes?: string | null
+          offer_case_id?: string
+          owner_name?: string | null
+          owner_user_id?: string | null
+          page_limit?: number | null
+          parent_id?: string | null
+          points_max?: number | null
+          sort_order?: number
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "offer_deliverables_offer_case_id_fkey"
+            columns: ["offer_case_id"]
+            isOneToOne: false
+            referencedRelation: "offer_cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "offer_deliverables_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "offer_deliverables"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      offer_requirement_deliverables: {
+        Row: {
+          deliverable_id: string
+          linked_at: string
+          requirement_id: string
+        }
+        Insert: {
+          deliverable_id: string
+          linked_at?: string
+          requirement_id: string
+        }
+        Update: {
+          deliverable_id?: string
+          linked_at?: string
+          requirement_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "offer_requirement_deliverables_deliverable_id_fkey"
+            columns: ["deliverable_id"]
+            isOneToOne: false
+            referencedRelation: "offer_deliverables"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "offer_requirement_deliverables_requirement_id_fkey"
+            columns: ["requirement_id"]
+            isOneToOne: false
+            referencedRelation: "offer_requirements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      company_documents: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          doc_type: string
+          expires_on: string | null
+          id: string
+          issued_on: string | null
+          notes: string | null
+          storage_path: string | null
+          tags: string[]
+          title: string
+          updated_at: string
+          url: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          doc_type?: string
+          expires_on?: string | null
+          id?: string
+          issued_on?: string | null
+          notes?: string | null
+          storage_path?: string | null
+          tags?: string[]
+          title: string
+          updated_at?: string
+          url?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          doc_type?: string
+          expires_on?: string | null
+          id?: string
+          issued_on?: string | null
+          notes?: string | null
+          storage_path?: string | null
+          tags?: string[]
+          title?: string
+          updated_at?: string
+          url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_documents_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      company_people: {
+        Row: {
+          certifications: string | null
+          created_at: string
+          created_by: string | null
+          cv_updated_on: string | null
+          cv_url: string | null
+          degrees: string | null
+          full_name: string
+          id: string
+          notes: string | null
+          relevant_projects: string | null
+          role_title: string | null
+          updated_at: string
+          years_experience: number | null
+        }
+        Insert: {
+          certifications?: string | null
+          created_at?: string
+          created_by?: string | null
+          cv_updated_on?: string | null
+          cv_url?: string | null
+          degrees?: string | null
+          full_name: string
+          id?: string
+          notes?: string | null
+          relevant_projects?: string | null
+          role_title?: string | null
+          updated_at?: string
+          years_experience?: number | null
+        }
+        Update: {
+          certifications?: string | null
+          created_at?: string
+          created_by?: string | null
+          cv_updated_on?: string | null
+          cv_url?: string | null
+          degrees?: string | null
+          full_name?: string
+          id?: string
+          notes?: string | null
+          relevant_projects?: string | null
+          role_title?: string | null
+          updated_at?: string
+          years_experience?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_people_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      company_references: {
+        Row: {
+          amount: number | null
+          certificate_url: string | null
+          client_name: string
+          cpv_codes: string[]
+          created_at: string
+          created_by: string | null
+          currency: string
+          id: string
+          notes: string | null
+          object_summary: string
+          updated_at: string
+          year_from: number | null
+          year_to: number | null
+        }
+        Insert: {
+          amount?: number | null
+          certificate_url?: string | null
+          client_name: string
+          cpv_codes?: string[]
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          id?: string
+          notes?: string | null
+          object_summary: string
+          updated_at?: string
+          year_from?: number | null
+          year_to?: number | null
+        }
+        Update: {
+          amount?: number | null
+          certificate_url?: string | null
+          client_name?: string
+          cpv_codes?: string[]
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          id?: string
+          notes?: string | null
+          object_summary?: string
+          updated_at?: string
+          year_from?: number | null
+          year_to?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_references_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      company_financials: {
+        Row: {
+          annual_turnover: number
+          created_at: string
+          created_by: string | null
+          currency: string
+          fiscal_year: number
+          id: string
+          notes: string | null
+          updated_at: string
+        }
+        Insert: {
+          annual_turnover: number
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          fiscal_year: number
+          id?: string
+          notes?: string | null
+          updated_at?: string
+        }
+        Update: {
+          annual_turnover?: number
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          fiscal_year?: number
+          id?: string
+          notes?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_financials_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      offer_requirement_evidence: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          document_id: string | null
+          evidence_kind: string
+          financial_id: string | null
+          id: string
+          notes: string | null
+          person_id: string | null
+          reference_id: string | null
+          requirement_id: string
+          url: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          document_id?: string | null
+          evidence_kind: string
+          financial_id?: string | null
+          id?: string
+          notes?: string | null
+          person_id?: string | null
+          reference_id?: string | null
+          requirement_id: string
+          url?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          document_id?: string | null
+          evidence_kind?: string
+          financial_id?: string | null
+          id?: string
+          notes?: string | null
+          person_id?: string | null
+          reference_id?: string | null
+          requirement_id?: string
+          url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "offer_requirement_evidence_requirement_id_fkey"
+            columns: ["requirement_id"]
+            isOneToOne: false
+            referencedRelation: "offer_requirements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      offer_case_members: {
+        Row: {
+          created_at: string
+          id: string
+          member_role: string
+          offer_case_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          member_role?: string
+          offer_case_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          member_role?: string
+          offer_case_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "offer_case_members_offer_case_id_fkey"
+            columns: ["offer_case_id"]
+            isOneToOne: false
+            referencedRelation: "offer_cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "offer_case_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      offer_tasks: {
+        Row: {
+          created_at: string
+          done_at: string | null
+          due_at: string | null
+          id: string
+          notes: string | null
+          offer_case_id: string
+          owner_name: string | null
+          owner_user_id: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          done_at?: string | null
+          due_at?: string | null
+          id?: string
+          notes?: string | null
+          offer_case_id: string
+          owner_name?: string | null
+          owner_user_id?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          done_at?: string | null
+          due_at?: string | null
+          id?: string
+          notes?: string | null
+          offer_case_id?: string
+          owner_name?: string | null
+          owner_user_id?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "offer_tasks_offer_case_id_fkey"
+            columns: ["offer_case_id"]
+            isOneToOne: false
+            referencedRelation: "offer_cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      offer_assigned_people: {
+        Row: {
+          compliance_status: string
+          created_at: string
+          id: string
+          notes: string | null
+          offer_case_id: string
+          person_id: string | null
+          required_profile: string | null
+        }
+        Insert: {
+          compliance_status?: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          offer_case_id: string
+          person_id?: string | null
+          required_profile?: string | null
+        }
+        Update: {
+          compliance_status?: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          offer_case_id?: string
+          person_id?: string | null
+          required_profile?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "offer_assigned_people_offer_case_id_fkey"
+            columns: ["offer_case_id"]
+            isOneToOne: false
+            referencedRelation: "offer_cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "offer_assigned_people_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "company_people"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      offer_milestones: {
+        Row: {
+          code: string | null
+          completed_at: string | null
+          created_at: string
+          due_at: string | null
+          id: string
+          kind: string
+          notes: string | null
+          offer_case_id: string
+          sort_order: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          code?: string | null
+          completed_at?: string | null
+          created_at?: string
+          due_at?: string | null
+          id?: string
+          kind: string
+          notes?: string | null
+          offer_case_id: string
+          sort_order?: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          code?: string | null
+          completed_at?: string | null
+          created_at?: string
+          due_at?: string | null
+          id?: string
+          kind?: string
+          notes?: string | null
+          offer_case_id?: string
+          sort_order?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "offer_milestones_offer_case_id_fkey"
+            columns: ["offer_case_id"]
+            isOneToOne: false
+            referencedRelation: "offer_cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      offer_case_pliegos: {
+        Row: {
+          changed_after_case: boolean
+          created_at: string
+          created_by: string | null
+          id: string
+          notes: string | null
+          offer_case_id: string
+          pliego_type: string
+          published_on: string | null
+          title: string
+          updated_at: string
+          url: string | null
+          version_label: string | null
+        }
+        Insert: {
+          changed_after_case?: boolean
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          offer_case_id: string
+          pliego_type: string
+          published_on?: string | null
+          title: string
+          updated_at?: string
+          url?: string | null
+          version_label?: string | null
+        }
+        Update: {
+          changed_after_case?: boolean
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          offer_case_id?: string
+          pliego_type?: string
+          published_on?: string | null
+          title?: string
+          updated_at?: string
+          url?: string | null
+          version_label?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "offer_case_pliegos_offer_case_id_fkey"
+            columns: ["offer_case_id"]
+            isOneToOne: false
+            referencedRelation: "offer_cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      offer_sources: {
+        Row: {
+          company_document_id: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          notes: string | null
+          offer_case_id: string
+          pliego_id: string | null
+          source_type: string
+          title: string
+          url: string | null
+        }
+        Insert: {
+          company_document_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          offer_case_id: string
+          pliego_id?: string | null
+          source_type: string
+          title: string
+          url?: string | null
+        }
+        Update: {
+          company_document_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          offer_case_id?: string
+          pliego_id?: string | null
+          source_type?: string
+          title?: string
+          url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "offer_sources_offer_case_id_fkey"
+            columns: ["offer_case_id"]
+            isOneToOne: false
+            referencedRelation: "offer_cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      offer_source_links: {
+        Row: {
+          created_at: string
+          deliverable_id: string | null
+          id: string
+          requirement_id: string | null
+          source_id: string
+        }
+        Insert: {
+          created_at?: string
+          deliverable_id?: string | null
+          id?: string
+          requirement_id?: string | null
+          source_id: string
+        }
+        Update: {
+          created_at?: string
+          deliverable_id?: string | null
+          id?: string
+          requirement_id?: string | null
+          source_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "offer_source_links_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "offer_sources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      offer_case_log: {
+        Row: {
+          body: string
+          created_at: string
+          created_by: string | null
+          event_type: string
+          happened_on: string
+          id: string
+          offer_case_id: string
+          related_deliverable_id: string | null
+          related_requirement_id: string | null
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          created_by?: string | null
+          event_type: string
+          happened_on?: string
+          id?: string
+          offer_case_id: string
+          related_deliverable_id?: string | null
+          related_requirement_id?: string | null
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          created_by?: string | null
+          event_type?: string
+          happened_on?: string
+          id?: string
+          offer_case_id?: string
+          related_deliverable_id?: string | null
+          related_requirement_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "offer_case_log_offer_case_id_fkey"
+            columns: ["offer_case_id"]
+            isOneToOne: false
+            referencedRelation: "offer_cases"
             referencedColumns: ["id"]
           },
         ]
