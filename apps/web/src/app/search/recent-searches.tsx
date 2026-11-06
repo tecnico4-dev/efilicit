@@ -101,6 +101,7 @@ export function RecentSearchesList({
                   <button
                     type="button"
                     onClick={() => onApply(item.criteria)}
+                    onMouseEnter={() => setPreview(item.criteria)}
                     className="min-w-0 truncate py-1 text-left hover:text-primary-dark"
                   >
                     {summary}
