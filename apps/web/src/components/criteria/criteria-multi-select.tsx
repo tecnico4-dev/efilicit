@@ -17,8 +17,8 @@ import type { SearchCriteria } from "@efilicit/types";
 
 /**
  * Desplegable multi-valor con ticks (Estado / Procedimiento / Tipo).
- * Sin selección = «Todos» (no envía params). Con ticks = OR en la RPC.
- * Menú en portal fijo para escapar overflow de modales.
+ * «Todos» = todas marcadas (no envía params). Parcial = OR en la RPC.
+ * «Limpiar» deja 0 ticks; al cerrar sin selección se restaura lo anterior.
  */
 export function CriteriaMultiSelect({
   id,
@@ -33,35 +33,41 @@ export function CriteriaMultiSelect({
   options: SearchFilterOption[];
   initialSelected: string[];
 }) {
-  const initialKey = initialSelected.join("\u0001");
+  const allValues = useMemo(
+    () => options.map((o) => o.value),
+    [options],
+  );
+  const allKey = allValues.join("\u0001");
+  const initialKey = `${initialSelected.join("\u0001")}|${allKey}`;
+
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState<string[]>(() =>
-    uniquePreserve(initialSelected),
+    toUiSelection(initialSelected, allValues),
   );
   const [previewing, setPreviewing] = useState(false);
   const snapshotRef = useRef<string[] | null>(null);
+  const openSnapshotRef = useRef<string[]>([]);
   const selectedRef = useRef(selected);
   selectedRef.current = selected;
   const triggerRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
-    setSelected(uniquePreserve(initialSelected));
+    setSelected(toUiSelection(initialSelected, allValues));
     snapshotRef.current = null;
     setPreviewing(false);
-    // initialKey evita resets por nueva referencia de array con mismo contenido.
     // eslint-disable-next-line react-hooks/exhaustive-deps -- sync by key
   }, [initialKey]);
 
   useEffect(() => {
     function onClear() {
-      setSelected([]);
+      setSelected([...allValues]);
       setOpen(false);
       snapshotRef.current = null;
       setPreviewing(false);
     }
     window.addEventListener(CLEAR_SEARCH_EVENT, onClear);
     return () => window.removeEventListener(CLEAR_SEARCH_EVENT, onClear);
-  }, []);
+  }, [allValues]);
 
   useEffect(() => {
     function valuesFromCriteria(criteria: SearchCriteria): string[] {
@@ -79,7 +85,7 @@ export function CriteriaMultiSelect({
       if (snapshotRef.current == null) {
         snapshotRef.current = selectedRef.current;
       }
-      setSelected(uniquePreserve(values));
+      setSelected(toUiSelection(values, allValues));
       setPreviewing(true);
     }
     function onRestore() {
@@ -93,7 +99,7 @@ export function CriteriaMultiSelect({
       const criteria = (e as CustomEvent<SearchCriteria>).detail;
       if (!criteria) return;
       snapshotRef.current = null;
-      setSelected(uniquePreserve(valuesFromCriteria(criteria)));
+      setSelected(toUiSelection(valuesFromCriteria(criteria), allValues));
       setPreviewing(false);
       setOpen(false);
     }
@@ -105,7 +111,7 @@ export function CriteriaMultiSelect({
       window.removeEventListener(SEARCH_RESTORE_MULTI_EVENT, onRestore);
       window.removeEventListener(SEARCH_APPLY_CRITERIA_EVENT, onApply);
     };
-  }, [name]);
+  }, [name, allValues]);
 
   const labelByValue = useMemo(() => {
     const m = new Map<string, string>();
@@ -113,12 +119,33 @@ export function CriteriaMultiSelect({
     return m;
   }, [options]);
 
-  const summary =
-    selected.length === 0
-      ? "Todos"
+  const isAll =
+    allValues.length > 0 && allValues.every((v) => selected.includes(v));
+
+  const formValues = isAll || selected.length === 0 ? [] : selected;
+
+  const summary = isAll
+    ? "Todos"
+    : selected.length === 0
+      ? "Ninguno"
       : selected.length <= 2
         ? selected.map((v) => labelByValue.get(v) ?? v).join(", ")
         : `${selected.length} seleccionados`;
+
+  function openMenu() {
+    openSnapshotRef.current = [...selectedRef.current];
+    setOpen(true);
+  }
+
+  function closeMenu() {
+    setSelected((prev) => {
+      if (prev.length > 0) return prev;
+      const snap = openSnapshotRef.current;
+      if (snap.length > 0) return snap;
+      return [...allValues];
+    });
+    setOpen(false);
+  }
 
   function toggle(value: string) {
     setSelected((prev) => {
@@ -139,7 +166,7 @@ export function CriteriaMultiSelect({
           id={id}
           aria-expanded={open}
           aria-haspopup="listbox"
-          onClick={() => setOpen((o) => !o)}
+          onClick={() => (open ? closeMenu() : openMenu())}
           className={cn(
             "flex w-full items-center justify-between gap-2 rounded-md border border-border bg-background px-3 py-2 text-left text-sm text-foreground outline-none hover:bg-muted/40 focus:ring-2 focus:ring-ring",
             previewing && SEARCH_PREVIEW_GHOST_CLASS,
@@ -150,26 +177,38 @@ export function CriteriaMultiSelect({
             ▾
           </span>
         </button>
-        {selected.map((value) => (
+        {formValues.map((value) => (
           <input key={value} type="hidden" name={name} value={value} />
         ))}
         <AnchoredPortal
           open={open}
           anchorRef={triggerRef}
-          onDismiss={() => setOpen(false)}
+          onDismiss={closeMenu}
           className="bg-surface py-1"
           maxHeight={224}
         >
+          <div className="flex border-b border-border">
+            <button
+              type="button"
+              className={cn(
+                "flex-1 px-3 py-1.5 text-left text-xs font-medium transition-colors",
+                isAll
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground",
+              )}
+              onClick={() => setSelected([...allValues])}
+            >
+              Todos
+            </button>
+            <button
+              type="button"
+              className="flex-1 border-l border-border px-3 py-1.5 text-left text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              onClick={() => setSelected([])}
+            >
+              Limpiar
+            </button>
+          </div>
           <ul role="listbox" aria-multiselectable>
-            <li className="border-b border-border px-3 py-1.5">
-              <button
-                type="button"
-                className="w-full text-left text-xs font-medium text-muted-foreground hover:text-foreground"
-                onClick={() => setSelected([])}
-              >
-                Todos (limpiar selección)
-              </button>
-            </li>
             {options.map((opt) => {
               const checked = selected.includes(opt.value);
               return (
@@ -191,6 +230,13 @@ export function CriteriaMultiSelect({
       </div>
     </div>
   );
+}
+
+/** Vacío / sin filtro en criteria → UI «Todos» (todas marcadas). */
+function toUiSelection(values: string[], allValues: string[]): string[] {
+  const cleaned = uniquePreserve(values);
+  if (cleaned.length === 0) return [...allValues];
+  return cleaned;
 }
 
 function uniquePreserve(values: string[]): string[] {
