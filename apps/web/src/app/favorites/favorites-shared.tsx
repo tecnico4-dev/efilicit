@@ -49,12 +49,14 @@ export function searchHrefFromCriteria(
   if (criteria.estimated_value_max != null) {
     params.set("max", String(criteria.estimated_value_max));
   }
-  if (criteria.statuses?.[0]) params.set("status", criteria.statuses[0]);
-  if (criteria.procedure_types?.[0]) {
-    params.set("procedure", criteria.procedure_types[0]);
+  if (criteria.statuses?.length) {
+    for (const s of criteria.statuses) params.append("status", s);
   }
-  if (criteria.contract_types?.[0]) {
-    params.set("contract_type", criteria.contract_types[0]);
+  if (criteria.procedure_types?.length) {
+    for (const p of criteria.procedure_types) params.append("procedure", p);
+  }
+  if (criteria.contract_types?.length) {
+    for (const c of criteria.contract_types) params.append("contract_type", c);
   }
   if (criteria.publication_date_from) {
     params.set("pub_from", criteria.publication_date_from);
@@ -62,7 +64,9 @@ export function searchHrefFromCriteria(
   if (criteria.publication_date_to) {
     params.set("pub_to", criteria.publication_date_to);
   }
-  if (criteria.open_for_submission === true) {
+  if (criteria.open_for_submission === false) {
+    params.set("en_plazo", "0");
+  } else {
     params.set("en_plazo", "1");
   }
   const ccaa = criteria.geography?.ccaa_codes?.[0];

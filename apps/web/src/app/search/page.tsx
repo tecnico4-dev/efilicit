@@ -79,6 +79,18 @@ function allParam(value: string | string[] | undefined): string[] {
   return out;
 }
 
+/** Params multi-valor genéricos (estado / procedimiento / tipo). */
+function allStringParam(value: string | string[] | undefined): string[] {
+  if (value == null) return [];
+  const raw = Array.isArray(value) ? value : [value];
+  const out: string[] = [];
+  for (const item of raw) {
+    const t = item.trim();
+    if (t && !out.includes(t)) out.push(t);
+  }
+  return out;
+}
+
 function formatMoney(value: number | null, currency: string): string {
   if (value == null) return "—";
   try {
@@ -110,9 +122,9 @@ type SearchFilters = {
   maxRaw: string;
   ccaa: string;
   municipality: string;
-  status: string;
-  procedure: string;
-  contractType: string;
+  statuses: string[];
+  procedures: string[];
+  contractTypes: string[];
   pubFrom: string;
   pubTo: string;
   openForSubmission: boolean;
@@ -136,12 +148,12 @@ function tenderHrefFromSearch(
   if (filters.maxRaw) params.set("max", filters.maxRaw);
   if (filters.ccaa) params.set("ccaa", filters.ccaa);
   if (filters.municipality) params.set("municipality", filters.municipality);
-  if (filters.status) params.set("status", filters.status);
-  if (filters.procedure) params.set("procedure", filters.procedure);
-  if (filters.contractType) params.set("contract_type", filters.contractType);
+  for (const s of filters.statuses) params.append("status", s);
+  for (const p of filters.procedures) params.append("procedure", p);
+  for (const c of filters.contractTypes) params.append("contract_type", c);
   if (filters.pubFrom) params.set("pub_from", filters.pubFrom);
   if (filters.pubTo) params.set("pub_to", filters.pubTo);
-  if (filters.openForSubmission) params.set("en_plazo", "1");
+  params.set("en_plazo", filters.openForSubmission ? "1" : "0");
   if (page > 1) params.set("page", String(page));
   if (pageSize !== SEARCH_PAGE_SIZE) params.set("ps", String(pageSize));
   if (sortBy !== "relevance") params.set("sort", sortBy);
@@ -319,12 +331,15 @@ export default async function SearchPage({
   const maxRaw = first(params.max).trim();
   const ccaa = first(params.ccaa).trim();
   const municipalityRaw = first(params.municipality).trim();
-  const statusRaw = first(params.status).trim();
-  const procedureRaw = first(params.procedure).trim();
-  const contractTypeRaw = first(params.contract_type).trim();
+  const statusesRaw = allStringParam(params.status);
+  const proceduresRaw = allStringParam(params.procedure);
+  const contractTypesRaw = allStringParam(params.contract_type);
   const pubFromRaw = first(params.pub_from).trim();
   const pubToRaw = first(params.pub_to).trim();
-  const openForSubmission = first(params.en_plazo).trim() === "1";
+  const enPlazoRaw = first(params.en_plazo).trim();
+  /** Ausente o `1` → en plazo; solo `0` desactiva (default marcado). */
+  const openForSubmission = enPlazoRaw !== "0";
+  const enPlazoExplicitOn = enPlazoRaw === "1";
   const from = first(params.from).trim();
   const back = backFromSavedSearch(from);
   const pageRaw = Number.parseInt(first(params.page).trim(), 10);
@@ -344,9 +359,9 @@ export default async function SearchPage({
   const ccaaValid = SEARCH_CCAA_OPTIONS.some((o) => o.code === ccaa)
     ? ccaa
     : "";
-  const statusValid = statusRaw;
-  const procedureValid = procedureRaw;
-  const contractTypeValid = contractTypeRaw;
+  const statusesValid = statusesRaw;
+  const proceduresValid = proceduresRaw;
+  const contractTypesValid = contractTypesRaw;
   const pubFromValid = /^\d{4}-\d{2}-\d{2}$/.test(pubFromRaw) ? pubFromRaw : "";
   const pubToValid = /^\d{4}-\d{2}-\d{2}$/.test(pubToRaw) ? pubToRaw : "";
 
@@ -373,12 +388,12 @@ export default async function SearchPage({
     (max != null && !Number.isNaN(max)) ||
     ccaaValid !== "" ||
     municipalityRaw !== "" ||
-    statusValid !== "" ||
-    procedureValid !== "" ||
-    contractTypeValid !== "" ||
+    statusesValid.length > 0 ||
+    proceduresValid.length > 0 ||
+    contractTypesValid.length > 0 ||
     pubFromValid !== "" ||
     pubToValid !== "" ||
-    openForSubmission;
+    enPlazoExplicitOn;
   /** Stopwords solas → aviso y sin RPC (aunque haya otros filtros en la URL). */
   const shouldSearch = hasParams && !queryOnlyNoise;
   /** Nueva búsqueda (no paginación): form no manda `tc`. */
@@ -404,9 +419,9 @@ export default async function SearchPage({
     maxRaw,
     ccaa: ccaaValid,
     municipality: municipalityValid,
-    status: statusValid,
-    procedure: procedureValid,
-    contractType: contractTypeValid,
+    statuses: statusesValid,
+    procedures: proceduresValid,
+    contractTypes: contractTypesValid,
     pubFrom: pubFromValid,
     pubTo: pubToValid,
     openForSubmission,
@@ -423,12 +438,12 @@ export default async function SearchPage({
         : undefined,
     estimated_value_min: min != null && !Number.isNaN(min) ? min : undefined,
     estimated_value_max: max != null && !Number.isNaN(max) ? max : undefined,
-    statuses: statusValid ? [statusValid] : undefined,
-    procedure_types: procedureValid ? [procedureValid] : undefined,
-    contract_types: contractTypeValid ? [contractTypeValid] : undefined,
+    statuses: statusesValid.length ? statusesValid : undefined,
+    procedure_types: proceduresValid.length ? proceduresValid : undefined,
+    contract_types: contractTypesValid.length ? contractTypesValid : undefined,
     publication_date_from: pubFromValid || undefined,
     publication_date_to: pubToValid || undefined,
-    open_for_submission: openForSubmission || undefined,
+    open_for_submission: openForSubmission,
     geography:
       ccaaValid || municipalityValid
         ? {
@@ -530,9 +545,9 @@ export default async function SearchPage({
     ccaa,
     municipalityCode: municipalityRaw,
     municipalityName: "",
-    status: statusRaw,
-    procedure: procedureRaw,
-    contractType: contractTypeRaw,
+    statuses: statusesRaw,
+    procedureTypes: proceduresRaw,
+    contractTypes: contractTypesRaw,
     pubFrom: pubFromValid,
     pubTo: pubToValid,
     openForSubmission,
@@ -552,7 +567,7 @@ export default async function SearchPage({
       </h1>
 
       <SearchForm
-        formKey={`${qInput}|${cpvCodes.join(",")}|${cpvMatch}|${minRaw}|${maxRaw}|${ccaa}|${municipalityRaw}|${statusRaw}|${procedureRaw}|${contractTypeRaw}|${pubFromValid}|${pubToValid}|${openForSubmission}|${from}`}
+        formKey={`${qInput}|${cpvCodes.join(",")}|${cpvMatch}|${minRaw}|${maxRaw}|${ccaa}|${municipalityRaw}|${statusesRaw.join(",")}|${proceduresRaw.join(",")}|${contractTypesRaw.join(",")}|${pubFromValid}|${pubToValid}|${enPlazoRaw}|${from}`}
       >
         {from === "favorites" || from === "favorites-searches" ? (
           <input type="hidden" name="from" value={from} />

@@ -58,9 +58,9 @@ export function buildCriteriaFromSearchForm(
   const maxRaw = readField(form, "max");
   const ccaa = readField(form, "ccaa");
   const municipality = readField(form, "municipality");
-  const status = readField(form, "status");
-  const procedure = readField(form, "procedure");
-  const contractType = readField(form, "contract_type");
+  const statuses = readAllFields(form, "status");
+  const procedureTypes = readAllFields(form, "procedure");
+  const contractTypes = readAllFields(form, "contract_type");
   const pubFrom = readField(form, "pub_from");
   const pubTo = readField(form, "pub_to");
   const openForSubmission = readField(form, "en_plazo") === "1";
@@ -76,9 +76,9 @@ export function buildCriteriaFromSearchForm(
     (max != null && !Number.isNaN(max)) ||
     ccaa !== "" ||
     municipality !== "" ||
-    status !== "" ||
-    procedure !== "" ||
-    contractType !== "" ||
+    statuses.length > 0 ||
+    procedureTypes.length > 0 ||
+    contractTypes.length > 0 ||
     pubFrom !== "" ||
     pubTo !== "" ||
     openForSubmission;
@@ -92,12 +92,12 @@ export function buildCriteriaFromSearchForm(
     cpv_match: cpvMatch,
     estimated_value_min: min != null && !Number.isNaN(min) ? min : undefined,
     estimated_value_max: max != null && !Number.isNaN(max) ? max : undefined,
-    statuses: status ? [status] : undefined,
-    procedure_types: procedure ? [procedure] : undefined,
-    contract_types: contractType ? [contractType] : undefined,
+    statuses: statuses.length ? statuses : undefined,
+    procedure_types: procedureTypes.length ? procedureTypes : undefined,
+    contract_types: contractTypes.length ? contractTypes : undefined,
     publication_date_from: pubFrom || undefined,
     publication_date_to: pubTo || undefined,
-    open_for_submission: openForSubmission || undefined,
+    open_for_submission: openForSubmission,
     geography:
       ccaa || municipality
         ? {

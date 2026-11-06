@@ -10,6 +10,7 @@ import {
 import { CpvPicker } from "@/app/search/cpv-picker";
 import { MunicipalityFilter } from "@/app/search/municipality-filter";
 import { SEARCH_FORM_ID } from "@/app/search/save-search-button";
+import { CriteriaMultiSelect } from "./criteria-multi-select";
 import { PublicationDateRange } from "./publication-date-range";
 import { SearchTextField } from "./search-text-field";
 
@@ -27,12 +28,16 @@ export type CriteriaFilterOptionsProp = {
   ccaaCodesWithTenders: readonly string[];
 };
 
-function withInitialOption(
+function withInitialOptions(
   options: SearchFilterOption[],
-  value: string,
+  values: string[],
 ): SearchFilterOption[] {
-  if (!value || options.some((o) => o.value === value)) return options;
-  return [...options, { value, label: value }];
+  let out = options;
+  for (const value of values) {
+    if (!value || out.some((o) => o.value === value)) continue;
+    out = [...out, { value, label: value }];
+  }
+  return out;
 }
 
 type Props = {
@@ -62,13 +67,13 @@ export function CriteriaFilters({
 }: Props) {
   const ccaaWithData = new Set(filterOptions.ccaaCodesWithTenders);
   const statuses = sortSearchFilterOptions(
-    withInitialOption(filterOptions.statuses, initial.status),
+    withInitialOptions(filterOptions.statuses, initial.statuses),
   );
   const procedureTypes = sortSearchFilterOptions(
-    withInitialOption(filterOptions.procedureTypes, initial.procedure),
+    withInitialOptions(filterOptions.procedureTypes, initial.procedureTypes),
   );
   const contractTypes = sortSearchFilterOptions(
-    withInitialOption(filterOptions.contractTypes, initial.contractType),
+    withInitialOptions(filterOptions.contractTypes, initial.contractTypes),
   );
   const qId = `${idPrefix}q`;
   const minId = `${idPrefix}min`;
@@ -153,69 +158,27 @@ export function CriteriaFilters({
       </div>
 
       <div className="grid gap-4 sm:grid-cols-3">
-        <div>
-          <label
-            htmlFor={statusId}
-            className="block text-sm font-medium text-foreground"
-          >
-            Estado
-          </label>
-          <select
-            id={statusId}
-            name="status"
-            defaultValue={initial.status}
-            className={selectClass}
-          >
-            <option value="">Todos</option>
-            {statuses.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label
-            htmlFor={procedureId}
-            className="block text-sm font-medium text-foreground"
-          >
-            Procedimiento
-          </label>
-          <select
-            id={procedureId}
-            name="procedure"
-            defaultValue={initial.procedure}
-            className={selectClass}
-          >
-            <option value="">Todos</option>
-            {procedureTypes.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label
-            htmlFor={contractId}
-            className="block text-sm font-medium text-foreground"
-          >
-            Tipo de contrato
-          </label>
-          <select
-            id={contractId}
-            name="contract_type"
-            defaultValue={initial.contractType}
-            className={selectClass}
-          >
-            <option value="">Todos</option>
-            {contractTypes.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
-        </div>
+        <CriteriaMultiSelect
+          id={statusId}
+          name="status"
+          label="Estado"
+          options={statuses}
+          initialSelected={initial.statuses}
+        />
+        <CriteriaMultiSelect
+          id={procedureId}
+          name="procedure"
+          label="Procedimiento"
+          options={procedureTypes}
+          initialSelected={initial.procedureTypes}
+        />
+        <CriteriaMultiSelect
+          id={contractId}
+          name="contract_type"
+          label="Tipo de contrato"
+          options={contractTypes}
+          initialSelected={initial.contractTypes}
+        />
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -303,15 +266,15 @@ export function CriteriaFiltersFallback({
       queryOnlyNoise={queryOnlyNoise}
       textFieldAction={textFieldAction}
       filterOptions={{
-        statuses: initial.status
-          ? [{ value: initial.status, label: initial.status }]
-          : [],
-        procedureTypes: initial.procedure
-          ? [{ value: initial.procedure, label: initial.procedure }]
-          : [],
-        contractTypes: initial.contractType
-          ? [{ value: initial.contractType, label: initial.contractType }]
-          : [],
+        statuses: initial.statuses.map((value) => ({ value, label: value })),
+        procedureTypes: initial.procedureTypes.map((value) => ({
+          value,
+          label: value,
+        })),
+        contractTypes: initial.contractTypes.map((value) => ({
+          value,
+          label: value,
+        })),
         ccaaCodesWithTenders: initial.ccaa ? [initial.ccaa] : [],
       }}
     />

@@ -18,14 +18,21 @@ const FORM_ID = "search-form";
 /** Clase fantasma en campos mientras dura el hover de una reciente. */
 export const SEARCH_PREVIEW_GHOST_CLASS = "text-muted-foreground";
 
+/** Preview / restore de multi-select (estado / procedimiento / tipo). */
+export const SEARCH_PREVIEW_MULTI_EVENT = "efilicit:search-preview-multi";
+export const SEARCH_RESTORE_MULTI_EVENT = "efilicit:search-restore-multi";
+
+export type SearchPreviewMultiDetail = {
+  status: string[];
+  procedure: string[];
+  contract_type: string[];
+};
+
 const SIMPLE_FIELD_NAMES = [
   "q",
   "min",
   "max",
   "ccaa",
-  "status",
-  "procedure",
-  "contract_type",
   "en_plazo",
 ] as const;
 
@@ -99,9 +106,6 @@ function paintSimpleFields(form: HTMLFormElement, criteria: SearchCriteria) {
     min: initial.min,
     max: initial.max,
     ccaa: initial.ccaa,
-    status: initial.status,
-    procedure: initial.procedure,
-    contract_type: initial.contractType,
   };
 
   for (const name of SIMPLE_FIELD_NAMES) {
@@ -116,6 +120,16 @@ function paintSimpleFields(form: HTMLFormElement, criteria: SearchCriteria) {
     }
     applyGhost(el, true);
   }
+
+  window.dispatchEvent(
+    new CustomEvent<SearchPreviewMultiDetail>(SEARCH_PREVIEW_MULTI_EVENT, {
+      detail: {
+        status: initial.statuses,
+        procedure: initial.procedureTypes,
+        contract_type: initial.contractTypes,
+      },
+    }),
+  );
 }
 
 function restoreSimpleFields(form: HTMLFormElement, snapshot: FieldSnapshot[]) {
@@ -129,6 +143,7 @@ function restoreSimpleFields(form: HTMLFormElement, snapshot: FieldSnapshot[]) {
     }
     applyGhost(el, false);
   }
+  window.dispatchEvent(new Event(SEARCH_RESTORE_MULTI_EVENT));
 }
 
 const CLEAR_PREVIEW_DELAY_MS = 150;

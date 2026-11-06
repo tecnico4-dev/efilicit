@@ -1,7 +1,8 @@
 "use client";
 
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
+import { flushSync } from "react-dom";
 import { formatCriteriaSummary } from "@/lib/criteria-display";
 import { searchHrefFromCriteria } from "@/app/favorites/favorites-shared";
 import { cn } from "@/lib/cn";
@@ -27,6 +28,7 @@ export function RecentSearchesList({
   /** Nombres de municipio por código INE (para el resumen del chip). */
   municipalityNames?: Readonly<Record<string, string>>;
 }) {
+  const router = useRouter();
   const { setPreview, clearPreview, scheduleClearPreview } =
     useSearchFormPreview();
   const [open, setOpen] = useState(false);
@@ -60,6 +62,15 @@ export function RecentSearchesList({
     setList((prev) => prev.filter((i) => i.id !== recentId));
   }
 
+  function onApply(criteria: RecentSearch["criteria"]) {
+    // Restaurar snapshot de forma síncrona antes de navegar; si no, el
+    // preview fantasma compite con el remount del form desde la URL.
+    flushSync(() => {
+      clearPreview();
+    });
+    router.push(searchHrefFromCriteria(criteria));
+  }
+
   return (
     <div className="flex w-full min-w-0 flex-col gap-1.5">
       <div className="flex w-full items-center justify-end gap-2">
@@ -87,12 +98,13 @@ export function RecentSearchesList({
                   onMouseEnter={() => setPreview(item.criteria)}
                   onMouseLeave={() => scheduleClearPreview()}
                 >
-                  <Link
-                    href={searchHrefFromCriteria(item.criteria)}
-                    className="min-w-0 truncate py-1 hover:text-primary-dark"
+                  <button
+                    type="button"
+                    onClick={() => onApply(item.criteria)}
+                    className="min-w-0 truncate py-1 text-left hover:text-primary-dark"
                   >
                     {summary}
-                  </Link>
+                  </button>
                   <button
                     type="button"
                     onClick={(e) => void onRemove(e, item.id)}

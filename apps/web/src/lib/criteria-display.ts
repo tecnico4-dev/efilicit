@@ -133,9 +133,10 @@ export type CriteriaFilterInitial = {
   ccaa: string;
   municipalityCode: string;
   municipalityName: string;
-  status: string;
-  procedure: string;
-  contractType: string;
+  /** Códigos de estado seleccionados (vacío = Todos). */
+  statuses: string[];
+  procedureTypes: string[];
+  contractTypes: string[];
   pubFrom: string;
   pubTo: string;
   openForSubmission: boolean;
@@ -151,12 +152,13 @@ export function emptyCriteriaFilterInitial(): CriteriaFilterInitial {
     ccaa: "",
     municipalityCode: "",
     municipalityName: "",
-    status: "",
-    procedure: "",
-    contractType: "",
+    statuses: [],
+    procedureTypes: [],
+    contractTypes: [],
     pubFrom: "",
     pubTo: "",
-    openForSubmission: false,
+    /** Buscador: «Solo en plazo» marcado por defecto. */
+    openForSubmission: true,
   };
 }
 
@@ -186,12 +188,16 @@ export function criteriaToFilterInitial(
     ccaa: criteria.geography?.ccaa_codes?.[0] ?? "",
     municipalityCode: criteria.geography?.municipality_codes?.[0] ?? "",
     municipalityName: "",
-    status: criteria.statuses?.[0] ?? "",
-    procedure: criteria.procedure_types?.[0] ?? "",
-    contractType: criteria.contract_types?.[0] ?? "",
+    statuses: criteria.statuses?.length ? [...criteria.statuses] : [],
+    procedureTypes: criteria.procedure_types?.length
+      ? [...criteria.procedure_types]
+      : [],
+    contractTypes: criteria.contract_types?.length
+      ? [...criteria.contract_types]
+      : [],
     pubFrom: criteria.publication_date_from ?? "",
     pubTo: criteria.publication_date_to ?? "",
-    openForSubmission: criteria.open_for_submission === true,
+    openForSubmission: criteria.open_for_submission !== false,
   };
 }
 

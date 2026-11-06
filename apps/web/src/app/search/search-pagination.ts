@@ -31,9 +31,9 @@ export type SearchHrefFilters = {
   maxRaw: string;
   ccaa: string;
   municipality: string;
-  status: string;
-  procedure: string;
-  contractType: string;
+  statuses: string[];
+  procedures: string[];
+  contractTypes: string[];
   pubFrom: string;
   pubTo: string;
   openForSubmission: boolean;
@@ -67,12 +67,12 @@ export function searchHref(
   if (filters.maxRaw) params.set("max", filters.maxRaw);
   if (filters.ccaa) params.set("ccaa", filters.ccaa);
   if (filters.municipality) params.set("municipality", filters.municipality);
-  if (filters.status) params.set("status", filters.status);
-  if (filters.procedure) params.set("procedure", filters.procedure);
-  if (filters.contractType) params.set("contract_type", filters.contractType);
+  for (const s of filters.statuses) params.append("status", s);
+  for (const p of filters.procedures) params.append("procedure", p);
+  for (const c of filters.contractTypes) params.append("contract_type", c);
   if (filters.pubFrom) params.set("pub_from", filters.pubFrom);
   if (filters.pubTo) params.set("pub_to", filters.pubTo);
-  if (filters.openForSubmission) params.set("en_plazo", "1");
+  params.set("en_plazo", filters.openForSubmission ? "1" : "0");
   const from = options?.from;
   if (from === "favorites" || from === "favorites-searches") {
     params.set("from", from);

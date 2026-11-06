@@ -53,8 +53,36 @@ function hasAnyCriterion(form: HTMLFormElement): boolean {
       const el = form.elements.namedItem(name);
       return el instanceof HTMLInputElement && el.checked;
     }
+    if (
+      name === "status" ||
+      name === "procedure" ||
+      name === "contract_type"
+    ) {
+      const el = form.elements.namedItem(name);
+      if (el instanceof RadioNodeList) {
+        return [...el].some(
+          (node) =>
+            node instanceof HTMLInputElement && node.value.trim() !== "",
+        );
+      }
+    }
     return readField(form, name) !== "";
   });
+}
+
+/** Checkbox desmarcado no viaja en GET: inyectamos `en_plazo=0`. */
+function ensureEnPlazoParam(form: HTMLFormElement) {
+  const el = form.elements.namedItem("en_plazo");
+  const checked = el instanceof HTMLInputElement && el.checked;
+  form.querySelectorAll('input[data-en-plazo-off="1"]').forEach((n) => n.remove());
+  if (!checked) {
+    const hidden = document.createElement("input");
+    hidden.type = "hidden";
+    hidden.name = "en_plazo";
+    hidden.value = "0";
+    hidden.dataset.enPlazoOff = "1";
+    form.appendChild(hidden);
+  }
 }
 
 /** Fechas de publicación: ambas rellenadas y desde > hasta. */
@@ -111,6 +139,7 @@ function SearchFormInner({ children }: { children: ReactNode }) {
           });
           return;
         }
+        ensureEnPlazoParam(e.currentTarget);
         clearFeedback();
       }}
     >

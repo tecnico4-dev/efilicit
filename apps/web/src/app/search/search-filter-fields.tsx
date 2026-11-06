@@ -12,11 +12,12 @@ import {
 } from "@/components/criteria/criteria-filters";
 import { SEARCH_FORM_ID } from "./save-search-button";
 
-function optionAllowed(
-  value: string,
+function optionsAllowed(
+  values: string[],
   options: { value: string }[],
-): string {
-  return options.some((o) => o.value === value) ? value : "";
+): string[] {
+  const allowed = new Set(options.map((o) => o.value));
+  return values.filter((v) => allowed.has(v));
 }
 
 type LoaderProps = {
@@ -61,13 +62,16 @@ export async function SearchFilterFields({
   const ccaaValid =
     ccaaInCatalog && ccaaWithData.has(initial.ccaa) ? initial.ccaa : "";
 
-  const statusValid = optionAllowed(initial.status, filterOptions.statuses);
-  const procedureValid = optionAllowed(
-    initial.procedure,
+  const statusesValid = optionsAllowed(
+    initial.statuses,
+    filterOptions.statuses,
+  );
+  const procedureValid = optionsAllowed(
+    initial.procedureTypes,
     filterOptions.procedureTypes,
   );
-  const contractTypeValid = optionAllowed(
-    initial.contractType,
+  const contractTypeValid = optionsAllowed(
+    initial.contractTypes,
     filterOptions.contractTypes,
   );
 
@@ -92,9 +96,9 @@ export async function SearchFilterFields({
     ccaa: ccaaValid,
     municipalityCode: municipalityValid,
     municipalityName,
-    status: statusValid,
-    procedure: procedureValid,
-    contractType: contractTypeValid,
+    statuses: statusesValid,
+    procedureTypes: procedureValid,
+    contractTypes: contractTypeValid,
   };
 
   return (

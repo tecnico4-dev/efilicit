@@ -63,10 +63,20 @@ function blankFormFields(form: HTMLFormElement) {
     "#municipality-text",
   ) as HTMLInputElement | null;
   if (munText) munText.value = "";
+  // «Solo en plazo» vuelve al default marcado.
+  const enPlazo = form.elements.namedItem("en_plazo");
+  if (enPlazo instanceof HTMLInputElement && enPlazo.type === "checkbox") {
+    enPlazo.checked = true;
+  }
   window.dispatchEvent(new Event(CLEAR_SEARCH_EVENT));
 }
 
 function fieldHasValue(form: HTMLFormElement, name: string): boolean {
+  // Default marcado: no cuenta como «sucio» para mostrar Limpiar.
+  if (name === "en_plazo") {
+    const el = form.elements.namedItem(name);
+    return el instanceof HTMLInputElement && !el.checked;
+  }
   const el = form.elements.namedItem(name);
   if (el instanceof RadioNodeList) {
     return [...el].some((node) => {

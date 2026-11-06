@@ -100,12 +100,12 @@ function backLinkFromParams(
     const max = first(params.max).trim();
     const ccaa = first(params.ccaa).trim();
     const municipality = first(params.municipality).trim();
-    const status = first(params.status).trim();
-    const procedure = first(params.procedure).trim();
-    const contractType = first(params.contract_type).trim();
+    const statuses = allParam(params.status);
+    const procedures = allParam(params.procedure);
+    const contractTypes = allParam(params.contract_type);
     const pubFrom = first(params.pub_from).trim();
     const pubTo = first(params.pub_to).trim();
-    const enPlazo = first(params.en_plazo).trim() === "1";
+    const enPlazoRaw = first(params.en_plazo).trim();
     if (q) qs.set("q", q);
     for (const code of cpvCodes) qs.append("cpv", code);
     if (cpvCodes.length >= 2 && cpvMatch === "all") {
@@ -115,12 +115,14 @@ function backLinkFromParams(
     if (max) qs.set("max", max);
     if (ccaa) qs.set("ccaa", ccaa);
     if (municipality) qs.set("municipality", municipality);
-    if (status) qs.set("status", status);
-    if (procedure) qs.set("procedure", procedure);
-    if (contractType) qs.set("contract_type", contractType);
+    for (const s of statuses) qs.append("status", s);
+    for (const p of procedures) qs.append("procedure", p);
+    for (const c of contractTypes) qs.append("contract_type", c);
     if (pubFrom) qs.set("pub_from", pubFrom);
     if (pubTo) qs.set("pub_to", pubTo);
-    if (enPlazo) qs.set("en_plazo", "1");
+    if (enPlazoRaw === "0" || enPlazoRaw === "1") {
+      qs.set("en_plazo", enPlazoRaw);
+    }
     const pageRaw = Number.parseInt(first(params.page).trim(), 10);
     if (Number.isInteger(pageRaw) && pageRaw > 1) {
       qs.set("page", String(pageRaw));
