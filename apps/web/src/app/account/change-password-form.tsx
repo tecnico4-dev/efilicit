@@ -96,7 +96,7 @@ function PasswordPolicyInfoButton({ className }: { className?: string }) {
   );
 }
 
-/** Formulario de cambio de contraseña (Cuenta, modal o post-login). */
+/** Formulario de cambio de contraseña (Cuenta paso 2, o post-login sin pedir actual). */
 export function ChangePasswordForm({
   onDone,
   onCancel,
@@ -221,7 +221,12 @@ export function ChangePasswordForm({
   );
 }
 
-/** Modal centrado en viewport (portal); bloquea hasta Guardar o Cancelar. */
+type ModalStep = "verify" | "change";
+
+/**
+ * Modal Cuenta: paso 1 verifica contraseña actual (sin cerrar sesión si falla);
+ * paso 2 pide la nueva. El post-login usa solo `ChangePasswordForm`.
+ */
 export function ChangePasswordModal({
   open,
   onClose,
@@ -230,6 +235,11 @@ export function ChangePasswordModal({
   onClose: () => void;
 }) {
   const [mounted, setMounted] = useState(false);
+  const [step, setStep] = useState<ModalStep>("verify");
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [verifyError, setVerifyError] = useState<string | null>(null);
+  const [pending, setPending] = useState(false);
+  const [forgotHint, setForgotHint] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -237,6 +247,11 @@ export function ChangePasswordModal({
 
   useEffect(() => {
     if (!open) return;
+    setStep("verify");
+    setCurrentPassword("");
+    setVerifyError(null);
+    setPending(false);
+    setForgotHint(false);
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => {
@@ -244,7 +259,49 @@ export function ChangePasswordModal({
     };
   }, [open]);
 
+  async function onVerify(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setVerifyError(null);
+    setForgotHint(false);
+
+    const supabase = createSupabaseBrowserClient();
+    const { data: userData, error: userError } = await supabase.auth.getUser();
+    const email = userData.user?.email?.trim();
+    if (userError || !email) {
+      setVerifyError("No se pudo comprobar la sesión. Inténtalo de nuevo.");
+      return;
+    }
+
+    const { data: before } = await supabase.auth.getSession();
+    const sessionBefore = before.session;
+
+    setPending(true);
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email,
+      password: currentPassword,
+    });
+    setPending(false);
+
+    if (signInError) {
+      // Por si Auth limpiara la sesión ante un fallo: restaurar.
+      const { data: after } = await supabase.auth.getSession();
+      if (!after.session && sessionBefore) {
+        await supabase.auth.setSession({
+          access_token: sessionBefore.access_token,
+          refresh_token: sessionBefore.refresh_token,
+        });
+      }
+      setVerifyError("Contraseña incorrecta.");
+      return;
+    }
+
+    setCurrentPassword("");
+    setStep("change");
+  }
+
   if (!open || !mounted) return null;
+
+  const titleId = "change-password-title";
 
   return createPortal(
     <div
@@ -254,25 +311,91 @@ export function ChangePasswordModal({
       <div
         role="dialog"
         aria-modal="true"
-        aria-labelledby="change-password-title"
+        aria-labelledby={titleId}
         className="max-h-[min(90vh,36rem)] w-full max-w-md overflow-y-auto rounded-xl border border-border bg-surface p-6 shadow-xl"
       >
-        <div className="flex items-center justify-between gap-2">
-          <h2
-            id="change-password-title"
-            className="text-lg font-semibold tracking-tight text-foreground"
-          >
-            Cambiar contraseña
-          </h2>
-          <PasswordPolicyInfoButton />
-        </div>
-        <div className="mt-4">
-          <ChangePasswordForm
-            onDone={onClose}
-            onCancel={onClose}
-            showPolicyInfo={false}
-          />
-        </div>
+        {step === "verify" ? (
+          <>
+            <h2
+              id={titleId}
+              className="text-lg font-semibold tracking-tight text-foreground"
+            >
+              Cambiar contraseña
+            </h2>
+            <form onSubmit={onVerify} className="mt-4 space-y-4">
+              <div>
+                <label
+                  htmlFor="current_password"
+                  className="mb-1 block text-sm text-muted-foreground"
+                >
+                  Introduce tu contraseña actual:
+                </label>
+                <PasswordInput
+                  id="current_password"
+                  autoComplete="current-password"
+                  required
+                  autoFocus
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                />
+              </div>
+              {verifyError ? (
+                <p
+                  className="rounded-lg border border-destructive/40 bg-surface px-3 py-2 text-sm text-destructive"
+                  role="alert"
+                >
+                  {verifyError}
+                </p>
+              ) : null}
+              <div className="flex flex-wrap items-center gap-2">
+                <Button type="submit" disabled={pending}>
+                  {pending ? "Comprobando…" : "Continuar"}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={pending}
+                  onClick={onClose}
+                >
+                  Cancelar
+                </Button>
+              </div>
+              <div>
+                <button
+                  type="button"
+                  className="text-sm font-medium text-link hover:underline"
+                  onClick={() => setForgotHint((v) => !v)}
+                >
+                  ¿Has olvidado tu contraseña?
+                </button>
+                {forgotHint ? (
+                  <p className="mt-1.5 text-sm text-muted-foreground" role="status">
+                    Contacta con el administrador para restablecerla.
+                  </p>
+                ) : null}
+              </div>
+            </form>
+          </>
+        ) : (
+          <>
+            <div className="flex items-center justify-between gap-2">
+              <h2
+                id={titleId}
+                className="text-lg font-semibold tracking-tight text-foreground"
+              >
+                Cambiar contraseña
+              </h2>
+              <PasswordPolicyInfoButton />
+            </div>
+            <div className="mt-4">
+              <ChangePasswordForm
+                onDone={onClose}
+                onCancel={onClose}
+                showPolicyInfo={false}
+              />
+            </div>
+          </>
+        )}
       </div>
     </div>,
     document.body,
