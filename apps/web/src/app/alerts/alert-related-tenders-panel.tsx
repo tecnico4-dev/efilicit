@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/button";
+import { PublicationDateRange } from "@/components/criteria/publication-date-range";
 import { TenderStarRating } from "@/components/tenders/tender-star-rating";
 import { cn } from "@/lib/cn";
 import { formatCpvListPreview } from "@/lib/cpv";
@@ -33,8 +34,7 @@ import {
 } from "@/app/favorites/list-pager";
 
 type FolderView = "active" | "trash";
-type TimeScope = "all" | "last_send" | "range";
-type StatusFilter = "all" | "sent" | "pending" | "error";
+type StatusFilter = "all" | "sent" | "pending";
 type RatingFilter = "all" | "rated" | "unrated";
 
 /**
@@ -322,7 +322,7 @@ export function AlertRelatedTendersPanel({
   const [ratings, setRatings] = useState<Record<string, TenderScore>>({});
   const [folder, setFolder] = useState<FolderView>("active");
   const [filtersOpen, setFiltersOpen] = useState(false);
-  const [timeScope, setTimeScope] = useState<TimeScope>("all");
+  const [lastSendOnly, setLastSendOnly] = useState(false);
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
@@ -388,7 +388,7 @@ export function AlertRelatedTendersPanel({
     if (!open) return;
     setFolder("active");
     setFiltersOpen(false);
-    setTimeScope("all");
+    setLastSendOnly(false);
     setDateFrom("");
     setDateTo("");
     setStatusFilter("all");
@@ -447,26 +447,22 @@ export function AlertRelatedTendersPanel({
   const filteredActive = useMemo(() => {
     let list = activeItems;
 
-    if (timeScope === "last_send") {
+    if (lastSendOnly) {
       list = lastSendItems;
-    } else if (timeScope === "range") {
+    } else if (dateFrom || dateTo) {
       list = list.filter((i) => {
         const day = itemDayKey(i);
         if (!day) return false;
         if (dateFrom && day < dateFrom) return false;
         if (dateTo && day > dateTo) return false;
-        return Boolean(dateFrom || dateTo);
+        return true;
       });
-      // Sin fechas aún → no filtrar a vacío; mostrar todo hasta que elijan
-      if (!dateFrom && !dateTo) list = activeItems;
     }
 
     if (statusFilter === "sent") {
       list = list.filter((i) => i.status === "sent");
     } else if (statusFilter === "pending") {
       list = list.filter((i) => i.status === "pending");
-    } else if (statusFilter === "error") {
-      list = list.filter((i) => isSendError(i.status));
     }
 
     if (ratingFilter === "rated") {
@@ -479,7 +475,7 @@ export function AlertRelatedTendersPanel({
   }, [
     activeItems,
     lastSendItems,
-    timeScope,
+    lastSendOnly,
     dateFrom,
     dateTo,
     statusFilter,
@@ -779,49 +775,32 @@ export function AlertRelatedTendersPanel({
 
                     {showFiltersUi && filtersOpen ? (
                       <div className="mb-3 flex shrink-0 flex-col gap-2 rounded-lg border border-border bg-muted/30 px-3 py-2.5 sm:flex-row sm:flex-wrap sm:items-end">
-                        <label className="flex min-w-[9rem] flex-col gap-1 text-xs text-muted-foreground">
-                          Tiempo
-                          <select
-                            className="h-9 rounded-md border border-border bg-background px-2 text-sm text-foreground"
-                            value={timeScope}
-                            onChange={(e) => {
-                              setTimeScope(e.target.value as TimeScope);
-                              setPage(1);
-                            }}
-                          >
-                            <option value="all">Todas las fechas</option>
-                            <option value="last_send">Último envío</option>
-                            <option value="range">Rango de fechas</option>
-                          </select>
-                        </label>
-                        {timeScope === "range" ? (
-                          <>
-                            <label className="flex flex-col gap-1 text-xs text-muted-foreground">
-                              Desde
-                              <input
-                                type="date"
-                                className="h-9 rounded-md border border-border bg-background px-2 text-sm text-foreground"
-                                value={dateFrom}
-                                onChange={(e) => {
-                                  setDateFrom(e.target.value);
-                                  setPage(1);
-                                }}
-                              />
-                            </label>
-                            <label className="flex flex-col gap-1 text-xs text-muted-foreground">
-                              Hasta
-                              <input
-                                type="date"
-                                className="h-9 rounded-md border border-border bg-background px-2 text-sm text-foreground"
-                                value={dateTo}
-                                onChange={(e) => {
-                                  setDateTo(e.target.value);
-                                  setPage(1);
-                                }}
-                              />
-                            </label>
-                          </>
-                        ) : null}
+                        <PublicationDateRange
+                          idPrefix={`alert-related-${alertId}-`}
+                          label="Tiempo"
+                          from={lastSendOnly ? "" : dateFrom}
+                          to={lastSendOnly ? "" : dateTo}
+                          summaryOverride={
+                            lastSendOnly ? "Último envío" : null
+                          }
+                          leadingMenuItems={[
+                            {
+                              label: "Último envío",
+                              onSelect: () => {
+                                setLastSendOnly(true);
+                                setDateFrom("");
+                                setDateTo("");
+                                setPage(1);
+                              },
+                            },
+                          ]}
+                          onChange={(nextFrom, nextTo) => {
+                            setLastSendOnly(false);
+                            setDateFrom(nextFrom);
+                            setDateTo(nextTo);
+                            setPage(1);
+                          }}
+                        />
                         <label className="flex min-w-[9rem] flex-col gap-1 text-xs text-muted-foreground">
                           Estado envío
                           <select
@@ -832,10 +811,9 @@ export function AlertRelatedTendersPanel({
                               setPage(1);
                             }}
                           >
-                            <option value="all">Todos</option>
+                            <option value="all">Todas</option>
                             <option value="sent">Enviadas</option>
                             <option value="pending">Pendientes</option>
-                            <option value="error">Con error</option>
                           </select>
                         </label>
                         <label className="flex min-w-[9rem] flex-col gap-1 text-xs text-muted-foreground">
@@ -905,7 +883,7 @@ export function AlertRelatedTendersPanel({
               ) : (
                 <div className="relative z-0 flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg rounded-tl-none border border-border bg-surface/40">
                   <div
-                    key={`${folder}-${timeScope}-${statusFilter}-${ratingFilter}-${page}-${pageSize}`}
+                    key={`${folder}-${lastSendOnly}-${dateFrom}-${dateTo}-${statusFilter}-${ratingFilter}-${page}-${pageSize}`}
                     className="min-h-0 flex-1 overflow-y-auto"
                   >
                     <ul className="divide-y divide-border">

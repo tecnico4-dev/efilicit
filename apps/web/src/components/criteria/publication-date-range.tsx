@@ -29,6 +29,19 @@ type Props = {
   initialTo?: string;
   /** Prefijo de ids (alertas). */
   idPrefix?: string;
+  /** Etiqueta del control (default: Publicación). */
+  label?: string;
+  /**
+   * Modo controlado (p. ej. modal de alertas): sin inputs hidden ni eventos de form.
+   * Si se pasa `onChange`, el valor efectivo es `from`/`to` (o vacío).
+   */
+  from?: string;
+  to?: string;
+  onChange?: (nextFrom: string, nextTo: string) => void;
+  /** Ítems extra al inicio del menú (p. ej. «Último envío»). */
+  leadingMenuItems?: { label: string; onSelect: () => void }[];
+  /** Sustituye el resumen del botón (p. ej. «Último envío»). */
+  summaryOverride?: string | null;
 };
 
 function pad2(n: number): string {
@@ -107,6 +120,12 @@ export function PublicationDateRange({
   initialFrom = "",
   initialTo = "",
   idPrefix = "",
+  label = "Publicación",
+  from: controlledFrom,
+  to: controlledTo,
+  onChange,
+  leadingMenuItems,
+  summaryOverride = null,
 }: Props) {
   const reactId = useId();
   const triggerId = `${idPrefix}pub_range-${reactId}`;
@@ -117,10 +136,15 @@ export function PublicationDateRange({
   const previewInitial = formPreview?.preview
     ? criteriaToFilterInitial(formPreview.preview)
     : null;
-  const isPreviewing = previewInitial != null;
+  const isPreviewing = previewInitial != null && onChange == null;
+  const isControlled = onChange != null;
 
-  const [from, setFrom] = useState(initialFrom);
-  const [to, setTo] = useState(initialTo);
+  const [from, setFrom] = useState(
+    isControlled ? (controlledFrom ?? "") : initialFrom,
+  );
+  const [to, setTo] = useState(
+    isControlled ? (controlledTo ?? "") : initialTo,
+  );
   const [open, setOpen] = useState(false);
   const [panel, setPanel] = useState<PanelMode>("menu");
   const [viewMonth, setViewMonth] = useState(() =>
@@ -132,11 +156,26 @@ export function PublicationDateRange({
   const [pickInicio, setPickInicio] = useState(true);
   const [pickFin, setPickFin] = useState(true);
 
-  const displayFrom = isPreviewing ? previewInitial.pubFrom : from;
-  const displayTo = isPreviewing ? previewInitial.pubTo : to;
+  useEffect(() => {
+    if (!isControlled) return;
+    setFrom(controlledFrom ?? "");
+    setTo(controlledTo ?? "");
+  }, [isControlled, controlledFrom, controlledTo]);
+
+  const displayFrom = isPreviewing
+    ? previewInitial!.pubFrom
+    : isControlled
+      ? (controlledFrom ?? "")
+      : from;
+  const displayTo = isPreviewing
+    ? previewInitial!.pubTo
+    : isControlled
+      ? (controlledTo ?? "")
+      : to;
   const pickingEnabled = pickInicio || pickFin;
 
   useEffect(() => {
+    if (isControlled) return;
     const onClear = () => {
       setFrom("");
       setTo("");
@@ -149,9 +188,10 @@ export function PublicationDateRange({
     };
     window.addEventListener(CLEAR_SEARCH_EVENT, onClear);
     return () => window.removeEventListener(CLEAR_SEARCH_EVENT, onClear);
-  }, []);
+  }, [isControlled]);
 
   useEffect(() => {
+    if (isControlled) return;
     function onApply(e: Event) {
       const criteria = (e as CustomEvent<SearchCriteria>).detail;
       if (!criteria) return;
@@ -170,20 +210,25 @@ export function PublicationDateRange({
     }
     window.addEventListener(SEARCH_APPLY_CRITERIA_EVENT, onApply);
     return () => window.removeEventListener(SEARCH_APPLY_CRITERIA_EVENT, onApply);
-  }, []);
+  }, [isControlled]);
 
   useEffect(() => {
-    if (isPreviewing) return;
+    if (isPreviewing || isControlled) return;
     const form = wrapRef.current?.closest("form");
     if (!form) return;
     form.dispatchEvent(new Event("input", { bubbles: true }));
     form.dispatchEvent(new Event("change", { bubbles: true }));
-  }, [from, to, isPreviewing]);
+  }, [from, to, isPreviewing, isControlled]);
 
   /** Si solo Inicio o solo Fin está activo, vacía el extremo que no se está eligiendo. */
   function clearInactiveBound(nextInicio: boolean, nextFin: boolean) {
-    if (nextInicio && !nextFin) setTo("");
-    else if (nextFin && !nextInicio) setFrom("");
+    if (nextInicio && !nextFin) {
+      if (isControlled) onChange?.(displayFrom, "");
+      else setTo("");
+    } else if (nextFin && !nextInicio) {
+      if (isControlled) onChange?.("", displayTo);
+      else setFrom("");
+    }
   }
 
   function leaveCalendar(closePopover: boolean) {
@@ -207,8 +252,12 @@ export function PublicationDateRange({
 
   function applyRange(nextFrom: string, nextTo: string) {
     clearFeedback();
-    setFrom(nextFrom);
-    setTo(nextTo);
+    if (isControlled) {
+      onChange?.(nextFrom, nextTo);
+    } else {
+      setFrom(nextFrom);
+      setTo(nextTo);
+    }
     setDraftStart(null);
     setHoverDay(null);
     setOpen(false);
@@ -311,16 +360,28 @@ export function PublicationDateRange({
   const cells = useMemo(() => buildMonthCells(viewMonth), [viewMonth]);
   const triggerRef = useRef<HTMLButtonElement>(null);
 
+  const summary =
+    summaryOverride?.trim() || summaryLabel(displayFrom, displayTo);
+
   return (
-    <div ref={wrapRef} className="relative">
+    <div ref={wrapRef} className="relative min-w-[12rem] flex-1 sm:max-w-xs">
       <label
         htmlFor={triggerId}
-        className="block text-sm font-medium text-foreground"
+        className={cn(
+          "block font-medium",
+          isControlled
+            ? "text-xs text-muted-foreground"
+            : "text-sm text-foreground",
+        )}
       >
-        Publicación
+        {label}
       </label>
-      <input type="hidden" name="pub_from" value={from} />
-      <input type="hidden" name="pub_to" value={to} />
+      {!isControlled ? (
+        <>
+          <input type="hidden" name="pub_from" value={from} />
+          <input type="hidden" name="pub_to" value={to} />
+        </>
+      ) : null}
       <button
         ref={triggerRef}
         id={triggerId}
@@ -353,9 +414,7 @@ export function PublicationDateRange({
           isPreviewing && SEARCH_PREVIEW_GHOST_CLASS,
         )}
       >
-        <span className="min-w-0 truncate">
-          {summaryLabel(displayFrom, displayTo)}
-        </span>
+        <span className="min-w-0 truncate">{summary}</span>
         <ChevronDown />
       </button>
 
@@ -369,9 +428,21 @@ export function PublicationDateRange({
         maxHeight={420}
         className="bg-background p-2"
       >
-        <div role="dialog" aria-label="Rango de publicación">
+        <div role="dialog" aria-label={label}>
           {panel === "menu" ? (
             <ul className="py-0.5">
+              {(leadingMenuItems ?? []).map((item) => (
+                <MenuItem
+                  key={item.label}
+                  onClick={() => {
+                    item.onSelect();
+                    setOpen(false);
+                    setPanel("menu");
+                  }}
+                >
+                  {item.label}
+                </MenuItem>
+              ))}
               <MenuItem onClick={onPresetLast7}>Últimos 7 días</MenuItem>
               <MenuItem onClick={onPresetThisMonth}>Este mes</MenuItem>
               <MenuItem onClick={onPresetThisYear}>Este año</MenuItem>
