@@ -351,7 +351,7 @@ export function AlertsPanel({
                 role="dialog"
                 aria-modal="true"
                 aria-labelledby={confirmTitleId}
-                className="w-full max-w-lg rounded-xl border border-border bg-surface p-5 shadow-xl"
+                className="w-full max-w-md rounded-xl border border-border bg-surface p-5 shadow-xl"
               >
                 <div className="flex items-start justify-between gap-3">
                   <h2
