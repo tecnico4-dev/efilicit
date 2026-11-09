@@ -276,7 +276,7 @@ export function AlertsPanel({
                     className="space-y-4"
                     onSubmit={(e) => e.preventDefault()}
                   >
-                    <div className="mb-6">
+                    <div>
                       <label
                         htmlFor="item_name"
                         className="block text-sm font-medium text-primary"
@@ -291,13 +291,16 @@ export function AlertsPanel({
                         autoFocus
                       />
                     </div>
-                    <CriteriaFilters
-                      key={formKey}
-                      initial={emptyCriteriaFilterInitial()}
-                      filterOptions={filterOptions}
-                      formId={ALERT_CREATE_FORM_ID}
-                      idPrefix="alert-create-"
-                    />
+                    {/* Hueco bajo el textbox del nombre → label «Texto» (filtros). */}
+                    <div className="!mt-8">
+                      <CriteriaFilters
+                        key={formKey}
+                        initial={emptyCriteriaFilterInitial()}
+                        filterOptions={filterOptions}
+                        formId={ALERT_CREATE_FORM_ID}
+                        idPrefix="alert-create-"
+                      />
+                    </div>
                     {error ? (
                       <p className="text-sm text-destructive" role="alert">
                         {error}

@@ -203,7 +203,7 @@ export function AlertRowItem({
           className="mt-4 space-y-3 rounded-lg border border-border bg-surface p-4"
           onSubmit={(e) => e.preventDefault()}
         >
-          <div className="mb-6">
+          <div>
             <label
               htmlFor={`${idPrefix}name`}
               className="block text-sm font-medium text-primary"
@@ -217,13 +217,16 @@ export function AlertRowItem({
               className="mt-1 border-primary/25 bg-primary-light/45"
             />
           </div>
-          <CriteriaFilters
-            key={editKey}
-            initial={criteriaToFilterInitial(criteria)}
-            filterOptions={filterOptions}
-            formId={formId}
-            idPrefix={idPrefix}
-          />
+          {/* Hueco bajo el textbox del nombre → label «Texto» (filtros). */}
+          <div className="!mt-8">
+            <CriteriaFilters
+              key={editKey}
+              initial={criteriaToFilterInitial(criteria)}
+              filterOptions={filterOptions}
+              formId={formId}
+              idPrefix={idPrefix}
+            />
+          </div>
           <div className="flex flex-wrap gap-2">
             <Button
               type="button"
