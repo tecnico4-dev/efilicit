@@ -104,10 +104,10 @@ export function UndoToastProvider({ children }: { children: ReactNode }) {
       {toast ? (
         <div
           className={cn(
-            "fixed bottom-10 left-1/2 z-50 -translate-x-1/2 rounded-lg px-4 py-3 text-sm shadow-lg",
+            "fixed left-1/2 z-50 -translate-x-1/2 rounded-lg px-4 py-3 text-sm shadow-lg",
             isWarning
-              ? "w-[min(28rem,calc(100vw-2rem))] border border-destructive/40 bg-destructive/10"
-              : "w-[min(24rem,calc(100vw-2rem))] border border-border bg-surface",
+              ? "top-[4.75rem] w-[min(28rem,calc(100vw-2rem))] border border-destructive/50 bg-[color-mix(in_srgb,var(--destructive)_18%,var(--surface))]"
+              : "bottom-10 w-[min(24rem,calc(100vw-2rem))] border border-border bg-surface",
           )}
           role="status"
         >
