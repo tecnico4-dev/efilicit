@@ -12,15 +12,15 @@ Frecuencias (ADR 013):
 Reintentos de cola (sin ADR): tras un fallo, ``failed`` sigue siendo drainable
 hasta agotar el umbral del error actual; luego ``cancelled``.
 
-Plantilla: título + «Ver en EfiLicit» + «Fuente oficial» (URL leída de
-``tender_sources`` al montar el correo; no se duplica en el payload de cola).
+Plantilla: bloques por alerta (máx. 5 licitaciones cada uno) + «Ver en EfiLicit»
++ «Fuente oficial» (URL leída de ``tender_sources`` al montar el correo).
 """
 
 from __future__ import annotations
 
 import os
 from collections import defaultdict
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import date, datetime, timezone
 from typing import Any, Callable
@@ -40,7 +40,15 @@ _BRAND_BORDER = "#b3e3f0"
 _BG = "#f7fbfd"
 _TEXT = "#1a2b33"
 _MUTED = "#5a6f78"
-_MAX_VISIBLE = 10
+_MAX_PER_ALERT = 5
+
+
+@dataclass(frozen=True)
+class _AlertDigestBlock:
+    alert_id: str
+    name: str
+    items: tuple[NotificationItem, ...]
+    total: int
 
 
 @dataclass
@@ -92,8 +100,9 @@ def build_digest_message(
     display_name: str = "usuario",
     base_url: str | None = None,
     source_urls: Mapping[str, str] | None = None,
+    alert_names: Mapping[str, str] | None = None,
 ) -> EmailMessage:
-    """Plantilla branded: título + EfiLicit + fuente oficial (si hay URL)."""
+    """Plantilla branded: un bloque por alerta (máx. 5 ítems) + CTAs."""
     from efilicit_ingestion.alerts.queue import normalize_digest_frequency
 
     count = len(items)
@@ -103,12 +112,14 @@ def build_digest_message(
     base = (base_url if base_url is not None else app_base_url()).rstrip("/")
     name = (display_name or "usuario").strip() or "usuario"
     urls = dict(source_urls or {})
+    names = dict(alert_names or {})
+    blocks = group_items_by_alert(items, alert_names=names)
 
     text = _build_text(
         name=name,
         label=label,
         count=count,
-        items=items,
+        blocks=blocks,
         base=base,
         source_urls=urls,
     )
@@ -116,7 +127,7 @@ def build_digest_message(
         name=name,
         label=label,
         count=count,
-        items=items,
+        blocks=blocks,
         base=base,
         source_urls=urls,
     )
@@ -127,6 +138,42 @@ def build_digest_message(
         html=html,
         tags=("digest", freq, digest),
     )
+
+
+def group_items_by_alert(
+    items: Sequence[NotificationItem],
+    *,
+    alert_names: Mapping[str, str] | None = None,
+    max_per_alert: int = _MAX_PER_ALERT,
+) -> list[_AlertDigestBlock]:
+    """Agrupa por alerta; conserva orden de primera aparición; recorta a N por bloque."""
+    names = dict(alert_names or {})
+    order: list[str] = []
+    buckets: dict[str, list[NotificationItem]] = defaultdict(list)
+    for item in items:
+        aid = (item.alert_id or _item_alert_id(item.payload) or "").strip() or "_unknown"
+        if aid not in buckets:
+            order.append(aid)
+        buckets[aid].append(item)
+
+    blocks: list[_AlertDigestBlock] = []
+    for aid in order:
+        group = buckets[aid]
+        label = (
+            names.get(aid)
+            or _item_alert_name(group[0].payload)
+            or ("Alerta" if aid == "_unknown" else "Alerta")
+        )
+        visible = tuple(group[:max_per_alert])
+        blocks.append(
+            _AlertDigestBlock(
+                alert_id=aid,
+                name=label,
+                items=visible,
+                total=len(group),
+            )
+        )
+    return blocks
 
 
 def _subject_line(*, label: str, count: int) -> str:
@@ -140,31 +187,37 @@ def _build_text(
     name: str,
     label: str,
     count: int,
-    items: list[NotificationItem],
+    blocks: Sequence[_AlertDigestBlock],
     base: str,
     source_urls: Mapping[str, str],
 ) -> str:
+    n_alerts = len(blocks)
+    alert_bit = (
+        "1 alerta"
+        if n_alerts == 1
+        else f"{n_alerts} alertas"
+    )
     lines = [
         f"EfiLicit — Resumen {label}",
         "",
         f"Hola, {name}",
-        f"Tienes {count} nuevas coincidencias con tus alertas.",
+        f"Tienes {count} nuevas coincidencias en {alert_bit}.",
         "",
     ]
-    visible = items[:_MAX_VISIBLE]
-    for item in visible:
-        title = _item_title(item.payload)
-        tid = _item_tender_id(item.payload)
-        lines.append(f"- {title}")
-        if base and tid:
-            lines.append(f"  Ver en EfiLicit: {base}/tenders/{tid}?from=email")
-        src = source_urls.get(tid) if tid else None
-        if src:
-            lines.append(f"  Fuente oficial: {src}")
-        lines.append("")
-    remaining = count - len(visible)
-    if remaining > 0:
-        lines.append(f"… y {remaining} más.")
+    for block in blocks:
+        lines.append(f"## {block.name}")
+        for item in block.items:
+            title = _item_title(item.payload)
+            tid = _item_tender_id(item.payload)
+            lines.append(f"- {title}")
+            if base and tid:
+                lines.append(f"  Ver en EfiLicit: {base}/tenders/{tid}?from=email")
+            src = source_urls.get(tid) if tid else None
+            if src:
+                lines.append(f"  Fuente oficial: {src}")
+        remaining = block.total - len(block.items)
+        if remaining > 0:
+            lines.append(f"… y {remaining} más en esta alerta.")
         lines.append("")
     if base:
         lines.append(f"Ver todas en el buzón: {base}/notifications")
@@ -176,26 +229,13 @@ def _build_html(
     name: str,
     label: str,
     count: int,
-    items: list[NotificationItem],
+    blocks: Sequence[_AlertDigestBlock],
     base: str,
     source_urls: Mapping[str, str],
 ) -> str:
-    cards = "".join(
-        _item_card(
-            item.payload,
-            base=base,
-            source_url=source_urls.get(_item_tender_id(item.payload) or ""),
-        )
-        for item in items[:_MAX_VISIBLE]
+    sections = "".join(
+        _alert_section(block, base=base, source_urls=source_urls) for block in blocks
     )
-    remaining = count - min(count, _MAX_VISIBLE)
-    more_html = ""
-    if remaining > 0:
-        more_html = (
-            f'<p style="margin:16px 0 0;font-size:14px;color:{_MUTED};">'
-            f"… y {_escape(str(remaining))} más."
-            f"</p>"
-        )
 
     inbox_cta = ""
     if base:
@@ -208,11 +248,13 @@ def _build_html(
             f"</p>"
         )
 
+    n_alerts = len(blocks)
+    alert_bit = "1 alerta" if n_alerts == 1 else f"{n_alerts} alertas"
     greeting = (
         f'<p style="margin:0 0 8px;font-size:16px;color:{_TEXT};">'
         f"Hola, {_escape(name)}</p>"
         f'<p style="margin:0 0 20px;font-size:15px;color:{_TEXT};line-height:1.45;">'
-        f"Tienes <strong>{count}</strong> nuevas coincidencias con tus alertas."
+        f"Tienes <strong>{count}</strong> nuevas coincidencias en {_escape(alert_bit)}."
         f"</p>"
     )
 
@@ -241,8 +283,7 @@ def _build_html(
         <tr>
           <td style="padding:24px;font-family:Arial,Helvetica,sans-serif;background:{_BG};">
             {greeting}
-            {cards}
-            {more_html}
+            {sections}
             {inbox_cta}
           </td>
         </tr>
@@ -252,6 +293,43 @@ def _build_html(
 </table>
 </body>
 </html>"""
+
+
+def _alert_section(
+    block: _AlertDigestBlock,
+    *,
+    base: str,
+    source_urls: Mapping[str, str],
+) -> str:
+    cards = "".join(
+        _item_card(
+            item.payload,
+            base=base,
+            source_url=source_urls.get(_item_tender_id(item.payload) or ""),
+        )
+        for item in block.items
+    )
+    remaining = block.total - len(block.items)
+    more_html = ""
+    if remaining > 0:
+        more_html = (
+            f'<p style="margin:0 0 4px;font-size:13px;color:{_MUTED};">'
+            f"… y {_escape(str(remaining))} más en esta alerta."
+            f"</p>"
+        )
+    return (
+        f'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" '
+        f'style="margin:0 0 20px;">'
+        f'<tr><td style="padding:0 0 10px;border-bottom:2px solid {_BRAND_BORDER};">'
+        f'<p style="margin:0;font-size:16px;font-weight:700;color:{_TEXT};">'
+        f"{_escape(block.name)}</p>"
+        f'<p style="margin:4px 0 0;font-size:12px;color:{_MUTED};">'
+        f"{block.total} coincidencia{'s' if block.total != 1 else ''}"
+        f"</p>"
+        f"</td></tr>"
+        f'<tr><td style="padding:12px 0 0;">{cards}{more_html}</td></tr>'
+        f"</table>"
+    )
 
 
 def _item_card(
@@ -306,6 +384,14 @@ def _item_title(payload: Mapping[str, Any]) -> str:
 
 def _item_tender_id(payload: Mapping[str, Any]) -> str:
     return str(payload.get("tender_id") or "").strip()
+
+
+def _item_alert_id(payload: Mapping[str, Any]) -> str:
+    return str(payload.get("alert_id") or "").strip()
+
+
+def _item_alert_name(payload: Mapping[str, Any]) -> str:
+    return str(payload.get("alert_name") or "").strip()
 
 
 def _escape(value: str) -> str:
@@ -366,6 +452,7 @@ def drain_daily_digests(
     job_date: date | datetime | None = None,
     inbox: DigestInbox | None = None,
     resolve_source_urls: Callable[[list[str]], Mapping[str, str]] | None = None,
+    resolve_alert_names: Callable[[list[str]], Mapping[str, str]] | None = None,
 ) -> DigestDrainResult:
     """Envía un digest por (usuario, periodo) cuando toca según la frecuencia.
 
@@ -375,6 +462,7 @@ def drain_daily_digests(
     Tras fallo: ``failed`` reintentable o ``cancelled`` si agota el umbral.
     Si ``inbox`` está definido, materializa un aviso in-app (1 = 1 correo).
     ``resolve_source_urls``: lookup puntual de URLs oficiales (``tender_sources``).
+    ``resolve_alert_names``: nombres de alerta para bloques (fallback del payload).
     """
     if list_pending is not None:
         pending_fn = list_pending
@@ -424,6 +512,18 @@ def drain_daily_digests(
         if resolve_source_urls is not None:
             source_urls = resolve_source_urls(_tender_ids_for_items(items))
 
+        alert_names: Mapping[str, str] = {}
+        if resolve_alert_names is not None:
+            alert_ids = sorted(
+                {
+                    (item.alert_id or _item_alert_id(item.payload) or "").strip()
+                    for item in items
+                    if (item.alert_id or _item_alert_id(item.payload) or "").strip()
+                }
+            )
+            if alert_ids:
+                alert_names = resolve_alert_names(alert_ids)
+
         message = build_digest_message(
             to_email=to_email,
             digest=digest,
@@ -432,6 +532,7 @@ def drain_daily_digests(
             display_name=directory.display_name_for(user_id, email=to_email),
             base_url=base,
             source_urls=source_urls,
+            alert_names=alert_names,
         )
         send_result = sender.send(message)
         now = datetime.now(timezone.utc)

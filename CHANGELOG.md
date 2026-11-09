@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Digest email: cuerpo agrupado por alerta (bloque con nombre; máx. 5 ítems visibles + «… y N más»); `alert_name` en payload de cola + lookup `alerts.name` al enviar.
 - Cuenta: cambio de contraseña valida en UI (≥6, mayúscula, minúscula y número) con mensajes en español; Auth local `lower_upper_letters_digits`.
 - Cuenta: modal de cambio en 2 pasos (contraseña actual → nueva); fallo no cierra sesión; «¿Has olvidado…?» → contactar administrador. Post-login sigue sin pedir la actual.
 - Alertas / buscador: desplegables (estado, municipio, fechas, CPV…) en portal fijo para que no queden atrapados ni generen scroll dentro del modal «Crear alerta».

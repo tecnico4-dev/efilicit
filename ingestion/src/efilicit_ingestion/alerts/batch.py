@@ -98,7 +98,11 @@ def run_alert_batch(
                 continue
             result.matches += 1
             item = match_to_notification(
-                match, tender, digest=period, frequency=freq
+                match,
+                tender,
+                digest=period,
+                frequency=freq,
+                alert_name=alert.name,
             )
             stored, created = queue.enqueue(item)
             result.items.append(stored)

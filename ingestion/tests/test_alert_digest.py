@@ -93,7 +93,8 @@ def test_build_digest_message_groups_titles() -> None:
     assert "alice@example.com" == msg.to
     assert msg.subject == "EfiLicit resumen diario: 2 oportunidades nuevas"
     assert "Hola, Alice" in msg.text
-    assert "Tienes 2 nuevas coincidencias con tus alertas." in msg.text
+    assert "Tienes 2 nuevas coincidencias en 1 alerta." in msg.text
+    assert "## Software" in msg.text
     assert "Mantenimiento de software" in msg.text
     assert "Software de gestión" in msg.text
     assert "50.000 €" not in msg.text
@@ -105,11 +106,64 @@ def test_build_digest_message_groups_titles() -> None:
     assert "#52b9d8" in (msg.html or "")
     assert "Hola, Alice" in (msg.html or "")
     assert "Resumen diario" in (msg.html or "")
+    assert "Software" in (msg.html or "")
     assert "Ver en EfiLicit" in (msg.html or "")
     assert "Fuente oficial" in (msg.html or "")
     assert "https://contratacion.example/soft" in (msg.html or "")
     assert ">Efi</span>" in (msg.html or "")
     assert ">Licit</span>" in (msg.html or "")
+
+
+def test_build_digest_message_blocks_by_alert_and_caps_at_five() -> None:
+    queue = InMemoryNotificationQueue()
+    soft = AlertRule(
+        id="alert-soft",
+        user_id="user-1",
+        name="Software",
+        criteria={"version": 1, "keywords": ["software"]},
+    )
+    obra = AlertRule(
+        id="alert-obra",
+        user_id="user-1",
+        name="Obras",
+        criteria={"version": 1, "keywords": ["obra"]},
+    )
+    soft_tenders = [
+        _tender(f"t-soft-{i}", f"Software {i}") for i in range(1, 8)
+    ]
+    obra_tenders = [
+        _tender("t-obra-1", "Obra vial"),
+        _tender("t-obra-2", "Obra hidráulica"),
+    ]
+    run_alert_batch(
+        alerts=[soft, obra],
+        tenders=[*soft_tenders, *obra_tenders],
+        queue=queue,
+        digest="2026-09-30",
+    )
+    pending = queue.pending_items()
+    assert len(pending) == 9
+
+    msg = build_digest_message(
+        to_email="alice@example.com",
+        digest="2026-09-30",
+        items=pending,
+        display_name="Alice",
+        alert_names={"alert-soft": "Software", "alert-obra": "Obras"},
+    )
+    assert msg.subject == "EfiLicit resumen diario: 9 oportunidades nuevas"
+    assert "Tienes 9 nuevas coincidencias en 2 alertas." in msg.text
+    assert "## Software" in msg.text
+    assert "## Obras" in msg.text
+    assert "Software 1" in msg.text
+    assert "Software 5" in msg.text
+    assert "Software 6" not in msg.text
+    assert "… y 2 más en esta alerta." in msg.text
+    assert "Obra vial" in msg.text
+    assert "Obra hidráulica" in msg.text
+    assert "y 2 más en esta alerta" in (msg.html or "")
+    # Payload del match incluye alert_name para fallback sin lookup DB.
+    assert pending[0].payload.get("alert_name") in {"Software", "Obras"}
 
 
 def test_build_digest_message_weekly_singular() -> None:

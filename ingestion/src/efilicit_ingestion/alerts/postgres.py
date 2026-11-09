@@ -406,6 +406,32 @@ def load_tender_source_urls(
     return {row["tender_id"]: row["source_url"].strip() for row in rows}
 
 
+def load_alert_names(
+    conn: psycopg.Connection,
+    alert_ids: list[str],
+) -> dict[str, str]:
+    """``alerts.id`` → ``name`` (trusted; para bloques del digest)."""
+    if not alert_ids:
+        return {}
+    ids = [UUID(a) for a in alert_ids]
+    with conn.cursor(row_factory=dict_row) as cur:
+        cur.execute(
+            """
+            select id::text as alert_id, name
+            from public.alerts
+            where id = any(%s)
+            """,
+            (ids,),
+        )
+        rows = cur.fetchall()
+    out: dict[str, str] = {}
+    for row in rows:
+        name = (row["name"] or "").strip()
+        if name:
+            out[row["alert_id"]] = name
+    return out
+
+
 def load_user_emails(
     conn: psycopg.Connection,
     user_ids: list[str],

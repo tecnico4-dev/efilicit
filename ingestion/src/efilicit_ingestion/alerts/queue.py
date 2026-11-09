@@ -86,6 +86,7 @@ def match_to_notification(
     *,
     digest: str,
     frequency: DigestFrequency = "daily",
+    alert_name: str | None = None,
 ) -> NotificationItem:
     """Construye el ítem de cola con payload mínimo para el email de digest."""
     key = make_idempotency_key(
@@ -94,6 +95,7 @@ def match_to_notification(
         digest=digest,
     )
     value = tender.estimated_value
+    name = (alert_name or "").strip()
     return NotificationItem(
         user_id=match.user_id,
         alert_id=match.alert_id,
@@ -101,6 +103,7 @@ def match_to_notification(
         payload={
             "tender_id": match.tender_id,
             "alert_id": match.alert_id,
+            "alert_name": name or None,
             "title": tender.title,
             "authority_name": tender.authority_name,
             "estimated_value": str(value) if value is not None else None,
