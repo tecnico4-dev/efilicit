@@ -42,7 +42,15 @@ type Props = {
   leadingMenuItems?: { label: string; onSelect: () => void }[];
   /** Sustituye el resumen del botón (p. ej. «Último envío»). */
   summaryOverride?: string | null;
+  /**
+   * Atajos del menú (tras leadingMenuItems).
+   * Default buscador: últimos 7 días / este mes / este año.
+   */
+  presets?: Array<"thisWeek" | "last7" | "thisMonth" | "thisYear">;
 };
+
+const DEFAULT_PRESETS: Array<"thisWeek" | "last7" | "thisMonth" | "thisYear"> =
+  ["last7", "thisMonth", "thisYear"];
 
 function pad2(n: number): string {
   return String(n).padStart(2, "0");
@@ -94,6 +102,13 @@ function startOfYear(d: Date): Date {
   return new Date(d.getFullYear(), 0, 1);
 }
 
+/** Lunes de la semana ISO-local (Lu–Do) que contiene `d`. */
+function startOfWeekMonday(d: Date): Date {
+  const x = startOfDay(d);
+  const mondayIndex = (x.getDay() + 6) % 7;
+  return addDays(x, -mondayIndex);
+}
+
 function monthLabel(d: Date): string {
   const raw = d.toLocaleDateString("es-ES", { month: "long", year: "numeric" });
   return raw.charAt(0).toUpperCase() + raw.slice(1);
@@ -126,6 +141,7 @@ export function PublicationDateRange({
   onChange,
   leadingMenuItems,
   summaryOverride = null,
+  presets = DEFAULT_PRESETS,
 }: Props) {
   const reactId = useId();
   const triggerId = `${idPrefix}pub_range-${reactId}`;
@@ -264,6 +280,11 @@ export function PublicationDateRange({
     setPanel("menu");
   }
 
+  function onPresetThisWeek() {
+    const end = today();
+    applyRange(toIso(startOfWeekMonday(end)), toIso(end));
+  }
+
   function onPresetLast7() {
     const end = today();
     const start = addDays(end, -6);
@@ -279,6 +300,18 @@ export function PublicationDateRange({
     const end = today();
     applyRange(toIso(startOfYear(end)), toIso(end));
   }
+
+  const presetItems: {
+    key: "thisWeek" | "last7" | "thisMonth" | "thisYear";
+    label: string;
+    onClick: () => void;
+  }[] = [
+    { key: "thisWeek", label: "Esta semana", onClick: onPresetThisWeek },
+    { key: "last7", label: "Últimos 7 días", onClick: onPresetLast7 },
+    { key: "thisMonth", label: "Este mes", onClick: onPresetThisMonth },
+    { key: "thisYear", label: "Este año", onClick: onPresetThisYear },
+  ];
+  const visiblePresets = presetItems.filter((p) => presets.includes(p.key));
 
   function onClear() {
     applyRange("", "");
@@ -443,9 +476,11 @@ export function PublicationDateRange({
                   {item.label}
                 </MenuItem>
               ))}
-              <MenuItem onClick={onPresetLast7}>Últimos 7 días</MenuItem>
-              <MenuItem onClick={onPresetThisMonth}>Este mes</MenuItem>
-              <MenuItem onClick={onPresetThisYear}>Este año</MenuItem>
+              {visiblePresets.map((p) => (
+                <MenuItem key={p.key} onClick={p.onClick}>
+                  {p.label}
+                </MenuItem>
+              ))}
               <MenuItem onClick={openCustom}>Personalizado</MenuItem>
               <MenuItem onClick={onClear} tone="muted">
                 Borrar

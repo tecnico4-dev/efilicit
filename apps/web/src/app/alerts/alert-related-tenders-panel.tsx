@@ -783,6 +783,7 @@ export function AlertRelatedTendersPanel({
                           summaryOverride={
                             lastSendOnly ? "Último envío" : null
                           }
+                          presets={["thisWeek", "last7"]}
                           leadingMenuItems={[
                             {
                               label: "Último envío",
