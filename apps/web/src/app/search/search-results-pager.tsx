@@ -22,6 +22,7 @@ export function SearchResultsPager({
   pageSize,
   showing,
   total,
+  capped = false,
   filters,
   from: searchFrom,
   sortBy,
@@ -31,6 +32,8 @@ export function SearchResultsPager({
   pageSize: SearchPageSize;
   showing: number;
   total: number;
+  /** true = batch top-K; el pager dice «acotadas» en lugar de «totales». */
+  capped?: boolean;
   filters: SearchHrefFilters;
   from?: string;
   sortBy: SearchSortBy;
@@ -68,6 +71,7 @@ export function SearchResultsPager({
         showing={showing}
         total={total}
         itemLabel="licitaciones"
+        totalQualifier={capped ? "acotadas" : "totales"}
         ariaPageSizeLabel="Licitaciones por página"
         pageSizeOptions={SEARCH_PAGE_SIZE_OPTIONS}
         onPageChange={(p) => go({ nextPage: p })}

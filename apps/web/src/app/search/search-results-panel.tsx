@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { FavoriteHeartButton } from "@/components/favorites/favorite-heart-button";
+import { useUndoToast } from "@/components/undo-toast";
 import { EmptyState, ErrorState } from "@/components/ui/state-message";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import {
@@ -28,6 +29,13 @@ import { SearchResultsPager } from "./search-results-pager";
 import { ScrollToSearchResults } from "./scroll-to-search-results";
 import { sortSearchRows } from "./sort-search-rows";
 import type { SearchSortBy, SearchSortDir } from "./search-sort";
+
+/** Evita repetir el toast al paginar/ordenar la misma búsqueda. */
+const toastedCapKeys = new Set<string>();
+
+function formatCountEs(n: number): string {
+  return new Intl.NumberFormat("es-ES").format(n);
+}
 
 function formatMoney(value: number | null, currency: string): string {
   if (value == null) return "—";
@@ -116,9 +124,13 @@ export function SearchResultsPanel({
   from,
   profileUserId,
 }: SearchResultsPanelProps) {
+  const { showStatus } = useUndoToast();
   const cached = shouldSearch ? getSearchResultCache(criteriaKey) : null;
   const [rows, setRows] = useState<SearchTenderRow[] | null>(
     () => cached?.rows ?? null,
+  );
+  const [universeTotal, setUniverseTotal] = useState(
+    () => cached?.universeTotal ?? 0,
   );
   const [loading, setLoading] = useState(
     () => shouldSearch && cached == null,
@@ -132,9 +144,19 @@ export function SearchResultsPanel({
   queryRef.current = query;
   rpcCriteriaRef.current = rpcCriteria;
 
+  function maybeToastCap(key: string, total: number) {
+    if (total <= SEARCH_RESULT_CAP) return;
+    if (toastedCapKeys.has(key)) return;
+    toastedCapKeys.add(key);
+    showStatus(
+      `Hay ${formatCountEs(total)} resultados. Mostramos las ${SEARCH_RESULT_CAP} más relevantes; prueba a acotar los filtros.`,
+    );
+  }
+
   useEffect(() => {
     if (!shouldSearch) {
       setRows(null);
+      setUniverseTotal(0);
       setError(null);
       setLoading(false);
       setFavoritedIds(new Set());
@@ -159,8 +181,10 @@ export function SearchResultsPanel({
     const hit = getSearchResultCache(criteriaKey);
     if (hit) {
       setRows(hit.rows);
+      setUniverseTotal(hit.universeTotal);
       setError(null);
       setLoading(false);
+      maybeToastCap(criteriaKey, hit.universeTotal);
       void loadFavorites(hit.rows);
       return () => {
         cancelled = true;
@@ -170,6 +194,7 @@ export function SearchResultsPanel({
     setLoading(true);
     setError(null);
     setRows(null);
+    setUniverseTotal(0);
 
     void searchTenders(client, {
       query: queryRef.current || undefined,
@@ -183,6 +208,7 @@ export function SearchResultsPanel({
       if (result.error) {
         setError(result.error.message);
         setRows([]);
+        setUniverseTotal(0);
         setLoading(false);
         return;
       }
@@ -193,13 +219,16 @@ export function SearchResultsPanel({
         universeTotal: result.totalCount,
       });
       setRows(batch);
+      setUniverseTotal(result.totalCount);
       setLoading(false);
+      maybeToastCap(criteriaKey, result.totalCount);
       await loadFavorites(batch);
     });
 
     return () => {
       cancelled = true;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- toast/cap por criteriaKey
   }, [shouldSearch, criteriaKey, profileUserId]);
 
   const sorted = useMemo(
@@ -207,6 +236,7 @@ export function SearchResultsPanel({
     [rows, sortBy, sortDir],
   );
 
+  const capped = universeTotal > SEARCH_RESULT_CAP;
   const displayTotal = sorted.length;
   const safePage =
     displayTotal === 0
@@ -308,6 +338,7 @@ export function SearchResultsPanel({
       pageSize={pageSize}
       showing={pageRows.length}
       total={displayTotal}
+      capped={capped}
       filters={filters}
       from={from}
       sortBy={sortBy}
