@@ -628,7 +628,7 @@ export function AlertRelatedTendersPanel({
   async function onEmptyTrash() {
     if (actionPending || trashItems.length === 0) return;
     const ok = window.confirm(
-      `¿Vaciar la papelera (${trashItems.length})? Dejarán de verse en este modal (no vuelven a Todas).`,
+      `¿Vaciar la papelera (${trashItems.length})? Dejarán de verse en este modal (no vuelven a Relacionadas).`,
     );
     if (!ok) return;
     setActionPending(true);
@@ -855,11 +855,11 @@ export function AlertRelatedTendersPanel({
                       <div
                         className="flex flex-wrap items-end gap-1"
                         role="tablist"
-                        aria-label="Todas o papelera"
+                        aria-label="Relacionadas o papelera"
                       >
                         <FolderTab
                           active={folder === "active"}
-                          label="Todas"
+                          label="Relacionadas"
                           count={activeItems.length}
                           onSelect={() => selectFolder("active")}
                         />
