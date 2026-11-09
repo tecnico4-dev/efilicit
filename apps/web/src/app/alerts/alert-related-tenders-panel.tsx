@@ -705,23 +705,39 @@ export function AlertRelatedTendersPanel({
           ) : (
             <>
               {(() => {
+                const activeFilterCount =
+                  (lastSendOnly || dateFrom || dateTo ? 1 : 0) +
+                  (statusFilter !== "all" ? 1 : 0) +
+                  (ratingFilter !== "all" ? 1 : 0);
                 const filterToggle = (
                   <button
                     type="button"
                     aria-label={
-                      filtersOpen ? "Ocultar filtros" : "Mostrar filtros"
+                      filtersOpen
+                        ? "Ocultar filtros"
+                        : activeFilterCount > 0
+                          ? `Mostrar filtros (${activeFilterCount} activos)`
+                          : "Mostrar filtros"
                     }
                     aria-expanded={filtersOpen}
                     title="Filtros"
                     onClick={() => setFiltersOpen((o) => !o)}
                     className={cn(
-                      "inline-flex size-9 shrink-0 items-center justify-center rounded-full border transition-colors",
-                      filtersOpen
+                      "relative inline-flex size-9 shrink-0 items-center justify-center rounded-full border transition-colors",
+                      filtersOpen || activeFilterCount > 0
                         ? "border-primary bg-primary/10 text-primary-dark"
                         : "border-border bg-surface text-muted-foreground hover:bg-muted hover:text-foreground",
                     )}
                   >
                     <FilterIcon className="size-4" />
+                    {activeFilterCount > 0 ? (
+                      <span
+                        className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-0.5 text-[10px] font-bold leading-none text-primary-foreground"
+                        aria-hidden
+                      >
+                        {activeFilterCount}
+                      </span>
+                    ) : null}
                   </button>
                 );
                 const showFiltersUi = folder === "active";
