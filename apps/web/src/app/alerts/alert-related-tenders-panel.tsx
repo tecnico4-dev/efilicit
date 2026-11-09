@@ -5,7 +5,6 @@ import Link from "next/link";
 import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/button";
 import { TenderStarRating } from "@/components/tenders/tender-star-rating";
-import { useUndoToast } from "@/components/undo-toast";
 import { cn } from "@/lib/cn";
 import { formatCpvListPreview } from "@/lib/cpv";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
@@ -386,6 +385,7 @@ export function AlertRelatedTendersPanel({
     setRatingFilter("all");
     setPage(1);
     setRatings({});
+    setListUndo(null);
     void reload();
   }, [open, alertId, userId, reload]);
 
@@ -555,7 +555,7 @@ export function AlertRelatedTendersPanel({
     });
     setActionPending(false);
     if (err) {
-      showStatus(`No se pudo vaciar el listado: ${err.message}`);
+      setError(`No se pudo vaciar el listado: ${err.message}`);
       return;
     }
     const now = new Date().toISOString();
@@ -565,27 +565,34 @@ export function AlertRelatedTendersPanel({
       ),
     );
     setPage(1);
-    showUndo(
-      "Se ha vaciado la lista de licitaciones de la alerta.",
-      async () => {
-        const c = createSupabaseBrowserClient();
-        const { error: undoErr } = await restoreOwnAlertRelatedManyFromTrash(
-          c,
-          { userId, queueIds: ids },
-        );
-        if (undoErr) {
-          showStatus(`No se pudo revertir: ${undoErr.message}`);
-          return;
-        }
-        setItems((prev) =>
-          prev.map((i) =>
-            ids.includes(i.queueId) ? { ...i, trashedAt: null } : i,
-          ),
-        );
-        setFolder("active");
-        setPage(1);
-      },
+    setListUndo({
+      message: "Se ha vaciado la lista de licitaciones de la alerta.",
+      queueIds: ids,
+    });
+  }
+
+  async function onRevertEmptyList() {
+    if (!listUndo || actionPending) return;
+    const ids = listUndo.queueIds;
+    setActionPending(true);
+    const client = createSupabaseBrowserClient();
+    const { error: undoErr } = await restoreOwnAlertRelatedManyFromTrash(
+      client,
+      { userId, queueIds: ids },
     );
+    setActionPending(false);
+    setListUndo(null);
+    if (undoErr) {
+      setError(`No se pudo revertir: ${undoErr.message}`);
+      return;
+    }
+    setItems((prev) =>
+      prev.map((i) =>
+        ids.includes(i.queueId) ? { ...i, trashedAt: null } : i,
+      ),
+    );
+    setFolder("active");
+    setPage(1);
   }
 
   async function onRestoreAllTrash() {
@@ -655,7 +662,7 @@ export function AlertRelatedTendersPanel({
         role="dialog"
         aria-modal="true"
         aria-labelledby={`alert-related-title-${alertId}`}
-        className="flex max-h-[min(90vh,720px)] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-border bg-background shadow-xl sm:max-w-4xl"
+        className="relative flex max-h-[min(90vh,720px)] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-border bg-background shadow-xl sm:max-w-4xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex shrink-0 items-start justify-between gap-3 border-b border-border px-5 py-4">
@@ -906,6 +913,35 @@ export function AlertRelatedTendersPanel({
             </>
           )}
         </div>
+
+        {listUndo ? (
+          <div
+            className="absolute bottom-4 left-1/2 z-10 w-[min(24rem,calc(100%-2rem))] -translate-x-1/2 rounded-lg border border-border bg-surface px-4 py-3 text-sm shadow-lg"
+            role="status"
+          >
+            <button
+              type="button"
+              aria-label="Cerrar"
+              onClick={() => setListUndo(null)}
+              className="absolute -right-2.5 -top-2.5 inline-flex h-6 w-6 items-center justify-center rounded-full border border-border bg-muted text-muted-foreground shadow-md hover:bg-muted/90 hover:text-foreground"
+            >
+              <span aria-hidden className="text-sm leading-none">
+                ×
+              </span>
+            </button>
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="text-muted-foreground">{listUndo.message}</span>
+              <button
+                type="button"
+                className="font-medium text-link hover:underline"
+                disabled={actionPending}
+                onClick={() => void onRevertEmptyList()}
+              >
+                Revertir
+              </button>
+            </div>
+          </div>
+        ) : null}
       </div>
     </div>,
     document.body,
