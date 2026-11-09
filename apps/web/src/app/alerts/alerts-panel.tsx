@@ -246,7 +246,7 @@ export function AlertsPanel({
                         id="item_name"
                         value={name}
                         onChange={(e) => setName(e.target.value)}
-                        className="mt-1"
+                        className="mt-1 border-primary/25 bg-primary-light/45"
                         autoFocus
                       />
                     </div>
