@@ -657,8 +657,8 @@ export function AlertRelatedTendersPanel({
   if (!open || !mounted) return null;
 
   const hasAny = items.length > 0;
-  /** Título: activas + papelera (sigue «en» el modal; no las ya caducadas/purgadas). */
-  const titleTotalCount = activeItems.length + trashItems.length;
+  /** Título: solo activas (sin papelera). */
+  const titleTotalCount = activeItems.length;
   const showEmptyActive = folder === "active" && activeItems.length === 0;
   const showEmptyTrash = folder === "trash" && trashItems.length === 0;
 
