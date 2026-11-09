@@ -23,7 +23,8 @@ import {
   trashOwnAlertRelatedMany,
   upsertOwnTenderRating,
   type AlertRelatedQueueItem,
-  type TenderScore,
+  type TenderInterestKind,
+  type TenderRating,
 } from "@/lib/queries";
 import { formatTenderStatus } from "@/lib/tender-labels";
 import { formatMoney } from "@/app/favorites/favorites-shared";
@@ -36,6 +37,8 @@ import {
 type FolderView = "active" | "trash";
 type StatusFilter = "all" | "sent" | "pending";
 type RatingFilter = "all" | "rated" | "unrated";
+/** Solo visible con Valoradas; «unset» = valorada sin Eficen/Sub. */
+type InterestFilter = "all" | TenderInterestKind | "unset";
 
 /**
  * Ítems `sent` del último lote de esta alerta: ancla por `sent_at` máximo
@@ -181,19 +184,22 @@ const destructiveOutlineBtn =
 
 function RelatedItemRow({
   item,
-  score,
+  rating,
   inTrash,
   pending,
-  onScoreChange,
+  onRatingChange,
   onTrash,
   onRestore,
   onNavigate,
 }: {
   item: AlertRelatedQueueItem;
-  score: TenderScore | null;
+  rating: TenderRating | null;
   inTrash: boolean;
   pending: boolean;
-  onScoreChange: (tenderId: string, next: TenderScore | null) => Promise<void>;
+  onRatingChange: (
+    tenderId: string,
+    next: TenderRating | null,
+  ) => Promise<void>;
   onTrash: (queueId: string) => void;
   onRestore: (queueId: string) => void;
   onNavigate: () => void;
@@ -266,8 +272,8 @@ function RelatedItemRow({
       <div className="flex shrink-0 flex-col items-end gap-2 pt-0.5">
         {canRate && !inTrash ? (
           <TenderStarRating
-            score={score}
-            onChange={(next) => onScoreChange(item.tenderId, next)}
+            rating={rating}
+            onChange={(next) => onRatingChange(item.tenderId, next)}
           />
         ) : null}
         {inTrash ? (
@@ -319,7 +325,7 @@ export function AlertRelatedTendersPanel({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [items, setItems] = useState<AlertRelatedQueueItem[]>([]);
-  const [ratings, setRatings] = useState<Record<string, TenderScore>>({});
+  const [ratings, setRatings] = useState<Record<string, TenderRating>>({});
   const [folder, setFolder] = useState<FolderView>("active");
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [lastSendOnly, setLastSendOnly] = useState(false);
@@ -327,6 +333,7 @@ export function AlertRelatedTendersPanel({
   const [dateTo, setDateTo] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [ratingFilter, setRatingFilter] = useState<RatingFilter>("all");
+  const [interestFilter, setInterestFilter] = useState<InterestFilter>("all");
   const [pageSize, setPageSize] = useState<PageSize>(DEFAULT_PAGE_SIZE);
   const [page, setPage] = useState(1);
   const [actionPending, setActionPending] = useState(false);
@@ -393,14 +400,15 @@ export function AlertRelatedTendersPanel({
     setDateTo("");
     setStatusFilter("all");
     setRatingFilter("all");
+    setInterestFilter("all");
     setPage(1);
     setRatings({});
     setListUndo(null);
     void reload();
   }, [open, alertId, userId, reload]);
 
-  const onScoreChange = useCallback(
-    async (tenderId: string, next: TenderScore | null) => {
+  const onRatingChange = useCallback(
+    async (tenderId: string, next: TenderRating | null) => {
       const client = createSupabaseBrowserClient();
       const prev = ratings[tenderId] ?? null;
       setRatings((r) => {
@@ -415,7 +423,8 @@ export function AlertRelatedTendersPanel({
           : await upsertOwnTenderRating(client, {
               userId,
               tenderId,
-              score: next,
+              score: next.score,
+              interestKind: next.interestKind,
             });
       if (result.error) {
         setRatings((r) => {
@@ -467,6 +476,21 @@ export function AlertRelatedTendersPanel({
 
     if (ratingFilter === "rated") {
       list = list.filter((i) => ratings[i.tenderId] != null);
+      if (interestFilter === "propia") {
+        list = list.filter(
+          (i) => ratings[i.tenderId]?.interestKind === "propia",
+        );
+      } else if (interestFilter === "subcontrata") {
+        list = list.filter(
+          (i) => ratings[i.tenderId]?.interestKind === "subcontrata",
+        );
+      } else if (interestFilter === "unset") {
+        list = list.filter(
+          (i) =>
+            ratings[i.tenderId] != null &&
+            ratings[i.tenderId]?.interestKind == null,
+        );
+      }
     } else if (ratingFilter === "unrated") {
       list = list.filter((i) => ratings[i.tenderId] == null);
     }
@@ -480,6 +504,7 @@ export function AlertRelatedTendersPanel({
     dateTo,
     statusFilter,
     ratingFilter,
+    interestFilter,
     ratings,
   ]);
 
@@ -716,7 +741,10 @@ export function AlertRelatedTendersPanel({
                 const activeFilterCount =
                   (lastSendOnly || dateFrom || dateTo ? 1 : 0) +
                   (statusFilter !== "all" ? 1 : 0) +
-                  (ratingFilter !== "all" ? 1 : 0);
+                  (ratingFilter !== "all" ? 1 : 0) +
+                  (ratingFilter === "rated" && interestFilter !== "all"
+                    ? 1
+                    : 0);
                 const filterToggle = (
                   <button
                     type="button"
@@ -847,7 +875,9 @@ export function AlertRelatedTendersPanel({
                             className="h-9 rounded-md border border-border bg-background px-2 text-sm text-foreground"
                             value={ratingFilter}
                             onChange={(e) => {
-                              setRatingFilter(e.target.value as RatingFilter);
+                              const next = e.target.value as RatingFilter;
+                              setRatingFilter(next);
+                              if (next !== "rated") setInterestFilter("all");
                               setPage(1);
                             }}
                           >
@@ -856,6 +886,26 @@ export function AlertRelatedTendersPanel({
                             <option value="unrated">Sin valorar</option>
                           </select>
                         </label>
+                        {ratingFilter === "rated" ? (
+                          <label className="flex min-w-[9rem] flex-col gap-1 text-xs text-muted-foreground">
+                            Interés
+                            <select
+                              className="h-9 rounded-md border border-border bg-background px-2 text-sm text-foreground"
+                              value={interestFilter}
+                              onChange={(e) => {
+                                setInterestFilter(
+                                  e.target.value as InterestFilter,
+                                );
+                                setPage(1);
+                              }}
+                            >
+                              <option value="all">Cualquiera</option>
+                              <option value="propia">Eficen</option>
+                              <option value="subcontrata">Subcontrata</option>
+                              <option value="unset">Sin clasificar</option>
+                            </select>
+                          </label>
+                        ) : null}
                       </div>
                     ) : null}
 
@@ -908,7 +958,7 @@ export function AlertRelatedTendersPanel({
               ) : (
                 <div className="relative z-0 flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg rounded-tl-none border border-border bg-surface/40">
                   <div
-                    key={`${folder}-${lastSendOnly}-${dateFrom}-${dateTo}-${statusFilter}-${ratingFilter}-${page}-${pageSize}`}
+                    key={`${folder}-${lastSendOnly}-${dateFrom}-${dateTo}-${statusFilter}-${ratingFilter}-${interestFilter}-${page}-${pageSize}`}
                     className="min-h-0 flex-1 overflow-y-auto"
                   >
                     <ul className="divide-y divide-border">
@@ -916,10 +966,10 @@ export function AlertRelatedTendersPanel({
                         <RelatedItemRow
                           key={item.queueId}
                           item={item}
-                          score={ratings[item.tenderId] ?? null}
+                          rating={ratings[item.tenderId] ?? null}
                           inTrash={folder === "trash"}
                           pending={actionPending}
-                          onScoreChange={onScoreChange}
+                          onRatingChange={onRatingChange}
                           onTrash={(id) => void onTrashOne(id)}
                           onRestore={(id) => void onRestoreOne(id)}
                           onNavigate={onClose}

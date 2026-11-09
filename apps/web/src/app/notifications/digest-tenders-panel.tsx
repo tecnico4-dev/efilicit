@@ -14,7 +14,7 @@ import {
   markOwnDigestInboxRead,
   upsertOwnTenderRating,
   type DigestTenderListItem,
-  type TenderScore,
+  type TenderRating,
 } from "@/lib/queries";
 import { formatTenderStatus } from "@/lib/tender-labels";
 import { formatMoney } from "@/app/favorites/favorites-shared";
@@ -26,13 +26,16 @@ import {
 
 function TenderRow({
   item,
-  score,
-  onScoreChange,
+  rating,
+  onRatingChange,
   onNavigate,
 }: {
   item: DigestTenderListItem;
-  score: TenderScore | null;
-  onScoreChange: (tenderId: string, next: TenderScore | null) => Promise<void>;
+  rating: TenderRating | null;
+  onRatingChange: (
+    tenderId: string,
+    next: TenderRating | null,
+  ) => Promise<void>;
   onNavigate: () => void;
 }) {
   return (
@@ -75,8 +78,8 @@ function TenderRow({
       {item.available ? (
         <div className="shrink-0 pt-0.5">
           <TenderStarRating
-            score={score}
-            onChange={(next) => onScoreChange(item.tenderId, next)}
+            rating={rating}
+            onChange={(next) => onRatingChange(item.tenderId, next)}
           />
         </div>
       ) : null}
@@ -109,7 +112,7 @@ export function DigestTendersPanel({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [items, setItems] = useState<DigestTenderListItem[]>([]);
-  const [ratings, setRatings] = useState<Record<string, TenderScore>>({});
+  const [ratings, setRatings] = useState<Record<string, TenderRating>>({});
   const [pageSize, setPageSize] = useState<PageSize>(DEFAULT_PAGE_SIZE);
   const [page, setPage] = useState(1);
 
@@ -164,11 +167,10 @@ export function DigestTendersPanel({
     };
   }, [open, digestId, userId, tenderIdsKey]);
 
-  const onScoreChange = useCallback(
-    async (tenderId: string, next: TenderScore | null) => {
+  const onRatingChange = useCallback(
+    async (tenderId: string, next: TenderRating | null) => {
       const client = createSupabaseBrowserClient();
       const prev = ratings[tenderId] ?? null;
-      // Optimistic
       setRatings((r) => {
         const copy = { ...r };
         if (next == null) delete copy[tenderId];
@@ -181,7 +183,8 @@ export function DigestTendersPanel({
           : await upsertOwnTenderRating(client, {
               userId,
               tenderId,
-              score: next,
+              score: next.score,
+              interestKind: next.interestKind,
             });
       if (result.error) {
         setRatings((r) => {
@@ -268,8 +271,8 @@ export function DigestTendersPanel({
                     <TenderRow
                       key={item.tenderId}
                       item={item}
-                      score={ratings[item.tenderId] ?? null}
-                      onScoreChange={onScoreChange}
+                      rating={ratings[item.tenderId] ?? null}
+                      onRatingChange={onRatingChange}
                       onNavigate={onClose}
                     />
                   ))}

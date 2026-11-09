@@ -8,19 +8,24 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import {
   deleteOwnTenderRating,
   upsertOwnTenderRating,
-  type TenderScore,
+  type TenderRating,
 } from "@/lib/queries";
 
-function persistScore(
+function persistRating(
   userId: string,
   tenderId: string,
-  next: TenderScore | null,
+  next: TenderRating | null,
 ) {
   const client = createSupabaseBrowserClient();
   if (next == null) {
     return deleteOwnTenderRating(client, { userId, tenderId });
   }
-  return upsertOwnTenderRating(client, { userId, tenderId, score: next });
+  return upsertOwnTenderRating(client, {
+    userId,
+    tenderId,
+    score: next.score,
+    interestKind: next.interestKind,
+  });
 }
 
 /**
@@ -30,14 +35,14 @@ function persistScore(
 export function TenderDetailRating({
   userId,
   tenderId,
-  initialScore,
+  initialRating,
 }: {
   userId: string;
   tenderId: string;
-  initialScore: TenderScore | null;
+  initialRating: TenderRating | null;
 }) {
   const router = useRouter();
-  const [score, setScore] = useState<TenderScore | null>(initialScore);
+  const [rating, setRating] = useState<TenderRating | null>(initialRating);
   const [error, setError] = useState<string | null>(null);
   const [exitOpen, setExitOpen] = useState(false);
   const [pendingHref, setPendingHref] = useState<string | null>(null);
@@ -46,17 +51,17 @@ export function TenderDetailRating({
   useEffect(() => setMounted(true), []);
 
   const onChange = useCallback(
-    async (next: TenderScore | null) => {
-      const prev = score;
-      setScore(next);
+    async (next: TenderRating | null) => {
+      const prev = rating;
+      setRating(next);
       setError(null);
-      const result = await persistScore(userId, tenderId, next);
+      const result = await persistRating(userId, tenderId, next);
       if (result.error) {
-        setScore(prev);
+        setRating(prev);
         setError(result.error.message);
       }
     },
-    [score, tenderId, userId],
+    [rating, tenderId, userId],
   );
 
   const proceedTo = useCallback(
@@ -74,7 +79,7 @@ export function TenderDetailRating({
 
   // Intercepta clics a otras rutas mientras no haya valoración.
   useEffect(() => {
-    if (score != null) return;
+    if (rating != null) return;
 
     function onClick(e: MouseEvent) {
       if (e.defaultPrevented) return;
@@ -106,7 +111,6 @@ export function TenderDetailRating({
       if (url.origin !== window.location.origin) return;
 
       const path = url.pathname;
-      // Misma ficha (con o sin query): no interceptar.
       if (path === `/tenders/${tenderId}` || path === `/tenders/${tenderId}/`) {
         return;
       }
@@ -119,16 +123,16 @@ export function TenderDetailRating({
 
     document.addEventListener("click", onClick, true);
     return () => document.removeEventListener("click", onClick, true);
-  }, [score, tenderId]);
+  }, [rating, tenderId]);
 
-  async function onExitRate(next: TenderScore | null) {
+  async function onExitRate(next: TenderRating | null) {
     if (next == null) return;
-    const prev = score;
-    setScore(next);
+    const prev = rating;
+    setRating(next);
     setError(null);
-    const result = await persistScore(userId, tenderId, next);
+    const result = await persistRating(userId, tenderId, next);
     if (result.error) {
-      setScore(prev);
+      setRating(prev);
       setError(result.error.message);
       return;
     }
@@ -150,7 +154,7 @@ export function TenderDetailRating({
           Tu valoración
         </p>
         <div className="flex w-full justify-center">
-          <TenderStarRating score={score} onChange={onChange} />
+          <TenderStarRating rating={rating} onChange={onChange} />
         </div>
         {error && !exitOpen ? (
           <p className="mt-1 text-xs text-destructive" role="alert">
@@ -175,10 +179,13 @@ export function TenderDetailRating({
                   ¿Te ha parecido interesante esta licitación?
                 </h2>
                 <div className="mt-5 flex justify-center">
-                  <TenderStarRating score={null} onChange={onExitRate} />
+                  <TenderStarRating rating={null} onChange={onExitRate} />
                 </div>
                 {error ? (
-                  <p className="mt-2 text-center text-xs text-destructive" role="alert">
+                  <p
+                    className="mt-2 text-center text-xs text-destructive"
+                    role="alert"
+                  >
                     {error}
                   </p>
                 ) : null}

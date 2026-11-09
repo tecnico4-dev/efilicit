@@ -252,6 +252,7 @@ export type Database = {
       tender_ratings: {
         Row: {
           created_at: string
+          interest_kind: string | null
           score: number
           tender_id: string
           updated_at: string
@@ -259,6 +260,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          interest_kind?: string | null
           score: number
           tender_id: string
           updated_at?: string
@@ -266,6 +268,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          interest_kind?: string | null
           score?: number
           tender_id?: string
           updated_at?: string

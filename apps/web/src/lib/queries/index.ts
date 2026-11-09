@@ -88,6 +88,9 @@ export {
   deleteOwnTenderRating,
   listOwnTenderRatings,
   upsertOwnTenderRating,
+  interestKindShortLabel,
+  type TenderInterestKind,
+  type TenderRating,
   type TenderScore,
 } from "./tender-ratings";
 export {

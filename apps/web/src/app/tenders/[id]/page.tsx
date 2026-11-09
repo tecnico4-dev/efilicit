@@ -11,7 +11,7 @@ import {
   isOwnFavorite,
   listOwnTenderRatings,
   listTenderStatusHistory,
-  type TenderScore,
+  type TenderRating,
   type TenderSourceSummary,
 } from "@/lib/queries";
 import { normalizeCpvCode } from "@/lib/cpv";
@@ -310,7 +310,7 @@ export default async function TenderDetailPage({
   let displayName: string | null = null;
   let initiallyFavorited = false;
   let existingBidCaseId: string | null = null;
-  let initialScore: TenderScore | null = null;
+  let initialRating: TenderRating | null = null;
   try {
     const profile = await getSessionProfile();
     if (profile.data) {
@@ -337,7 +337,7 @@ export default async function TenderDetailPage({
       initiallyFavorited = fav.data;
       existingBidCaseId = bid.data;
       if (ratings && !ratings.error) {
-        initialScore = ratings.data[tender.id] ?? null;
+        initialRating = ratings.data[tender.id] ?? null;
       }
     }
   } catch {
@@ -362,7 +362,7 @@ export default async function TenderDetailPage({
           <TenderDetailRating
             userId={favoriteUserId}
             tenderId={tender.id}
-            initialScore={initialScore}
+            initialRating={initialRating}
           />
         </div>
       ) : null}
