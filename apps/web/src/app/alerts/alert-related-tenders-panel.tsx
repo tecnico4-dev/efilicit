@@ -330,9 +330,19 @@ export function AlertRelatedTendersPanel({
   const [pageSize, setPageSize] = useState<PageSize>(DEFAULT_PAGE_SIZE);
   const [page, setPage] = useState(1);
   const [actionPending, setActionPending] = useState(false);
-  const { showUndo, showStatus } = useUndoToast();
+  /** Toast de «Vaciar listado» dentro del modal (el global queda bajo el overlay). */
+  const [listUndo, setListUndo] = useState<{
+    message: string;
+    queueIds: string[];
+  } | null>(null);
 
   useEffect(() => setMounted(true), []);
+
+  useEffect(() => {
+    if (!listUndo) return;
+    const t = window.setTimeout(() => setListUndo(null), 7000);
+    return () => window.clearTimeout(t);
+  }, [listUndo]);
 
   useEffect(() => {
     if (!open) return;
