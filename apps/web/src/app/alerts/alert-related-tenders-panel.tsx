@@ -505,6 +505,7 @@ export function AlertRelatedTendersPanel({
   function selectFolder(next: FolderView) {
     setFolder(next);
     setPage(1);
+    if (next === "trash") setFiltersOpen(false);
   }
 
   function onPageSizeChange(next: number) {
@@ -727,9 +728,10 @@ export function AlertRelatedTendersPanel({
                     <FilterIcon className="size-4" />
                   </button>
                 );
+                const showFiltersUi = folder === "active";
                 const actionButtons = (
                   <div className="flex flex-wrap items-center justify-end gap-2">
-                    {filterToggle}
+                    {showFiltersUi ? filterToggle : null}
                     {folder === "active" && activeItems.length > 0 ? (
                       <Button
                         type="button"
@@ -769,13 +771,13 @@ export function AlertRelatedTendersPanel({
                 );
                 return (
                   <>
-                    {filtersOpen ? (
+                    {showFiltersUi && filtersOpen ? (
                       <div className="mb-2 flex shrink-0 justify-end">
                         {actionButtons}
                       </div>
                     ) : null}
 
-                    {filtersOpen ? (
+                    {showFiltersUi && filtersOpen ? (
                       <div className="mb-3 flex shrink-0 flex-col gap-2 rounded-lg border border-border bg-muted/30 px-3 py-2.5 sm:flex-row sm:flex-wrap sm:items-end">
                         <label className="flex min-w-[9rem] flex-col gap-1 text-xs text-muted-foreground">
                           Tiempo
@@ -873,7 +875,7 @@ export function AlertRelatedTendersPanel({
                           onSelect={() => selectFolder("trash")}
                         />
                       </div>
-                      {!filtersOpen ? (
+                      {!(showFiltersUi && filtersOpen) ? (
                         <div className="mb-px flex items-center">{actionButtons}</div>
                       ) : null}
                     </div>
