@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Valoraciones: dimensión de interés opcional `propia` (Eficen) / `subcontrata` (`tender_ratings.interest_kind`, NULL si no se elige); chips al puntuar; compacto `3★ Eficen` / `3★ Sub`. En Relacionadas, filtro Interés solo con Valoradas.
+- Valoraciones: dimensión de interés `propia` (Eficen) / `subcontrata` (`tender_ratings.interest_kind`); hay que elegir chip antes de las estrellas (si no, rebotan); compacto `3★ Eficen` / `3★ Sub`. En Relacionadas, filtro Interés solo con Valoradas.
 - Alertas · Licitaciones relacionadas: papelera por ítem (icono) + «Vaciar listado» / «Restaurar todo» / «Vaciar papelera»; pestañas Todas | Papelera (30 días); filtros en panel colapsable (embudo); tiempo / estado / valoración. Solo el modal (`alert_related_trash`); no afecta al buzón.
 - Mis licitaciones (nuevo): esquema completo ADR 026 (`offer_*` + `company_*`: requisitos, entregables, evidencias, equipo, hitos, pliegos, fuentes, bitácora, biblioteca); backfill desde `bid_cases`; UI `/mis-licitaciones` sobre el expediente nuevo.
 - Buscador: en la franja de paginación, «Ordenar por» (desplegable ↑) + flecha asc/desc; URL `sort`/`dir` y RPC `p_sort_by`/`p_sort_dir`.

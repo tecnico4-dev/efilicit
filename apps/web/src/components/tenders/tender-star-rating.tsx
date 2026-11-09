@@ -38,8 +38,8 @@ function StarIcon({
 }
 
 /**
- * Puntuación 1–5 + interés opcional (Eficen / Subcontrata).
- * Compacto: «3★», «3★ Eficen», «3★ Sub».
+ * Puntuación 1–5 + interés (Eficen / Subcontrata) obligatorio antes de puntuar.
+ * Compacto: «3★ Eficen», «3★ Sub».
  * Clic en la misma estrella que la nota → quita la puntuación.
  */
 export function TenderStarRating({
@@ -57,6 +57,7 @@ export function TenderStarRating({
   const [draftKind, setDraftKind] = useState<TenderInterestKind | null>(
     rating?.interestKind ?? null,
   );
+  const [nudgeKey, setNudgeKey] = useState(0);
 
   useEffect(() => {
     if (rating != null) {
@@ -86,10 +87,17 @@ export function TenderStarRating({
     }
   }
 
+  function nudgeKinds() {
+    setNudgeKey((k) => k + 1);
+  }
+
   function toggleKind(kind: TenderInterestKind) {
-    const nextKind = draftKind === kind ? null : kind;
+    // Con nota ya guardada no se puede dejar sin clasificar (solo cambiar).
+    if (score != null && draftKind === kind) return;
+    const nextKind =
+      score == null && draftKind === kind ? null : kind;
     setDraftKind(nextKind);
-    if (score != null) {
+    if (score != null && nextKind != null) {
       void apply({ score, interestKind: nextKind });
     }
   }
@@ -97,6 +105,10 @@ export function TenderStarRating({
   async function onStarClick(n: TenderScore) {
     if (score === n) {
       await apply(null);
+      return;
+    }
+    if (draftKind == null) {
+      nudgeKinds();
       return;
     }
     await apply({ score: n, interestKind: draftKind });
@@ -140,19 +152,25 @@ export function TenderStarRating({
       )}
     >
       <div
-        className="inline-flex items-center gap-1"
+        key={nudgeKey}
+        className={cn(
+          "inline-flex items-center gap-1",
+          nudgeKey > 0 && "interest-chip-nudge",
+        )}
         role="group"
-        aria-label="Tipo de interés"
+        aria-label="Tipo de interés (elige antes de puntuar)"
       >
         <KindChip
           label="Eficen"
           active={draftKind === "propia"}
+          insist={nudgeKey > 0 && draftKind == null}
           disabled={disabled || pending}
           onClick={() => toggleKind("propia")}
         />
         <KindChip
           label="Subcontrata"
           active={draftKind === "subcontrata"}
+          insist={nudgeKey > 0 && draftKind == null}
           disabled={disabled || pending}
           onClick={() => toggleKind("subcontrata")}
         />
@@ -179,7 +197,9 @@ export function TenderStarRating({
               aria-label={
                 score === n
                   ? `Quitar puntuación (${n} estrellas)`
-                  : `Puntuar con ${n} estrellas`
+                  : draftKind == null
+                    ? `Elige Eficen o Subcontrata antes de puntuar con ${n}`
+                    : `Puntuar con ${n} estrellas`
               }
               aria-pressed={score != null && n <= score}
             >
@@ -195,11 +215,13 @@ export function TenderStarRating({
 function KindChip({
   label,
   active,
+  insist,
   disabled,
   onClick,
 }: {
   label: string;
   active: boolean;
+  insist?: boolean;
   disabled?: boolean;
   onClick: () => void;
 }) {
@@ -213,7 +235,9 @@ function KindChip({
         "rounded-md border px-2 py-0.5 text-[11px] font-medium transition-colors",
         active
           ? "border-primary/50 bg-primary/15 text-primary-dark"
-          : "border-border bg-background text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+          : insist
+            ? "border-primary bg-primary/10 text-primary-dark"
+            : "border-border bg-background text-muted-foreground hover:bg-muted/60 hover:text-foreground",
         disabled && "opacity-60",
       )}
     >

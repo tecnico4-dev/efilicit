@@ -170,6 +170,30 @@ body::-webkit-scrollbar {
   }
 }
 
+/* Empujón al intentar puntuar sin elegir Eficen/Subcontrata. */
+@keyframes interest-chip-nudge {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  18% {
+    transform: translateX(-3px) rotate(-1.5deg);
+  }
+  36% {
+    transform: translateX(3px) rotate(1.5deg);
+  }
+  54% {
+    transform: translateX(-2px) rotate(-1deg);
+  }
+  72% {
+    transform: translateX(2px) rotate(1deg);
+  }
+}
+
+.interest-chip-nudge {
+  animation: interest-chip-nudge 420ms ease-in-out;
+}
+
 .home-dashboard {
   background:
     radial-gradient(
