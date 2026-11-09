@@ -39,8 +39,14 @@ export {
   type DigestFrequency,
 } from "./user-data";
 export {
+  isAlertRelatedActive,
+  isAlertRelatedInTrashWindow,
   listOwnAlertIdsWithQueueItems,
   listOwnAlertRelatedQueueItems,
+  purgeOwnAlertRelatedTrashWindow,
+  restoreOwnAlertRelatedFromTrash,
+  trashOwnAlertRelated,
+  trashOwnAlertRelatedMany,
   type AlertQueueStatus,
   type AlertRelatedQueueItem,
 } from "./alert-related-tenders";

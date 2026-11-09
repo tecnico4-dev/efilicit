@@ -1581,6 +1581,39 @@ export type Database = {
           },
         ]
       }
+      alert_related_trash: {
+        Row: {
+          queue_id: string
+          trashed_at: string
+          user_id: string
+        }
+        Insert: {
+          queue_id: string
+          trashed_at?: string
+          user_id: string
+        }
+        Update: {
+          queue_id?: string
+          trashed_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "alert_related_trash_queue_id_fkey"
+            columns: ["queue_id"]
+            isOneToOne: false
+            referencedRelation: "notification_queue"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "alert_related_trash_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notification_trash: {
         Row: {
           event_id: string

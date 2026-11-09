@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Alertas · Licitaciones relacionadas: papelera por ítem (icono) + «Vaciar listado» / «Vaciar papelera»; pestañas Activas | Papelera (30 días, como el buzón); filtros Tiempo (todas / último envío / rango), estado de envío y valoración. Solo el modal de alertas (`alert_related_trash`); no afecta al buzón.
 - Mis licitaciones (nuevo): esquema completo ADR 026 (`offer_*` + `company_*`: requisitos, entregables, evidencias, equipo, hitos, pliegos, fuentes, bitácora, biblioteca); backfill desde `bid_cases`; UI `/mis-licitaciones` sobre el expediente nuevo.
 - Buscador: en la franja de paginación, «Ordenar por» (desplegable ↑) + flecha asc/desc; URL `sort`/`dir` y RPC `p_sort_by`/`p_sort_dir`.
 - Mis licitaciones: etapa histórica `subcontrata` (participación sin ser adjudicatario).

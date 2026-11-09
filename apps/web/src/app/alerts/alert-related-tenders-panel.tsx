@@ -10,8 +10,15 @@ import { formatCpvListPreview } from "@/lib/cpv";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import {
   deleteOwnTenderRating,
+  formatNotificationTrashExpiry,
+  isAlertRelatedActive,
+  isAlertRelatedInTrashWindow,
   listOwnAlertRelatedQueueItems,
   listOwnTenderRatings,
+  purgeOwnAlertRelatedTrashWindow,
+  restoreOwnAlertRelatedFromTrash,
+  trashOwnAlertRelated,
+  trashOwnAlertRelatedMany,
   upsertOwnTenderRating,
   type AlertRelatedQueueItem,
   type TenderScore,
@@ -24,13 +31,10 @@ import {
   type PageSize,
 } from "@/app/favorites/list-pager";
 
-export type RelatedTendersView =
-  | "all"
-  | "sent"
-  | "pending"
-  | "last_send"
-  | "rated"
-  | "unrated";
+type FolderView = "active" | "trash";
+type TimeScope = "all" | "last_send" | "range";
+type StatusFilter = "all" | "sent" | "pending" | "error";
+type RatingFilter = "all" | "rated" | "unrated";
 
 /**
  * Ítems `sent` del último lote de esta alerta: ancla por `sent_at` máximo
@@ -74,6 +78,25 @@ function isSendError(status: AlertRelatedQueueItem["status"]): boolean {
   return status === "failed" || status === "cancelled";
 }
 
+/** Día Madrid YYYY-MM-DD a partir de un ISO. */
+function dayKeyMadrid(iso: string): string | null {
+  try {
+    return new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Europe/Madrid",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).format(new Date(iso));
+  } catch {
+    return null;
+  }
+}
+
+function itemDayKey(item: AlertRelatedQueueItem): string | null {
+  const iso = item.sentAt ?? item.createdAt;
+  return dayKeyMadrid(iso);
+}
+
 function FolderTab({
   active,
   label,
@@ -113,15 +136,44 @@ function FolderTab({
   );
 }
 
+function TrashIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2" />
+      <path d="M4 6h16" />
+      <path d="M7 6v13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V6" />
+      <path d="M10 11v6" />
+      <path d="M14 11v6" />
+    </svg>
+  );
+}
+
 function RelatedItemRow({
   item,
   score,
+  inTrash,
+  pending,
   onScoreChange,
+  onTrash,
+  onRestore,
   onNavigate,
 }: {
   item: AlertRelatedQueueItem;
   score: TenderScore | null;
+  inTrash: boolean;
+  pending: boolean;
   onScoreChange: (tenderId: string, next: TenderScore | null) => Promise<void>;
+  onTrash: (queueId: string) => void;
+  onRestore: (queueId: string) => void;
   onNavigate: () => void;
 }) {
   const title =
@@ -183,25 +235,50 @@ function RelatedItemRow({
               ? `Pendiente · detectada ${formatWhen(item.createdAt)}`
               : `En cola · ${formatWhen(item.createdAt)}`}
         </p>
+        {inTrash && item.trashedAt ? (
+          <p className="mt-1 text-xs text-muted-foreground">
+            {formatNotificationTrashExpiry(item.trashedAt)}
+          </p>
+        ) : null}
       </div>
-      {canRate ? (
-        <div className="shrink-0 pt-0.5">
+      <div className="flex shrink-0 flex-col items-end gap-2 pt-0.5">
+        {canRate && !inTrash ? (
           <TenderStarRating
             score={score}
             onChange={(next) => onScoreChange(item.tenderId, next)}
           />
-        </div>
-      ) : null}
+        ) : null}
+        {inTrash ? (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={pending}
+            onClick={() => onRestore(item.queueId)}
+          >
+            Restaurar
+          </Button>
+        ) : (
+          <button
+            type="button"
+            disabled={pending}
+            onClick={() => onTrash(item.queueId)}
+            aria-label="Mover a la papelera"
+            title="Mover a la papelera"
+            className="inline-flex size-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-destructive disabled:opacity-50"
+          >
+            <TrashIcon className="size-4" />
+          </button>
+        )}
+      </div>
     </li>
   );
 }
 
 /**
  * Modal: licitaciones de notification_queue para una alerta.
- * Carpetas Todas / Enviadas / Último envío / Pendientes / Valoradas / Sin valorar
- * (las condicionales solo si tienen ítems). Default: Todas.
- * Paginación estilo favoritos (10 / 50 / 100).
- * Estrellas 1–5 (misma tabla `tender_ratings` que el buzón).
+ * Activas | Papelera + filtros (tiempo / estado / valoración).
+ * Papelera solo de este modal (no toca el buzón).
  */
 export function AlertRelatedTendersPanel({
   alertId,
@@ -221,9 +298,15 @@ export function AlertRelatedTendersPanel({
   const [error, setError] = useState<string | null>(null);
   const [items, setItems] = useState<AlertRelatedQueueItem[]>([]);
   const [ratings, setRatings] = useState<Record<string, TenderScore>>({});
-  const [view, setView] = useState<RelatedTendersView>("all");
+  const [folder, setFolder] = useState<FolderView>("active");
+  const [timeScope, setTimeScope] = useState<TimeScope>("all");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [ratingFilter, setRatingFilter] = useState<RatingFilter>("all");
   const [pageSize, setPageSize] = useState<PageSize>(DEFAULT_PAGE_SIZE);
   const [page, setPage] = useState(1);
+  const [actionPending, setActionPending] = useState(false);
 
   useEffect(() => setMounted(true), []);
 
@@ -236,49 +319,49 @@ export function AlertRelatedTendersPanel({
     return () => window.removeEventListener("keydown", onKey);
   }, [open, onClose]);
 
-  useEffect(() => {
-    if (!open) return;
-    let cancelled = false;
+  const reload = useCallback(async () => {
     setLoading(true);
     setError(null);
-    setView("all");
+    const client = createSupabaseBrowserClient();
+    const queueResult = await listOwnAlertRelatedQueueItems(client, {
+      alertId,
+      userId,
+    });
+    if (queueResult.error) {
+      setLoading(false);
+      setError(queueResult.error.message);
+      setItems([]);
+      return;
+    }
+    setItems(queueResult.data);
+
+    const tenderIds = [
+      ...new Set(queueResult.data.map((i) => i.tenderId).filter(Boolean)),
+    ];
+    const ratingsResult = await listOwnTenderRatings(client, {
+      userId,
+      tenderIds,
+    });
+    setLoading(false);
+    if (ratingsResult.error) {
+      setError(ratingsResult.error.message);
+      return;
+    }
+    setRatings(ratingsResult.data);
+  }, [alertId, userId]);
+
+  useEffect(() => {
+    if (!open) return;
+    setFolder("active");
+    setTimeScope("all");
+    setDateFrom("");
+    setDateTo("");
+    setStatusFilter("all");
+    setRatingFilter("all");
     setPage(1);
     setRatings({});
-    const client = createSupabaseBrowserClient();
-
-    void (async () => {
-      const queueResult = await listOwnAlertRelatedQueueItems(client, {
-        alertId,
-      });
-      if (cancelled) return;
-      if (queueResult.error) {
-        setLoading(false);
-        setError(queueResult.error.message);
-        setItems([]);
-        return;
-      }
-      setItems(queueResult.data);
-
-      const tenderIds = [
-        ...new Set(queueResult.data.map((i) => i.tenderId).filter(Boolean)),
-      ];
-      const ratingsResult = await listOwnTenderRatings(client, {
-        userId,
-        tenderIds,
-      });
-      if (cancelled) return;
-      setLoading(false);
-      if (ratingsResult.error) {
-        setError(ratingsResult.error.message);
-        return;
-      }
-      setRatings(ratingsResult.data);
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [open, alertId, userId]);
+    void reload();
+  }, [open, alertId, userId, reload]);
 
   const onScoreChange = useCallback(
     async (tenderId: string, next: TenderScore | null) => {
@@ -311,33 +394,64 @@ export function AlertRelatedTendersPanel({
     [ratings, userId],
   );
 
-  const lastSendItems = useMemo(() => itemsFromLastSend(items), [items]);
+  const activeItems = useMemo(
+    () => items.filter((i) => isAlertRelatedActive(i)),
+    [items],
+  );
+  const trashItems = useMemo(
+    () => items.filter((i) => isAlertRelatedInTrashWindow(i)),
+    [items],
+  );
 
-  const counts = useMemo(() => {
-    const all = items.length;
-    const sent = items.filter((i) => i.status === "sent").length;
-    const pending = items.filter((i) => i.status === "pending").length;
-    const lastSend = lastSendItems.length;
-    let rated = 0;
-    let unrated = 0;
-    for (const i of items) {
-      if (ratings[i.tenderId] != null) rated += 1;
-      else unrated += 1;
+  const lastSendItems = useMemo(
+    () => itemsFromLastSend(activeItems),
+    [activeItems],
+  );
+
+  const filteredActive = useMemo(() => {
+    let list = activeItems;
+
+    if (timeScope === "last_send") {
+      list = lastSendItems;
+    } else if (timeScope === "range") {
+      list = list.filter((i) => {
+        const day = itemDayKey(i);
+        if (!day) return false;
+        if (dateFrom && day < dateFrom) return false;
+        if (dateTo && day > dateTo) return false;
+        return Boolean(dateFrom || dateTo);
+      });
+      // Sin fechas aún → no filtrar a vacío; mostrar todo hasta que elijan
+      if (!dateFrom && !dateTo) list = activeItems;
     }
-    return { all, sent, pending, lastSend, rated, unrated };
-  }, [items, ratings, lastSendItems]);
 
-  const visible = useMemo(() => {
-    if (view === "sent") return items.filter((i) => i.status === "sent");
-    if (view === "pending") return items.filter((i) => i.status === "pending");
-    if (view === "last_send") return lastSendItems;
-    if (view === "rated")
-      return items.filter((i) => ratings[i.tenderId] != null);
-    if (view === "unrated")
-      return items.filter((i) => ratings[i.tenderId] == null);
-    return items;
-  }, [items, view, ratings, lastSendItems]);
+    if (statusFilter === "sent") {
+      list = list.filter((i) => i.status === "sent");
+    } else if (statusFilter === "pending") {
+      list = list.filter((i) => i.status === "pending");
+    } else if (statusFilter === "error") {
+      list = list.filter((i) => isSendError(i.status));
+    }
 
+    if (ratingFilter === "rated") {
+      list = list.filter((i) => ratings[i.tenderId] != null);
+    } else if (ratingFilter === "unrated") {
+      list = list.filter((i) => ratings[i.tenderId] == null);
+    }
+
+    return list;
+  }, [
+    activeItems,
+    lastSendItems,
+    timeScope,
+    dateFrom,
+    dateTo,
+    statusFilter,
+    ratingFilter,
+    ratings,
+  ]);
+
+  const visible = folder === "trash" ? trashItems : filteredActive;
   const total = visible.length;
   const showPager = total > DEFAULT_PAGE_SIZE;
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
@@ -352,36 +466,8 @@ export function AlertRelatedTendersPanel({
     if (page > totalPages) setPage(totalPages);
   }, [page, totalPages]);
 
-  // Si la pestaña activa deja de tener ítems (p. ej. valoras la última de «Sin valorar»),
-  // volver a Todas para no quedarte en una vista vacía sin tab visible.
-  useEffect(() => {
-    if (view === "sent" && counts.sent === 0) {
-      setView("all");
-      setPage(1);
-    } else if (view === "pending" && counts.pending === 0) {
-      setView("all");
-      setPage(1);
-    } else if (view === "last_send" && counts.lastSend === 0) {
-      setView("all");
-      setPage(1);
-    } else if (view === "rated" && counts.rated === 0) {
-      setView("all");
-      setPage(1);
-    } else if (view === "unrated" && counts.unrated === 0) {
-      setView("all");
-      setPage(1);
-    }
-  }, [
-    view,
-    counts.sent,
-    counts.pending,
-    counts.lastSend,
-    counts.rated,
-    counts.unrated,
-  ]);
-
-  function selectView(next: RelatedTendersView) {
-    setView(next);
+  function selectFolder(next: FolderView) {
+    setFolder(next);
     setPage(1);
   }
 
@@ -390,7 +476,109 @@ export function AlertRelatedTendersPanel({
     setPage(1);
   }
 
+  async function onTrashOne(queueId: string) {
+    if (actionPending) return;
+    setActionPending(true);
+    const client = createSupabaseBrowserClient();
+    const { error: err } = await trashOwnAlertRelated(client, {
+      userId,
+      queueId,
+    });
+    setActionPending(false);
+    if (err) {
+      setError(err.message);
+      return;
+    }
+    setItems((prev) =>
+      prev.map((i) =>
+        i.queueId === queueId
+          ? { ...i, trashedAt: new Date().toISOString() }
+          : i,
+      ),
+    );
+  }
+
+  async function onRestoreOne(queueId: string) {
+    if (actionPending) return;
+    setActionPending(true);
+    const client = createSupabaseBrowserClient();
+    const { error: err } = await restoreOwnAlertRelatedFromTrash(client, {
+      userId,
+      queueId,
+    });
+    setActionPending(false);
+    if (err) {
+      setError(err.message);
+      return;
+    }
+    setItems((prev) =>
+      prev.map((i) =>
+        i.queueId === queueId ? { ...i, trashedAt: null } : i,
+      ),
+    );
+  }
+
+  async function onEmptyActiveList() {
+    if (actionPending || activeItems.length === 0) return;
+    const ok = window.confirm(
+      `¿Mover las ${activeItems.length} licitaciones activas de esta alerta a la papelera?`,
+    );
+    if (!ok) return;
+    setActionPending(true);
+    const client = createSupabaseBrowserClient();
+    const ids = activeItems.map((i) => i.queueId);
+    const { error: err } = await trashOwnAlertRelatedMany(client, {
+      userId,
+      queueIds: ids,
+    });
+    setActionPending(false);
+    if (err) {
+      setError(err.message);
+      return;
+    }
+    const now = new Date().toISOString();
+    setItems((prev) =>
+      prev.map((i) =>
+        ids.includes(i.queueId) ? { ...i, trashedAt: now } : i,
+      ),
+    );
+    setPage(1);
+  }
+
+  async function onEmptyTrash() {
+    if (actionPending || trashItems.length === 0) return;
+    const ok = window.confirm(
+      `¿Vaciar la papelera (${trashItems.length})? Dejarán de verse en este modal (no vuelven a Activas).`,
+    );
+    if (!ok) return;
+    setActionPending(true);
+    const client = createSupabaseBrowserClient();
+    const ids = trashItems.map((i) => i.queueId);
+    const { error: err } = await purgeOwnAlertRelatedTrashWindow(client, {
+      userId,
+      queueIds: ids,
+    });
+    setActionPending(false);
+    if (err) {
+      setError(err.message);
+      return;
+    }
+    const past = new Date(
+      Date.now() - 31 * 24 * 60 * 60 * 1000,
+    ).toISOString();
+    setItems((prev) =>
+      prev.map((i) =>
+        ids.includes(i.queueId) ? { ...i, trashedAt: past } : i,
+      ),
+    );
+    setPage(1);
+  }
+
   if (!open || !mounted) return null;
+
+  const hasAny = items.length > 0;
+  const showEmptyActive = folder === "active" && activeItems.length === 0;
+  const showEmptyTrash = folder === "trash" && trashItems.length === 0;
 
   return createPortal(
     <div
@@ -430,75 +618,157 @@ export function AlertRelatedTendersPanel({
             <p className="py-8 text-center text-sm text-destructive" role="alert">
               {error}
             </p>
-          ) : items.length === 0 ? (
+          ) : !hasAny ? (
             <p className="py-8 text-center text-sm text-muted-foreground">
               Aún no hay licitaciones en cola para esta alerta.
             </p>
           ) : (
             <>
-              <div
-                className="flex shrink-0 flex-wrap items-end gap-1 px-1"
-                role="tablist"
-                aria-label="Filtro de licitaciones"
-              >
-                <FolderTab
-                  active={view === "all"}
-                  label="Todas"
-                  count={counts.all}
-                  onSelect={() => selectView("all")}
-                />
-                {counts.sent > 0 ? (
+              <div className="mb-2 flex shrink-0 flex-wrap items-center justify-between gap-2">
+                <div
+                  className="flex flex-wrap items-end gap-1"
+                  role="tablist"
+                  aria-label="Activas o papelera"
+                >
                   <FolderTab
-                    active={view === "sent"}
-                    label="Enviadas"
-                    count={counts.sent}
-                    onSelect={() => selectView("sent")}
+                    active={folder === "active"}
+                    label="Activas"
+                    count={activeItems.length}
+                    onSelect={() => selectFolder("active")}
                   />
+                  <FolderTab
+                    active={folder === "trash"}
+                    label="Papelera"
+                    count={trashItems.length}
+                    onSelect={() => selectFolder("trash")}
+                  />
+                </div>
+                {folder === "active" && activeItems.length > 0 ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={actionPending}
+                    onClick={() => void onEmptyActiveList()}
+                  >
+                    Vaciar listado
+                  </Button>
                 ) : null}
-                {counts.lastSend > 0 ? (
-                  <FolderTab
-                    active={view === "last_send"}
-                    label="Último envío"
-                    count={counts.lastSend}
-                    onSelect={() => selectView("last_send")}
-                  />
-                ) : null}
-                {counts.pending > 0 ? (
-                  <FolderTab
-                    active={view === "pending"}
-                    label="Pendientes de enviar"
-                    count={counts.pending}
-                    onSelect={() => selectView("pending")}
-                  />
-                ) : null}
-                {counts.rated > 0 ? (
-                  <FolderTab
-                    active={view === "rated"}
-                    label="Valoradas"
-                    count={counts.rated}
-                    onSelect={() => selectView("rated")}
-                  />
-                ) : null}
-                {counts.unrated > 0 ? (
-                  <FolderTab
-                    active={view === "unrated"}
-                    label="Sin valorar"
-                    count={counts.unrated}
-                    onSelect={() => selectView("unrated")}
-                  />
+                {folder === "trash" && trashItems.length > 0 ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={actionPending}
+                    onClick={() => void onEmptyTrash()}
+                  >
+                    Vaciar papelera
+                  </Button>
                 ) : null}
               </div>
 
-              {visible.length === 0 ? (
-                <div className="relative z-0 overflow-hidden rounded-lg rounded-tl-none border border-border bg-surface/40">
+              {folder === "active" ? (
+                <div className="mb-3 flex shrink-0 flex-col gap-2 rounded-lg border border-border bg-muted/30 px-3 py-2.5 sm:flex-row sm:flex-wrap sm:items-end">
+                  <label className="flex min-w-[9rem] flex-col gap-1 text-xs text-muted-foreground">
+                    Tiempo
+                    <select
+                      className="h-9 rounded-md border border-border bg-background px-2 text-sm text-foreground"
+                      value={timeScope}
+                      onChange={(e) => {
+                        setTimeScope(e.target.value as TimeScope);
+                        setPage(1);
+                      }}
+                    >
+                      <option value="all">Todas las fechas</option>
+                      <option value="last_send">Último envío</option>
+                      <option value="range">Rango de fechas</option>
+                    </select>
+                  </label>
+                  {timeScope === "range" ? (
+                    <>
+                      <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+                        Desde
+                        <input
+                          type="date"
+                          className="h-9 rounded-md border border-border bg-background px-2 text-sm text-foreground"
+                          value={dateFrom}
+                          onChange={(e) => {
+                            setDateFrom(e.target.value);
+                            setPage(1);
+                          }}
+                        />
+                      </label>
+                      <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+                        Hasta
+                        <input
+                          type="date"
+                          className="h-9 rounded-md border border-border bg-background px-2 text-sm text-foreground"
+                          value={dateTo}
+                          onChange={(e) => {
+                            setDateTo(e.target.value);
+                            setPage(1);
+                          }}
+                        />
+                      </label>
+                    </>
+                  ) : null}
+                  <label className="flex min-w-[9rem] flex-col gap-1 text-xs text-muted-foreground">
+                    Estado envío
+                    <select
+                      className="h-9 rounded-md border border-border bg-background px-2 text-sm text-foreground"
+                      value={statusFilter}
+                      onChange={(e) => {
+                        setStatusFilter(e.target.value as StatusFilter);
+                        setPage(1);
+                      }}
+                    >
+                      <option value="all">Todos</option>
+                      <option value="sent">Enviadas</option>
+                      <option value="pending">Pendientes</option>
+                      <option value="error">Con error</option>
+                    </select>
+                  </label>
+                  <label className="flex min-w-[9rem] flex-col gap-1 text-xs text-muted-foreground">
+                    Valoración
+                    <select
+                      className="h-9 rounded-md border border-border bg-background px-2 text-sm text-foreground"
+                      value={ratingFilter}
+                      onChange={(e) => {
+                        setRatingFilter(e.target.value as RatingFilter);
+                        setPage(1);
+                      }}
+                    >
+                      <option value="all">Todas</option>
+                      <option value="rated">Valoradas</option>
+                      <option value="unrated">Sin valorar</option>
+                    </select>
+                  </label>
+                </div>
+              ) : null}
+
+              {showEmptyActive ? (
+                <div className="relative z-0 overflow-hidden rounded-lg border border-border bg-surface/40">
                   <p className="px-4 py-8 text-center text-sm text-muted-foreground">
-                    No hay licitaciones en esta vista.
+                    No hay licitaciones activas. Las de la papelera siguen
+                    disponibles en esa pestaña.
+                  </p>
+                </div>
+              ) : showEmptyTrash ? (
+                <div className="relative z-0 overflow-hidden rounded-lg border border-border bg-surface/40">
+                  <p className="px-4 py-8 text-center text-sm text-muted-foreground">
+                    La papelera está vacía.
+                  </p>
+                </div>
+              ) : visible.length === 0 ? (
+                <div className="relative z-0 overflow-hidden rounded-lg border border-border bg-surface/40">
+                  <p className="px-4 py-8 text-center text-sm text-muted-foreground">
+                    Ninguna licitación coincide con los filtros.
                   </p>
                 </div>
               ) : (
-                <div className="relative z-0 flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg rounded-tl-none border border-border bg-surface/40">
+                <div className="relative z-0 flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-border bg-surface/40">
                   <div
-                    key={`${view}-${page}-${pageSize}`}
+                    key={`${folder}-${timeScope}-${statusFilter}-${ratingFilter}-${page}-${pageSize}`}
                     className="min-h-0 flex-1 overflow-y-auto"
                   >
                     <ul className="divide-y divide-border">
@@ -507,7 +777,11 @@ export function AlertRelatedTendersPanel({
                           key={item.queueId}
                           item={item}
                           score={ratings[item.tenderId] ?? null}
+                          inTrash={folder === "trash"}
+                          pending={actionPending}
                           onScoreChange={onScoreChange}
+                          onTrash={(id) => void onTrashOne(id)}
+                          onRestore={(id) => void onRestoreOne(id)}
                           onNavigate={onClose}
                         />
                       ))}
