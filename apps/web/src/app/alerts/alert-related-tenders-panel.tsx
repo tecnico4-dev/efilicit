@@ -5,6 +5,7 @@ import Link from "next/link";
 import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/button";
 import { TenderStarRating } from "@/components/tenders/tender-star-rating";
+import { useUndoToast } from "@/components/undo-toast";
 import { cn } from "@/lib/cn";
 import { formatCpvListPreview } from "@/lib/cpv";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
@@ -330,6 +331,7 @@ export function AlertRelatedTendersPanel({
   const [pageSize, setPageSize] = useState<PageSize>(DEFAULT_PAGE_SIZE);
   const [page, setPage] = useState(1);
   const [actionPending, setActionPending] = useState(false);
+  const { showUndo, showStatus } = useUndoToast();
 
   useEffect(() => setMounted(true), []);
 
@@ -544,10 +546,6 @@ export function AlertRelatedTendersPanel({
 
   async function onEmptyActiveList() {
     if (actionPending || activeItems.length === 0) return;
-    const ok = window.confirm(
-      `¿Mover las ${activeItems.length} licitaciones de esta alerta a la papelera?`,
-    );
-    if (!ok) return;
     setActionPending(true);
     const client = createSupabaseBrowserClient();
     const ids = activeItems.map((i) => i.queueId);
@@ -557,7 +555,7 @@ export function AlertRelatedTendersPanel({
     });
     setActionPending(false);
     if (err) {
-      setError(err.message);
+      showStatus(`No se pudo vaciar el listado: ${err.message}`);
       return;
     }
     const now = new Date().toISOString();
@@ -567,6 +565,27 @@ export function AlertRelatedTendersPanel({
       ),
     );
     setPage(1);
+    showUndo(
+      "Se ha vaciado la lista de licitaciones de la alerta.",
+      async () => {
+        const c = createSupabaseBrowserClient();
+        const { error: undoErr } = await restoreOwnAlertRelatedManyFromTrash(
+          c,
+          { userId, queueIds: ids },
+        );
+        if (undoErr) {
+          showStatus(`No se pudo revertir: ${undoErr.message}`);
+          return;
+        }
+        setItems((prev) =>
+          prev.map((i) =>
+            ids.includes(i.queueId) ? { ...i, trashedAt: null } : i,
+          ),
+        );
+        setFolder("active");
+        setPage(1);
+      },
+    );
   }
 
   async function onRestoreAllTrash() {
