@@ -835,7 +835,7 @@ export function AlertRelatedTendersPanel({
                       </div>
                     ) : null}
 
-                    <div className="flex shrink-0 flex-wrap items-end justify-between gap-2 px-1">
+                    <div className="flex shrink-0 flex-wrap items-start justify-between gap-2 px-1">
                       <div
                         className="flex flex-wrap items-end gap-1"
                         role="tablist"
@@ -855,7 +855,7 @@ export function AlertRelatedTendersPanel({
                         />
                       </div>
                       {!(showFiltersUi && filtersOpen) ? (
-                        <div className="mb-px flex items-center">{actionButtons}</div>
+                        <div className="flex items-start">{actionButtons}</div>
                       ) : null}
                     </div>
                   </>
