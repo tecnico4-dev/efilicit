@@ -276,7 +276,7 @@ export function AlertsPanel({
                     className="space-y-4"
                     onSubmit={(e) => e.preventDefault()}
                   >
-                    <div>
+                    <div className="mb-6">
                       <label
                         htmlFor="item_name"
                         className="block text-sm font-medium text-primary"

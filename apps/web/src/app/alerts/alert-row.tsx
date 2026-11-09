@@ -203,7 +203,7 @@ export function AlertRowItem({
           className="mt-4 space-y-3 rounded-lg border border-border bg-surface p-4"
           onSubmit={(e) => e.preventDefault()}
         >
-          <div>
+          <div className="mb-6">
             <label
               htmlFor={`${idPrefix}name`}
               className="block text-sm font-medium text-primary"
