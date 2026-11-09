@@ -397,7 +397,14 @@ export function PublicationDateRange({
     summaryOverride?.trim() || summaryLabel(displayFrom, displayTo);
 
   return (
-    <div ref={wrapRef} className="relative min-w-[12rem] flex-1 sm:max-w-xs">
+    <div
+      ref={wrapRef}
+      className={cn(
+        "relative",
+        // Modal alertas: ancho justo para «dd/mm/aaaa – dd/mm/aaaa»; buscador: full.
+        isControlled ? "w-[13.75rem] shrink-0" : "w-full",
+      )}
+    >
       <label
         htmlFor={triggerId}
         className={cn(
