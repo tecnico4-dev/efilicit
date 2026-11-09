@@ -373,8 +373,8 @@ export function AlertsPanel({
                   </button>
                 </div>
                 <p className="mt-2 text-sm text-muted-foreground">
-                  El campo Texto está vacío o solo tiene partículas como «de»,
-                  «la» o «a». La alerta usará el resto de filtros.
+                  Una alerta sin texto puede devolver muchos resultados y
+                  saturar tus notificaciones.
                 </p>
                 <div className="mt-5 flex flex-wrap items-center justify-end gap-2">
                   <Button
@@ -389,17 +389,9 @@ export function AlertsPanel({
                     variant="outline"
                     disabled={pending}
                     onClick={dismissConfirmEmptyText}
-                  >
-                    No
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    disabled={pending}
-                    onClick={dismissConfirmEmptyText}
                     className="border-destructive text-destructive hover:bg-destructive/10 hover:text-destructive"
                   >
-                    Cancelar
+                    No
                   </Button>
                 </div>
               </div>
