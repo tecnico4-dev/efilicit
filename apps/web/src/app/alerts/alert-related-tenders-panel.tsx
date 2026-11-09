@@ -657,6 +657,8 @@ export function AlertRelatedTendersPanel({
   if (!open || !mounted) return null;
 
   const hasAny = items.length > 0;
+  /** Título: activas + papelera (sigue «en» el modal; no las ya caducadas/purgadas). */
+  const titleTotalCount = activeItems.length + trashItems.length;
   const showEmptyActive = folder === "active" && activeItems.length === 0;
   const showEmptyTrash = folder === "trash" && trashItems.length === 0;
 
@@ -679,6 +681,12 @@ export function AlertRelatedTendersPanel({
               className="text-lg font-semibold text-foreground"
             >
               Licitaciones relacionadas
+              {!loading && hasAny ? (
+                <span className="font-semibold text-muted-foreground">
+                  {" "}
+                  ({titleTotalCount})
+                </span>
+              ) : null}
             </h2>
             <p className="mt-0.5 truncate text-sm text-muted-foreground">
               {alertName}
@@ -860,7 +868,7 @@ export function AlertRelatedTendersPanel({
                         <FolderTab
                           active={folder === "active"}
                           label="Relacionadas"
-                          count={activeItems.length}
+                          count={filteredActive.length}
                           onSelect={() => selectFolder("active")}
                         />
                         <FolderTab
