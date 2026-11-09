@@ -149,7 +149,7 @@ export function SearchResultsPanel({
     if (toastedCapKeys.has(key)) return;
     toastedCapKeys.add(key);
     showWarning(
-      `Hay ${formatCountEs(total)} resultados. Mostramos las ${SEARCH_RESULT_CAP} más relevantes; prueba a acotar los filtros.`,
+      `Se muestran las ${SEARCH_RESULT_CAP} más relevantes de ${formatCountEs(total)} resultados.\nRecomendación: endurecer los filtros usados.`,
     );
   }
 

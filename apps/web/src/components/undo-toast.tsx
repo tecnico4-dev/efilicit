@@ -126,13 +126,18 @@ export function UndoToastProvider({ children }: { children: ReactNode }) {
               ×
             </span>
           </button>
-          <div className="flex flex-wrap items-center gap-3">
+          <div
+            className={cn(
+              "flex flex-wrap items-center gap-3",
+              isWarning && "justify-center",
+            )}
+          >
             <span
-              className={
+              className={cn(
                 isWarning
-                  ? "font-medium text-destructive"
-                  : "text-muted-foreground"
-              }
+                  ? "whitespace-pre-line text-center font-medium text-destructive"
+                  : "text-muted-foreground",
+              )}
             >
               {toast.message}
             </span>
