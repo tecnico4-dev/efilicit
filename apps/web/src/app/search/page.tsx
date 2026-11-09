@@ -1,23 +1,17 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import { FavoriteHeartButton } from "@/components/favorites/favorite-heart-button";
 import { PAGE_MAIN_CLASS } from "@/components/shell/page-width";
-import { EmptyState, ErrorState } from "@/components/ui/state-message";
 import { getSessionProfile, getSupabaseServerClient } from "@/lib/auth/session";
 import {
-  listOwnFavoriteTenderIds,
   listMunicipalityNamesByCodes,
   listOwnRecentSearches,
   listPlaceMunicipalitiesForCcaas,
   recordOwnRecentSearch,
-  searchTenders,
   type RecentSearch,
-  type SearchTenderRow,
 } from "@/lib/queries";
 import { SEARCH_CCAA_OPTIONS } from "@/lib/geo-ccaa";
 import { normalizeSearchQuery, tokenizeKeywords } from "@/lib/keywords";
-import { formatTenderStatus } from "@/lib/tender-labels";
-import { formatCpvListPreview, normalizeCpvCode } from "@/lib/cpv";
+import { normalizeCpvCode } from "@/lib/cpv";
 import type { CriteriaFilterInitial } from "@/lib/criteria-display";
 import { RecentSearchesList } from "./recent-searches";
 import { SaveSearchSlot } from "./save-search-slot";
@@ -28,18 +22,13 @@ import {
 import { SearchForm } from "./search-form";
 import {
   parseSearchPageSize,
-  SEARCH_PAGE_SIZE,
-  SEARCH_RESULTS_ANCHOR,
-  type SearchPageSize,
+  type SearchHrefFilters,
 } from "./search-pagination";
 import {
   parseSearchSortBy,
   parseSearchSortDir,
-  type SearchSortBy,
-  type SearchSortDir,
 } from "./search-sort";
-import { ScrollToSearchResults } from "./scroll-to-search-results";
-import { SearchResultsPager } from "./search-results-pager";
+import { SearchResultsPanel } from "./search-results-panel";
 
 function backFromSavedSearch(from: string): { href: string; label: string } | null {
   if (from === "favorites-searches") {
@@ -91,228 +80,6 @@ function allStringParam(value: string | string[] | undefined): string[] {
   return out;
 }
 
-function formatMoney(value: number | null, currency: string): string {
-  if (value == null) return "—";
-  try {
-    return new Intl.NumberFormat("es-ES", {
-      style: "currency",
-      currency: currency || "EUR",
-      maximumFractionDigits: 0,
-    }).format(value);
-  } catch {
-    return `${value} ${currency}`;
-  }
-}
-
-/** Solo «errata» (trgm); FTS/filtro no se muestran al usuario. */
-function MatchKindBadge({ kind }: { kind: string }) {
-  if (kind !== "trgm") return null;
-  return (
-    <span className="rounded border border-border bg-muted px-1.5 py-0.5 font-mono text-xs text-foreground">
-      errata
-    </span>
-  );
-}
-
-type SearchFilters = {
-  q: string;
-  cpvCodes: string[];
-  cpvMatch: "any" | "all";
-  minRaw: string;
-  maxRaw: string;
-  ccaaCodes: string[];
-  municipality: string;
-  statuses: string[];
-  procedures: string[];
-  contractTypes: string[];
-  pubFrom: string;
-  pubTo: string;
-  openForSubmission: boolean;
-};
-
-function tenderHrefFromSearch(
-  tenderId: string,
-  filters: SearchFilters,
-  page: number,
-  pageSize: SearchPageSize,
-  sortBy: SearchSortBy,
-  sortDir: SearchSortDir,
-): string {
-  const params = new URLSearchParams({ from: "search" });
-  if (filters.q) params.set("q", filters.q);
-  for (const code of filters.cpvCodes) params.append("cpv", code);
-  if (filters.cpvCodes.length >= 2 && filters.cpvMatch === "all") {
-    params.set("cpv_match", "all");
-  }
-  if (filters.minRaw) params.set("min", filters.minRaw);
-  if (filters.maxRaw) params.set("max", filters.maxRaw);
-  for (const c of filters.ccaaCodes) params.append("ccaa", c);
-  if (filters.municipality) params.set("municipality", filters.municipality);
-  for (const s of filters.statuses) params.append("status", s);
-  for (const p of filters.procedures) params.append("procedure", p);
-  for (const c of filters.contractTypes) params.append("contract_type", c);
-  if (filters.pubFrom) params.set("pub_from", filters.pubFrom);
-  if (filters.pubTo) params.set("pub_to", filters.pubTo);
-  params.set("en_plazo", filters.openForSubmission ? "1" : "0");
-  if (page > 1) params.set("page", String(page));
-  if (pageSize !== SEARCH_PAGE_SIZE) params.set("ps", String(pageSize));
-  if (sortBy !== "relevance") params.set("sort", sortBy);
-  if (sortDir !== "desc") params.set("dir", sortDir);
-  return `/tenders/${tenderId}?${params.toString()}`;
-}
-
-function ResultsList({
-  rows,
-  error,
-  searched,
-  filters,
-  page,
-  pageSize,
-  totalCount,
-  from,
-  profileUserId,
-  favoritedIds,
-  sortBy,
-  sortDir,
-}: {
-  rows: SearchTenderRow[];
-  error: string | null;
-  searched: boolean;
-  filters: SearchFilters;
-  page: number;
-  pageSize: SearchPageSize;
-  totalCount: number;
-  from: string;
-  profileUserId: string | null;
-  favoritedIds: Set<string>;
-  sortBy: SearchSortBy;
-  sortDir: SearchSortDir;
-}) {
-  if (error) {
-    return (
-      <ErrorState className="mt-8">Error al buscar: {error}</ErrorState>
-    );
-  }
-
-  if (!searched) {
-    return null;
-  }
-
-  if (rows.length === 0 && page <= 1) {
-    return (
-      <EmptyState className="mt-8">
-        Sin resultados para estos criterios.
-      </EmptyState>
-    );
-  }
-
-  const showPager = totalCount > pageSize || page > 1;
-
-  const list = (
-    <ul className="divide-y divide-border">
-      {rows.map((row) => (
-        <li key={row.id} className="py-4">
-          <div className="flex items-start gap-3">
-            <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap items-baseline gap-2">
-                <h2 className="text-base font-medium text-foreground">
-                  <Link
-                    href={tenderHrefFromSearch(
-                      row.id,
-                      filters,
-                      page,
-                      pageSize,
-                      sortBy,
-                      sortDir,
-                    )}
-                    className="text-foreground hover:text-link hover:underline"
-                  >
-                    {row.title}
-                  </Link>
-                </h2>
-                <MatchKindBadge kind={row.match_kind} />
-              </div>
-              <dl className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
-                <div>
-                  <dt className="inline text-muted-foreground">Importe: </dt>
-                  <dd className="inline">
-                    {formatMoney(row.estimated_value, row.currency)}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="inline text-muted-foreground">CPV: </dt>
-                  <dd className="inline font-mono">
-                    {formatCpvListPreview(row.cpv_codes)}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="inline text-muted-foreground">Estado: </dt>
-                  <dd className="inline">{formatTenderStatus(row.status)}</dd>
-                </div>
-              </dl>
-            </div>
-            {profileUserId ? (
-              <FavoriteHeartButton
-                userId={profileUserId}
-                tenderId={row.id}
-                initiallyFavorited={favoritedIds.has(row.id)}
-              />
-            ) : null}
-          </div>
-        </li>
-      ))}
-    </ul>
-  );
-
-  const pager = (
-    <SearchResultsPager
-      page={page}
-      pageSize={pageSize}
-      showing={rows.length}
-      total={totalCount}
-      filters={filters}
-      from={from}
-      sortBy={sortBy}
-      sortDir={sortDir}
-    />
-  );
-
-  if (!showPager) {
-    return (
-      <div id={SEARCH_RESULTS_ANCHOR} className="mt-8 scroll-mt-24">
-        <ScrollToSearchResults />
-        <div className="rounded-lg border border-border px-4">{list}</div>
-      </div>
-    );
-  }
-
-  return (
-    <div id={SEARCH_RESULTS_ANCHOR} className="mt-8 scroll-mt-24">
-      <ScrollToSearchResults />
-      <div
-        className="flex flex-col overflow-hidden rounded-lg border border-border"
-        style={{ height: "calc(100dvh - 11.5rem)" }}
-      >
-        <div
-          key={`${page}-${pageSize}-${sortBy}-${sortDir}`}
-          className="min-h-0 flex-1 overflow-y-auto px-4"
-        >
-          {rows.length === 0 ? (
-            <p className="py-8 text-center text-sm text-muted-foreground">
-              Sin resultados en esta página.
-            </p>
-          ) : (
-            list
-          )}
-        </div>
-        <div className="shrink-0 border-t border-border bg-background px-4 py-3">
-          {pager}
-        </div>
-      </div>
-    </div>
-  );
-}
-
 export default async function SearchPage({
   searchParams,
 }: {
@@ -348,13 +115,12 @@ export default async function SearchPage({
   const sortBy = parseSearchSortBy(first(params.sort));
   const sortDir = parseSearchSortDir(first(params.dir));
   const tcRaw = Number.parseInt(first(params.tc).trim(), 10);
-  /** Total cacheado en URL tras la 1.ª página; la RPC no recuenta. */
+  /** Marca de paginación/orden (no re-graba recientes). */
   const knownTotal =
     Number.isInteger(tcRaw) && tcRaw >= 0 ? tcRaw : undefined;
   const min = minRaw === "" ? undefined : Number(minRaw);
   const max = maxRaw === "" ? undefined : Number(maxRaw);
 
-  // Criterios de URL sin esperar DISTINCT de filtros (UI se rellena en Suspense).
   const catalogCcaa = new Set(SEARCH_CCAA_OPTIONS.map((o) => o.code));
   const ccaaValid = ccaaRaw.filter((c) => catalogCcaa.has(c));
   const statusesValid = statusesRaw;
@@ -363,11 +129,7 @@ export default async function SearchPage({
   const pubFromValid = /^\d{4}-\d{2}-\d{2}$/.test(pubFromRaw) ? pubFromRaw : "";
   const pubToValid = /^\d{4}-\d{2}-\d{2}$/.test(pubToRaw) ? pubToRaw : "";
 
-  let rows: SearchTenderRow[] = [];
-  let totalCount = 0;
-  let error: string | null = null;
   let profileUserId: string | null = null;
-  let favoritedIds = new Set<string>();
   let municipalityValid = "";
   let recentSearches: RecentSearch[] = [];
   let recentMunicipalityNames: Record<string, string> = {};
@@ -392,9 +154,8 @@ export default async function SearchPage({
     contractTypesValid.length > 0 ||
     pubFromValid !== "" ||
     pubToValid !== "";
-  /** Stopwords solas → aviso y sin RPC (aunque haya otros filtros en la URL). */
   const shouldSearch = hasParams && !queryOnlyNoise;
-  /** Nueva búsqueda (no paginación): form no manda `tc`. */
+  /** Nueva búsqueda (form GET sin `tc` / page). */
   const isFreshSearch = shouldSearch && page === 1 && knownTotal == null;
 
   if (client && shouldSearch && ccaaValid.length > 0 && municipalityRaw) {
@@ -409,7 +170,7 @@ export default async function SearchPage({
     municipalityValid = municipalityRaw;
   }
 
-  const filters: SearchFilters = {
+  const filters: SearchHrefFilters = {
     q: qInput,
     cpvCodes,
     cpvMatch,
@@ -453,13 +214,30 @@ export default async function SearchPage({
         : undefined,
   };
 
+  const { keywords: _keywords, ...rpcCriteria } = searchCriteria;
+
+  const criteriaKey = [
+    q,
+    cpvCodes.join(","),
+    cpvMatch,
+    minRaw,
+    maxRaw,
+    ccaaValid.join(","),
+    municipalityValid,
+    statusesValid.join(","),
+    proceduresValid.join(","),
+    contractTypesValid.join(","),
+    pubFromValid,
+    pubToValid,
+    openForSubmission ? "1" : "0",
+  ].join("\u0001");
+
   if (client) {
     try {
       const profile = await getSessionProfile();
       profileUserId = profile.data?.id ?? null;
 
       if (isFreshSearch && profileUserId) {
-        // 0 resultados también cuentan; paginación (tc/page>1) no escribe.
         await recordOwnRecentSearch(client, { criteria: searchCriteria });
       }
 
@@ -480,57 +258,6 @@ export default async function SearchPage({
       }
     } catch {
       /* historial no bloquea la búsqueda */
-    }
-  }
-
-  if (client && shouldSearch) {
-    // Historial guarda keywords; la RPC sigue usando `query` (comportamiento previo).
-    const { keywords: _keywords, ...rpcCriteria } = searchCriteria;
-    const searchInput = {
-      query: q || undefined,
-      criteria: rpcCriteria,
-      knownTotal,
-      sortBy,
-      sortDir,
-    };
-
-    try {
-      const result = await searchTenders(client, {
-        ...searchInput,
-        limit: pageSize,
-        offset: (page - 1) * pageSize,
-      });
-
-      if (result.error) {
-        error = result.error.message;
-      } else {
-        rows = (result.data ?? []).slice(0, pageSize);
-        totalCount = knownTotal ?? result.totalCount;
-        if (
-          rows.length === 0 &&
-          page > 1 &&
-          totalCount === 0 &&
-          knownTotal == null
-        ) {
-          const probe = await searchTenders(client, {
-            ...searchInput,
-            knownTotal: undefined,
-            limit: 1,
-            offset: 0,
-          });
-          if (!probe.error) totalCount = probe.totalCount;
-        }
-      }
-
-      if (profileUserId && rows.length > 0) {
-        const fav = await listOwnFavoriteTenderIds(
-          client,
-          rows.map((r) => r.id),
-        );
-        favoritedIds = fav.data;
-      }
-    } catch (err) {
-      error = err instanceof Error ? err.message : String(err);
     }
   }
 
@@ -607,19 +334,18 @@ export default async function SearchPage({
         </Suspense>
       </SearchForm>
 
-      <ResultsList
-        rows={rows}
-        error={error}
-        searched={shouldSearch}
+      <SearchResultsPanel
+        shouldSearch={shouldSearch}
+        criteriaKey={criteriaKey}
+        query={q}
+        rpcCriteria={rpcCriteria}
         filters={filters}
         page={page}
         pageSize={pageSize}
-        totalCount={totalCount}
-        from={from}
-        profileUserId={profileUserId}
-        favoritedIds={favoritedIds}
         sortBy={sortBy}
         sortDir={sortDir}
+        from={from}
+        profileUserId={profileUserId}
       />
     </main>
   );
