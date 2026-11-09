@@ -206,7 +206,7 @@ export function AlertRowItem({
           <div>
             <label
               htmlFor={`${idPrefix}name`}
-              className="block text-sm font-medium text-foreground"
+              className="block text-sm font-medium text-primary"
             >
               Nombre de la alerta
             </label>

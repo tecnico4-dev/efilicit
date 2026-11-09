@@ -99,7 +99,7 @@ export function ConvertToAlertButton({
 
   return (
     <div className="mt-2 space-y-2 rounded-lg border border-border bg-surface p-3">
-      <label className="block text-sm font-medium text-foreground">
+      <label className="block text-sm font-medium text-primary">
         Nombre de la alerta
         <Input
           value={name}

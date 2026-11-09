@@ -21,6 +21,7 @@ import {
   hasInvalidPublicationRange,
 } from "@/lib/build-criteria-from-form";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { tokenizeKeywords } from "@/lib/keywords";
 import {
   createOwnAlert,
   createOwnSavedSearch,
@@ -28,8 +29,11 @@ import {
   ownAlertNameTaken,
   type DigestFrequency,
 } from "@/lib/queries";
+import type { SearchCriteria } from "@efilicit/types";
 
 export const ALERT_CREATE_FORM_ID = "alert-create-form";
+
+type BuiltAlert = { name: string; criteria: SearchCriteria };
 
 /**
  * Botón «Crear alerta» + modal con criterios, Crear / Guardar como búsqueda /
@@ -46,12 +50,16 @@ export function AlertsPanel({
 }) {
   const router = useRouter();
   const titleId = useId();
+  const confirmTitleId = useId();
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [name, setName] = useState("");
   const [formKey, setFormKey] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  /** Confirmación si el nombre solo tiene stopwords / tokens < 2. */
+  const [confirmEmptyName, setConfirmEmptyName] = useState(false);
+  const [pendingBuilt, setPendingBuilt] = useState<BuiltAlert | null>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -62,25 +70,37 @@ export function AlertsPanel({
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") closeModal();
+      if (e.key !== "Escape") return;
+      if (confirmEmptyName) {
+        dismissConfirmEmptyName();
+        return;
+      }
+      closeModal();
     }
     window.addEventListener("keydown", onKey);
     return () => {
       document.body.style.overflow = prev;
       window.removeEventListener("keydown", onKey);
     };
-  }, [open]);
+  }, [open, confirmEmptyName]);
 
   function resetForm() {
     setName("");
     setFormKey((k) => k + 1);
     setError(null);
+    setConfirmEmptyName(false);
+    setPendingBuilt(null);
   }
 
   function closeModal() {
     setOpen(false);
     resetForm();
     setPending(false);
+  }
+
+  function dismissConfirmEmptyName() {
+    setConfirmEmptyName(false);
+    setPendingBuilt(null);
   }
 
   function buildOrFail() {
@@ -111,21 +131,21 @@ export function AlertsPanel({
     return { name: name.trim(), criteria };
   }
 
-  async function onCreateAlert() {
-    setError(null);
-    const built = buildOrFail();
-    if (!built) return;
-
+  async function persistAlert(built: BuiltAlert) {
     setPending(true);
     const client = createSupabaseBrowserClient();
     const nameCheck = await ownAlertNameTaken(client, { name: built.name });
     if (nameCheck.error) {
       setPending(false);
+      setConfirmEmptyName(false);
+      setPendingBuilt(null);
       setError(nameCheck.error.message);
       return;
     }
     if (nameCheck.taken) {
       setPending(false);
+      setConfirmEmptyName(false);
+      setPendingBuilt(null);
       setError("Ya existe una alerta con este nombre.");
       return;
     }
@@ -138,11 +158,32 @@ export function AlertsPanel({
     });
     setPending(false);
     if (createError) {
+      setConfirmEmptyName(false);
+      setPendingBuilt(null);
       setError(createError.message);
       return;
     }
     closeModal();
     router.refresh();
+  }
+
+  async function onCreateAlert() {
+    setError(null);
+    const built = buildOrFail();
+    if (!built) return;
+
+    if (tokenizeKeywords(built.name).length === 0) {
+      setPendingBuilt(built);
+      setConfirmEmptyName(true);
+      return;
+    }
+
+    await persistAlert(built);
+  }
+
+  async function onConfirmCreateWithoutText() {
+    if (!pendingBuilt) return;
+    await persistAlert(pendingBuilt);
   }
 
   async function onCreateSavedSearch() {
@@ -238,7 +279,7 @@ export function AlertsPanel({
                     <div>
                       <label
                         htmlFor="item_name"
-                        className="block text-sm font-medium text-foreground"
+                        className="block text-sm font-medium text-primary"
                       >
                         Nombre de la alerta
                       </label>
@@ -286,6 +327,73 @@ export function AlertsPanel({
                     variant="outline"
                     disabled={pending}
                     onClick={closeModal}
+                    className="border-destructive text-destructive hover:bg-destructive/10 hover:text-destructive"
+                  >
+                    Cancelar
+                  </Button>
+                </div>
+              </div>
+            </div>,
+            document.body,
+          )
+        : null}
+
+      {open && mounted && confirmEmptyName
+        ? createPortal(
+            <div
+              className="fixed inset-0 z-[210] flex items-center justify-center bg-black/50 p-3 sm:p-6"
+              role="presentation"
+            >
+              <div
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby={confirmTitleId}
+                className="w-full max-w-md rounded-xl border border-border bg-surface p-5 shadow-xl"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <h2
+                    id={confirmTitleId}
+                    className="text-base font-semibold text-foreground"
+                  >
+                    ¿Seguro que quieres guardar una alerta sin texto?
+                  </h2>
+                  <button
+                    type="button"
+                    onClick={dismissConfirmEmptyName}
+                    disabled={pending}
+                    className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-destructive bg-surface text-destructive transition-colors hover:bg-destructive/10 hover:text-destructive disabled:opacity-60"
+                    aria-label="Cerrar"
+                  >
+                    <span aria-hidden className="text-xl leading-none">
+                      ×
+                    </span>
+                  </button>
+                </div>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  El nombre no tiene términos significativos (solo partículas
+                  como «de», «la» o «a»).
+                </p>
+                <div className="mt-5 flex flex-wrap items-center justify-end gap-2">
+                  <Button
+                    type="button"
+                    disabled={pending}
+                    onClick={onConfirmCreateWithoutText}
+                  >
+                    Sí
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={pending}
+                    onClick={dismissConfirmEmptyName}
+                  >
+                    No
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={pending}
+                    onClick={dismissConfirmEmptyName}
                     className="border-destructive text-destructive hover:bg-destructive/10 hover:text-destructive"
                   >
                     Cancelar
