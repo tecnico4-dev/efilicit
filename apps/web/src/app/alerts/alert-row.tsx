@@ -208,7 +208,7 @@ export function AlertRowItem({
               htmlFor={`${idPrefix}name`}
               className="block text-sm font-medium text-primary"
             >
-              Nombre de la alerta
+              Nombre de la alerta*
             </label>
             <Input
               id={`${idPrefix}name`}

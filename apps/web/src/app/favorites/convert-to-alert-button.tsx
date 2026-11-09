@@ -100,7 +100,7 @@ export function ConvertToAlertButton({
   return (
     <div className="mt-2 space-y-2 rounded-lg border border-border bg-surface p-3">
       <label className="block text-sm font-medium text-primary">
-        Nombre de la alerta
+        Nombre de la alerta*
         <Input
           value={name}
           onChange={(e) => setName(e.target.value)}

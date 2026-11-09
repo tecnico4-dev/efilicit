@@ -21,7 +21,6 @@ import {
   hasInvalidPublicationRange,
 } from "@/lib/build-criteria-from-form";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
-import { tokenizeKeywords } from "@/lib/keywords";
 import {
   createOwnAlert,
   createOwnSavedSearch,
@@ -57,8 +56,8 @@ export function AlertsPanel({
   const [formKey, setFormKey] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
-  /** Confirmación si el nombre solo tiene stopwords / tokens < 2. */
-  const [confirmEmptyName, setConfirmEmptyName] = useState(false);
+  /** Confirmación si el campo Texto no tiene keywords útiles. */
+  const [confirmEmptyText, setConfirmEmptyText] = useState(false);
   const [pendingBuilt, setPendingBuilt] = useState<BuiltAlert | null>(null);
 
   useEffect(() => {
@@ -71,8 +70,8 @@ export function AlertsPanel({
     document.body.style.overflow = "hidden";
     function onKey(e: KeyboardEvent) {
       if (e.key !== "Escape") return;
-      if (confirmEmptyName) {
-        dismissConfirmEmptyName();
+      if (confirmEmptyText) {
+        dismissConfirmEmptyText();
         return;
       }
       closeModal();
@@ -82,13 +81,13 @@ export function AlertsPanel({
       document.body.style.overflow = prev;
       window.removeEventListener("keydown", onKey);
     };
-  }, [open, confirmEmptyName]);
+  }, [open, confirmEmptyText]);
 
   function resetForm() {
     setName("");
     setFormKey((k) => k + 1);
     setError(null);
-    setConfirmEmptyName(false);
+    setConfirmEmptyText(false);
     setPendingBuilt(null);
   }
 
@@ -98,8 +97,8 @@ export function AlertsPanel({
     setPending(false);
   }
 
-  function dismissConfirmEmptyName() {
-    setConfirmEmptyName(false);
+  function dismissConfirmEmptyText() {
+    setConfirmEmptyText(false);
     setPendingBuilt(null);
   }
 
@@ -137,14 +136,14 @@ export function AlertsPanel({
     const nameCheck = await ownAlertNameTaken(client, { name: built.name });
     if (nameCheck.error) {
       setPending(false);
-      setConfirmEmptyName(false);
+      setConfirmEmptyText(false);
       setPendingBuilt(null);
       setError(nameCheck.error.message);
       return;
     }
     if (nameCheck.taken) {
       setPending(false);
-      setConfirmEmptyName(false);
+      setConfirmEmptyText(false);
       setPendingBuilt(null);
       setError("Ya existe una alerta con este nombre.");
       return;
@@ -158,7 +157,7 @@ export function AlertsPanel({
     });
     setPending(false);
     if (createError) {
-      setConfirmEmptyName(false);
+      setConfirmEmptyText(false);
       setPendingBuilt(null);
       setError(createError.message);
       return;
@@ -172,9 +171,10 @@ export function AlertsPanel({
     const built = buildOrFail();
     if (!built) return;
 
-    if (tokenizeKeywords(built.name).length === 0) {
+    // Sin keywords en «Texto» (vacío o solo stopwords) → confirmar.
+    if (!built.criteria.keywords?.length) {
       setPendingBuilt(built);
-      setConfirmEmptyName(true);
+      setConfirmEmptyText(true);
       return;
     }
 
@@ -281,7 +281,7 @@ export function AlertsPanel({
                         htmlFor="item_name"
                         className="block text-sm font-medium text-primary"
                       >
-                        Nombre de la alerta
+                        Nombre de la alerta*
                       </label>
                       <Input
                         id="item_name"
@@ -341,7 +341,7 @@ export function AlertsPanel({
           )
         : null}
 
-      {open && mounted && confirmEmptyName
+      {open && mounted && confirmEmptyText
         ? createPortal(
             <div
               className="fixed inset-0 z-[210] flex items-center justify-center bg-black/50 p-3 sm:p-6"
@@ -362,7 +362,7 @@ export function AlertsPanel({
                   </h2>
                   <button
                     type="button"
-                    onClick={dismissConfirmEmptyName}
+                    onClick={dismissConfirmEmptyText}
                     disabled={pending}
                     className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-destructive bg-surface text-destructive transition-colors hover:bg-destructive/10 hover:text-destructive disabled:opacity-60"
                     aria-label="Cerrar"
@@ -373,8 +373,8 @@ export function AlertsPanel({
                   </button>
                 </div>
                 <p className="mt-2 text-sm text-muted-foreground">
-                  El nombre no tiene términos significativos (solo partículas
-                  como «de», «la» o «a»).
+                  El campo Texto está vacío o solo tiene partículas como «de»,
+                  «la» o «a». La alerta usará el resto de filtros.
                 </p>
                 <div className="mt-5 flex flex-wrap items-center justify-end gap-2">
                   <Button
@@ -388,7 +388,7 @@ export function AlertsPanel({
                     type="button"
                     variant="outline"
                     disabled={pending}
-                    onClick={dismissConfirmEmptyName}
+                    onClick={dismissConfirmEmptyText}
                   >
                     No
                   </Button>
@@ -396,7 +396,7 @@ export function AlertsPanel({
                     type="button"
                     variant="outline"
                     disabled={pending}
-                    onClick={dismissConfirmEmptyName}
+                    onClick={dismissConfirmEmptyText}
                     className="border-destructive text-destructive hover:bg-destructive/10 hover:text-destructive"
                   >
                     Cancelar
