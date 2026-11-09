@@ -17,6 +17,7 @@ import {
   listOwnTenderRatings,
   purgeOwnAlertRelatedTrashWindow,
   restoreOwnAlertRelatedFromTrash,
+  restoreOwnAlertRelatedManyFromTrash,
   trashOwnAlertRelated,
   trashOwnAlertRelatedMany,
   upsertOwnTenderRating,
@@ -157,6 +158,27 @@ function TrashIcon({ className }: { className?: string }) {
   );
 }
 
+/** Embudo / filtro (outline). */
+function FilterIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M4 5h16l-6.5 7.5v4.5L10.5 19v-6.5L4 5z" />
+    </svg>
+  );
+}
+
+const destructiveOutlineBtn =
+  "border-destructive text-destructive hover:bg-destructive/10 hover:text-destructive";
+
 function RelatedItemRow({
   item,
   score,
@@ -265,7 +287,7 @@ function RelatedItemRow({
             onClick={() => onTrash(item.queueId)}
             aria-label="Mover a la papelera"
             title="Mover a la papelera"
-            className="inline-flex size-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-destructive disabled:opacity-50"
+            className="inline-flex size-8 items-center justify-center rounded-lg border border-destructive bg-surface text-destructive transition-colors hover:bg-destructive/10 hover:text-destructive disabled:opacity-50"
           >
             <TrashIcon className="size-4" />
           </button>
@@ -299,6 +321,7 @@ export function AlertRelatedTendersPanel({
   const [items, setItems] = useState<AlertRelatedQueueItem[]>([]);
   const [ratings, setRatings] = useState<Record<string, TenderScore>>({});
   const [folder, setFolder] = useState<FolderView>("active");
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [timeScope, setTimeScope] = useState<TimeScope>("all");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
@@ -353,6 +376,7 @@ export function AlertRelatedTendersPanel({
   useEffect(() => {
     if (!open) return;
     setFolder("active");
+    setFiltersOpen(false);
     setTimeScope("all");
     setDateFrom("");
     setDateTo("");
@@ -521,7 +545,7 @@ export function AlertRelatedTendersPanel({
   async function onEmptyActiveList() {
     if (actionPending || activeItems.length === 0) return;
     const ok = window.confirm(
-      `¿Mover las ${activeItems.length} licitaciones activas de esta alerta a la papelera?`,
+      `¿Mover las ${activeItems.length} licitaciones de esta alerta a la papelera?`,
     );
     if (!ok) return;
     setActionPending(true);
@@ -545,10 +569,33 @@ export function AlertRelatedTendersPanel({
     setPage(1);
   }
 
+  async function onRestoreAllTrash() {
+    if (actionPending || trashItems.length === 0) return;
+    setActionPending(true);
+    const client = createSupabaseBrowserClient();
+    const ids = trashItems.map((i) => i.queueId);
+    const { error: err } = await restoreOwnAlertRelatedManyFromTrash(client, {
+      userId,
+      queueIds: ids,
+    });
+    setActionPending(false);
+    if (err) {
+      setError(err.message);
+      return;
+    }
+    setItems((prev) =>
+      prev.map((i) =>
+        ids.includes(i.queueId) ? { ...i, trashedAt: null } : i,
+      ),
+    );
+    setFolder("active");
+    setPage(1);
+  }
+
   async function onEmptyTrash() {
     if (actionPending || trashItems.length === 0) return;
     const ok = window.confirm(
-      `¿Vaciar la papelera (${trashItems.length})? Dejarán de verse en este modal (no vuelven a Activas).`,
+      `¿Vaciar la papelera (${trashItems.length})? Dejarán de verse en este modal (no vuelven a Todas).`,
     );
     if (!ok) return;
     setActionPending(true);
@@ -625,49 +672,63 @@ export function AlertRelatedTendersPanel({
           ) : (
             <>
               <div className="mb-2 flex shrink-0 flex-wrap items-center justify-between gap-2">
-                <div
-                  className="flex flex-wrap items-end gap-1"
-                  role="tablist"
-                  aria-label="Activas o papelera"
+                <button
+                  type="button"
+                  aria-label={
+                    filtersOpen ? "Ocultar filtros" : "Mostrar filtros"
+                  }
+                  aria-expanded={filtersOpen}
+                  title="Filtros"
+                  onClick={() => setFiltersOpen((o) => !o)}
+                  className={cn(
+                    "inline-flex size-9 items-center justify-center rounded-full border transition-colors",
+                    filtersOpen
+                      ? "border-primary bg-primary/10 text-primary-dark"
+                      : "border-border bg-surface text-muted-foreground hover:bg-muted hover:text-foreground",
+                  )}
                 >
-                  <FolderTab
-                    active={folder === "active"}
-                    label="Activas"
-                    count={activeItems.length}
-                    onSelect={() => selectFolder("active")}
-                  />
-                  <FolderTab
-                    active={folder === "trash"}
-                    label="Papelera"
-                    count={trashItems.length}
-                    onSelect={() => selectFolder("trash")}
-                  />
+                  <FilterIcon className="size-4" />
+                </button>
+                <div className="flex flex-wrap items-center gap-2">
+                  {folder === "active" && activeItems.length > 0 ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={actionPending}
+                      className={destructiveOutlineBtn}
+                      onClick={() => void onEmptyActiveList()}
+                    >
+                      Vaciar listado
+                    </Button>
+                  ) : null}
+                  {folder === "trash" && trashItems.length > 0 ? (
+                    <>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        disabled={actionPending}
+                        onClick={() => void onRestoreAllTrash()}
+                      >
+                        Restaurar todo
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        disabled={actionPending}
+                        className={destructiveOutlineBtn}
+                        onClick={() => void onEmptyTrash()}
+                      >
+                        Vaciar papelera
+                      </Button>
+                    </>
+                  ) : null}
                 </div>
-                {folder === "active" && activeItems.length > 0 ? (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    disabled={actionPending}
-                    onClick={() => void onEmptyActiveList()}
-                  >
-                    Vaciar listado
-                  </Button>
-                ) : null}
-                {folder === "trash" && trashItems.length > 0 ? (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    disabled={actionPending}
-                    onClick={() => void onEmptyTrash()}
-                  >
-                    Vaciar papelera
-                  </Button>
-                ) : null}
               </div>
 
-              {folder === "active" ? (
+              {filtersOpen ? (
                 <div className="mb-3 flex shrink-0 flex-col gap-2 rounded-lg border border-border bg-muted/30 px-3 py-2.5 sm:flex-row sm:flex-wrap sm:items-end">
                   <label className="flex min-w-[9rem] flex-col gap-1 text-xs text-muted-foreground">
                     Tiempo
@@ -746,27 +807,46 @@ export function AlertRelatedTendersPanel({
                 </div>
               ) : null}
 
+              <div
+                className="flex shrink-0 flex-wrap items-end gap-1 px-1"
+                role="tablist"
+                aria-label="Todas o papelera"
+              >
+                <FolderTab
+                  active={folder === "active"}
+                  label="Todas"
+                  count={activeItems.length}
+                  onSelect={() => selectFolder("active")}
+                />
+                <FolderTab
+                  active={folder === "trash"}
+                  label="Papelera"
+                  count={trashItems.length}
+                  onSelect={() => selectFolder("trash")}
+                />
+              </div>
+
               {showEmptyActive ? (
-                <div className="relative z-0 overflow-hidden rounded-lg border border-border bg-surface/40">
+                <div className="relative z-0 overflow-hidden rounded-lg rounded-tl-none border border-border bg-surface/40">
                   <p className="px-4 py-8 text-center text-sm text-muted-foreground">
-                    No hay licitaciones activas. Las de la papelera siguen
+                    No hay licitaciones aquí. Las de la papelera siguen
                     disponibles en esa pestaña.
                   </p>
                 </div>
               ) : showEmptyTrash ? (
-                <div className="relative z-0 overflow-hidden rounded-lg border border-border bg-surface/40">
+                <div className="relative z-0 overflow-hidden rounded-lg rounded-tl-none border border-border bg-surface/40">
                   <p className="px-4 py-8 text-center text-sm text-muted-foreground">
                     La papelera está vacía.
                   </p>
                 </div>
               ) : visible.length === 0 ? (
-                <div className="relative z-0 overflow-hidden rounded-lg border border-border bg-surface/40">
+                <div className="relative z-0 overflow-hidden rounded-lg rounded-tl-none border border-border bg-surface/40">
                   <p className="px-4 py-8 text-center text-sm text-muted-foreground">
                     Ninguna licitación coincide con los filtros.
                   </p>
                 </div>
               ) : (
-                <div className="relative z-0 flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-border bg-surface/40">
+                <div className="relative z-0 flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg rounded-tl-none border border-border bg-surface/40">
                   <div
                     key={`${folder}-${timeScope}-${statusFilter}-${ratingFilter}-${page}-${pageSize}`}
                     className="min-h-0 flex-1 overflow-y-auto"

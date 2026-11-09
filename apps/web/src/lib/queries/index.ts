@@ -45,6 +45,7 @@ export {
   listOwnAlertRelatedQueueItems,
   purgeOwnAlertRelatedTrashWindow,
   restoreOwnAlertRelatedFromTrash,
+  restoreOwnAlertRelatedManyFromTrash,
   trashOwnAlertRelated,
   trashOwnAlertRelatedMany,
   type AlertQueueStatus,

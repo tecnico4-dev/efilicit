@@ -265,7 +265,7 @@ export async function trashOwnAlertRelatedMany(
   return { error: null };
 }
 
-/** Saca de la papelera del modal (vuelve a Activas). */
+/** Saca de la papelera del modal (vuelve a Todas). */
 export async function restoreOwnAlertRelatedFromTrash(
   client: SupabaseClient<Database>,
   input: { userId: string; queueId: string },
@@ -276,6 +276,26 @@ export async function restoreOwnAlertRelatedFromTrash(
     .eq("user_id", input.userId)
     .eq("queue_id", input.queueId);
   if (error) return { error: new Error(error.message) };
+  return { error: null };
+}
+
+/** Restaura varias de la papelera (Restaurar todo). */
+export async function restoreOwnAlertRelatedManyFromTrash(
+  client: SupabaseClient<Database>,
+  input: { userId: string; queueIds: string[] },
+): Promise<{ error: Error | null }> {
+  const ids = [...new Set(input.queueIds.filter(Boolean))];
+  if (ids.length === 0) return { error: null };
+  const CHUNK = 100;
+  for (let i = 0; i < ids.length; i += CHUNK) {
+    const chunk = ids.slice(i, i + CHUNK);
+    const { error } = await client
+      .from("alert_related_trash")
+      .delete()
+      .eq("user_id", input.userId)
+      .in("queue_id", chunk);
+    if (error) return { error: new Error(error.message) };
+  }
   return { error: null };
 }
 
