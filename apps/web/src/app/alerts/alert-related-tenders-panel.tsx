@@ -287,7 +287,7 @@ function RelatedItemRow({
             onClick={() => onTrash(item.queueId)}
             aria-label="Mover a la papelera"
             title="Mover a la papelera"
-            className="inline-flex size-8 items-center justify-center rounded-lg border border-destructive bg-surface text-destructive transition-colors hover:bg-destructive/10 hover:text-destructive disabled:opacity-50"
+            className="inline-flex size-8 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-destructive disabled:opacity-50"
           >
             <TrashIcon className="size-4" />
           </button>
@@ -707,160 +707,179 @@ export function AlertRelatedTendersPanel({
             </p>
           ) : (
             <>
-              <div className="mb-2 flex shrink-0 flex-wrap items-center justify-between gap-2">
-                <button
-                  type="button"
-                  aria-label={
-                    filtersOpen ? "Ocultar filtros" : "Mostrar filtros"
-                  }
-                  aria-expanded={filtersOpen}
-                  title="Filtros"
-                  onClick={() => setFiltersOpen((o) => !o)}
-                  className={cn(
-                    "inline-flex size-9 items-center justify-center rounded-full border transition-colors",
-                    filtersOpen
-                      ? "border-primary bg-primary/10 text-primary-dark"
-                      : "border-border bg-surface text-muted-foreground hover:bg-muted hover:text-foreground",
-                  )}
-                >
-                  <FilterIcon className="size-4" />
-                </button>
-                <div className="flex flex-wrap items-center gap-2">
-                  {folder === "active" && activeItems.length > 0 ? (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      disabled={actionPending}
-                      className={destructiveOutlineBtn}
-                      onClick={() => void onEmptyActiveList()}
-                    >
-                      Vaciar listado
-                    </Button>
-                  ) : null}
-                  {folder === "trash" && trashItems.length > 0 ? (
-                    <>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        disabled={actionPending}
-                        onClick={() => void onRestoreAllTrash()}
-                      >
-                        Restaurar todo
-                      </Button>
+              {(() => {
+                const filterToggle = (
+                  <button
+                    type="button"
+                    aria-label={
+                      filtersOpen ? "Ocultar filtros" : "Mostrar filtros"
+                    }
+                    aria-expanded={filtersOpen}
+                    title="Filtros"
+                    onClick={() => setFiltersOpen((o) => !o)}
+                    className={cn(
+                      "inline-flex size-9 shrink-0 items-center justify-center rounded-full border transition-colors",
+                      filtersOpen
+                        ? "border-primary bg-primary/10 text-primary-dark"
+                        : "border-border bg-surface text-muted-foreground hover:bg-muted hover:text-foreground",
+                    )}
+                  >
+                    <FilterIcon className="size-4" />
+                  </button>
+                );
+                const actionButtons = (
+                  <div className="flex flex-wrap items-center justify-end gap-2">
+                    {filterToggle}
+                    {folder === "active" && activeItems.length > 0 ? (
                       <Button
                         type="button"
                         variant="outline"
                         size="sm"
                         disabled={actionPending}
                         className={destructiveOutlineBtn}
-                        onClick={() => void onEmptyTrash()}
+                        onClick={() => void onEmptyActiveList()}
                       >
-                        Vaciar papelera
+                        Vaciar listado
                       </Button>
-                    </>
-                  ) : null}
-                </div>
-              </div>
+                    ) : null}
+                    {folder === "trash" && trashItems.length > 0 ? (
+                      <>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          disabled={actionPending}
+                          onClick={() => void onRestoreAllTrash()}
+                        >
+                          Restaurar todo
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          disabled={actionPending}
+                          className={destructiveOutlineBtn}
+                          onClick={() => void onEmptyTrash()}
+                        >
+                          Vaciar papelera
+                        </Button>
+                      </>
+                    ) : null}
+                  </div>
+                );
+                return (
+                  <>
+                    {filtersOpen ? (
+                      <div className="mb-2 flex shrink-0 justify-end">
+                        {actionButtons}
+                      </div>
+                    ) : null}
 
-              {filtersOpen ? (
-                <div className="mb-3 flex shrink-0 flex-col gap-2 rounded-lg border border-border bg-muted/30 px-3 py-2.5 sm:flex-row sm:flex-wrap sm:items-end">
-                  <label className="flex min-w-[9rem] flex-col gap-1 text-xs text-muted-foreground">
-                    Tiempo
-                    <select
-                      className="h-9 rounded-md border border-border bg-background px-2 text-sm text-foreground"
-                      value={timeScope}
-                      onChange={(e) => {
-                        setTimeScope(e.target.value as TimeScope);
-                        setPage(1);
-                      }}
-                    >
-                      <option value="all">Todas las fechas</option>
-                      <option value="last_send">Último envío</option>
-                      <option value="range">Rango de fechas</option>
-                    </select>
-                  </label>
-                  {timeScope === "range" ? (
-                    <>
-                      <label className="flex flex-col gap-1 text-xs text-muted-foreground">
-                        Desde
-                        <input
-                          type="date"
-                          className="h-9 rounded-md border border-border bg-background px-2 text-sm text-foreground"
-                          value={dateFrom}
-                          onChange={(e) => {
-                            setDateFrom(e.target.value);
-                            setPage(1);
-                          }}
-                        />
-                      </label>
-                      <label className="flex flex-col gap-1 text-xs text-muted-foreground">
-                        Hasta
-                        <input
-                          type="date"
-                          className="h-9 rounded-md border border-border bg-background px-2 text-sm text-foreground"
-                          value={dateTo}
-                          onChange={(e) => {
-                            setDateTo(e.target.value);
-                            setPage(1);
-                          }}
-                        />
-                      </label>
-                    </>
-                  ) : null}
-                  <label className="flex min-w-[9rem] flex-col gap-1 text-xs text-muted-foreground">
-                    Estado envío
-                    <select
-                      className="h-9 rounded-md border border-border bg-background px-2 text-sm text-foreground"
-                      value={statusFilter}
-                      onChange={(e) => {
-                        setStatusFilter(e.target.value as StatusFilter);
-                        setPage(1);
-                      }}
-                    >
-                      <option value="all">Todos</option>
-                      <option value="sent">Enviadas</option>
-                      <option value="pending">Pendientes</option>
-                      <option value="error">Con error</option>
-                    </select>
-                  </label>
-                  <label className="flex min-w-[9rem] flex-col gap-1 text-xs text-muted-foreground">
-                    Valoración
-                    <select
-                      className="h-9 rounded-md border border-border bg-background px-2 text-sm text-foreground"
-                      value={ratingFilter}
-                      onChange={(e) => {
-                        setRatingFilter(e.target.value as RatingFilter);
-                        setPage(1);
-                      }}
-                    >
-                      <option value="all">Todas</option>
-                      <option value="rated">Valoradas</option>
-                      <option value="unrated">Sin valorar</option>
-                    </select>
-                  </label>
-                </div>
-              ) : null}
+                    {filtersOpen ? (
+                      <div className="mb-3 flex shrink-0 flex-col gap-2 rounded-lg border border-border bg-muted/30 px-3 py-2.5 sm:flex-row sm:flex-wrap sm:items-end">
+                        <label className="flex min-w-[9rem] flex-col gap-1 text-xs text-muted-foreground">
+                          Tiempo
+                          <select
+                            className="h-9 rounded-md border border-border bg-background px-2 text-sm text-foreground"
+                            value={timeScope}
+                            onChange={(e) => {
+                              setTimeScope(e.target.value as TimeScope);
+                              setPage(1);
+                            }}
+                          >
+                            <option value="all">Todas las fechas</option>
+                            <option value="last_send">Último envío</option>
+                            <option value="range">Rango de fechas</option>
+                          </select>
+                        </label>
+                        {timeScope === "range" ? (
+                          <>
+                            <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+                              Desde
+                              <input
+                                type="date"
+                                className="h-9 rounded-md border border-border bg-background px-2 text-sm text-foreground"
+                                value={dateFrom}
+                                onChange={(e) => {
+                                  setDateFrom(e.target.value);
+                                  setPage(1);
+                                }}
+                              />
+                            </label>
+                            <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+                              Hasta
+                              <input
+                                type="date"
+                                className="h-9 rounded-md border border-border bg-background px-2 text-sm text-foreground"
+                                value={dateTo}
+                                onChange={(e) => {
+                                  setDateTo(e.target.value);
+                                  setPage(1);
+                                }}
+                              />
+                            </label>
+                          </>
+                        ) : null}
+                        <label className="flex min-w-[9rem] flex-col gap-1 text-xs text-muted-foreground">
+                          Estado envío
+                          <select
+                            className="h-9 rounded-md border border-border bg-background px-2 text-sm text-foreground"
+                            value={statusFilter}
+                            onChange={(e) => {
+                              setStatusFilter(e.target.value as StatusFilter);
+                              setPage(1);
+                            }}
+                          >
+                            <option value="all">Todos</option>
+                            <option value="sent">Enviadas</option>
+                            <option value="pending">Pendientes</option>
+                            <option value="error">Con error</option>
+                          </select>
+                        </label>
+                        <label className="flex min-w-[9rem] flex-col gap-1 text-xs text-muted-foreground">
+                          Valoración
+                          <select
+                            className="h-9 rounded-md border border-border bg-background px-2 text-sm text-foreground"
+                            value={ratingFilter}
+                            onChange={(e) => {
+                              setRatingFilter(e.target.value as RatingFilter);
+                              setPage(1);
+                            }}
+                          >
+                            <option value="all">Todas</option>
+                            <option value="rated">Valoradas</option>
+                            <option value="unrated">Sin valorar</option>
+                          </select>
+                        </label>
+                      </div>
+                    ) : null}
 
-              <div
-                className="flex shrink-0 flex-wrap items-end gap-1 px-1"
-                role="tablist"
-                aria-label="Todas o papelera"
-              >
-                <FolderTab
-                  active={folder === "active"}
-                  label="Todas"
-                  count={activeItems.length}
-                  onSelect={() => selectFolder("active")}
-                />
-                <FolderTab
-                  active={folder === "trash"}
-                  label="Papelera"
-                  count={trashItems.length}
-                  onSelect={() => selectFolder("trash")}
-                />
-              </div>
+                    <div className="flex shrink-0 flex-wrap items-end justify-between gap-2 px-1">
+                      <div
+                        className="flex flex-wrap items-end gap-1"
+                        role="tablist"
+                        aria-label="Todas o papelera"
+                      >
+                        <FolderTab
+                          active={folder === "active"}
+                          label="Todas"
+                          count={activeItems.length}
+                          onSelect={() => selectFolder("active")}
+                        />
+                        <FolderTab
+                          active={folder === "trash"}
+                          label="Papelera"
+                          count={trashItems.length}
+                          onSelect={() => selectFolder("trash")}
+                        />
+                      </div>
+                      {!filtersOpen ? (
+                        <div className="mb-px flex items-center">{actionButtons}</div>
+                      ) : null}
+                    </div>
+                  </>
+                );
+              })()}
 
               {showEmptyActive ? (
                 <div className="relative z-0 overflow-hidden rounded-lg rounded-tl-none border border-border bg-surface/40">
