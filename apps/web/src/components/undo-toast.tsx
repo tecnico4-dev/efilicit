@@ -9,11 +9,16 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { cn } from "@/lib/cn";
 
 const TOAST_MS = 7000;
+const TOAST_WARNING_MS = 9000;
+
+type ToastTone = "default" | "warning";
 
 type ToastState = {
   message: string;
+  tone: ToastTone;
   /** Si hay callback, se muestra «Revertir». */
   onUndo?: () => void | Promise<void>;
 };
@@ -22,6 +27,8 @@ type UndoToastApi = {
   showUndo: (message: string, onUndo: () => void | Promise<void>) => void;
   /** Aviso temporal con × (sin Revertir). */
   showStatus: (message: string) => void;
+  /** Aviso destacado (borde/texto alerta); p. ej. búsqueda acotada a top-K. */
+  showWarning: (message: string) => void;
 };
 
 const UndoToastContext = createContext<UndoToastApi | null>(null);
@@ -39,18 +46,25 @@ export function UndoToastProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const show = useCallback(
-    (message: string, onUndo?: () => void | Promise<void>) => {
+    (
+      message: string,
+      opts?: { onUndo?: () => void | Promise<void>; tone?: ToastTone },
+    ) => {
       if (timerRef.current) clearTimeout(timerRef.current);
-      undoRef.current = onUndo ?? null;
-      setToast({ message, onUndo });
-      timerRef.current = setTimeout(clear, TOAST_MS);
+      const tone = opts?.tone ?? "default";
+      undoRef.current = opts?.onUndo ?? null;
+      setToast({ message, tone, onUndo: opts?.onUndo });
+      timerRef.current = setTimeout(
+        clear,
+        tone === "warning" ? TOAST_WARNING_MS : TOAST_MS,
+      );
     },
     [clear],
   );
 
   const showUndo = useCallback(
     (msg: string, onUndo: () => void | Promise<void>) => {
-      show(msg, onUndo);
+      show(msg, { onUndo });
     },
     [show],
   );
@@ -62,9 +76,19 @@ export function UndoToastProvider({ children }: { children: ReactNode }) {
     [show],
   );
 
-  useEffect(() => () => {
-    if (timerRef.current) clearTimeout(timerRef.current);
-  }, []);
+  const showWarning = useCallback(
+    (msg: string) => {
+      show(msg, { tone: "warning" });
+    },
+    [show],
+  );
+
+  useEffect(
+    () => () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    },
+    [],
+  );
 
   async function onRevert() {
     const fn = undoRef.current;
@@ -72,26 +96,46 @@ export function UndoToastProvider({ children }: { children: ReactNode }) {
     if (fn) await fn();
   }
 
+  const isWarning = toast?.tone === "warning";
+
   return (
-    <UndoToastContext.Provider value={{ showUndo, showStatus }}>
+    <UndoToastContext.Provider value={{ showUndo, showStatus, showWarning }}>
       {children}
       {toast ? (
         <div
-          className="fixed bottom-6 left-1/2 z-50 w-[min(24rem,calc(100vw-2rem))] -translate-x-1/2 rounded-lg border border-border bg-surface px-4 py-3 text-sm text-foreground shadow-lg"
+          className={cn(
+            "fixed bottom-10 left-1/2 z-50 -translate-x-1/2 rounded-lg px-4 py-3 text-sm shadow-lg",
+            isWarning
+              ? "w-[min(28rem,calc(100vw-2rem))] border border-destructive/40 bg-destructive/10"
+              : "w-[min(24rem,calc(100vw-2rem))] border border-border bg-surface",
+          )}
           role="status"
         >
           <button
             type="button"
             aria-label="Cerrar"
             onClick={clear}
-            className="absolute -right-2.5 -top-2.5 inline-flex h-6 w-6 items-center justify-center rounded-full border border-border bg-muted text-muted-foreground shadow-md hover:bg-muted/90 hover:text-foreground"
+            className={cn(
+              "absolute -right-2.5 -top-2.5 inline-flex h-6 w-6 items-center justify-center rounded-full border shadow-md",
+              isWarning
+                ? "border-destructive/40 bg-surface text-destructive hover:bg-destructive/10"
+                : "border-border bg-muted text-muted-foreground hover:bg-muted/90 hover:text-foreground",
+            )}
           >
             <span aria-hidden className="text-sm leading-none">
               ×
             </span>
           </button>
           <div className="flex flex-wrap items-center gap-3">
-            <span className="text-muted-foreground">{toast.message}</span>
+            <span
+              className={
+                isWarning
+                  ? "font-medium text-destructive"
+                  : "text-muted-foreground"
+              }
+            >
+              {toast.message}
+            </span>
             {toast.onUndo ? (
               <button
                 type="button"

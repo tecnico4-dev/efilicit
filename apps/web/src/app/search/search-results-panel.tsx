@@ -124,7 +124,7 @@ export function SearchResultsPanel({
   from,
   profileUserId,
 }: SearchResultsPanelProps) {
-  const { showStatus } = useUndoToast();
+  const { showWarning } = useUndoToast();
   const cached = shouldSearch ? getSearchResultCache(criteriaKey) : null;
   const [rows, setRows] = useState<SearchTenderRow[] | null>(
     () => cached?.rows ?? null,
@@ -148,7 +148,7 @@ export function SearchResultsPanel({
     if (total <= SEARCH_RESULT_CAP) return;
     if (toastedCapKeys.has(key)) return;
     toastedCapKeys.add(key);
-    showStatus(
+    showWarning(
       `Hay ${formatCountEs(total)} resultados. Mostramos las ${SEARCH_RESULT_CAP} más relevantes; prueba a acotar los filtros.`,
     );
   }
