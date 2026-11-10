@@ -79,7 +79,7 @@ function ActiveToggle({
       {/* Etiqueta en el hueco libre (el círculo ocupa ~1.75rem en un extremo). */}
       <span
         className={cn(
-          "pointer-events-none absolute inset-y-0 flex items-center justify-center text-[10px] font-semibold tracking-wide",
+          "pointer-events-none absolute inset-y-0 flex items-center justify-center text-[10px] font-semibold leading-none tracking-wide",
           active
             ? "left-1 right-7 text-link"
             : "left-7 right-1 text-destructive",
@@ -90,7 +90,7 @@ function ActiveToggle({
       </span>
       <span
         className={cn(
-          "pointer-events-none absolute top-0.5 flex size-6 items-center justify-center rounded-full bg-background shadow-sm transition-[left,right] duration-200",
+          "pointer-events-none absolute top-1/2 flex size-6 -translate-y-1/2 items-center justify-center rounded-full bg-background shadow-sm transition-[left,right] duration-200",
           active ? "right-0.5 left-auto" : "left-0.5 right-auto",
         )}
       >
