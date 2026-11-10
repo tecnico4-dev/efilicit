@@ -231,9 +231,23 @@ export function AlertRowItem({
   return (
     <li className="py-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0 flex-1">
-          <p className="font-medium text-foreground">{alert.name}</p>
-          <p className="mt-1 text-sm text-muted-foreground">
+        <div className={cn("min-w-0 flex-1", !alert.is_active && "opacity-55")}>
+          <p
+            className={cn(
+              "font-medium",
+              alert.is_active ? "text-foreground" : "text-muted-foreground",
+            )}
+          >
+            {alert.name}
+          </p>
+          <p
+            className={cn(
+              "mt-1 text-sm",
+              alert.is_active
+                ? "text-muted-foreground"
+                : "text-muted-foreground/80",
+            )}
+          >
             {formatCriteriaSummary(criteria, { municipalityNames })}
           </p>
         </div>
