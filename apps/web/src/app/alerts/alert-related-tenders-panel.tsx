@@ -42,14 +42,13 @@ import {
   ListPager,
   type PageSize,
 } from "@/app/favorites/list-pager";
+import { ScoreFilterSelect } from "./score-filter-select";
 
 type FolderView = "active" | "trash";
 type StatusFilter = "all" | "sent" | "pending";
 type RatingFilter = "all" | "rated" | "unrated";
 /** Solo visible con Valoradas. */
 type InterestFilter = "all" | TenderInterestKind;
-/** Solo visible con Valoradas. */
-type ScoreFilter = "all" | TenderScore;
 
 /**
  * Ítems `sent` del último lote de esta alerta: ancla por `sent_at` máximo
@@ -196,8 +195,8 @@ const destructiveOutlineBtn =
 /** Anchos reservados (px) para Tiempo + Estado + Valoración + Interés + Puntuación. */
 const FILTER_TIEMPO_PX = 13.75 * 16;
 const FILTER_FIELD_PX = 9 * 16;
-/** Select corto (1★…5★). */
-const FILTER_SCORE_PX = 7 * 16;
+/** Select puntuación multi (p. ej. «1★, 3★-5★»). */
+const FILTER_SCORE_PX = 9 * 16;
 const FILTER_GAP_PX = 8;
 const FILTER_ROW_PAD_PX = 24; // px-3 × 2
 const FILTER_SELECT_CHROME_PX = 40; // padding + borde + flecha nativa
@@ -393,7 +392,8 @@ export function AlertRelatedTendersPanel({
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [ratingFilter, setRatingFilter] = useState<RatingFilter>("all");
   const [interestFilter, setInterestFilter] = useState<InterestFilter>("all");
-  const [scoreFilter, setScoreFilter] = useState<ScoreFilter>("all");
+  /** Vacío = Cualquiera (sin filtro de nota). Solo con Valoradas. */
+  const [scoreFilter, setScoreFilter] = useState<TenderScore[]>([]);
   /** Solo Coincidencias (embedded): filtrar por alerta de origen. */
   const [alertFilter, setAlertFilter] = useState<string>("all");
   const [alertOptions, setAlertOptions] = useState<
@@ -530,7 +530,7 @@ export function AlertRelatedTendersPanel({
     setStatusFilter("all");
     setRatingFilter("all");
     setInterestFilter("all");
-    setScoreFilter("all");
+    setScoreFilter([]);
     setAlertFilter("all");
     setPage(1);
     setRatings({});
@@ -641,10 +641,12 @@ export function AlertRelatedTendersPanel({
           (i) => ratings[i.tenderId]?.interestKind === "subcontrata",
         );
       }
-      if (scoreFilter !== "all") {
-        list = list.filter(
-          (i) => ratings[i.tenderId]?.score === scoreFilter,
-        );
+      if (scoreFilter.length > 0) {
+        const allowed = new Set(scoreFilter);
+        list = list.filter((i) => {
+          const score = ratings[i.tenderId]?.score;
+          return score != null && allowed.has(score);
+        });
       }
     } else if (ratingFilter === "unrated") {
       list = list.filter((i) => ratings[i.tenderId] == null);
@@ -935,7 +937,7 @@ export function AlertRelatedTendersPanel({
               (hasPendingItems && statusFilter !== "all" ? 1 : 0) +
               (ratingFilter !== "all" ? 1 : 0) +
               (ratingFilter === "rated" && interestFilter !== "all" ? 1 : 0) +
-              (ratingFilter === "rated" && scoreFilter !== "all" ? 1 : 0) +
+              (ratingFilter === "rated" && scoreFilter.length > 0 ? 1 : 0) +
               (isEmbedded && alertFilter !== "all" ? 1 : 0);
             const filterToggle = (
               <button
@@ -1098,7 +1100,7 @@ export function AlertRelatedTendersPanel({
                           setRatingFilter(next);
                           if (next !== "rated") {
                             setInterestFilter("all");
-                            setScoreFilter("all");
+                            setScoreFilter([]);
                           }
                           setPage(1);
                         }}
@@ -1127,29 +1129,17 @@ export function AlertRelatedTendersPanel({
                             <option value="subcontrata">Subcontrata</option>
                           </select>
                         </label>
-                        <label className="flex min-w-[7rem] flex-col gap-1 text-xs text-muted-foreground">
-                          Puntuación
-                          <select
-                            className="h-9 rounded-md border border-border bg-background px-2 text-sm text-foreground"
-                            value={scoreFilter === "all" ? "all" : String(scoreFilter)}
-                            onChange={(e) => {
-                              const v = e.target.value;
-                              setScoreFilter(
-                                v === "all"
-                                  ? "all"
-                                  : (Number(v) as TenderScore),
-                              );
+                        <div className="min-w-[9rem]">
+                          <ScoreFilterSelect
+                            id={`alert-related-${scopeId}-score`}
+                            value={scoreFilter}
+                            onChange={(next) => {
+                              setScoreFilter(next);
                               setPage(1);
                             }}
-                          >
-                            <option value="all">Cualquiera</option>
-                            <option value="1">1★</option>
-                            <option value="2">2★</option>
-                            <option value="3">3★</option>
-                            <option value="4">4★</option>
-                            <option value="5">5★</option>
-                          </select>
-                        </label>
+                            disabled={actionPending}
+                          />
+                        </div>
                       </>
                     ) : null}
                       </div>
@@ -1211,7 +1201,7 @@ export function AlertRelatedTendersPanel({
               )}
             >
               <div
-                key={`${folder}-${lastSendOnly}-${dateFrom}-${dateTo}-${statusFilter}-${ratingFilter}-${interestFilter}-${scoreFilter}-${page}-${pageSize}`}
+                key={`${folder}-${lastSendOnly}-${dateFrom}-${dateTo}-${statusFilter}-${ratingFilter}-${interestFilter}-${scoreFilter.join(",")}-${page}-${pageSize}`}
                 className="min-h-0 flex-1 overflow-y-auto"
               >
                 <ul className="divide-y divide-border">
