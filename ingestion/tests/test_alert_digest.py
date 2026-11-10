@@ -166,6 +166,45 @@ def test_build_digest_message_blocks_by_alert_and_caps_at_five() -> None:
     assert pending[0].payload.get("alert_name") in {"Software", "Obras"}
 
 
+def test_build_digest_message_caps_alert_blocks() -> None:
+    queue = InMemoryNotificationQueue()
+    alerts = [
+        AlertRule(
+            id=f"alert-{i}",
+            user_id="user-1",
+            name=f"Alerta {i}",
+            criteria={"version": 1, "keywords": [f"kw{i}"]},
+        )
+        for i in range(1, 8)
+    ]
+    tenders = [_tender(f"t-{i}", f"Titulo kw{i}") for i in range(1, 8)]
+    run_alert_batch(
+        alerts=alerts,
+        tenders=tenders,
+        queue=queue,
+        digest="2026-09-30",
+    )
+    pending = queue.pending_items()
+    assert len(pending) == 7
+
+    msg = build_digest_message(
+        to_email="alice@example.com",
+        digest="2026-09-30",
+        items=pending,
+        display_name="Alice",
+        alert_names={f"alert-{i}": f"Alerta {i}" for i in range(1, 8)},
+    )
+    assert "Tienes 7 nuevas coincidencias en 7 alertas." in msg.text
+    assert "## Alerta 1" in msg.text
+    assert "## Alerta 5" in msg.text
+    assert "## Alerta 6" not in msg.text
+    assert "## Alerta 7" not in msg.text
+    assert "… y 2 alertas más en el buzón." in msg.text
+    assert "2 alertas más en el buzón" in (msg.html or "")
+    # Asunto y cola: totales reales (solo se recorta la plantilla).
+    assert msg.subject == "EfiLicit resumen diario: 7 oportunidades nuevas"
+
+
 def test_build_digest_message_weekly_singular() -> None:
     queue = InMemoryNotificationQueue()
     alert = AlertRule(

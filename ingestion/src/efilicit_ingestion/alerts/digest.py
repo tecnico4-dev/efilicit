@@ -41,6 +41,7 @@ _BG = "#f7fbfd"
 _TEXT = "#1a2b33"
 _MUTED = "#5a6f78"
 _MAX_PER_ALERT = 5
+_MAX_ALERTS = 5
 
 
 @dataclass(frozen=True)
@@ -102,7 +103,7 @@ def build_digest_message(
     source_urls: Mapping[str, str] | None = None,
     alert_names: Mapping[str, str] | None = None,
 ) -> EmailMessage:
-    """Plantilla branded: un bloque por alerta (máx. 5 ítems) + CTAs."""
+    """Plantilla branded: máx. N alertas × M ítems + CTAs (cola se marca entera)."""
     from efilicit_ingestion.alerts.queue import normalize_digest_frequency
 
     count = len(items)
@@ -113,13 +114,18 @@ def build_digest_message(
     name = (display_name or "usuario").strip() or "usuario"
     urls = dict(source_urls or {})
     names = dict(alert_names or {})
-    blocks = group_items_by_alert(items, alert_names=names)
+    all_blocks = group_items_by_alert(items, alert_names=names)
+    total_alerts = len(all_blocks)
+    blocks = all_blocks[:_MAX_ALERTS]
+    omitted_alerts = total_alerts - len(blocks)
 
     text = _build_text(
         name=name,
         label=label,
         count=count,
+        total_alerts=total_alerts,
         blocks=blocks,
+        omitted_alerts=omitted_alerts,
         base=base,
         source_urls=urls,
     )
@@ -127,7 +133,9 @@ def build_digest_message(
         name=name,
         label=label,
         count=count,
+        total_alerts=total_alerts,
         blocks=blocks,
+        omitted_alerts=omitted_alerts,
         base=base,
         source_urls=urls,
     )
@@ -146,7 +154,10 @@ def group_items_by_alert(
     alert_names: Mapping[str, str] | None = None,
     max_per_alert: int = _MAX_PER_ALERT,
 ) -> list[_AlertDigestBlock]:
-    """Agrupa por alerta; conserva orden de primera aparición; recorta a N por bloque."""
+    """Agrupa por alerta; conserva orden de primera aparición; recorta ítems por bloque.
+
+    El tope de nº de alertas visibles lo aplica ``build_digest_message``.
+    """
     names = dict(alert_names or {})
     order: list[str] = []
     buckets: dict[str, list[NotificationItem]] = defaultdict(list)
@@ -187,15 +198,16 @@ def _build_text(
     name: str,
     label: str,
     count: int,
+    total_alerts: int,
     blocks: Sequence[_AlertDigestBlock],
+    omitted_alerts: int,
     base: str,
     source_urls: Mapping[str, str],
 ) -> str:
-    n_alerts = len(blocks)
     alert_bit = (
         "1 alerta"
-        if n_alerts == 1
-        else f"{n_alerts} alertas"
+        if total_alerts == 1
+        else f"{total_alerts} alertas"
     )
     lines = [
         f"EfiLicit — Resumen {label}",
@@ -219,6 +231,14 @@ def _build_text(
         if remaining > 0:
             lines.append(f"… y {remaining} más en esta alerta.")
         lines.append("")
+    if omitted_alerts > 0:
+        more = (
+            "1 alerta más"
+            if omitted_alerts == 1
+            else f"{omitted_alerts} alertas más"
+        )
+        lines.append(f"… y {more} en el buzón.")
+        lines.append("")
     if base:
         lines.append(f"Ver todas en el buzón: {base}/notifications")
     return "\n".join(lines).rstrip() + "\n"
@@ -229,13 +249,28 @@ def _build_html(
     name: str,
     label: str,
     count: int,
+    total_alerts: int,
     blocks: Sequence[_AlertDigestBlock],
+    omitted_alerts: int,
     base: str,
     source_urls: Mapping[str, str],
 ) -> str:
     sections = "".join(
         _alert_section(block, base=base, source_urls=source_urls) for block in blocks
     )
+
+    omitted_html = ""
+    if omitted_alerts > 0:
+        more = (
+            "1 alerta más"
+            if omitted_alerts == 1
+            else f"{omitted_alerts} alertas más"
+        )
+        omitted_html = (
+            f'<p style="margin:0 0 16px;font-size:13px;color:{_MUTED};">'
+            f"… y {_escape(more)} en el buzón."
+            f"</p>"
+        )
 
     inbox_cta = ""
     if base:
@@ -248,8 +283,7 @@ def _build_html(
             f"</p>"
         )
 
-    n_alerts = len(blocks)
-    alert_bit = "1 alerta" if n_alerts == 1 else f"{n_alerts} alertas"
+    alert_bit = "1 alerta" if total_alerts == 1 else f"{total_alerts} alertas"
     greeting = (
         f'<p style="margin:0 0 8px;font-size:16px;color:{_TEXT};">'
         f"Hola, {_escape(name)}</p>"
@@ -284,6 +318,7 @@ def _build_html(
           <td style="padding:24px;font-family:Arial,Helvetica,sans-serif;background:{_BG};">
             {greeting}
             {sections}
+            {omitted_html}
             {inbox_cta}
           </td>
         </tr>
