@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Pipeline legacy Mis licitaciones: ruta `/my-tenders` (nav «eliminar»), queries `bid-pipeline` y tablas `bid_*` (migración local `20261110140000`). Queda solo `/mis-licitaciones` + `offer_*` / `company_*` ([ADR 026](docs/adr/026-mis-licitaciones-offer-cases.md)).
 
+### Fixed
+
+- Mis licitaciones / migraciones locales: `is_app_user()` se recrea tras el rollback que la dropeaba; ALTER/backfill `bid_*` con guardas si las tablas no existen — [ADR 027](docs/adr/027-offer-schema-hardening-is-app-user.md). Solo Studio local.
+
 ### Changed
 
 - Mis licitaciones: desactivado en remoto por defecto (`NEXT_PUBLIC_MIS_LICITACIONES_ENABLED`); nav oculta, rutas redirigen a `/` y no hay alta desde ficha. En local poner `=1` en `apps/web/.env.local`.

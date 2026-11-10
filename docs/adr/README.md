@@ -40,3 +40,4 @@ No uses un ADR para el estado de una fuente o un parser: eso va en `docs/sources
 | [024](024-drop-tender-sources-last-seen.md) | Eliminar `tender_sources.last_seen_at` (+ RPC `tender_max_last_seen`) | Aceptado |
 | [025](025-catalunya-raw-row-incremental.md) | CCAA RAW incremental por unidad (Catalunya + Euskadi; extiende 022) | Aceptado |
 | [026](026-mis-licitaciones-offer-cases.md) | Mis licitaciones: expediente de oferta (`offer_*`; extiende 023) | Aceptado |
+| [027](027-offer-schema-hardening-is-app-user.md) | Endurecimiento oferta: `is_app_user` + cadena migraciones (bloque A) | Aceptado |
