@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
 import { useUndoToast } from "@/components/undo-toast";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import {
@@ -93,22 +92,20 @@ export function RemoveAlertButton({
 
   return (
     <div className="flex flex-col items-start gap-1">
-      <Button
+      <button
         type="button"
-        variant="outline"
-        size="sm"
         disabled={pending || disabled}
         onClick={onRemove}
         aria-label="Eliminar alerta"
         title="Eliminar"
-        className="size-8 border-destructive px-0 text-destructive hover:bg-destructive/10 hover:text-destructive"
+        className="inline-flex size-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50"
       >
         {pending ? (
           <span className="text-xs">…</span>
         ) : (
-          <TrashIcon className="size-4" />
+          <TrashIcon className="size-[1.15rem]" />
         )}
-      </Button>
+      </button>
       {error ? (
         <p className="text-xs text-destructive" role="alert">
           {error}

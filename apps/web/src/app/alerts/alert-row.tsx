@@ -82,7 +82,7 @@ function ActiveToggle({
           "pointer-events-none absolute inset-y-0 flex items-center justify-center text-[10px] font-semibold tracking-wide",
           active
             ? "left-1 right-7 text-primary-foreground"
-            : "left-7 right-1 text-destructive-foreground",
+            : "left-7 right-1 text-white",
         )}
         aria-hidden
       >
@@ -245,10 +245,8 @@ export function AlertRowItem({
               pending={pending}
               onToggle={() => void toggleActive()}
             />
-            <Button
+            <button
               type="button"
-              variant="outline"
-              size="sm"
               disabled={pending || editing}
               aria-pressed={editing}
               aria-label="Editar alerta"
@@ -258,10 +256,16 @@ export function AlertRowItem({
                 setEditKey((k) => k + 1);
                 setError(null);
               }}
-              className="size-8 px-0"
+              className={cn(
+                "inline-flex size-8 items-center justify-center rounded-md text-muted-foreground transition-colors",
+                "hover:bg-muted hover:text-foreground",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
+                "disabled:pointer-events-none disabled:opacity-50",
+                editing && "bg-muted text-foreground",
+              )}
             >
-              <PencilIcon className="size-4" />
-            </Button>
+              <PencilIcon className="size-[1.15rem]" />
+            </button>
             <RemoveAlertButton alert={alert} disabled={editing} />
           </div>
           {hasRelatedTenders ? (
