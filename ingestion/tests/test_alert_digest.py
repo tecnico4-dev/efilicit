@@ -251,12 +251,14 @@ def test_drain_records_inbox_aviso_one_per_email() -> None:
     sender = FakeEmailSender()
     directory = UserEmailDirectory(emails={"user-1": "alice@example.com"})
     inbox = InMemoryDigestInbox()
+    job_day = date(2026, 9, 30)
 
     result = drain_daily_digests(
         queue=queue,
         sender=sender,
         directory=directory,
         inbox=inbox,
+        job_date=job_day,
     )
     assert result.digests_sent == 1
     assert len(inbox.entries) == 1
@@ -272,8 +274,51 @@ def test_drain_records_inbox_aviso_one_per_email() -> None:
         sender=sender,
         directory=directory,
         inbox=inbox,
+        job_date=job_day,
     )
     assert len(inbox.entries) == 1
+
+
+def test_drain_one_email_when_payload_digests_differ() -> None:
+    """Cambio diaria↔semanal: backlog con periodos distintos → 1 correo/usuario."""
+    from efilicit_ingestion.alerts.models import NotificationItem
+    from efilicit_ingestion.alerts.queue import make_idempotency_key
+
+    queue = InMemoryNotificationQueue()
+    for tid, period in (("t-a", "2026-W46"), ("t-b", "2026-11-10"), ("t-c", "2026-11-09")):
+        key = make_idempotency_key(alert_id="alert-1", tender_id=tid, digest=period)
+        queue.enqueue(
+            NotificationItem(
+                user_id="user-1",
+                alert_id="alert-1",
+                idempotency_key=key,
+                payload={
+                    "tender_id": tid,
+                    "alert_id": "alert-1",
+                    "alert_name": "Software",
+                    "title": f"Titulo {tid}",
+                    "digest": period,
+                    "frequency": "semanal" if period.startswith("2026-W") else "diaria",
+                    "channel": "email",
+                    "kind": "alert_match",
+                },
+            )
+        )
+    sender = FakeEmailSender()
+    directory = UserEmailDirectory(emails={"user-1": "alice@example.com"})
+
+    result = drain_daily_digests(
+        queue=queue,
+        sender=sender,
+        directory=directory,
+        frequencies={"user-1": "diaria"},
+        job_date=date(2026, 11, 10),
+    )
+    assert result.digests_sent == 1
+    assert result.items_marked_sent == 3
+    assert len(sender.sent) == 1
+    assert "3 oportunidades" in sender.sent[0].subject
+    assert all(i.status == "sent" for i in queue.all_items())
 
 
 def test_drain_twice_does_not_resend() -> None:

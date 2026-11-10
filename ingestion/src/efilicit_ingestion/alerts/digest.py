@@ -1,7 +1,8 @@
-"""Digest diario/semanal: agrupa drainable y envía un email por usuario/periodo (Paso 8).
+"""Digest diario/semanal: agrupa drainable y envía un email por usuario (Paso 8).
 
-Batch-first (ADR 012): un correo por (usuario, periodo), no por cada INSERT
-de ingesta. El envío lo hace el job Python vía Resend; no hay Edge Function.
+Batch-first (ADR 012): un correo por usuario cuando toca según su frecuencia
+de cuenta, no por cada INSERT de ingesta. El envío lo hace el job Python vía
+Resend; no hay Edge Function.
 
 Frecuencias (ADR 013):
 
@@ -9,10 +10,14 @@ Frecuencias (ADR 013):
 - weekly: solo lunes UTC; el resto deja pending/failed.
 - instant: fuera del MVP.
 
+Agrupación al enviar: por ``user_id`` (no por ``payload.digest``). Así un
+cambio diaria↔semanal no genera varios correos por periodos viejos en cola.
+El periodo del aviso in-app / tags es el de la frecuencia actual + ``job_date``.
+
 Reintentos de cola (sin ADR): tras un fallo, ``failed`` sigue siendo drainable
 hasta agotar el umbral del error actual; luego ``cancelled``.
 
-Plantilla: bloques por alerta (máx. 5 licitaciones cada uno) + «Ver en EfiLicit»
+Plantilla: bloques por alerta (máx. 5 alertas × 5 ítems) + «Ver en EfiLicit»
 + «Fuente oficial» (URL leída de ``tender_sources`` al montar el correo).
 """
 
@@ -30,7 +35,7 @@ from efilicit_ingestion.alerts.inbox import DigestInbox, tender_ids_from_items
 from efilicit_ingestion.alerts.models import NotificationItem
 from efilicit_ingestion.alerts.queue import (
     NotificationQueue,
-    digest_day,
+    digest_period,
     should_send_digest,
 )
 
@@ -442,21 +447,21 @@ def _escape(value: str) -> str:
     )
 
 
-def group_drainable_by_user_digest(
+def group_drainable_by_user(
     items: list[NotificationItem],
-) -> dict[tuple[str, str], list[NotificationItem]]:
-    """Agrupa ``pending``/``failed`` por (user_id, periodo) para un solo email."""
-    groups: dict[tuple[str, str], list[NotificationItem]] = defaultdict(list)
+) -> dict[str, list[NotificationItem]]:
+    """Agrupa ``pending``/``failed`` por usuario → un solo email cuando toque."""
+    groups: dict[str, list[NotificationItem]] = defaultdict(list)
     for item in items:
         if item.status not in {"pending", "failed"}:
             continue
-        digest = str(item.payload.get("digest") or digest_day())
-        groups[(item.user_id, digest)].append(item)
+        groups[item.user_id].append(item)
     return dict(groups)
 
 
-# Compat tests / callers antiguos
-group_pending_by_user_digest = group_drainable_by_user_digest
+# Compat: nombre antiguo (antes agrupaba también por payload.digest).
+group_drainable_by_user_digest = group_drainable_by_user
+group_pending_by_user_digest = group_drainable_by_user
 
 
 def _record_failure_counts(
@@ -493,10 +498,11 @@ def drain_daily_digests(
     resolve_source_urls: Callable[[list[str]], Mapping[str, str]] | None = None,
     resolve_alert_names: Callable[[list[str]], Mapping[str, str]] | None = None,
 ) -> DigestDrainResult:
-    """Envía un digest por (usuario, periodo) cuando toca según la frecuencia.
+    """Envía un digest por usuario cuando toca según la frecuencia de cuenta.
 
     - daily: siempre que haya ítems drainable.
     - weekly: solo lunes UTC; el resto de días no envía.
+    Un usuario = un correo (se ignora ``payload.digest`` al agrupar).
     Reejecutar tras un envío OK no reenvía: los ítems ya no están drainable.
     Tras fallo: ``failed`` reintentable o ``cancelled`` si agota el umbral.
     Si ``inbox`` está definido, materializa un aviso in-app (1 = 1 correo).
@@ -520,11 +526,11 @@ def drain_daily_digests(
         k: normalize_digest_frequency(v) for k, v in (frequencies or {}).items()
     }
     drainable = list(pending_fn())
-    groups = group_drainable_by_user_digest(drainable)
+    groups = group_drainable_by_user(drainable)
     result = DigestDrainResult()
     base = app_base_url()
 
-    for (user_id, digest), items in sorted(groups.items(), key=lambda x: (x[0][0], x[0][1])):
+    for user_id, items in sorted(groups.items(), key=lambda x: x[0]):
         freq = normalize_digest_frequency(
             freqs.get(user_id)
             or str(items[0].payload.get("frequency") or "diaria")
@@ -532,6 +538,9 @@ def drain_daily_digests(
         if not should_send_digest(freq, job_date):
             result.digests_skipped_not_due += 1
             continue
+
+        # Periodo de etiqueta/inbox = cadencia actual de cuenta, no payload.
+        period = digest_period(freq, job_date)
 
         result.digests_attempted += 1
         to_email = directory.email_for(user_id)
@@ -565,7 +574,7 @@ def drain_daily_digests(
 
         message = build_digest_message(
             to_email=to_email,
-            digest=digest,
+            digest=period,
             items=items,
             frequency=freq,
             display_name=directory.display_name_for(user_id, email=to_email),
@@ -590,7 +599,7 @@ def drain_daily_digests(
                     inbox.record_sent_digest(
                         user_id=user_id,
                         frequency=freq,
-                        digest_period=digest,
+                        digest_period=period,
                         sent_at=now,
                         tender_ids=tids,
                     )
