@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { DigestFrequency } from "@/lib/queries";
+import { isMisLicitacionesEnabled } from "@/lib/features/mis-licitaciones";
 import { cn } from "@/lib/cn";
 import type { ReactNode } from "react";
 import { AccountMenu } from "./account-menu";
@@ -66,12 +67,14 @@ export function AppHeader({
         </nav>
 
         <div className="flex items-center gap-2">
-          <Link
-            href="/mis-licitaciones"
-            className={navClass(pathname.startsWith("/mis-licitaciones"))}
-          >
-            Mis licitaciones
-          </Link>
+          {isMisLicitacionesEnabled() ? (
+            <Link
+              href="/mis-licitaciones"
+              className={navClass(pathname.startsWith("/mis-licitaciones"))}
+            >
+              Mis licitaciones
+            </Link>
+          ) : null}
           {notifications}
           {userId ? (
             <AccountMenu

@@ -5,6 +5,7 @@ import { OfferCaseToggle } from "@/components/mis-licitaciones/offer-case-toggle
 import { PAGE_MAIN_CLASS } from "@/components/shell/page-width";
 import { ErrorState } from "@/components/ui/state-message";
 import { getSessionProfile, getSupabaseServerClient } from "@/lib/auth/session";
+import { isMisLicitacionesEnabled } from "@/lib/features/mis-licitaciones";
 import {
   getOfferCaseIdByTenderId,
   getTenderById,
@@ -78,7 +79,7 @@ function backLinkFromParams(
       label: "← Volver a la lista de favoritos",
     };
   }
-  if (from === "mis-licitaciones") {
+  if (from === "mis-licitaciones" && isMisLicitacionesEnabled()) {
     return {
       href: "/mis-licitaciones",
       label: "← Volver a Mis licitaciones",
@@ -300,6 +301,7 @@ export default async function TenderDetailPage({
   }
 
   // Favoritos / Mis licitaciones solo con sesión; valoración solo en from rating.
+  const misLicitacionesOn = isMisLicitacionesEnabled();
   let favoriteUserId: string | null = null;
   let displayName: string | null = null;
   let initiallyFavorited = false;
@@ -310,24 +312,21 @@ export default async function TenderDetailPage({
     if (profile.data) {
       favoriteUserId = profile.data.id;
       displayName = profile.data.display_name;
-      const tasks: [
-        ReturnType<typeof isOwnFavorite>,
-        ReturnType<typeof getOfferCaseIdByTenderId>,
-        ReturnType<typeof listOwnTenderRatings> | Promise<null>,
-      ] = [
+      const [fav, offer, ratings] = await Promise.all([
         isOwnFavorite(supabase, {
           userId: profile.data.id,
           tenderId: tender.id,
         }),
-        getOfferCaseIdByTenderId(supabase, tender.id),
+        misLicitacionesOn
+          ? getOfferCaseIdByTenderId(supabase, tender.id)
+          : Promise.resolve({ data: null as string | null, error: null }),
         showRating
           ? listOwnTenderRatings(supabase, {
               userId: profile.data.id,
               tenderIds: [tender.id],
             })
           : Promise.resolve(null),
-      ];
-      const [fav, offer, ratings] = await Promise.all(tasks);
+      ]);
       initiallyFavorited = fav.data;
       existingOfferCaseId = offer.data;
       if (ratings && !ratings.error) {
@@ -371,12 +370,14 @@ export default async function TenderDetailPage({
         </h1>
         {favoriteUserId ? (
           <div className="flex flex-wrap items-center gap-2">
-            <OfferCaseToggle
-              userId={favoriteUserId}
-              displayName={displayName}
-              tenderId={tender.id}
-              existingCaseId={existingOfferCaseId}
-            />
+            {misLicitacionesOn ? (
+              <OfferCaseToggle
+                userId={favoriteUserId}
+                displayName={displayName}
+                tenderId={tender.id}
+                existingCaseId={existingOfferCaseId}
+              />
+            ) : null}
             <FavoriteToggle
               userId={favoriteUserId}
               tenderId={tender.id}
