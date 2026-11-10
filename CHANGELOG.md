@@ -38,6 +38,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Alertas · filtros (Coincidencias / Relacionadas): con Valoración = Valoradas, además de Interés aparece Puntuación (1★…5★).
 - Alertas · Coincidencias: una fila por licitación (dedupe); basura/restaurar/vaciar afecta a todas las colas de esa licitación. Relacionadas por alerta sigue con una fila por cola; si solo se borra en una alerta, en Coincidencias sigue saliendo en Todas / la otra alerta.
 - Alertas cola: `idempotency_key` = `alert:{id}:tender:{id}` (sin periodo); la misma alerta no reencola esa licitación al cambiar día/semana o diaria↔semanal. Ya no se escribe `payload.digest` (el periodo solo etiqueta el digest enviado / inbox).
 - Alertas: al Revertir un borrado se reasignan las filas de `notification_queue` a la alerta nueva (el botón «Licitaciones relacionadas» vuelve a salir).

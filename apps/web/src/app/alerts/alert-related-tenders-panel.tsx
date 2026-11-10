@@ -33,6 +33,7 @@ import {
   type AlertRelatedQueueItem,
   type TenderInterestKind,
   type TenderRating,
+  type TenderScore,
 } from "@/lib/queries";
 import { formatTenderStatus } from "@/lib/tender-labels";
 import { formatMoney } from "@/app/favorites/favorites-shared";
@@ -47,6 +48,8 @@ type StatusFilter = "all" | "sent" | "pending";
 type RatingFilter = "all" | "rated" | "unrated";
 /** Solo visible con Valoradas. */
 type InterestFilter = "all" | TenderInterestKind;
+/** Solo visible con Valoradas. */
+type ScoreFilter = "all" | TenderScore;
 
 /**
  * Ítems `sent` del último lote de esta alerta: ancla por `sent_at` máximo
@@ -190,9 +193,11 @@ function FilterIcon({ className }: { className?: string }) {
 const destructiveOutlineBtn =
   "border-destructive text-destructive hover:bg-destructive/10 hover:text-destructive";
 
-/** Anchos reservados (px) para que quepan Tiempo + Estado + Valoración + Interés. */
+/** Anchos reservados (px) para Tiempo + Estado + Valoración + Interés + Puntuación. */
 const FILTER_TIEMPO_PX = 13.75 * 16;
 const FILTER_FIELD_PX = 9 * 16;
+/** Select corto (1★…5★). */
+const FILTER_SCORE_PX = 7 * 16;
 const FILTER_GAP_PX = 8;
 const FILTER_ROW_PAD_PX = 24; // px-3 × 2
 const FILTER_SELECT_CHROME_PX = 40; // padding + borde + flecha nativa
@@ -217,11 +222,12 @@ function measureAlertSelectNeededPx(names: string[]): number {
 }
 
 function maxAlertSelectWidthPx(containerInnerWidth: number): number {
-  // Tiempo + Alerta + Estado + Valoración + Interés → 4 gaps entre 5 controles.
+  // Tiempo + Alerta + Estado + Valoración + Interés + Puntuación.
   const reservedOthers =
     FILTER_TIEMPO_PX +
     FILTER_FIELD_PX * 3 +
-    FILTER_GAP_PX * 4 +
+    FILTER_SCORE_PX +
+    FILTER_GAP_PX * 5 +
     FILTER_ROW_PAD_PX;
   return Math.max(
     FILTER_ALERT_MIN_PX,
@@ -387,6 +393,7 @@ export function AlertRelatedTendersPanel({
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [ratingFilter, setRatingFilter] = useState<RatingFilter>("all");
   const [interestFilter, setInterestFilter] = useState<InterestFilter>("all");
+  const [scoreFilter, setScoreFilter] = useState<ScoreFilter>("all");
   /** Solo Coincidencias (embedded): filtrar por alerta de origen. */
   const [alertFilter, setAlertFilter] = useState<string>("all");
   const [alertOptions, setAlertOptions] = useState<
@@ -523,6 +530,7 @@ export function AlertRelatedTendersPanel({
     setStatusFilter("all");
     setRatingFilter("all");
     setInterestFilter("all");
+    setScoreFilter("all");
     setAlertFilter("all");
     setPage(1);
     setRatings({});
@@ -633,6 +641,11 @@ export function AlertRelatedTendersPanel({
           (i) => ratings[i.tenderId]?.interestKind === "subcontrata",
         );
       }
+      if (scoreFilter !== "all") {
+        list = list.filter(
+          (i) => ratings[i.tenderId]?.score === scoreFilter,
+        );
+      }
     } else if (ratingFilter === "unrated") {
       list = list.filter((i) => ratings[i.tenderId] == null);
     }
@@ -647,6 +660,7 @@ export function AlertRelatedTendersPanel({
     statusFilter,
     ratingFilter,
     interestFilter,
+    scoreFilter,
     ratings,
   ]);
 
@@ -921,6 +935,7 @@ export function AlertRelatedTendersPanel({
               (hasPendingItems && statusFilter !== "all" ? 1 : 0) +
               (ratingFilter !== "all" ? 1 : 0) +
               (ratingFilter === "rated" && interestFilter !== "all" ? 1 : 0) +
+              (ratingFilter === "rated" && scoreFilter !== "all" ? 1 : 0) +
               (isEmbedded && alertFilter !== "all" ? 1 : 0);
             const filterToggle = (
               <button
@@ -1081,7 +1096,10 @@ export function AlertRelatedTendersPanel({
                         onChange={(e) => {
                           const next = e.target.value as RatingFilter;
                           setRatingFilter(next);
-                          if (next !== "rated") setInterestFilter("all");
+                          if (next !== "rated") {
+                            setInterestFilter("all");
+                            setScoreFilter("all");
+                          }
                           setPage(1);
                         }}
                       >
@@ -1091,24 +1109,49 @@ export function AlertRelatedTendersPanel({
                       </select>
                     </label>
                     {ratingFilter === "rated" ? (
-                      <label className="flex min-w-[9rem] flex-col gap-1 text-xs text-muted-foreground">
-                        Interés
-                        <select
-                          className="h-9 rounded-md border border-border bg-background px-2 text-sm text-foreground"
-                          value={interestFilter}
-                          onChange={(e) => {
-                            setInterestFilter(
-                              e.target.value as InterestFilter,
-                            );
-                            setPage(1);
-                          }}
-                        >
-                              <option value="all">Cualquiera</option>
-                              <option value="propia">Eficen</option>
-                              <option value="subcontrata">Subcontrata</option>
-                            </select>
-                          </label>
-                        ) : null}
+                      <>
+                        <label className="flex min-w-[9rem] flex-col gap-1 text-xs text-muted-foreground">
+                          Interés
+                          <select
+                            className="h-9 rounded-md border border-border bg-background px-2 text-sm text-foreground"
+                            value={interestFilter}
+                            onChange={(e) => {
+                              setInterestFilter(
+                                e.target.value as InterestFilter,
+                              );
+                              setPage(1);
+                            }}
+                          >
+                            <option value="all">Cualquiera</option>
+                            <option value="propia">Eficen</option>
+                            <option value="subcontrata">Subcontrata</option>
+                          </select>
+                        </label>
+                        <label className="flex min-w-[7rem] flex-col gap-1 text-xs text-muted-foreground">
+                          Puntuación
+                          <select
+                            className="h-9 rounded-md border border-border bg-background px-2 text-sm text-foreground"
+                            value={scoreFilter === "all" ? "all" : String(scoreFilter)}
+                            onChange={(e) => {
+                              const v = e.target.value;
+                              setScoreFilter(
+                                v === "all"
+                                  ? "all"
+                                  : (Number(v) as TenderScore),
+                              );
+                              setPage(1);
+                            }}
+                          >
+                            <option value="all">Cualquiera</option>
+                            <option value="1">1★</option>
+                            <option value="2">2★</option>
+                            <option value="3">3★</option>
+                            <option value="4">4★</option>
+                            <option value="5">5★</option>
+                          </select>
+                        </label>
+                      </>
+                    ) : null}
                       </div>
                     ) : null}
 
@@ -1168,7 +1211,7 @@ export function AlertRelatedTendersPanel({
               )}
             >
               <div
-                key={`${folder}-${lastSendOnly}-${dateFrom}-${dateTo}-${statusFilter}-${ratingFilter}-${interestFilter}-${page}-${pageSize}`}
+                key={`${folder}-${lastSendOnly}-${dateFrom}-${dateTo}-${statusFilter}-${ratingFilter}-${interestFilter}-${scoreFilter}-${page}-${pageSize}`}
                 className="min-h-0 flex-1 overflow-y-auto"
               >
                 <ul className="divide-y divide-border">
