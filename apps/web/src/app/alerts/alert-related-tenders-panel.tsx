@@ -840,26 +840,6 @@ export function AlertRelatedTendersPanel({
 
                 {showFiltersUi && filtersOpen ? (
                   <div className="mb-3 flex shrink-0 flex-col gap-2 rounded-lg border border-border bg-muted/30 px-3 py-2.5 sm:flex-row sm:flex-wrap sm:items-end">
-                    {isEmbedded && alertOptions.length > 0 ? (
-                      <label className="flex min-w-[9rem] flex-col gap-1 text-xs text-muted-foreground">
-                        Alerta
-                        <select
-                          className="h-9 rounded-md border border-border bg-background px-2 text-sm text-foreground"
-                          value={alertFilter}
-                          onChange={(e) => {
-                            setAlertFilter(e.target.value);
-                            setPage(1);
-                          }}
-                        >
-                          <option value="all">Todas</option>
-                          {alertOptions.map((a) => (
-                            <option key={a.id} value={a.id}>
-                              {a.name}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                    ) : null}
                     <PublicationDateRange
                       idPrefix={`alert-related-${scopeId}-`}
                       label="Tiempo"
@@ -885,6 +865,26 @@ export function AlertRelatedTendersPanel({
                         setPage(1);
                       }}
                     />
+                    {isEmbedded && alertOptions.length > 0 ? (
+                      <label className="flex min-w-[9rem] flex-col gap-1 text-xs text-muted-foreground">
+                        Alerta
+                        <select
+                          className="h-9 rounded-md border border-border bg-background px-2 text-sm text-foreground"
+                          value={alertFilter}
+                          onChange={(e) => {
+                            setAlertFilter(e.target.value);
+                            setPage(1);
+                          }}
+                        >
+                          <option value="all">Todas</option>
+                          {alertOptions.map((a) => (
+                            <option key={a.id} value={a.id}>
+                              {a.name}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    ) : null}
                     <label className="flex min-w-[9rem] flex-col gap-1 text-xs text-muted-foreground">
                       Estado envío
                       <select
