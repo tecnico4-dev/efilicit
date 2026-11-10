@@ -76,10 +76,10 @@ function ActiveToggle({
           : "border-destructive/25 bg-destructive/15",
       )}
     >
-      {/* Etiqueta en el hueco libre (el círculo ocupa ~1.75rem en un extremo). */}
+      {/* Etiqueta en el hueco libre (el círculo ocupa ~1.5rem + márgenes). */}
       <span
         className={cn(
-          "pointer-events-none absolute inset-y-0 flex items-center justify-center text-[10px] font-semibold leading-none tracking-wide",
+          "pointer-events-none absolute inset-y-0 flex items-center justify-center text-[10px] font-semibold leading-none tracking-wide transition-[left,right,color] duration-200",
           active
             ? "left-1 right-7 text-link"
             : "left-7 right-1 text-destructive",
@@ -88,10 +88,11 @@ function ActiveToggle({
       >
         {active ? "Activa" : "Inactiva"}
       </span>
+      {/* Desliza con translate-x (left/right no anima bien). 5.25rem − 0.25rem − 1.5rem = 3.5rem. */}
       <span
         className={cn(
-          "pointer-events-none absolute top-1/2 flex size-6 -translate-y-1/2 items-center justify-center rounded-full bg-background shadow-sm transition-[left,right] duration-200",
-          active ? "right-0.5 left-auto" : "left-0.5 right-auto",
+          "pointer-events-none absolute left-0.5 top-1/2 flex size-6 -translate-y-1/2 items-center justify-center rounded-full bg-background shadow-sm transition-transform duration-200 ease-out will-change-transform",
+          active ? "translate-x-[3.5rem]" : "translate-x-0",
         )}
       >
         {active ? (
