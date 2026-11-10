@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Removed
+
+- Pipeline legacy Mis licitaciones: ruta `/my-tenders` (nav «eliminar»), queries `bid-pipeline` y tablas `bid_*` (migración local `20261110140000`). Queda solo `/mis-licitaciones` + `offer_*` / `company_*` ([ADR 026](docs/adr/026-mis-licitaciones-offer-cases.md)).
+
+### Changed
+
+- Mis licitaciones: se quita el subtítulo «Espacio de preparación de oferta · pipeline compartido Eficen».
+- Scripts locales `seed_import_eficen_*` escriben/`update` `offer_cases` (ya no `bid_cases`).
+
 ### Added
 
 - Valoraciones: dimensión de interés `propia` (Eficen) / `subcontrata` (`tender_ratings.interest_kind`); hay que elegir chip antes de las estrellas (si no, rebotan); compacto `3★ Eficen` / `3★ Sub`. En Relacionadas, filtro Interés solo con Valoradas.

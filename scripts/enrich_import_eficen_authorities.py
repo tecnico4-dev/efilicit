@@ -236,11 +236,11 @@ def main() -> int:
 
         n = conn.execute(
             """
-            update public.bid_cases bc
+            update public.offer_cases oc
             set stage = 'subcontrata', updated_at = now()
             from public.tenders t
             join public.tender_sources ts on ts.tender_id = t.id
-            where bc.tender_id = t.id
+            where oc.tender_id = t.id
               and ts.source_code = %s
               and t.title ilike %s
             """,
@@ -277,11 +277,11 @@ def main() -> int:
 
         verify = conn.execute(
             """
-            select left(t.title, 42), left(ca.name, 42), ca.platform_id, bc.stage
+            select left(t.title, 42), left(ca.name, 42), ca.platform_id, oc.stage
             from tenders t
             join tender_sources ts on ts.tender_id = t.id
             left join contracting_authorities ca on ca.id = t.contracting_authority_id
-            left join bid_cases bc on bc.tender_id = t.id
+            left join offer_cases oc on oc.tender_id = t.id
             where ts.source_code = %s
             order by t.title
             """,
@@ -289,7 +289,7 @@ def main() -> int:
         ).fetchall()
         print("--- verify ---")
         for r in verify:
-            print(f"{r[3]:14s} | {(r[1] or '-')[:40]:40s} | {r[0]}")
+            print(f"{(r[3] or '-'):14s} | {(r[1] or '-')[:40]:40s} | {r[0]}")
     return 0
 
 

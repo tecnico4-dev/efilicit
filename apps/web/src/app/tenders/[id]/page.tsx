@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { FavoriteToggle } from "@/components/favorites/favorite-toggle";
-import { BidCaseToggle } from "@/components/my-tenders/bid-case-toggle";
+import { OfferCaseToggle } from "@/components/mis-licitaciones/offer-case-toggle";
 import { PAGE_MAIN_CLASS } from "@/components/shell/page-width";
 import { ErrorState } from "@/components/ui/state-message";
 import { getSessionProfile, getSupabaseServerClient } from "@/lib/auth/session";
@@ -76,12 +76,6 @@ function backLinkFromParams(
     return {
       href: "/favorites",
       label: "← Volver a la lista de favoritos",
-    };
-  }
-  if (from === "my-tenders") {
-    return {
-      href: "/my-tenders",
-      label: "← Volver a eliminar",
     };
   }
   if (from === "mis-licitaciones") {
@@ -309,7 +303,7 @@ export default async function TenderDetailPage({
   let favoriteUserId: string | null = null;
   let displayName: string | null = null;
   let initiallyFavorited = false;
-  let existingBidCaseId: string | null = null;
+  let existingOfferCaseId: string | null = null;
   let initialRating: TenderRating | null = null;
   try {
     const profile = await getSessionProfile();
@@ -333,9 +327,9 @@ export default async function TenderDetailPage({
             })
           : Promise.resolve(null),
       ];
-      const [fav, bid, ratings] = await Promise.all(tasks);
+      const [fav, offer, ratings] = await Promise.all(tasks);
       initiallyFavorited = fav.data;
-      existingBidCaseId = bid.data;
+      existingOfferCaseId = offer.data;
       if (ratings && !ratings.error) {
         initialRating = ratings.data[tender.id] ?? null;
       }
@@ -377,11 +371,11 @@ export default async function TenderDetailPage({
         </h1>
         {favoriteUserId ? (
           <div className="flex flex-wrap items-center gap-2">
-            <BidCaseToggle
+            <OfferCaseToggle
               userId={favoriteUserId}
               displayName={displayName}
               tenderId={tender.id}
-              existingCaseId={existingBidCaseId}
+              existingCaseId={existingOfferCaseId}
             />
             <FavoriteToggle
               userId={favoriteUserId}

@@ -61,9 +61,6 @@ export default async function MisLicitacionesPage({ searchParams }: PageProps) {
       <h1 className="text-2xl font-semibold tracking-tight text-foreground">
         Mis licitaciones
       </h1>
-      <p className="mt-2 text-sm text-muted-foreground">
-        Espacio de preparación de oferta · pipeline compartido Eficen
-      </p>
 
       <div className={PAGE_TITLE_RULE}>
         <div className="flex flex-wrap items-center gap-2 border-b border-border pb-3">

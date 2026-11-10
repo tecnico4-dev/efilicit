@@ -4,9 +4,11 @@
 
 **Estado:** Aceptado
 
-**Reemplaza:** Ninguno (extiende [023](023-mis-licitaciones-pipeline-compartido.md); las tablas `bid_*` quedan como legacy de `/my-tenders` «eliminar» hasta borrado explícito)
+**Reemplaza:** Ninguno (extiende [023](023-mis-licitaciones-pipeline-compartido.md))
 
 **Reemplazado por:** Ninguno
+
+**Retirada legacy (2026-11-10):** UI `/my-tenders` y tablas `bid_*` eliminadas (migración `20261110140000_drop_bid_pipeline_legacy.sql`). Solo `offer_*` / `company_*` + `/mis-licitaciones`.
 
 ---
 
@@ -40,7 +42,7 @@ El espacio de oferta acordado (matriz requisito→evidencia, sobres, go/no-go, K
 8. RLS: `is_app_user()` (mismo tenant compartido que 023).
 9. Backfill one-shot: `bid_cases` → `offer_cases` (mismo `id`); checklist → `offer_requirements`.
 10. **Storage de ficheros** (bucket privado): aplazado; columnas `url` / `storage_path` listas.
-11. UI `/mis-licitaciones` usa solo este esquema; `/my-tenders` (eliminar) sigue en `bid_*` hasta retirada.
+11. UI `/mis-licitaciones` usa solo este esquema. Legacy `/my-tenders` + `bid_*` retirados (2026-11-10).
 
 ### Alternativas descartadas
 
@@ -58,15 +60,15 @@ El espacio de oferta acordado (matriz requisito→evidencia, sobres, go/no-go, K
 
 ### Negativas / riesgos
 
-- Dos pipelines en paralelo hasta borrar `bid_*`.
 - UI aún no cubre todas las tablas (esquema adelantado a la interfaz).
+- (Histórico) Hubo dos pipelines en paralelo hasta retirar `bid_*` (2026-11-10).
 
 ## Riesgos
 
 | Riesgo | Mitigación |
 |---|---|
 | Esquema amplio sin UI | Migraciones versionadas; tablas vacías OK; cablear por incremento |
-| Desalineación bid ↔ offer | Altas nuevas solo en `offer_cases`; retirar `bid_*` pronto |
+| Desalineación bid ↔ offer | Mitigado: `bid_*` retiradas (2026-11-10); altas solo en `offer_cases` |
 
 ## Referencias
 

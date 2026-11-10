@@ -67,12 +67,6 @@ export function AppHeader({
 
         <div className="flex items-center gap-2">
           <Link
-            href="/my-tenders"
-            className={navClass(pathname.startsWith("/my-tenders"))}
-          >
-            eliminar
-          </Link>
-          <Link
             href="/mis-licitaciones"
             className={navClass(pathname.startsWith("/mis-licitaciones"))}
           >

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Seed local: histórico Eficen → tenders/tender_sources/bid_cases (import_eficen).
+"""Seed local: histórico Eficen → tenders/tender_sources/offer_cases (import_eficen).
 
 Lee el Excel y carpetas ADJ-* del Escritorio (fuera del repo). Idempotente por
 ``(import_eficen, source_tender_id)``.
@@ -305,7 +305,7 @@ def upsert_row(conn: psycopg.Connection, row: ImportRow) -> str:
 
     conn.execute(
         """
-        insert into public.bid_cases (
+        insert into public.offer_cases (
           tender_id, stage, outcome_on, notes
         ) values (%s, %s, %s, null)
         on conflict (tender_id) do nothing
@@ -332,15 +332,17 @@ def main() -> int:
 
     inserted = skipped_exist = 0
     with psycopg.connect(args.db_url) as conn:
-        # Ensure bid tables exist
         n = conn.execute(
             """
             select count(*) from information_schema.tables
-            where table_schema='public' and table_name='bid_cases'
+            where table_schema='public' and table_name='offer_cases'
             """
         ).fetchone()
         if not n or n[0] == 0:
-            print("ERROR: falta public.bid_cases — restaura la migración 20261030120000", file=sys.stderr)
+            print(
+                "ERROR: falta public.offer_cases — aplica migraciones locales ADR 026",
+                file=sys.stderr,
+            )
             return 1
 
         for row in all_rows:

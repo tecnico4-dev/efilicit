@@ -9,7 +9,7 @@ import {
 } from "@/lib/queries";
 import { formatCountdown } from "@/lib/bid-countdown";
 import { formatDateMadrid } from "@/lib/datetime";
-import { CaseStageBadge } from "@/components/my-tenders/case-stage-badge";
+import { CaseStageBadge } from "@/components/mis-licitaciones/case-stage-badge";
 import { cn } from "@/lib/cn";
 
 type Scope = "active" | "historic";

@@ -6,7 +6,7 @@
 
 **Reemplaza:** Ninguno
 
-**Reemplazado por:** Parcialmente supersedido en UI/nuevo esquema por [026](026-mis-licitaciones-offer-cases.md) (`offer_*`). Tablas `bid_*` = legacy hasta retirada.
+**Reemplazado por:** [026](026-mis-licitaciones-offer-cases.md) (`offer_*` / `/mis-licitaciones`). Tablas `bid_*` y UI `/my-tenders` **retiradas** (migración `20261110140000`, 2026-11-10).
 
 ---
 

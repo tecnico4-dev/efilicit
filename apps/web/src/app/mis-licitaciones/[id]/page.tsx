@@ -16,9 +16,9 @@ import { formatDateMadrid, formatDateTimeMadrid } from "@/lib/datetime";
 import { formatTenderStatus } from "@/lib/tender-labels";
 import { PAGE_MAIN_CLASS } from "@/components/shell/page-width";
 import { ErrorState } from "@/components/ui/state-message";
-import { CaseStageBadge } from "@/components/my-tenders/case-stage-badge";
-import { TenderFichaModalButton } from "@/components/my-tenders/tender-ficha-modal";
+import { CaseStageBadge } from "@/components/mis-licitaciones/case-stage-badge";
 import { DetailTabs } from "@/components/mis-licitaciones/detail-tabs";
+import { TenderFichaModalButton } from "@/components/mis-licitaciones/tender-ficha-modal";
 import { cn } from "@/lib/cn";
 
 export const dynamic = "force-dynamic";

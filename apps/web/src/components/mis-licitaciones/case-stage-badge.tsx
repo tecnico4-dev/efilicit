@@ -1,4 +1,4 @@
-import { BID_STAGE_LABELS, type BidStage } from "@/lib/queries";
+import { OFFER_STAGE_LABELS, type OfferStage } from "@/lib/queries";
 import { cn } from "@/lib/cn";
 
 const TONE: Record<string, string> = {
@@ -15,18 +15,10 @@ const TONE: Record<string, string> = {
   desierta: "border-border bg-muted text-muted-foreground",
 };
 
-const EXTRA_LABELS: Record<string, string> = {
-  analisis: "Análisis / Go-No go",
-  en_evaluacion: "En evaluación",
-  requerimiento: "Requerimiento",
-  desierta: "Desierta",
-};
-
 function stageLabel(stage: string): string {
-  if (stage in BID_STAGE_LABELS) {
-    return BID_STAGE_LABELS[stage as BidStage];
+  if (stage in OFFER_STAGE_LABELS) {
+    return OFFER_STAGE_LABELS[stage as OfferStage];
   }
-  if (stage in EXTRA_LABELS) return EXTRA_LABELS[stage];
   return stage.replaceAll("_", " ");
 }
 

@@ -10,7 +10,7 @@ import { createOfferCase } from "@/lib/queries";
  * Añade la licitación al pipeline de oferta (Mis licitaciones / offer_cases).
  * Si ya existe, enlaza al expediente.
  */
-export function BidCaseToggle({
+export function OfferCaseToggle({
   userId,
   displayName,
   tenderId,
