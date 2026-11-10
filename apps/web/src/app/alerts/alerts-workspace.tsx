@@ -10,8 +10,8 @@ type AlertsTab = "alerts" | "coincidences";
 
 /**
  * Mis alertas | Coincidencias (+ frecuencia a la derecha).
- * «Coincidencias» = misma UI que Relacionadas, para todas las alertas
- * (misma papelera `alert_related_trash`).
+ * «Coincidencias» = misma UI que Relacionadas, dedupe por licitación
+ * (basura ahí afecta a todas las colas de esa licitación).
  */
 export function AlertsWorkspace({
   userId,

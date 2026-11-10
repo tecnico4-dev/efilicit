@@ -16,6 +16,7 @@ import { cn } from "@/lib/cn";
 import { formatCpvListPreview } from "@/lib/cpv";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import {
+  dedupeAlertRelatedByTender,
   deleteOwnTenderRating,
   formatNotificationTrashExpiry,
   isAlertRelatedActive,
@@ -23,6 +24,7 @@ import {
   listOwnAlertRelatedQueueItems,
   listOwnTenderRatings,
   purgeOwnAlertRelatedTrashWindow,
+  queueIdsForTender,
   restoreOwnAlertRelatedFromTrash,
   restoreOwnAlertRelatedManyFromTrash,
   trashOwnAlertRelated,
@@ -351,7 +353,8 @@ function RelatedItemRow({
 /**
  * Licitaciones de `notification_queue` (una alerta o todas).
  * Activas | Papelera + filtros. Papelera = `alert_related_trash` (no el buzón).
- * `modal` = overlay por alerta; `embedded` = pestaña Coincidencias en /alerts.
+ * `modal` = Relacionadas por alerta (1 fila por cola).
+ * `embedded` = Coincidencias (1 fila por licitación; basura/restaurar afecta a todas las colas de esa licitación).
  */
 export function AlertRelatedTendersPanel({
   alertId,
@@ -564,18 +567,27 @@ export function AlertRelatedTendersPanel({
     return items.filter((i) => i.alertId === alertFilter);
   }, [items, isEmbedded, alertFilter]);
 
-  const activeItems = useMemo(
+  /** Filas de cola activas en el alcance (alerta / Todas). */
+  const activeQueueItems = useMemo(
     () => scopedItems.filter((i) => isAlertRelatedActive(i)),
     [scopedItems],
   );
-  const trashItems = useMemo(
-    () => scopedItems.filter((i) => isAlertRelatedInTrashWindow(i)),
-    [scopedItems],
-  );
+  const trashQueueItems = useMemo(() => {
+    let list = scopedItems.filter((i) => isAlertRelatedInTrashWindow(i));
+    // Coincidencias · Todas: si sigue activa en otra alerta, no va a Papelera.
+    if (isEmbedded && alertFilter === "all") {
+      const stillActive = new Set(
+        items.filter((i) => isAlertRelatedActive(i)).map((i) => i.tenderId),
+      );
+      list = list.filter((i) => !stillActive.has(i.tenderId));
+    }
+    return list;
+  }, [scopedItems, items, isEmbedded, alertFilter]);
+
   /** Sin pendientes, el filtro «Estado envío» sobra. */
   const hasPendingItems = useMemo(
-    () => activeItems.some((i) => i.status === "pending"),
-    [activeItems],
+    () => activeQueueItems.some((i) => i.status === "pending"),
+    [activeQueueItems],
   );
 
   useEffect(() => {
@@ -585,12 +597,12 @@ export function AlertRelatedTendersPanel({
   }, [hasPendingItems, statusFilter]);
 
   const lastSendItems = useMemo(
-    () => itemsFromLastSend(activeItems),
-    [activeItems],
+    () => itemsFromLastSend(activeQueueItems),
+    [activeQueueItems],
   );
 
-  const filteredActive = useMemo(() => {
-    let list = activeItems;
+  const filteredActiveRaw = useMemo(() => {
+    let list = activeQueueItems;
 
     if (lastSendOnly) {
       list = lastSendItems;
@@ -627,7 +639,7 @@ export function AlertRelatedTendersPanel({
 
     return list;
   }, [
-    activeItems,
+    activeQueueItems,
     lastSendItems,
     lastSendOnly,
     dateFrom,
@@ -637,6 +649,28 @@ export function AlertRelatedTendersPanel({
     interestFilter,
     ratings,
   ]);
+
+  const activeItems = useMemo(
+    () =>
+      isEmbedded
+        ? dedupeAlertRelatedByTender(activeQueueItems)
+        : activeQueueItems,
+    [isEmbedded, activeQueueItems],
+  );
+  const trashItems = useMemo(
+    () =>
+      isEmbedded
+        ? dedupeAlertRelatedByTender(trashQueueItems)
+        : trashQueueItems,
+    [isEmbedded, trashQueueItems],
+  );
+  const filteredActive = useMemo(
+    () =>
+      isEmbedded
+        ? dedupeAlertRelatedByTender(filteredActiveRaw)
+        : filteredActiveRaw,
+    [isEmbedded, filteredActiveRaw],
+  );
 
   const visible = folder === "trash" ? trashItems : filteredActive;
   const total = visible.length;
@@ -664,36 +698,57 @@ export function AlertRelatedTendersPanel({
     setPage(1);
   }
 
+  /** En Coincidencias, basura/restaurar afecta a todas las colas de esa licitación. */
+  function expandQueueIdsForAction(
+    queueId: string,
+    predicate: (item: AlertRelatedQueueItem) => boolean,
+  ): string[] {
+    if (!isEmbedded) return [queueId];
+    const target = items.find((i) => i.queueId === queueId);
+    if (!target) return [queueId];
+    const ids = queueIdsForTender(items, target.tenderId, predicate);
+    return ids.length > 0 ? ids : [queueId];
+  }
+
   async function onTrashOne(queueId: string) {
     if (actionPending) return;
+    const ids = expandQueueIdsForAction(queueId, (i) => i.trashedAt == null);
     setActionPending(true);
     const client = createSupabaseBrowserClient();
-    const { error: err } = await trashOwnAlertRelated(client, {
-      userId,
-      queueId,
-    });
+    const { error: err } =
+      ids.length === 1
+        ? await trashOwnAlertRelated(client, { userId, queueId: ids[0]! })
+        : await trashOwnAlertRelatedMany(client, { userId, queueIds: ids });
     setActionPending(false);
     if (err) {
       setError(err.message);
       return;
     }
+    const now = new Date().toISOString();
     setItems((prev) =>
       prev.map((i) =>
-        i.queueId === queueId
-          ? { ...i, trashedAt: new Date().toISOString() }
-          : i,
+        ids.includes(i.queueId) ? { ...i, trashedAt: now } : i,
       ),
     );
   }
 
   async function onRestoreOne(queueId: string) {
     if (actionPending) return;
+    const ids = expandQueueIdsForAction(queueId, (i) =>
+      isAlertRelatedInTrashWindow(i),
+    );
     setActionPending(true);
     const client = createSupabaseBrowserClient();
-    const { error: err } = await restoreOwnAlertRelatedFromTrash(client, {
-      userId,
-      queueId,
-    });
+    const { error: err } =
+      ids.length === 1
+        ? await restoreOwnAlertRelatedFromTrash(client, {
+            userId,
+            queueId: ids[0]!,
+          })
+        : await restoreOwnAlertRelatedManyFromTrash(client, {
+            userId,
+            queueIds: ids,
+          });
     setActionPending(false);
     if (err) {
       setError(err.message);
@@ -701,7 +756,7 @@ export function AlertRelatedTendersPanel({
     }
     setItems((prev) =>
       prev.map((i) =>
-        i.queueId === queueId ? { ...i, trashedAt: null } : i,
+        ids.includes(i.queueId) ? { ...i, trashedAt: null } : i,
       ),
     );
   }
@@ -710,7 +765,13 @@ export function AlertRelatedTendersPanel({
     if (actionPending || activeItems.length === 0) return;
     setActionPending(true);
     const client = createSupabaseBrowserClient();
-    const ids = activeItems.map((i) => i.queueId);
+    // Coincidencias: vaciar también las colas de otras alertas para esas licitaciones.
+    const tenderIds = new Set(activeItems.map((i) => i.tenderId));
+    const ids = isEmbedded
+      ? items
+          .filter((i) => tenderIds.has(i.tenderId) && i.trashedAt == null)
+          .map((i) => i.queueId)
+      : activeQueueItems.map((i) => i.queueId);
     const { error: err } = await trashOwnAlertRelatedMany(client, {
       userId,
       queueIds: ids,
@@ -763,7 +824,15 @@ export function AlertRelatedTendersPanel({
     if (actionPending || trashItems.length === 0) return;
     setActionPending(true);
     const client = createSupabaseBrowserClient();
-    const ids = trashItems.map((i) => i.queueId);
+    const tenderIds = new Set(trashItems.map((i) => i.tenderId));
+    const ids = isEmbedded
+      ? items
+          .filter(
+            (i) =>
+              tenderIds.has(i.tenderId) && isAlertRelatedInTrashWindow(i),
+          )
+          .map((i) => i.queueId)
+      : trashQueueItems.map((i) => i.queueId);
     const { error: err } = await restoreOwnAlertRelatedManyFromTrash(client, {
       userId,
       queueIds: ids,
@@ -790,7 +859,15 @@ export function AlertRelatedTendersPanel({
     if (!ok) return;
     setActionPending(true);
     const client = createSupabaseBrowserClient();
-    const ids = trashItems.map((i) => i.queueId);
+    const tenderIds = new Set(trashItems.map((i) => i.tenderId));
+    const ids = isEmbedded
+      ? items
+          .filter(
+            (i) =>
+              tenderIds.has(i.tenderId) && isAlertRelatedInTrashWindow(i),
+          )
+          .map((i) => i.queueId)
+      : trashQueueItems.map((i) => i.queueId);
     const { error: err } = await purgeOwnAlertRelatedTrashWindow(client, {
       userId,
       queueIds: ids,
@@ -1097,7 +1174,11 @@ export function AlertRelatedTendersPanel({
                 <ul className="divide-y divide-border">
                   {pageItems.map((item) => (
                     <RelatedItemRow
-                      key={item.queueId}
+                      key={
+                        isEmbedded
+                          ? `${item.tenderId}:${folder}`
+                          : item.queueId
+                      }
                       item={item}
                       rating={ratings[item.tenderId] ?? null}
                       inTrash={folder === "trash"}

@@ -393,3 +393,33 @@ export function isAlertRelatedInTrashWindow(
   if (item.trashedAt == null) return false;
   return isNotificationInTrashWindow(item.trashedAt, now);
 }
+
+/**
+ * Una fila por licitación (conserva el orden de `items`, p. ej. `created_at` desc).
+ * Para Coincidencias; Relacionadas por alerta no lo usa.
+ */
+export function dedupeAlertRelatedByTender(
+  items: AlertRelatedQueueItem[],
+): AlertRelatedQueueItem[] {
+  const seen = new Set<string>();
+  const out: AlertRelatedQueueItem[] = [];
+  for (const item of items) {
+    if (seen.has(item.tenderId)) continue;
+    seen.add(item.tenderId);
+    out.push(item);
+  }
+  return out;
+}
+
+/** `queue_id` de una licitación (opcionalmente filtrados). */
+export function queueIdsForTender(
+  items: AlertRelatedQueueItem[],
+  tenderId: string,
+  predicate?: (item: AlertRelatedQueueItem) => boolean,
+): string[] {
+  return items
+    .filter(
+      (i) => i.tenderId === tenderId && (predicate ? predicate(i) : true),
+    )
+    .map((i) => i.queueId);
+}
