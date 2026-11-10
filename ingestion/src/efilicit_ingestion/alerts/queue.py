@@ -1,8 +1,11 @@
 """Cola de notificaciones e idempotencia (Paso 7.2 / 8).
 
 Contrato compartido por la cola en memoria (tests) y Postgres
-(``PostgresNotificationQueue``). La clave evita reenviar el mismo
-match alerta×licitación en el mismo periodo de digest.
+(``PostgresNotificationQueue``). La clave evita reencolar el mismo
+match alerta×licitación (una sola vez; no “renace” al cruzar día/semana).
+
+El periodo de digest (día / semana ISO) solo gobierna *cuándo* se drena
+el correo (``should_send_digest`` / inbox), no la idempotencia de cola.
 
 Frecuencias de cuenta (ADR 013): ``diaria`` | ``semanal``.
 ``instantanea`` queda fuera del MVP (BACKLOG).
@@ -74,17 +77,15 @@ def make_idempotency_key(
     *,
     alert_id: str,
     tender_id: str,
-    digest: str,
 ) -> str:
-    """Clave estable por alerta+licitación+periodo (re-run del job no reenvía)."""
-    return f"alert:{alert_id}:tender:{tender_id}:digest:{digest}"
+    """Clave estable por alerta+licitación (re-run / nuevo periodo no reencola)."""
+    return f"alert:{alert_id}:tender:{tender_id}"
 
 
 def match_to_notification(
     match: AlertMatch,
     tender: TenderCandidate,
     *,
-    digest: str,
     frequency: DigestFrequency = "daily",
     alert_name: str | None = None,
 ) -> NotificationItem:
@@ -92,7 +93,6 @@ def match_to_notification(
     key = make_idempotency_key(
         alert_id=match.alert_id,
         tender_id=match.tender_id,
-        digest=digest,
     )
     value = tender.estimated_value
     name = (alert_name or "").strip()
@@ -112,7 +112,6 @@ def match_to_notification(
             "score": match.score,
             "priority": match.priority,
             "reasons": list(match.reasons),
-            "digest": digest,
             "frequency": (frequency or "daily").strip().lower(),
             "channel": "email",
             "kind": "alert_match",

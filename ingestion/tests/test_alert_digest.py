@@ -281,14 +281,14 @@ def test_drain_records_inbox_aviso_one_per_email() -> None:
     assert len(inbox.entries) == 1
 
 
-def test_drain_one_email_when_payload_digests_differ() -> None:
-    """Cambio diaria↔semanal: backlog con periodos distintos → 1 correo/usuario."""
+def test_drain_one_email_for_several_pending_items() -> None:
+    """Varias filas pending del mismo usuario → 1 correo."""
     from efilicit_ingestion.alerts.models import NotificationItem
     from efilicit_ingestion.alerts.queue import make_idempotency_key
 
     queue = InMemoryNotificationQueue()
-    for tid, period in (("t-a", "2026-W46"), ("t-b", "2026-11-10"), ("t-c", "2026-11-09")):
-        key = make_idempotency_key(alert_id="alert-1", tender_id=tid, digest=period)
+    for tid in ("t-a", "t-b", "t-c"):
+        key = make_idempotency_key(alert_id="alert-1", tender_id=tid)
         queue.enqueue(
             NotificationItem(
                 user_id="user-1",
@@ -299,8 +299,7 @@ def test_drain_one_email_when_payload_digests_differ() -> None:
                     "alert_id": "alert-1",
                     "alert_name": "Software",
                     "title": f"Titulo {tid}",
-                    "digest": period,
-                    "frequency": "semanal" if period.startswith("2026-W") else "diaria",
+                    "frequency": "diaria",
                     "channel": "email",
                     "kind": "alert_match",
                 },
@@ -342,9 +341,7 @@ def test_drain_twice_does_not_resend() -> None:
     third = drain_daily_digests(queue=queue, sender=sender, directory=directory)
     assert third.digests_sent == 0
     assert len(sender.sent) == 1
-    key = make_idempotency_key(
-        alert_id="alert-1", tender_id="t-soft", digest="2026-09-30"
-    )
+    key = make_idempotency_key(alert_id="alert-1", tender_id="t-soft")
     assert queue.get(key) is not None
     assert queue.get(key).status == "sent"  # type: ignore[union-attr]
 
@@ -367,8 +364,7 @@ def test_weekly_tuesday_enqueues_without_sending() -> None:
     queue = InMemoryNotificationQueue()
     freqs = {"user-1": "semanal"}
     _enqueue_software_match(queue, job_date=TUESDAY, frequencies=freqs)
-    week = digest_period("semanal", TUESDAY)
-    key = make_idempotency_key(alert_id="alert-1", tender_id="t-soft", digest=week)
+    key = make_idempotency_key(alert_id="alert-1", tender_id="t-soft")
     assert queue.get(key) is not None
     assert queue.get(key).status == "pending"  # type: ignore[union-attr]
 
@@ -446,6 +442,6 @@ def test_weekly_same_tender_same_week_is_idempotent() -> None:
     assert second.enqueued_new == 0
     assert second.enqueued_existing == 1
     assert len(queue.all_items()) == 1
-    week = digest_period("semanal", MONDAY)
-    key = make_idempotency_key(alert_id="alert-1", tender_id="t-soft", digest=week)
+    key = make_idempotency_key(alert_id="alert-1", tender_id="t-soft")
     assert queue.get(key) is not None
+    assert "digest" not in queue.get(key).payload  # type: ignore[union-attr]

@@ -130,7 +130,6 @@ begin
   -- Cola como si el digest ya se hubiera enviado (opcional, coherencia).
   delete from public.notification_queue
   where user_id = v_alice
-    and payload->>'digest' = v_digest
     and payload->>'kind' = 'alert_match_demo_stars';
 
   insert into public.notification_queue (
@@ -138,46 +137,46 @@ begin
   ) values
     (
       v_alice, v_alert, 'sent',
-      'demo-stars:' || v_t1::text || ':' || v_digest, 1,
+      'alert:' || v_alert::text || ':tender:' || v_t1::text, 1,
       jsonb_build_object(
         'tender_id', v_t1, 'alert_id', v_alert, 'title', 'Mantenimiento de software de gestión municipal',
-        'digest', v_digest, 'frequency', 'diaria', 'channel', 'email', 'kind', 'alert_match_demo_stars'
+        'frequency', 'diaria', 'channel', 'email', 'kind', 'alert_match_demo_stars'
       ),
       now() - interval '1 hour', now() - interval '30 minutes'
     ),
     (
       v_alice, v_alert, 'sent',
-      'demo-stars:' || v_t2::text || ':' || v_digest, 1,
+      'alert:' || v_alert::text || ':tender:' || v_t2::text, 1,
       jsonb_build_object(
         'tender_id', v_t2, 'alert_id', v_alert, 'title', 'Suministro de material de oficina ecológico',
-        'digest', v_digest, 'frequency', 'diaria', 'channel', 'email', 'kind', 'alert_match_demo_stars'
+        'frequency', 'diaria', 'channel', 'email', 'kind', 'alert_match_demo_stars'
       ),
       now() - interval '1 hour', now() - interval '30 minutes'
     ),
     (
       v_alice, v_alert, 'sent',
-      'demo-stars:' || v_t3::text || ':' || v_digest, 1,
+      'alert:' || v_alert::text || ':tender:' || v_t3::text, 1,
       jsonb_build_object(
         'tender_id', v_t3, 'alert_id', v_alert, 'title', 'Servicio de limpieza de edificios administrativos',
-        'digest', v_digest, 'frequency', 'diaria', 'channel', 'email', 'kind', 'alert_match_demo_stars'
+        'frequency', 'diaria', 'channel', 'email', 'kind', 'alert_match_demo_stars'
       ),
       now() - interval '1 hour', now() - interval '30 minutes'
     ),
     (
       v_alice, v_alert, 'sent',
-      'demo-stars:' || v_t4::text || ':' || v_digest, 1,
+      'alert:' || v_alert::text || ':tender:' || v_t4::text, 1,
       jsonb_build_object(
         'tender_id', v_t4, 'alert_id', v_alert, 'title', 'Desarrollo de portal web de contratación',
-        'digest', v_digest, 'frequency', 'diaria', 'channel', 'email', 'kind', 'alert_match_demo_stars'
+        'frequency', 'diaria', 'channel', 'email', 'kind', 'alert_match_demo_stars'
       ),
       now() - interval '1 hour', now() - interval '30 minutes'
     ),
     (
       v_alice, v_alert, 'sent',
-      'demo-stars:' || v_t5::text || ':' || v_digest, 1,
+      'alert:' || v_alert::text || ':tender:' || v_t5::text, 1,
       jsonb_build_object(
         'tender_id', v_t5, 'alert_id', v_alert, 'title', 'Formación en ciberseguridad para personal técnico',
-        'digest', v_digest, 'frequency', 'diaria', 'channel', 'email', 'kind', 'alert_match_demo_stars'
+        'frequency', 'diaria', 'channel', 'email', 'kind', 'alert_match_demo_stars'
       ),
       now() - interval '1 hour', now() - interval '30 minutes'
     );

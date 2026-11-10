@@ -10,7 +10,7 @@ Frecuencias (ADR 013):
 - weekly: solo lunes UTC; el resto deja pending/failed.
 - instant: fuera del MVP.
 
-Agrupación al enviar: por ``user_id`` (no por ``payload.digest``). Así un
+Agrupación al enviar: por ``user_id``. Así un
 cambio diaria↔semanal no genera varios correos por periodos viejos en cola.
 El periodo del aviso in-app / tags es el de la frecuencia actual + ``job_date``.
 
@@ -471,7 +471,7 @@ def group_drainable_by_user(
     return dict(groups)
 
 
-# Compat: nombre antiguo (antes agrupaba también por payload.digest).
+# Compat: nombre antiguo (antes agrupaba también por periodo en payload).
 group_drainable_by_user_digest = group_drainable_by_user
 group_pending_by_user_digest = group_drainable_by_user
 
@@ -514,7 +514,7 @@ def drain_daily_digests(
 
     - daily: siempre que haya ítems drainable.
     - weekly: solo lunes UTC; el resto de días no envía.
-    Un usuario = un correo (se ignora ``payload.digest`` al agrupar).
+    Un usuario = un correo. El periodo del job etiqueta inbox/tags; no reencola.
     Reejecutar tras un envío OK no reenvía: los ítems ya no están drainable.
     Tras fallo: ``failed`` reintentable o ``cancelled`` si agota el umbral.
     Si ``inbox`` está definido, materializa un aviso in-app (1 = 1 correo).

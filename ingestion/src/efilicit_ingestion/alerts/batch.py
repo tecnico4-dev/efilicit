@@ -1,14 +1,12 @@
 """Batch de alertas: ventana de tenders → match → notification_queue (Paso 7).
 
 No envía email (eso es Paso 8 / ``drain_daily_digests``). Solo evalúa y encola
-con ``idempotency_key`` estable por alerta+licitación+periodo de digest.
+con ``idempotency_key`` estable por alerta+licitación.
 
-El periodo depende de ``users.digest_frequency`` (ADR 013):
+Un re-run del job (u otro día/semana) no duplica filas ni reabre ítems ya
+``sent``: la misma alerta no vuelve a encolar la misma licitación.
 
-- ``diaria`` → YYYY-MM-DD
-- ``semanal`` → semana ISO ``YYYY-Www``
-
-Así un re-run del job no duplica filas ni reabre ítems ya ``sent``.
+La cadencia de envío sigue en ``users.digest_frequency`` (ADR 013) al drenar.
 """
 
 from __future__ import annotations
@@ -25,24 +23,8 @@ from efilicit_ingestion.alerts.models import (
 )
 from efilicit_ingestion.alerts.queue import (
     NotificationQueue,
-    digest_day,
-    digest_period,
     match_to_notification,
 )
-
-
-def _job_date(digest: date | datetime | str | None) -> date | None:
-    """Normaliza el ancla del job; strings ISO-semana no son fechas parseables aquí."""
-    if digest is None:
-        return None
-    if isinstance(digest, datetime):
-        return digest.date()
-    if isinstance(digest, date):
-        return digest
-    # Periodo explícito de tests (YYYY-MM-DD); claves weekly ISO no son fechas.
-    if len(digest) == 10 and digest[4] == "-" and digest[7] == "-":
-        return date.fromisoformat(digest)
-    return None
 
 
 def run_alert_batch(
@@ -55,22 +37,16 @@ def run_alert_batch(
 ) -> BatchResult:
     """Evalúa alertas activas contra licitaciones de la ventana y encola matches.
 
-    No envía email. Idempotente vía ``idempotency_key``.
-    El periodo de digest es por cuenta: diaria → día; semanal → semana ISO.
+    No envía email. Idempotente vía ``idempotency_key`` (alerta+licitación).
+    ``digest`` se acepta por compatibilidad con el job runner; no entra en la clave
+    ni en el payload.
     """
     from efilicit_ingestion.alerts.queue import normalize_digest_frequency
 
+    _ = digest  # ancla del job runner; la idempotencia ya no depende del periodo
     freqs = {
         k: normalize_digest_frequency(v) for k, v in (frequencies or {}).items()
     }
-    job_date = _job_date(digest)
-    if isinstance(digest, str) and job_date is None and not freqs:
-        default_period = digest
-    elif job_date is not None:
-        default_period = digest_day(job_date)
-    else:
-        default_period = digest_day(None)
-        job_date = date.fromisoformat(default_period)
 
     tenders_by_id = {t.id: t for t in tenders}
     result = BatchResult(alerts_seen=len(alerts), tenders_seen=len(tenders))
@@ -86,11 +62,6 @@ def run_alert_batch(
             continue
 
         freq = freqs.get(alert.user_id, "diaria")
-        if freqs and job_date is not None:
-            period = digest_period(freq, job_date)
-        else:
-            period = default_period
-
         matches = match_alert_to_tenders(alert, tenders)
         for match in matches:
             tender = tenders_by_id.get(match.tender_id)
@@ -100,7 +71,6 @@ def run_alert_batch(
             item = match_to_notification(
                 match,
                 tender,
-                digest=period,
                 frequency=freq,
                 alert_name=alert.name,
             )

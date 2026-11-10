@@ -48,7 +48,7 @@ type InterestFilter = "all" | TenderInterestKind;
 
 /**
  * Ítems `sent` del último lote de esta alerta: ancla por `sent_at` máximo
- * y agrupa por `digestPeriod` (fallback: mismo `sent_at`).
+ * y agrupa por `digestPeriod` legacy si existe (si no, mismo `sent_at`).
  */
 function itemsFromLastSend(
   items: AlertRelatedQueueItem[],
