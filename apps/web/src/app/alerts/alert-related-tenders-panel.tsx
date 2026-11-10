@@ -1,6 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import Link from "next/link";
 import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/button";
@@ -182,6 +188,45 @@ function FilterIcon({ className }: { className?: string }) {
 const destructiveOutlineBtn =
   "border-destructive text-destructive hover:bg-destructive/10 hover:text-destructive";
 
+/** Anchos reservados (px) para que quepan Tiempo + Estado + Valoración + Interés. */
+const FILTER_TIEMPO_PX = 13.75 * 16;
+const FILTER_FIELD_PX = 9 * 16;
+const FILTER_GAP_PX = 8;
+const FILTER_ROW_PAD_PX = 24; // px-3 × 2
+const FILTER_SELECT_CHROME_PX = 40; // padding + borde + flecha nativa
+const FILTER_ALERT_MIN_PX = 9 * 16;
+
+function measureAlertSelectNeededPx(names: string[]): number {
+  if (typeof document === "undefined") return FILTER_ALERT_MIN_PX;
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return FILTER_ALERT_MIN_PX;
+  const sample = document.body;
+  const style = sample ? getComputedStyle(sample) : null;
+  const family =
+    style?.fontFamily ||
+    'ui-sans-serif, system-ui, sans-serif, "Segoe UI", Roboto';
+  ctx.font = `400 14px ${family}`;
+  let longest = ctx.measureText("Todas").width;
+  for (const name of names) {
+    longest = Math.max(longest, ctx.measureText(name).width);
+  }
+  return Math.ceil(longest + FILTER_SELECT_CHROME_PX);
+}
+
+function maxAlertSelectWidthPx(containerInnerWidth: number): number {
+  // Tiempo + Alerta + Estado + Valoración + Interés → 4 gaps entre 5 controles.
+  const reservedOthers =
+    FILTER_TIEMPO_PX +
+    FILTER_FIELD_PX * 3 +
+    FILTER_GAP_PX * 4 +
+    FILTER_ROW_PAD_PX;
+  return Math.max(
+    FILTER_ALERT_MIN_PX,
+    Math.floor(containerInnerWidth - reservedOthers),
+  );
+}
+
 function RelatedItemRow({
   item,
   rating,
@@ -344,6 +389,11 @@ export function AlertRelatedTendersPanel({
   const [alertOptions, setAlertOptions] = useState<
     { id: string; name: string }[]
   >([]);
+  /** Ancho fijo del select Alerta mientras la pestaña Coincidencias está abierta. */
+  const [alertSelectWidthPx, setAlertSelectWidthPx] = useState<number | null>(
+    null,
+  );
+  const contentRef = useRef<HTMLDivElement>(null);
   const [pageSize, setPageSize] = useState<PageSize>(DEFAULT_PAGE_SIZE);
   const [page, setPage] = useState(1);
   const [actionPending, setActionPending] = useState(false);
@@ -354,6 +404,32 @@ export function AlertRelatedTendersPanel({
   } | null>(null);
 
   useEffect(() => setMounted(true), []);
+
+  // Ancho del desplegable Alerta: una vez por apertura de Coincidencias.
+  useEffect(() => {
+    if (
+      !isEmbedded ||
+      loading ||
+      alertOptions.length === 0 ||
+      alertSelectWidthPx != null
+    ) {
+      return;
+    }
+    let cancelled = false;
+    const frame = window.requestAnimationFrame(() => {
+      const el = contentRef.current;
+      if (cancelled || !el || el.clientWidth <= 0) return;
+      const needed = measureAlertSelectNeededPx(
+        alertOptions.map((a) => a.name),
+      );
+      const capped = Math.min(needed, maxAlertSelectWidthPx(el.clientWidth));
+      setAlertSelectWidthPx(Math.max(FILTER_ALERT_MIN_PX, capped));
+    });
+    return () => {
+      cancelled = true;
+      window.cancelAnimationFrame(frame);
+    };
+  }, [isEmbedded, loading, alertOptions, alertSelectWidthPx]);
 
   useEffect(() => {
     if (!listUndo) return;
@@ -866,10 +942,17 @@ export function AlertRelatedTendersPanel({
                       }}
                     />
                     {isEmbedded && alertOptions.length > 0 ? (
-                      <label className="flex min-w-[9rem] flex-col gap-1 text-xs text-muted-foreground">
+                      <label
+                        className="flex flex-col gap-1 text-xs text-muted-foreground"
+                        style={
+                          alertSelectWidthPx != null
+                            ? { width: alertSelectWidthPx }
+                            : { minWidth: FILTER_ALERT_MIN_PX }
+                        }
+                      >
                         Alerta
                         <select
-                          className="h-9 rounded-md border border-border bg-background px-2 text-sm text-foreground"
+                          className="h-9 w-full truncate rounded-md border border-border bg-background px-2 text-sm text-foreground"
                           value={alertFilter}
                           onChange={(e) => {
                             setAlertFilter(e.target.value);
@@ -1082,7 +1165,12 @@ export function AlertRelatedTendersPanel({
             ) : null}
           </h2>
         </div>
-        <div className="flex flex-col px-4 pb-4 pt-3 sm:px-5">{body}</div>
+        <div
+          ref={contentRef}
+          className="flex flex-col px-4 pb-4 pt-3 sm:px-5"
+        >
+          {body}
+        </div>
         {undoToast}
       </div>
     );
