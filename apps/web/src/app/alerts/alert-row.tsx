@@ -76,10 +76,13 @@ function ActiveToggle({
           : "border-destructive/25 bg-destructive/35",
       )}
     >
+      {/* Etiqueta en el hueco libre (el círculo ocupa ~1.75rem en un extremo). */}
       <span
         className={cn(
-          "pointer-events-none absolute inset-0 flex items-center justify-center px-7 text-[10px] font-semibold tracking-wide",
-          active ? "text-primary-foreground" : "text-destructive-foreground",
+          "pointer-events-none absolute inset-y-0 flex items-center justify-center text-[10px] font-semibold tracking-wide",
+          active
+            ? "left-1 right-7 text-primary-foreground"
+            : "left-7 right-1 text-destructive-foreground",
         )}
         aria-hidden
       >
