@@ -88,6 +88,48 @@ function alertIdFromPayload(payload: Json): string | null {
   return typeof alertId === "string" && alertId.trim() ? alertId.trim() : null;
 }
 
+/** Ids de cola ligados a una alerta (antes de borrarla: ON DELETE SET NULL). */
+export async function listOwnQueueIdsForAlert(
+  client: SupabaseClient<Database>,
+  input: { userId: string; alertId: string },
+): Promise<{ data: string[]; error: Error | null }> {
+  const { data, error } = await client
+    .from("notification_queue")
+    .select("id")
+    .eq("user_id", input.userId)
+    .eq("alert_id", input.alertId);
+
+  if (error) return { data: [], error: new Error(error.message) };
+  return {
+    data: (data ?? []).map((r) => r.id).filter(Boolean),
+    error: null,
+  };
+}
+
+/**
+ * Reasigna `alert_id` tras recrear una alerta (Revertir).
+ * Requiere política UPDATE propia sobre `alert_id`.
+ */
+export async function reassignOwnAlertQueueItems(
+  client: SupabaseClient<Database>,
+  input: { userId: string; alertId: string; queueIds: string[] },
+): Promise<{ error: Error | null }> {
+  const ids = [...new Set(input.queueIds.filter(Boolean))];
+  if (ids.length === 0) return { error: null };
+
+  const CHUNK = 100;
+  for (let i = 0; i < ids.length; i += CHUNK) {
+    const chunk = ids.slice(i, i + CHUNK);
+    const { error } = await client
+      .from("notification_queue")
+      .update({ alert_id: input.alertId })
+      .eq("user_id", input.userId)
+      .in("id", chunk);
+    if (error) return { error: new Error(error.message) };
+  }
+  return { error: null };
+}
+
 /**
  * Alertas del usuario que tienen al menos un ítem en cola
  * (pending / sent / failed / cancelled).

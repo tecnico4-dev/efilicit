@@ -7,6 +7,8 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import {
   createOwnAlert,
   deleteOwnAlert,
+  listOwnQueueIdsForAlert,
+  reassignOwnAlertQueueItems,
   updateOwnAlert,
   type DigestFrequency,
 } from "@/lib/queries";
@@ -54,6 +56,18 @@ export function RemoveAlertButton({
     setPending(true);
     setError(null);
 
+    const client = createSupabaseBrowserClient();
+    // Antes del DELETE: ON DELETE SET NULL deja la cola sin alert_id.
+    const queueIdsResult = await listOwnQueueIdsForAlert(client, {
+      userId: alert.user_id,
+      alertId: alert.id,
+    });
+    if (queueIdsResult.error) {
+      setPending(false);
+      setError(queueIdsResult.error.message);
+      return;
+    }
+
     const snapshot = {
       userId: alert.user_id,
       name: alert.name,
@@ -62,9 +76,9 @@ export function RemoveAlertButton({
         ? "semanal"
         : "diaria") as DigestFrequency,
       wasActive: alert.is_active,
+      queueIds: queueIdsResult.data,
     };
 
-    const client = createSupabaseBrowserClient();
     const { error: deleteError } = await deleteOwnAlert(client, {
       alertId: alert.id,
     });
@@ -82,8 +96,19 @@ export function RemoveAlertButton({
         criteria: snapshot.criteria,
         frequency: snapshot.frequency,
       });
-      if (data && !snapshot.wasActive) {
+      if (!data) {
+        router.refresh();
+        return;
+      }
+      if (!snapshot.wasActive) {
         await updateOwnAlert(c, { alertId: data.id, isActive: false });
+      }
+      if (snapshot.queueIds.length > 0) {
+        await reassignOwnAlertQueueItems(c, {
+          userId: snapshot.userId,
+          alertId: data.id,
+          queueIds: snapshot.queueIds,
+        });
       }
       router.refresh();
     });

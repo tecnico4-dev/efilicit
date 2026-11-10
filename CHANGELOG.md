@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Alertas: al Revertir un borrado se reasignan las filas de `notification_queue` a la alerta nueva (el botón «Licitaciones relacionadas» vuelve a salir).
 - Alertas: pestañas **Mis alertas** | **Coincidencias** (filtro Alerta; sin subtítulo; Interés sin «Sin clasificar» también en Relacionadas); listado con interruptor Activa/Inactiva + editar/eliminar, y «Licitaciones relacionadas» debajo a la derecha.
 - Digest email: hueco entre bloques de alerta con spacer HTML (`height`/celda), no `margin` (Gmail/Outlook lo ignoraban).
 - Digest email: un correo por usuario según frecuencia de cuenta (se ignora `payload.digest` al agrupar; evita dobles al cambiar diaria↔semanal).
