@@ -15,11 +15,11 @@ import {
 import { parseCriteria } from "@/lib/criteria-display";
 import type { CriteriaFilterOptionsProp } from "@/components/criteria/criteria-filters";
 import { AlertsPanel } from "./alerts-panel";
-import { DigestFrequencyControl } from "./digest-frequency-control";
+import { AlertsWorkspace } from "./alerts-workspace";
 import { PaginatedAlertsList } from "./paginated-alerts-list";
 
 /**
- * Cabecera (título + Crear alerta) + Mis alertas.
+ * Cabecera (título + Crear alerta) + Mis alertas | Coincidencias.
  * Pensado para `<Suspense>`: el loading/fallback muestra el marco.
  */
 export async function AlertsBody() {
@@ -94,33 +94,26 @@ export async function AlertsBody() {
       </div>
 
       <div className={PAGE_TITLE_RULE}>
-        <section>
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <h2 className="text-base font-medium text-foreground">
-              Mis alertas
-            </h2>
-            <DigestFrequencyControl
-              userId={profileResult.data.id}
-              initialFrequency={digestFrequency}
-            />
-          </div>
-          {alertsResult.error ? (
-            <ErrorState className="mt-3">
-              {alertsResult.error.message}
-            </ErrorState>
-          ) : alertsResult.data.length === 0 ? (
-            <EmptyState className="mt-3">
-              Aún no tienes alertas. Usa «Crear alerta» para añadir una.
-            </EmptyState>
-          ) : (
-            <PaginatedAlertsList
-              alerts={alertsResult.data}
-              filterOptions={filterOptions}
-              alertIdsWithQueue={[...alertIdsWithQueue]}
-              municipalityNames={municipalityNames}
-            />
-          )}
-        </section>
+        <AlertsWorkspace
+          userId={profileResult.data.id}
+          digestFrequency={digestFrequency}
+          alertsList={
+            alertsResult.error ? (
+              <ErrorState>{alertsResult.error.message}</ErrorState>
+            ) : alertsResult.data.length === 0 ? (
+              <EmptyState>
+                Aún no tienes alertas. Usa «Crear alerta» para añadir una.
+              </EmptyState>
+            ) : (
+              <PaginatedAlertsList
+                alerts={alertsResult.data}
+                filterOptions={filterOptions}
+                alertIdsWithQueue={[...alertIdsWithQueue]}
+                municipalityNames={municipalityNames}
+              />
+            )
+          }
+        />
       </div>
     </>
   );

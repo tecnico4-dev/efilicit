@@ -202,7 +202,7 @@ function RelatedItemRow({
   ) => Promise<void>;
   onTrash: (queueId: string) => void;
   onRestore: (queueId: string) => void;
-  onNavigate: () => void;
+  onNavigate?: () => void;
 }) {
   const title =
     item.tender?.title?.trim() || item.payloadTitle || "Licitación";
@@ -304,9 +304,9 @@ function RelatedItemRow({
 }
 
 /**
- * Modal: licitaciones de notification_queue para una alerta.
- * Activas | Papelera + filtros (tiempo / estado / valoración).
- * Papelera solo de este modal (no toca el buzón).
+ * Licitaciones de `notification_queue` (una alerta o todas).
+ * Activas | Papelera + filtros. Papelera = `alert_related_trash` (no el buzón).
+ * `modal` = overlay por alerta; `embedded` = pestaña Coincidencias en /alerts.
  */
 export function AlertRelatedTendersPanel({
   alertId,
@@ -314,13 +314,18 @@ export function AlertRelatedTendersPanel({
   userId,
   open,
   onClose,
+  variant = "modal",
 }: {
-  alertId: string;
-  alertName: string;
+  /** Si falta, carga la cola de todas las alertas del usuario. */
+  alertId?: string;
+  alertName?: string;
   userId: string;
   open: boolean;
   onClose: () => void;
+  variant?: "modal" | "embedded";
 }) {
+  const isEmbedded = variant === "embedded";
+  const scopeId = alertId ?? "all";
   const [mounted, setMounted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -352,21 +357,21 @@ export function AlertRelatedTendersPanel({
   }, [listUndo]);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open || isEmbedded) return;
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") onClose();
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [open, onClose]);
+  }, [open, onClose, isEmbedded]);
 
   const reload = useCallback(async () => {
     setLoading(true);
     setError(null);
     const client = createSupabaseBrowserClient();
     const queueResult = await listOwnAlertRelatedQueueItems(client, {
-      alertId,
       userId,
+      ...(alertId ? { alertId } : {}),
     });
     if (queueResult.error) {
       setLoading(false);
@@ -391,8 +396,10 @@ export function AlertRelatedTendersPanel({
     setRatings(ratingsResult.data);
   }, [alertId, userId]);
 
+  const isOpen = isEmbedded || open;
+
   useEffect(() => {
-    if (!open) return;
+    if (!isOpen) return;
     setFolder("active");
     setFiltersOpen(false);
     setLastSendOnly(false);
@@ -405,7 +412,7 @@ export function AlertRelatedTendersPanel({
     setRatings({});
     setListUndo(null);
     void reload();
-  }, [open, alertId, userId, reload]);
+  }, [isOpen, alertId, userId, reload]);
 
   const onRatingChange = useCallback(
     async (tenderId: string, next: TenderRating | null) => {
@@ -598,7 +605,9 @@ export function AlertRelatedTendersPanel({
     );
     setPage(1);
     setListUndo({
-      message: "Se ha vaciado la lista de licitaciones de la alerta.",
+      message: alertId
+        ? "Se ha vaciado la lista de licitaciones de la alerta."
+        : "Se ha vaciado la lista de coincidencias.",
       queueIds: ids,
     });
   }
@@ -653,7 +662,7 @@ export function AlertRelatedTendersPanel({
   async function onEmptyTrash() {
     if (actionPending || trashItems.length === 0) return;
     const ok = window.confirm(
-      `¿Vaciar la papelera (${trashItems.length})? Dejarán de verse en este modal (no vuelven a Relacionadas).`,
+      `¿Vaciar la papelera (${trashItems.length})? Dejarán de verse aquí (no vuelven a Relacionadas / Coincidencias).`,
     );
     if (!ok) return;
     setActionPending(true);
@@ -679,13 +688,353 @@ export function AlertRelatedTendersPanel({
     setPage(1);
   }
 
-  if (!open || !mounted) return null;
+  if (!isOpen || (!isEmbedded && !mounted)) return null;
 
   const hasAny = items.length > 0;
   /** Título: solo activas (sin papelera). */
   const titleTotalCount = activeItems.length;
   const showEmptyActive = folder === "active" && activeItems.length === 0;
   const showEmptyTrash = folder === "trash" && trashItems.length === 0;
+  const emptyNoneMessage = alertId
+    ? "Aún no hay licitaciones en cola para esta alerta."
+    : "Aún no hay coincidencias en cola para tus alertas.";
+
+  const body = (
+    <>
+      {loading ? (
+        <p className="py-8 text-center text-sm text-muted-foreground">
+          Cargando…
+        </p>
+      ) : error ? (
+        <p className="py-8 text-center text-sm text-destructive" role="alert">
+          {error}
+        </p>
+      ) : !hasAny ? (
+        <p className="py-8 text-center text-sm text-muted-foreground">
+          {emptyNoneMessage}
+        </p>
+      ) : (
+        <>
+          {(() => {
+            const activeFilterCount =
+              (lastSendOnly || dateFrom || dateTo ? 1 : 0) +
+              (statusFilter !== "all" ? 1 : 0) +
+              (ratingFilter !== "all" ? 1 : 0) +
+              (ratingFilter === "rated" && interestFilter !== "all" ? 1 : 0);
+            const filterToggle = (
+              <button
+                type="button"
+                aria-label={
+                  filtersOpen
+                    ? "Ocultar filtros"
+                    : activeFilterCount > 0
+                      ? `Mostrar filtros (${activeFilterCount} activos)`
+                      : "Mostrar filtros"
+                }
+                aria-expanded={filtersOpen}
+                title="Filtros"
+                onClick={() => setFiltersOpen((o) => !o)}
+                className={cn(
+                  "relative inline-flex size-9 shrink-0 items-center justify-center rounded-full border transition-colors",
+                  filtersOpen || activeFilterCount > 0
+                    ? "border-primary bg-primary/10 text-primary-dark"
+                    : "border-border bg-surface text-muted-foreground hover:bg-muted hover:text-foreground",
+                )}
+              >
+                <FilterIcon className="size-4" />
+                {activeFilterCount > 0 ? (
+                  <span
+                    className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-0.5 text-[10px] font-bold leading-none text-primary-foreground"
+                    aria-hidden
+                  >
+                    {activeFilterCount}
+                  </span>
+                ) : null}
+              </button>
+            );
+            const showFiltersUi = folder === "active";
+            const actionButtons = (
+              <div className="flex flex-wrap items-center justify-end gap-2">
+                {showFiltersUi ? filterToggle : null}
+                {folder === "active" && activeItems.length > 0 ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={actionPending}
+                    className={destructiveOutlineBtn}
+                    onClick={() => void onEmptyActiveList()}
+                  >
+                    Vaciar listado
+                  </Button>
+                ) : null}
+                {folder === "trash" && trashItems.length > 0 ? (
+                  <>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={actionPending}
+                      onClick={() => void onRestoreAllTrash()}
+                    >
+                      Restaurar todo
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={actionPending}
+                      className={destructiveOutlineBtn}
+                      onClick={() => void onEmptyTrash()}
+                    >
+                      Vaciar papelera
+                    </Button>
+                  </>
+                ) : null}
+              </div>
+            );
+            return (
+              <>
+                {showFiltersUi && filtersOpen ? (
+                  <div className="mb-2 flex shrink-0 justify-end">
+                    {actionButtons}
+                  </div>
+                ) : null}
+
+                {showFiltersUi && filtersOpen ? (
+                  <div className="mb-3 flex shrink-0 flex-col gap-2 rounded-lg border border-border bg-muted/30 px-3 py-2.5 sm:flex-row sm:flex-wrap sm:items-end">
+                    <PublicationDateRange
+                      idPrefix={`alert-related-${scopeId}-`}
+                      label="Tiempo"
+                      from={lastSendOnly ? "" : dateFrom}
+                      to={lastSendOnly ? "" : dateTo}
+                      summaryOverride={lastSendOnly ? "Último envío" : null}
+                      presets={["thisWeek", "last7"]}
+                      leadingMenuItems={[
+                        {
+                          label: "Último envío",
+                          onSelect: () => {
+                            setLastSendOnly(true);
+                            setDateFrom("");
+                            setDateTo("");
+                            setPage(1);
+                          },
+                        },
+                      ]}
+                      onChange={(nextFrom, nextTo) => {
+                        setLastSendOnly(false);
+                        setDateFrom(nextFrom);
+                        setDateTo(nextTo);
+                        setPage(1);
+                      }}
+                    />
+                    <label className="flex min-w-[9rem] flex-col gap-1 text-xs text-muted-foreground">
+                      Estado envío
+                      <select
+                        className="h-9 rounded-md border border-border bg-background px-2 text-sm text-foreground"
+                        value={statusFilter}
+                        onChange={(e) => {
+                          setStatusFilter(e.target.value as StatusFilter);
+                          setPage(1);
+                        }}
+                      >
+                        <option value="all">Todas</option>
+                        <option value="sent">Enviadas</option>
+                        <option value="pending">Pendientes</option>
+                      </select>
+                    </label>
+                    <label className="flex min-w-[9rem] flex-col gap-1 text-xs text-muted-foreground">
+                      Valoración
+                      <select
+                        className="h-9 rounded-md border border-border bg-background px-2 text-sm text-foreground"
+                        value={ratingFilter}
+                        onChange={(e) => {
+                          const next = e.target.value as RatingFilter;
+                          setRatingFilter(next);
+                          if (next !== "rated") setInterestFilter("all");
+                          setPage(1);
+                        }}
+                      >
+                        <option value="all">Todas</option>
+                        <option value="rated">Valoradas</option>
+                        <option value="unrated">Sin valorar</option>
+                      </select>
+                    </label>
+                    {ratingFilter === "rated" ? (
+                      <label className="flex min-w-[9rem] flex-col gap-1 text-xs text-muted-foreground">
+                        Interés
+                        <select
+                          className="h-9 rounded-md border border-border bg-background px-2 text-sm text-foreground"
+                          value={interestFilter}
+                          onChange={(e) => {
+                            setInterestFilter(
+                              e.target.value as InterestFilter,
+                            );
+                            setPage(1);
+                          }}
+                        >
+                          <option value="all">Cualquiera</option>
+                          <option value="propia">Eficen</option>
+                          <option value="subcontrata">Subcontrata</option>
+                          <option value="unset">Sin clasificar</option>
+                        </select>
+                      </label>
+                    ) : null}
+                  </div>
+                ) : null}
+
+                <div className="flex shrink-0 flex-wrap items-start justify-between gap-2 px-1">
+                  <div
+                    className="flex flex-wrap items-end gap-1"
+                    role="tablist"
+                    aria-label="Relacionadas o papelera"
+                  >
+                    <FolderTab
+                      active={folder === "active"}
+                      label="Relacionadas"
+                      count={filteredActive.length}
+                      onSelect={() => selectFolder("active")}
+                    />
+                    <FolderTab
+                      active={folder === "trash"}
+                      label="Papelera"
+                      count={trashItems.length}
+                      onSelect={() => selectFolder("trash")}
+                    />
+                  </div>
+                  {!(showFiltersUi && filtersOpen) ? (
+                    <div className="flex items-start">{actionButtons}</div>
+                  ) : null}
+                </div>
+              </>
+            );
+          })()}
+
+          {showEmptyActive ? (
+            <div className="relative z-0 overflow-hidden rounded-lg rounded-tl-none border border-border bg-surface/40">
+              <p className="px-4 py-8 text-center text-sm text-muted-foreground">
+                No hay licitaciones aquí. Las de la papelera siguen disponibles
+                en esa pestaña.
+              </p>
+            </div>
+          ) : showEmptyTrash ? (
+            <div className="relative z-0 overflow-hidden rounded-lg rounded-tl-none border border-border bg-surface/40">
+              <p className="px-4 py-8 text-center text-sm text-muted-foreground">
+                La papelera está vacía.
+              </p>
+            </div>
+          ) : visible.length === 0 ? (
+            <div className="relative z-0 overflow-hidden rounded-lg rounded-tl-none border border-border bg-surface/40">
+              <p className="px-4 py-8 text-center text-sm text-muted-foreground">
+                Ninguna licitación coincide con los filtros.
+              </p>
+            </div>
+          ) : (
+            <div
+              className={cn(
+                "relative z-0 flex flex-col overflow-hidden rounded-lg rounded-tl-none border border-border bg-surface/40",
+                isEmbedded
+                  ? "max-h-[min(70vh,640px)]"
+                  : "min-h-0 flex-1",
+              )}
+            >
+              <div
+                key={`${folder}-${lastSendOnly}-${dateFrom}-${dateTo}-${statusFilter}-${ratingFilter}-${interestFilter}-${page}-${pageSize}`}
+                className="min-h-0 flex-1 overflow-y-auto"
+              >
+                <ul className="divide-y divide-border">
+                  {pageItems.map((item) => (
+                    <RelatedItemRow
+                      key={item.queueId}
+                      item={item}
+                      rating={ratings[item.tenderId] ?? null}
+                      inTrash={folder === "trash"}
+                      pending={actionPending}
+                      onRatingChange={onRatingChange}
+                      onTrash={(id) => void onTrashOne(id)}
+                      onRestore={(id) => void onRestoreOne(id)}
+                      onNavigate={isEmbedded ? undefined : onClose}
+                    />
+                  ))}
+                </ul>
+              </div>
+              {showPager ? (
+                <div className="shrink-0 border-t border-border bg-background px-4 py-3">
+                  <ListPager
+                    page={page}
+                    totalPages={totalPages}
+                    pageSize={pageSize}
+                    showing={pageItems.length}
+                    total={total}
+                    itemLabel="licitaciones"
+                    ariaPageSizeLabel="Licitaciones por página"
+                    onPageChange={setPage}
+                    onPageSizeChange={onPageSizeChange}
+                  />
+                </div>
+              ) : null}
+            </div>
+          )}
+        </>
+      )}
+    </>
+  );
+
+  const undoToast = listUndo ? (
+    <div
+      className="absolute bottom-4 left-1/2 z-10 w-[min(24rem,calc(100%-2rem))] -translate-x-1/2 rounded-lg border border-border bg-surface px-4 py-3 text-sm shadow-lg"
+      role="status"
+    >
+      <button
+        type="button"
+        aria-label="Cerrar"
+        onClick={() => setListUndo(null)}
+        className="absolute -right-2.5 -top-2.5 inline-flex h-6 w-6 items-center justify-center rounded-full border border-border bg-muted text-muted-foreground shadow-md hover:bg-muted/90 hover:text-foreground"
+      >
+        <span aria-hidden className="text-sm leading-none">
+          ×
+        </span>
+      </button>
+      <div className="flex flex-wrap items-center gap-3">
+        <span className="text-muted-foreground">{listUndo.message}</span>
+        <button
+          type="button"
+          className="font-medium text-link hover:underline"
+          disabled={actionPending}
+          onClick={() => void onRevertEmptyList()}
+        >
+          Revertir
+        </button>
+      </div>
+    </div>
+  ) : null;
+
+  if (isEmbedded) {
+    return (
+      <div className="relative rounded-xl border border-border bg-background">
+        <div className="border-b border-border px-4 py-3 sm:px-5">
+          <h2
+            id={`alert-related-title-${scopeId}`}
+            className="text-base font-semibold text-foreground"
+          >
+            Coincidencias
+            {!loading && hasAny ? (
+              <span className="font-semibold text-muted-foreground">
+                {" "}
+                ({titleTotalCount})
+              </span>
+            ) : null}
+          </h2>
+          <p className="mt-0.5 text-sm text-muted-foreground">
+            Licitaciones de todas tus alertas (misma papelera que en cada
+            alerta).
+          </p>
+        </div>
+        <div className="flex flex-col px-4 pb-4 pt-3 sm:px-5">{body}</div>
+        {undoToast}
+      </div>
+    );
+  }
 
   return createPortal(
     <div
@@ -695,14 +1044,14 @@ export function AlertRelatedTendersPanel({
       <div
         role="dialog"
         aria-modal="true"
-        aria-labelledby={`alert-related-title-${alertId}`}
+        aria-labelledby={`alert-related-title-${scopeId}`}
         className="relative flex max-h-[min(90vh,720px)] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-border bg-background shadow-xl sm:max-w-4xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex shrink-0 items-start justify-between gap-3 border-b border-border px-5 py-4">
           <div className="min-w-0">
             <h2
-              id={`alert-related-title-${alertId}`}
+              id={`alert-related-title-${scopeId}`}
               className="text-lg font-semibold text-foreground"
             >
               Licitaciones relacionadas
@@ -713,319 +1062,19 @@ export function AlertRelatedTendersPanel({
                 </span>
               ) : null}
             </h2>
-            <p className="mt-0.5 truncate text-sm text-muted-foreground">
-              {alertName}
-            </p>
+            {alertName ? (
+              <p className="mt-0.5 truncate text-sm text-muted-foreground">
+                {alertName}
+              </p>
+            ) : null}
           </div>
           <Button type="button" variant="outline" size="sm" onClick={onClose}>
             Cerrar
           </Button>
         </div>
 
-        <div className="flex min-h-0 flex-1 flex-col px-5 pb-5 pt-3">
-          {loading ? (
-            <p className="py-8 text-center text-sm text-muted-foreground">
-              Cargando…
-            </p>
-          ) : error ? (
-            <p className="py-8 text-center text-sm text-destructive" role="alert">
-              {error}
-            </p>
-          ) : !hasAny ? (
-            <p className="py-8 text-center text-sm text-muted-foreground">
-              Aún no hay licitaciones en cola para esta alerta.
-            </p>
-          ) : (
-            <>
-              {(() => {
-                const activeFilterCount =
-                  (lastSendOnly || dateFrom || dateTo ? 1 : 0) +
-                  (statusFilter !== "all" ? 1 : 0) +
-                  (ratingFilter !== "all" ? 1 : 0) +
-                  (ratingFilter === "rated" && interestFilter !== "all"
-                    ? 1
-                    : 0);
-                const filterToggle = (
-                  <button
-                    type="button"
-                    aria-label={
-                      filtersOpen
-                        ? "Ocultar filtros"
-                        : activeFilterCount > 0
-                          ? `Mostrar filtros (${activeFilterCount} activos)`
-                          : "Mostrar filtros"
-                    }
-                    aria-expanded={filtersOpen}
-                    title="Filtros"
-                    onClick={() => setFiltersOpen((o) => !o)}
-                    className={cn(
-                      "relative inline-flex size-9 shrink-0 items-center justify-center rounded-full border transition-colors",
-                      filtersOpen || activeFilterCount > 0
-                        ? "border-primary bg-primary/10 text-primary-dark"
-                        : "border-border bg-surface text-muted-foreground hover:bg-muted hover:text-foreground",
-                    )}
-                  >
-                    <FilterIcon className="size-4" />
-                    {activeFilterCount > 0 ? (
-                      <span
-                        className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-0.5 text-[10px] font-bold leading-none text-primary-foreground"
-                        aria-hidden
-                      >
-                        {activeFilterCount}
-                      </span>
-                    ) : null}
-                  </button>
-                );
-                const showFiltersUi = folder === "active";
-                const actionButtons = (
-                  <div className="flex flex-wrap items-center justify-end gap-2">
-                    {showFiltersUi ? filterToggle : null}
-                    {folder === "active" && activeItems.length > 0 ? (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        disabled={actionPending}
-                        className={destructiveOutlineBtn}
-                        onClick={() => void onEmptyActiveList()}
-                      >
-                        Vaciar listado
-                      </Button>
-                    ) : null}
-                    {folder === "trash" && trashItems.length > 0 ? (
-                      <>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          disabled={actionPending}
-                          onClick={() => void onRestoreAllTrash()}
-                        >
-                          Restaurar todo
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          disabled={actionPending}
-                          className={destructiveOutlineBtn}
-                          onClick={() => void onEmptyTrash()}
-                        >
-                          Vaciar papelera
-                        </Button>
-                      </>
-                    ) : null}
-                  </div>
-                );
-                return (
-                  <>
-                    {showFiltersUi && filtersOpen ? (
-                      <div className="mb-2 flex shrink-0 justify-end">
-                        {actionButtons}
-                      </div>
-                    ) : null}
-
-                    {showFiltersUi && filtersOpen ? (
-                      <div className="mb-3 flex shrink-0 flex-col gap-2 rounded-lg border border-border bg-muted/30 px-3 py-2.5 sm:flex-row sm:flex-wrap sm:items-end">
-                        <PublicationDateRange
-                          idPrefix={`alert-related-${alertId}-`}
-                          label="Tiempo"
-                          from={lastSendOnly ? "" : dateFrom}
-                          to={lastSendOnly ? "" : dateTo}
-                          summaryOverride={
-                            lastSendOnly ? "Último envío" : null
-                          }
-                          presets={["thisWeek", "last7"]}
-                          leadingMenuItems={[
-                            {
-                              label: "Último envío",
-                              onSelect: () => {
-                                setLastSendOnly(true);
-                                setDateFrom("");
-                                setDateTo("");
-                                setPage(1);
-                              },
-                            },
-                          ]}
-                          onChange={(nextFrom, nextTo) => {
-                            setLastSendOnly(false);
-                            setDateFrom(nextFrom);
-                            setDateTo(nextTo);
-                            setPage(1);
-                          }}
-                        />
-                        <label className="flex min-w-[9rem] flex-col gap-1 text-xs text-muted-foreground">
-                          Estado envío
-                          <select
-                            className="h-9 rounded-md border border-border bg-background px-2 text-sm text-foreground"
-                            value={statusFilter}
-                            onChange={(e) => {
-                              setStatusFilter(e.target.value as StatusFilter);
-                              setPage(1);
-                            }}
-                          >
-                            <option value="all">Todas</option>
-                            <option value="sent">Enviadas</option>
-                            <option value="pending">Pendientes</option>
-                          </select>
-                        </label>
-                        <label className="flex min-w-[9rem] flex-col gap-1 text-xs text-muted-foreground">
-                          Valoración
-                          <select
-                            className="h-9 rounded-md border border-border bg-background px-2 text-sm text-foreground"
-                            value={ratingFilter}
-                            onChange={(e) => {
-                              const next = e.target.value as RatingFilter;
-                              setRatingFilter(next);
-                              if (next !== "rated") setInterestFilter("all");
-                              setPage(1);
-                            }}
-                          >
-                            <option value="all">Todas</option>
-                            <option value="rated">Valoradas</option>
-                            <option value="unrated">Sin valorar</option>
-                          </select>
-                        </label>
-                        {ratingFilter === "rated" ? (
-                          <label className="flex min-w-[9rem] flex-col gap-1 text-xs text-muted-foreground">
-                            Interés
-                            <select
-                              className="h-9 rounded-md border border-border bg-background px-2 text-sm text-foreground"
-                              value={interestFilter}
-                              onChange={(e) => {
-                                setInterestFilter(
-                                  e.target.value as InterestFilter,
-                                );
-                                setPage(1);
-                              }}
-                            >
-                              <option value="all">Cualquiera</option>
-                              <option value="propia">Eficen</option>
-                              <option value="subcontrata">Subcontrata</option>
-                              <option value="unset">Sin clasificar</option>
-                            </select>
-                          </label>
-                        ) : null}
-                      </div>
-                    ) : null}
-
-                    <div className="flex shrink-0 flex-wrap items-start justify-between gap-2 px-1">
-                      <div
-                        className="flex flex-wrap items-end gap-1"
-                        role="tablist"
-                        aria-label="Relacionadas o papelera"
-                      >
-                        <FolderTab
-                          active={folder === "active"}
-                          label="Relacionadas"
-                          count={filteredActive.length}
-                          onSelect={() => selectFolder("active")}
-                        />
-                        <FolderTab
-                          active={folder === "trash"}
-                          label="Papelera"
-                          count={trashItems.length}
-                          onSelect={() => selectFolder("trash")}
-                        />
-                      </div>
-                      {!(showFiltersUi && filtersOpen) ? (
-                        <div className="flex items-start">{actionButtons}</div>
-                      ) : null}
-                    </div>
-                  </>
-                );
-              })()}
-
-              {showEmptyActive ? (
-                <div className="relative z-0 overflow-hidden rounded-lg rounded-tl-none border border-border bg-surface/40">
-                  <p className="px-4 py-8 text-center text-sm text-muted-foreground">
-                    No hay licitaciones aquí. Las de la papelera siguen
-                    disponibles en esa pestaña.
-                  </p>
-                </div>
-              ) : showEmptyTrash ? (
-                <div className="relative z-0 overflow-hidden rounded-lg rounded-tl-none border border-border bg-surface/40">
-                  <p className="px-4 py-8 text-center text-sm text-muted-foreground">
-                    La papelera está vacía.
-                  </p>
-                </div>
-              ) : visible.length === 0 ? (
-                <div className="relative z-0 overflow-hidden rounded-lg rounded-tl-none border border-border bg-surface/40">
-                  <p className="px-4 py-8 text-center text-sm text-muted-foreground">
-                    Ninguna licitación coincide con los filtros.
-                  </p>
-                </div>
-              ) : (
-                <div className="relative z-0 flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg rounded-tl-none border border-border bg-surface/40">
-                  <div
-                    key={`${folder}-${lastSendOnly}-${dateFrom}-${dateTo}-${statusFilter}-${ratingFilter}-${interestFilter}-${page}-${pageSize}`}
-                    className="min-h-0 flex-1 overflow-y-auto"
-                  >
-                    <ul className="divide-y divide-border">
-                      {pageItems.map((item) => (
-                        <RelatedItemRow
-                          key={item.queueId}
-                          item={item}
-                          rating={ratings[item.tenderId] ?? null}
-                          inTrash={folder === "trash"}
-                          pending={actionPending}
-                          onRatingChange={onRatingChange}
-                          onTrash={(id) => void onTrashOne(id)}
-                          onRestore={(id) => void onRestoreOne(id)}
-                          onNavigate={onClose}
-                        />
-                      ))}
-                    </ul>
-                  </div>
-                  {showPager ? (
-                    <div className="shrink-0 border-t border-border bg-background px-4 py-3">
-                      <ListPager
-                        page={page}
-                        totalPages={totalPages}
-                        pageSize={pageSize}
-                        showing={pageItems.length}
-                        total={total}
-                        itemLabel="licitaciones"
-                        ariaPageSizeLabel="Licitaciones por página"
-                        onPageChange={setPage}
-                        onPageSizeChange={onPageSizeChange}
-                      />
-                    </div>
-                  ) : null}
-                </div>
-              )}
-            </>
-          )}
-        </div>
-
-        {listUndo ? (
-          <div
-            className="absolute bottom-4 left-1/2 z-10 w-[min(24rem,calc(100%-2rem))] -translate-x-1/2 rounded-lg border border-border bg-surface px-4 py-3 text-sm shadow-lg"
-            role="status"
-          >
-            <button
-              type="button"
-              aria-label="Cerrar"
-              onClick={() => setListUndo(null)}
-              className="absolute -right-2.5 -top-2.5 inline-flex h-6 w-6 items-center justify-center rounded-full border border-border bg-muted text-muted-foreground shadow-md hover:bg-muted/90 hover:text-foreground"
-            >
-              <span aria-hidden className="text-sm leading-none">
-                ×
-              </span>
-            </button>
-            <div className="flex flex-wrap items-center gap-3">
-              <span className="text-muted-foreground">{listUndo.message}</span>
-              <button
-                type="button"
-                className="font-medium text-link hover:underline"
-                disabled={actionPending}
-                onClick={() => void onRevertEmptyList()}
-              >
-                Revertir
-              </button>
-            </div>
-          </div>
-        ) : null}
+        <div className="flex min-h-0 flex-1 flex-col px-5 pb-5 pt-3">{body}</div>
+        {undoToast}
       </div>
     </div>,
     document.body,

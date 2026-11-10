@@ -127,18 +127,24 @@ async function loadTrashMap(
 }
 
 /**
- * Ítems de cola de una alerta, más recientes primero (`created_at` desc).
- * Une datos canónicos de `tenders` y estado de papelera del modal.
+ * Ítems de cola de una alerta (o de todas las del usuario si no hay `alertId`),
+ * más recientes primero (`created_at` desc). Une `tenders` + papelera del modal.
  */
 export async function listOwnAlertRelatedQueueItems(
   client: SupabaseClient<Database>,
-  input: { alertId: string; userId: string },
+  input: { userId: string; alertId?: string },
 ): Promise<{ data: AlertRelatedQueueItem[]; error: Error | null }> {
-  const { data, error } = await client
+  let query = client
     .from("notification_queue")
     .select("id, status, created_at, sent_at, last_error, payload")
-    .eq("alert_id", input.alertId)
+    .eq("user_id", input.userId)
     .order("created_at", { ascending: false });
+
+  if (input.alertId) {
+    query = query.eq("alert_id", input.alertId);
+  }
+
+  const { data, error } = await query;
 
   if (error) return { data: [], error: new Error(error.message) };
 

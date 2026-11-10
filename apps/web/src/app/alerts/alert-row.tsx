@@ -19,6 +19,7 @@ import {
   hasInvalidAmountRange,
   hasInvalidPublicationRange,
 } from "@/lib/build-criteria-from-form";
+import { cn } from "@/lib/cn";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { ownAlertNameTaken, updateOwnAlert } from "@/lib/queries";
 import type { Database } from "@efilicit/types";
@@ -26,6 +27,91 @@ import { AlertRelatedTendersPanel } from "./alert-related-tenders-panel";
 import { RemoveAlertButton } from "./remove-alert-button";
 
 type AlertRow = Database["public"]["Tables"]["alerts"]["Row"];
+
+function PencilIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M12 20h9" />
+      <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
+    </svg>
+  );
+}
+
+/** Interruptor Activa/Inactiva (marca EfiLicit: primary / soft destructive). */
+function ActiveToggle({
+  active,
+  disabled,
+  pending,
+  onToggle,
+}: {
+  active: boolean;
+  disabled?: boolean;
+  pending?: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={active}
+      aria-label={active ? "Desactivar alerta" : "Activar alerta"}
+      title={active ? "Desactivar" : "Activar"}
+      disabled={disabled || pending}
+      onClick={onToggle}
+      className={cn(
+        "relative inline-flex h-8 w-[3.25rem] shrink-0 items-center rounded-full border transition-colors",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
+        "disabled:pointer-events-none disabled:opacity-50",
+        active
+          ? "border-primary/40 bg-primary"
+          : "border-destructive/25 bg-destructive/35",
+      )}
+    >
+      <span
+        className={cn(
+          "pointer-events-none absolute top-0.5 flex size-6 items-center justify-center rounded-full bg-background shadow-sm transition-transform duration-200",
+          active ? "left-0.5 translate-x-[1.35rem]" : "left-0.5 translate-x-0",
+        )}
+      >
+        {active ? (
+          <svg
+            viewBox="0 0 16 16"
+            className="size-3.5 text-primary"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden
+          >
+            <path d="M3.5 8.5 6.5 11.5 12.5 4.5" />
+          </svg>
+        ) : (
+          <svg
+            viewBox="0 0 16 16"
+            className="size-3.5 text-destructive"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            aria-hidden
+          >
+            <path d="M4 4l8 8M12 4l-8 8" />
+          </svg>
+        )}
+      </span>
+    </button>
+  );
+}
 
 export function AlertRowItem({
   alert,
@@ -150,7 +236,7 @@ export function AlertRowItem({
             )}
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {hasRelatedTenders ? (
             <Button
               type="button"
@@ -168,23 +254,23 @@ export function AlertRowItem({
             size="sm"
             disabled={pending || editing}
             aria-pressed={editing}
+            aria-label="Editar alerta"
+            title="Editar"
             onClick={() => {
               setEditing(true);
               setEditKey((k) => k + 1);
               setError(null);
             }}
+            className="size-8 px-0"
           >
-            Editar
+            <PencilIcon className="size-4" />
           </Button>
-          <Button
-            type="button"
-            variant={alert.is_active ? "outline" : "primary"}
-            size="sm"
-            disabled={pending || editing}
-            onClick={toggleActive}
-          >
-            {alert.is_active ? "Desactivar" : "Activar"}
-          </Button>
+          <ActiveToggle
+            active={alert.is_active}
+            disabled={editing}
+            pending={pending}
+            onToggle={() => void toggleActive()}
+          />
           <RemoveAlertButton alert={alert} disabled={editing} />
         </div>
       </div>

@@ -10,7 +10,10 @@ export function AlertsBodyFallback() {
       <div className="mt-8 border-t border-border pt-8">
         <section aria-busy="true" aria-label="Cargando alertas">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="h-5 w-28 animate-pulse rounded bg-muted" />
+            <div className="flex gap-1">
+              <div className="h-9 w-28 animate-pulse rounded-t-lg bg-muted" />
+              <div className="h-9 w-28 animate-pulse rounded-t-lg bg-muted/60" />
+            </div>
             <div className="h-8 w-64 max-w-full animate-pulse rounded bg-muted/70" />
           </div>
           <ul className="mt-3 divide-y divide-border border-t border-border">
