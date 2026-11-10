@@ -46,7 +46,7 @@ function PencilIcon({ className }: { className?: string }) {
   );
 }
 
-/** Interruptor Activa/Inactiva con etiqueta (marca EfiLicit). */
+/** Interruptor Activa/Inactiva: ancho fijo (Inactiva); círculo pegado al extremo. */
 function ActiveToggle({
   active,
   disabled,
@@ -68,7 +68,7 @@ function ActiveToggle({
       disabled={disabled || pending}
       onClick={onToggle}
       className={cn(
-        "relative inline-flex h-8 w-[6.25rem] shrink-0 items-center rounded-full border transition-colors",
+        "relative inline-flex h-8 w-[5.25rem] shrink-0 items-center rounded-full border transition-colors",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
         "disabled:pointer-events-none disabled:opacity-50",
         active
@@ -78,10 +78,8 @@ function ActiveToggle({
     >
       <span
         className={cn(
-          "pointer-events-none absolute inset-y-0 flex items-center text-[10px] font-semibold tracking-wide",
-          active
-            ? "left-2 text-primary-foreground"
-            : "right-2 text-destructive-foreground",
+          "pointer-events-none absolute inset-0 flex items-center justify-center px-7 text-[10px] font-semibold tracking-wide",
+          active ? "text-primary-foreground" : "text-destructive-foreground",
         )}
         aria-hidden
       >
@@ -89,8 +87,8 @@ function ActiveToggle({
       </span>
       <span
         className={cn(
-          "pointer-events-none absolute top-0.5 flex size-6 items-center justify-center rounded-full bg-background shadow-sm transition-transform duration-200",
-          active ? "left-0.5 translate-x-[3.55rem]" : "left-0.5 translate-x-0",
+          "pointer-events-none absolute top-0.5 flex size-6 items-center justify-center rounded-full bg-background shadow-sm transition-[left,right] duration-200",
+          active ? "right-0.5 left-auto" : "left-0.5 right-auto",
         )}
       >
         {active ? (
