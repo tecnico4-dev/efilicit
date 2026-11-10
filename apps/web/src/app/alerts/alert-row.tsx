@@ -72,8 +72,8 @@ function ActiveToggle({
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
         "disabled:pointer-events-none disabled:opacity-50",
         active
-          ? "border-primary/40 bg-primary"
-          : "border-destructive/25 bg-destructive/35",
+          ? "border-primary/30 bg-primary/15"
+          : "border-destructive/25 bg-destructive/15",
       )}
     >
       {/* Etiqueta en el hueco libre (el círculo ocupa ~1.75rem en un extremo). */}
@@ -81,8 +81,8 @@ function ActiveToggle({
         className={cn(
           "pointer-events-none absolute inset-y-0 flex items-center justify-center text-[10px] font-semibold tracking-wide",
           active
-            ? "left-1 right-7 text-primary-foreground"
-            : "left-7 right-1 text-white",
+            ? "left-1 right-7 text-link"
+            : "left-7 right-1 text-destructive",
         )}
         aria-hidden
       >
