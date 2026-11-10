@@ -216,7 +216,7 @@ def _build_text(
         f"Tienes {count} nuevas coincidencias en {alert_bit}.",
         "",
     ]
-    for block in blocks:
+    for i, block in enumerate(blocks):
         lines.append(f"## {block.name}")
         for item in block.items:
             title = _item_title(item.payload)
@@ -231,6 +231,9 @@ def _build_text(
         if remaining > 0:
             lines.append(f"… y {remaining} más en esta alerta.")
         lines.append("")
+        # Hueco extra entre bloques de alerta (antes del siguiente título).
+        if i < len(blocks) - 1:
+            lines.append("")
     if omitted_alerts > 0:
         more = (
             "1 alerta más"
@@ -348,13 +351,14 @@ def _alert_section(
     more_html = ""
     if remaining > 0:
         more_html = (
-            f'<p style="margin:0 0 4px;font-size:13px;color:{_MUTED};">'
+            f'<p style="margin:8px 0 0;font-size:13px;color:{_MUTED};">'
             f"… y {_escape(str(remaining))} más en esta alerta."
             f"</p>"
         )
+    # Margen inferior amplio: separación clara antes del siguiente bloque de alerta.
     return (
         f'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" '
-        f'style="margin:0 0 20px;">'
+        f'style="margin:0 0 36px;">'
         f'<tr><td style="padding:0 0 10px;border-bottom:2px solid {_BRAND_BORDER};">'
         f'<p style="margin:0;font-size:16px;font-weight:700;color:{_TEXT};">'
         f"{_escape(block.name)}</p>"
