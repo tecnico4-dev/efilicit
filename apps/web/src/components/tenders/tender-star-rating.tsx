@@ -61,15 +61,24 @@ export function TenderStarRating({
     rating?.interestKind ?? null,
   );
   const [nudgeKey, setNudgeKey] = useState(0);
+  const [showNudge, setShowNudge] = useState(false);
 
   useEffect(() => {
     if (rating != null) {
       setEditing(false);
       setDraftKind(rating.interestKind);
+      setShowNudge(false);
     } else {
       setDraftKind(null);
     }
   }, [rating]);
+
+  // La animación solo mientras dura; no debe repetirse al reabrir el editor.
+  useEffect(() => {
+    if (!showNudge) return;
+    const id = window.setTimeout(() => setShowNudge(false), 420);
+    return () => window.clearTimeout(id);
+  }, [showNudge, nudgeKey]);
 
   const score = rating?.score ?? null;
   const showStars = rating == null || editing;
@@ -92,6 +101,7 @@ export function TenderStarRating({
 
   function nudgeKinds() {
     setNudgeKey((k) => k + 1);
+    setShowNudge(true);
   }
 
   function toggleKind(kind: TenderInterestKind) {
@@ -100,6 +110,7 @@ export function TenderStarRating({
     const nextKind =
       score == null && draftKind === kind ? null : kind;
     setDraftKind(nextKind);
+    setShowNudge(false);
     if (score != null && nextKind != null) {
       void apply({ score, interestKind: nextKind });
     }
@@ -122,7 +133,10 @@ export function TenderStarRating({
       <button
         type="button"
         disabled={disabled || pending}
-        onClick={() => setEditing(true)}
+        onClick={() => {
+          setShowNudge(false);
+          setEditing(true);
+        }}
         className={cn(
           "inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-semibold tabular-nums transition-opacity",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
@@ -160,7 +174,7 @@ export function TenderStarRating({
         key={nudgeKey}
         className={cn(
           "inline-flex items-center gap-1",
-          nudgeKey > 0 && "interest-chip-nudge",
+          showNudge && "interest-chip-nudge",
         )}
         role="group"
         aria-label="Tipo de interés (elige antes de puntuar)"
