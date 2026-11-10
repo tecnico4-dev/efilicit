@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   OFFER_STAGE_LABELS,
   type OfferCaseListItem,
@@ -10,6 +10,11 @@ import {
 import { formatCountdown } from "@/lib/bid-countdown";
 import { formatDateMadrid } from "@/lib/datetime";
 import { CaseStageBadge } from "@/components/mis-licitaciones/case-stage-badge";
+import {
+  DEFAULT_PAGE_SIZE,
+  ListPager,
+  type PageSize,
+} from "@/app/favorites/list-pager";
 import { cn } from "@/lib/cn";
 
 type Scope = "active" | "historic";
@@ -83,6 +88,88 @@ function riskTone(
   return null;
 }
 
+function CaseListRow({
+  item,
+  scope,
+}: {
+  item: OfferCaseListItem;
+  scope: Scope;
+}) {
+  const pct = prepPct(item);
+  const risk = riskTone(item, scope);
+  const due =
+    item.next_due_at ??
+    item.internal_deadline_at ??
+    item.tenders?.deadline_at ??
+    null;
+  const cd = formatCountdown(scope === "active" ? due : null);
+  return (
+    <li>
+      <Link
+        href={`/mis-licitaciones/${item.id}`}
+        className="block px-4 py-4 transition-colors hover:bg-muted/50 sm:px-5"
+      >
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <p className="font-medium text-foreground">
+              {item.tenders?.title ?? "Licitación eliminada"}
+            </p>
+            <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+              <CaseStageBadge stage={item.stage} />
+              {item.owner_name ? <span>Resp. {item.owner_name}</span> : null}
+              {scope === "historic" &&
+              (item.outcome_on || item.presented_on) ? (
+                <span>
+                  {formatDateMadrid(item.outcome_on ?? item.presented_on)}
+                </span>
+              ) : null}
+              {cd.tone !== "none" ? (
+                <span
+                  className={cn(
+                    "font-medium",
+                    cd.tone === "overdue" && "text-destructive",
+                    cd.tone === "soon" && "text-amber-700",
+                  )}
+                >
+                  {cd.label}
+                </span>
+              ) : null}
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center justify-end gap-1.5">
+            <span className="rounded-full border border-border bg-muted px-2.5 py-0.5 text-xs font-semibold text-foreground">
+              {formatMoneySafe(
+                item.tenders?.estimated_value,
+                item.tenders?.currency,
+              )}
+            </span>
+            {pct != null ? (
+              <span className="rounded-full border border-border bg-muted px-2.5 py-0.5 text-xs font-semibold text-foreground">
+                Prep. {pct}%
+              </span>
+            ) : null}
+            {item.requirements_total > 0 ? (
+              <span className="rounded-full border border-primary/30 bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-link">
+                {item.requirements_ready}/{item.requirements_total}
+              </span>
+            ) : null}
+            {risk ? (
+              <span
+                className={cn(
+                  "rounded-full border px-2.5 py-0.5 text-xs font-semibold",
+                  risk.className,
+                )}
+              >
+                {risk.label}
+              </span>
+            ) : null}
+          </div>
+        </div>
+      </Link>
+    </li>
+  );
+}
+
 export function PipelineBoard({
   scope,
   cases,
@@ -91,7 +178,32 @@ export function PipelineBoard({
   cases: OfferCaseListItem[];
 }) {
   const [view, setView] = useState<"lista" | "kanban">("lista");
+  const [pageSize, setPageSize] = useState<PageSize>(DEFAULT_PAGE_SIZE);
+  const [page, setPage] = useState(1);
   const columns = scope === "historic" ? HISTORIC_KANBAN : ACTIVE_KANBAN;
+
+  const total = cases.length;
+  const showPager = total > DEFAULT_PAGE_SIZE;
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+
+  const pageItems = useMemo(() => {
+    const safe = Math.min(Math.max(page, 1), totalPages);
+    const start = (safe - 1) * pageSize;
+    return cases.slice(start, start + pageSize);
+  }, [cases, page, pageSize, totalPages]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [scope]);
+
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages);
+  }, [page, totalPages]);
+
+  function onPageSizeChange(next: number) {
+    setPageSize(next as PageSize);
+    setPage(1);
+  }
 
   const byStage = useMemo(() => {
     const map = new Map<string, OfferCaseListItem[]>();
@@ -136,87 +248,37 @@ export function PipelineBoard({
       </div>
 
       {view === "lista" ? (
-        <ul className="divide-y divide-border rounded-xl border border-border bg-surface">
-          {cases.map((item) => {
-            const pct = prepPct(item);
-            const risk = riskTone(item, scope);
-            const due =
-              item.next_due_at ??
-              item.internal_deadline_at ??
-              item.tenders?.deadline_at ??
-              null;
-            const cd = formatCountdown(scope === "active" ? due : null);
-            return (
-              <li key={item.id}>
-                <Link
-                  href={`/mis-licitaciones/${item.id}`}
-                  className="block px-4 py-4 transition-colors hover:bg-muted/50 sm:px-5"
-                >
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div className="min-w-0 flex-1">
-                      <p className="font-medium text-foreground">
-                        {item.tenders?.title ?? "Licitación eliminada"}
-                      </p>
-                      <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                        <CaseStageBadge stage={item.stage} />
-                        {item.owner_name ? (
-                          <span>Resp. {item.owner_name}</span>
-                        ) : null}
-                        {scope === "historic" &&
-                        (item.outcome_on || item.presented_on) ? (
-                          <span>
-                            {formatDateMadrid(
-                              item.outcome_on ?? item.presented_on,
-                            )}
-                          </span>
-                        ) : null}
-                        {cd.tone !== "none" ? (
-                          <span
-                            className={cn(
-                              "font-medium",
-                              cd.tone === "overdue" && "text-destructive",
-                              cd.tone === "soon" && "text-amber-700",
-                            )}
-                          >
-                            {cd.label}
-                          </span>
-                        ) : null}
-                      </div>
-                    </div>
-                    <div className="flex flex-wrap items-center justify-end gap-1.5">
-                      <span className="rounded-full border border-border bg-muted px-2.5 py-0.5 text-xs font-semibold text-foreground">
-                        {formatMoneySafe(
-                          item.tenders?.estimated_value,
-                          item.tenders?.currency,
-                        )}
-                      </span>
-                      {pct != null ? (
-                        <span className="rounded-full border border-border bg-muted px-2.5 py-0.5 text-xs font-semibold text-foreground">
-                          Prep. {pct}%
-                        </span>
-                      ) : null}
-                      {item.requirements_total > 0 ? (
-                        <span className="rounded-full border border-primary/30 bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-link">
-                          {item.requirements_ready}/{item.requirements_total}
-                        </span>
-                      ) : null}
-                      {risk ? (
-                        <span
-                          className={cn(
-                            "rounded-full border px-2.5 py-0.5 text-xs font-semibold",
-                            risk.className,
-                          )}
-                        >
-                          {risk.label}
-                        </span>
-                      ) : null}
-                    </div>
-                  </div>
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
+        showPager ? (
+          <div className="overflow-hidden rounded-xl border border-border bg-surface">
+            <ul
+              key={`${scope}-${page}-${pageSize}`}
+              className="divide-y divide-border"
+            >
+              {pageItems.map((item) => (
+                <CaseListRow key={item.id} item={item} scope={scope} />
+              ))}
+            </ul>
+            <div className="border-t border-border bg-background px-4 py-3 sm:px-5">
+              <ListPager
+                page={page}
+                totalPages={totalPages}
+                pageSize={pageSize}
+                showing={pageItems.length}
+                total={total}
+                itemLabel="licitaciones"
+                ariaPageSizeLabel="Licitaciones por página"
+                onPageChange={setPage}
+                onPageSizeChange={onPageSizeChange}
+              />
+            </div>
+          </div>
+        ) : (
+          <ul className="divide-y divide-border rounded-xl border border-border bg-surface">
+            {pageItems.map((item) => (
+              <CaseListRow key={item.id} item={item} scope={scope} />
+            ))}
+          </ul>
+        )
       ) : (
         <div className="grid gap-3 overflow-x-auto pb-2 md:grid-cols-3 lg:grid-cols-4">
           {columns.map((col) => {

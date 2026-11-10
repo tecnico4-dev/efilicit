@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Mis licitaciones · Lista: paginación como favoritos/alertas (10 por página; 10/50/100 si hay más), en Activas e Histórico.
 - Mis licitaciones: se quita el subtítulo «Espacio de preparación de oferta · pipeline compartido Eficen».
 - Scripts locales `seed_import_eficen_*` escriben/`update` `offer_cases` (ya no `bid_cases`).
 
