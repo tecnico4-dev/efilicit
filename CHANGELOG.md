@@ -23,8 +23,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Digest email: hueco entre bloques de alerta con spacer HTML (`height`/celda), no `margin` (Gmail/Outlook lo ignoraban).
 - Digest email: un correo por usuario según frecuencia de cuenta (se ignora `payload.digest` al agrupar; evita dobles al cambiar diaria↔semanal).
-- Digest email: más aire entre bloques de alerta (texto + HTML) cuando hay varias.
+- Digest email: más aire entre bloques de alerta en la parte texto cuando hay varias.
 - Digest email: cuerpo agrupado por alerta (máx. 5 alertas × 5 ítems; «… y N más» / «… y K alertas más en el buzón»); `alert_name` en payload de cola + lookup `alerts.name` al enviar.
 - Cuenta: cambio de contraseña valida en UI (≥6, mayúscula, minúscula y número) con mensajes en español; Auth local `lower_upper_letters_digits`.
 - Cuenta: modal de cambio en 2 pasos (contraseña actual → nueva); fallo no cierra sesión; «¿Has olvidado…?» → contactar administrador. Post-login sigue sin pedir la actual.

@@ -263,9 +263,13 @@ def _build_html(
     base: str,
     source_urls: Mapping[str, str],
 ) -> str:
-    sections = "".join(
-        _alert_section(block, base=base, source_urls=source_urls) for block in blocks
-    )
+    # Spacer con height/padding (no margin): Gmail/Outlook suelen ignorar margin en <table>.
+    section_parts: list[str] = []
+    for i, block in enumerate(blocks):
+        if i > 0:
+            section_parts.append(_alert_block_spacer())
+        section_parts.append(_alert_section(block, base=base, source_urls=source_urls))
+    sections = "".join(section_parts)
 
     omitted_html = ""
     if omitted_alerts > 0:
@@ -338,6 +342,15 @@ def _build_html(
 </html>"""
 
 
+def _alert_block_spacer() -> str:
+    """Hueco vertical entre bloques de alerta (compatible con clientes de email)."""
+    return (
+        '<table role="presentation" width="100%" cellpadding="0" cellspacing="0">'
+        '<tr><td height="28" style="height:28px;line-height:28px;font-size:0;">&nbsp;</td></tr>'
+        "</table>"
+    )
+
+
 def _alert_section(
     block: _AlertDigestBlock,
     *,
@@ -360,10 +373,9 @@ def _alert_section(
             f"… y {_escape(str(remaining))} más en esta alerta."
             f"</p>"
         )
-    # Margen inferior amplio: separación clara antes del siguiente bloque de alerta.
     return (
         f'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" '
-        f'style="margin:0 0 36px;">'
+        f'style="margin:0;">'
         f'<tr><td style="padding:0 0 10px;border-bottom:2px solid {_BRAND_BORDER};">'
         f'<p style="margin:0;font-size:16px;font-weight:700;color:{_TEXT};">'
         f"{_escape(block.name)}</p>"

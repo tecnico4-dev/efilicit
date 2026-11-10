@@ -201,6 +201,8 @@ def test_build_digest_message_caps_alert_blocks() -> None:
     assert "## Alerta 7" not in msg.text
     assert "… y 2 alertas más en el buzón." in msg.text
     assert "2 alertas más en el buzón" in (msg.html or "")
+    # Spacer entre bloques (no margin): clientes de email respetan height en <td>.
+    assert 'height="28"' in (msg.html or "")
     # Asunto y cola: totales reales (solo se recorta la plantilla).
     assert msg.subject == "EfiLicit resumen diario: 7 oportunidades nuevas"
 
