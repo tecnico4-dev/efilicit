@@ -1,0 +1,187 @@
+42184162818	Ingest Euskadi	Run euskadi (live)	success	2026-11-06T07:56:27Z	2026-11-06T08:12:13Z	ubuntu-latest
+42174873725	Alerts digest	Run alerts send (write-resend)	success	2026-11-06T06:30:38Z	2026-11-06T06:31:44Z	ubuntu-latest
+42171774769	Alerts match	Run alerts match (write)	success	2026-11-06T06:00:52Z	2026-11-06T06:01:52Z	ubuntu-latest
+42153884813	Ingest Euskadi	Run euskadi (live)	success	2026-11-06T03:00:54Z	2026-11-06T03:08:19Z	ubuntu-latest
+42153880676	Ingest Catalunya	Run catalunya (live)	success	2026-11-06T03:00:52Z	2026-11-06T03:03:01Z	ubuntu-latest
+42147544747	Ingest PLACSP	Run placsp_agregadas (live)	success	2026-11-06T02:00:50Z	2026-11-06T03:01:46Z	ubuntu-latest
+42140883723	Ingest PLACSP	Run placsp_menores (live)	success	2026-11-06T01:00:51Z	2026-11-06T02:29:52Z	ubuntu-latest
+42133657141	Ingest PLACSP	Run placsp (live)	success	2026-11-06T00:00:52Z	2026-11-06T01:29:10Z	ubuntu-latest
+42014401599	Ingest Catalunya	Run catalunya (live)	success	2026-11-05T10:53:19Z	2026-11-05T11:24:47Z	ubuntu-latest
+41990030398	Alerts digest	Run alerts send (write-resend)	success	2026-11-05T07:50:21Z	2026-11-05T07:50:31Z	ubuntu-latest
+41987160193	Alerts digest	Run alerts send (write-resend)	success	2026-11-05T07:25:45Z	2026-11-05T07:25:54Z	ubuntu-latest
+41980882516	Alerts digest	Run alerts send (write-resend)	success	2026-11-05T06:30:39Z	2026-11-05T06:31:32Z	ubuntu-latest
+41977586993	Alerts match	Run alerts match (write)	success	2026-11-05T06:00:52Z	2026-11-05T06:01:49Z	ubuntu-latest
+41958860981	Ingest Catalunya	Run catalunya (live)	success	2026-11-05T03:00:56Z	2026-11-05T05:16:13Z	ubuntu-latest
+41958859948	Ingest Euskadi	Run euskadi (live)	success	2026-11-05T03:00:53Z	2026-11-05T03:03:20Z	ubuntu-latest
+41952327520	Ingest PLACSP	Run placsp_agregadas (live)	success	2026-11-05T02:00:49Z	2026-11-05T02:50:27Z	ubuntu-latest
+41945516449	Ingest PLACSP	Run placsp_menores (live)	success	2026-11-05T01:00:52Z	2026-11-05T02:30:44Z	ubuntu-latest
+41938108224	Ingest PLACSP	Run placsp (live)	success	2026-11-05T00:00:52Z	2026-11-05T00:09:58Z	ubuntu-latest
+41826830013	Alerts digest	Run alerts send (write-resend)	success	2026-11-04T12:09:29Z	2026-11-04T12:09:54Z	ubuntu-latest
+41826687247	Alerts match	Run alerts match (write)	success	2026-11-04T12:08:28Z	2026-11-04T12:08:52Z	ubuntu-latest
+41794334122	Ingest Catalunya	Run catalunya (live)	success	2026-11-04T07:44:17Z	2026-11-04T08:46:30Z	ubuntu-latest
+41794263440	Ingest Euskadi	Run euskadi (live)	success	2026-11-04T07:43:39Z	2026-11-04T07:45:39Z	ubuntu-latest
+41794192172	Ingest PLACSP	Run placsp_menores (live)	failure	2026-11-04T07:43:02Z	2026-11-04T08:39:52Z	ubuntu-latest
+41794152699	Ingest PLACSP	Run placsp_agregadas (live)	failure	2026-11-04T07:42:41Z	2026-11-04T08:14:58Z	ubuntu-latest
+41794106912	Ingest PLACSP	Run placsp (live)	success	2026-11-04T07:42:18Z	2026-11-04T10:29:40Z	ubuntu-latest
+41785990658	Alerts digest	Run alerts send (write-resend)	success	2026-11-04T06:30:40Z	2026-11-04T06:30:54Z	ubuntu-latest
+41782729860	Alerts match	Run alerts match (write)	success	2026-11-04T06:00:51Z	2026-11-04T06:01:04Z	ubuntu-latest
+41764374506	Ingest Euskadi	Run euskadi (live)	failure	2026-11-04T03:00:51Z	2026-11-04T03:01:04Z	ubuntu-latest
+41764374904	Ingest Catalunya	Run catalunya (live)	failure	2026-11-04T03:00:51Z	2026-11-04T03:02:02Z	ubuntu-latest
+41743574492	Ingest PLACSP	Run placsp (live)	failure	2026-11-04T00:00:51Z	2026-11-04T00:16:31Z	ubuntu-latest
+41743574587	Ingest PLACSP	Run placsp_agregadas (live)	failure	2026-11-04T00:00:51Z	2026-11-04T00:07:11Z	ubuntu-latest
+41743573633	Ingest PLACSP	Run placsp_menores (live)	failure	2026-11-04T00:00:51Z	2026-11-04T00:11:42Z	ubuntu-latest
+41590322098	Alerts digest	Run alerts send (write-resend)	success	2026-11-03T06:30:39Z	2026-11-03T06:30:52Z	ubuntu-latest
+41587219942	Alerts match	Run alerts match (write)	success	2026-11-03T06:00:50Z	2026-11-03T06:01:09Z	ubuntu-latest
+41569591499	Ingest Euskadi	Run euskadi (live)	success	2026-11-03T03:00:54Z	2026-11-03T03:02:48Z	ubuntu-latest
+41569586912	Ingest Catalunya	Run catalunya (live)	success	2026-11-03T03:00:52Z	2026-11-03T06:00:33Z	ubuntu-latest
+41549700946	Ingest PLACSP	Run placsp_menores (live)	success	2026-11-03T00:00:51Z	2026-11-03T00:01:40Z	ubuntu-latest
+41549700598	Ingest PLACSP	Run placsp (live)	success	2026-11-03T00:00:51Z	2026-11-03T00:01:40Z	ubuntu-latest
+41549700213	Ingest PLACSP	Run placsp_agregadas (live)	success	2026-11-03T00:00:53Z	2026-11-03T00:01:49Z	ubuntu-latest
+41446574463	Alerts digest	Run alerts send (write-resend)	success	2026-11-02T12:40:13Z	2026-11-02T12:40:24Z	ubuntu-latest
+41445639633	Alerts digest	Run alerts send (write-resend)	success	2026-11-02T12:33:27Z	2026-11-02T12:33:37Z	ubuntu-latest
+41437161451	Alerts digest	Run alerts send (write-resend)	success	2026-11-02T11:28:54Z	2026-11-02T11:29:05Z	ubuntu-latest
+41433090672	Alerts digest	Run alerts send (write-resend)	success	2026-11-02T10:59:05Z	2026-11-02T10:59:20Z	ubuntu-latest
+41418459337	Ingest Euskadi	Run euskadi (live)	success	2026-11-02T09:10:17Z	2026-11-02T09:12:00Z	ubuntu-latest
+41418328126	Ingest PLACSP	Run placsp (live)	success	2026-11-02T09:09:19Z	2026-11-02T09:10:33Z	ubuntu-latest
+41416427394	Alerts digest	Run alerts send (write-resend)	success	2026-11-02T08:54:20Z	2026-11-02T08:56:36Z	ubuntu-latest
+41415301428	Alerts match	Run alerts match (write)	success	2026-11-02T08:45:14Z	2026-11-02T08:46:49Z	ubuntu-latest
+41412705862	Ingest PLACSP	Run placsp_menores (live)	success	2026-11-02T08:23:31Z	2026-11-02T08:37:09Z	ubuntu-latest
+41412630367	Ingest PLACSP	Run placsp_agregadas (live)	success	2026-11-02T08:22:55Z	2026-11-02T08:37:05Z	ubuntu-latest
+41409755610	Ingest PLACSP	Run placsp (live)	success	2026-11-02T07:58:46Z	2026-11-02T08:15:56Z	ubuntu-latest
+41400344798	Alerts digest	Run alerts send (write-resend)	success	2026-11-02T06:30:38Z	2026-11-02T06:30:49Z	ubuntu-latest
+41397302612	Alerts match	Run alerts match (write)	success	2026-11-02T06:00:54Z	2026-11-02T06:01:06Z	ubuntu-latest
+41380718276	Ingest Catalunya	Run catalunya (live)	success	2026-11-02T03:00:58Z	2026-11-02T06:29:21Z	ubuntu-latest
+41380718387	Ingest Euskadi	Run euskadi (live)	success	2026-11-02T03:00:59Z	2026-11-02T03:02:32Z	ubuntu-latest
+41364866660	Ingest PLACSP	Run placsp_agregadas (live)	failure	2026-11-02T00:00:50Z	2026-11-02T00:01:01Z	ubuntu-latest
+41364865960	Ingest PLACSP	Run placsp (live)	failure	2026-11-02T00:00:50Z	2026-11-02T00:01:00Z	ubuntu-latest
+41364866353	Ingest PLACSP	Run placsp_menores (live)	failure	2026-11-02T00:00:50Z	2026-11-02T00:01:02Z	ubuntu-latest
+41053132371	Alerts digest	Run alerts send (write-resend)	success	2026-10-30T12:08:37Z	2026-10-30T12:08:49Z	ubuntu-latest
+41031612108	Ingest PLACSP	Run placsp_menores (live)	cancelled	2026-10-30T09:11:33Z	2026-10-30T15:12:41Z	ubuntu-latest
+41031163515	Ingest PLACSP	Run placsp (live)	cancelled	2026-10-30T09:07:54Z	2026-10-30T15:08:28Z	ubuntu-latest
+41019039518	Ingest PLACSP	Run placsp (live)	failure	2026-10-30T07:16:08Z	2026-10-30T07:16:11Z	ubuntu-latest
+41018977089	Ingest PLACSP	Run placsp (live)	failure	2026-10-30T07:15:31Z	2026-10-30T07:15:34Z	ubuntu-latest
+41014491776	Alerts digest	Run alerts send (write-resend)	success	2026-10-30T06:30:40Z	2026-10-30T06:30:53Z	ubuntu-latest
+41011589014	Alerts match	Run alerts match (write)	success	2026-10-30T06:00:48Z	2026-10-30T06:01:01Z	ubuntu-latest
+41006016633	Ingest Euskadi	Run euskadi (live)	success	2026-10-30T05:00:48Z	2026-10-30T05:02:45Z	ubuntu-latest
+41000483213	Ingest Catalunya	Run catalunya (live)	failure	2026-10-30T04:00:48Z	2026-10-30T04:07:49Z	ubuntu-latest
+40989163139	Ingest PLACSP	Run placsp_menores (live)	cancelled	2026-10-30T02:00:47Z	2026-10-30T07:14:14Z	ubuntu-latest
+40989163164	Ingest PLACSP	Run placsp (live)	failure	2026-10-30T02:00:47Z	2026-10-30T02:12:00Z	ubuntu-latest
+40989162424	Ingest PLACSP	Run placsp_agregadas (live)	success	2026-10-30T02:00:47Z	2026-10-30T06:23:34Z	ubuntu-latest
+40869509712	Alerts digest	Run alerts send (write-resend)	success	2026-10-29T11:58:35Z	2026-10-29T12:00:34Z	ubuntu-latest
+40867822314	Alerts match	Run alerts match (write)	failure	2026-10-29T11:45:25Z	2026-10-29T11:47:12Z	ubuntu-latest
+40867822314	Alerts match	Run alerts match (write)	success	2026-10-29T11:49:00Z	2026-10-29T11:51:36Z	ubuntu-latest
+40865075813	Ingest PLACSP	Run placsp (live)	cancelled	2026-10-29T11:23:59Z	2026-10-29T17:24:17Z	ubuntu-latest
+40861806417	Ingest PLACSP	Run placsp (live)	cancelled	2026-10-29T10:59:09Z	2026-10-29T11:23:08Z	ubuntu-latest
+40849219719	Ingest Catalunya	Run catalunya (live)	success	2026-10-29T09:23:20Z	2026-10-29T09:26:20Z	ubuntu-latest
+40835122614	Ingest PLACSP	Run placsp_agregadas (live)	failure	2026-10-29T07:23:35Z	2026-10-29T07:26:42Z	ubuntu-latest
+40829637595	Alerts digest	Run alerts send (write-resend)	failure	2026-10-29T06:30:41Z	2026-10-29T06:31:19Z	ubuntu-latest
+40826656425	Alerts match	Run alerts match (write)	success	2026-10-29T06:00:50Z	2026-10-29T06:01:04Z	ubuntu-latest
+40820913935	Ingest Euskadi	Run euskadi (live)	success	2026-10-29T05:00:50Z	2026-10-29T05:02:12Z	ubuntu-latest
+40815314520	Ingest Catalunya	Run catalunya (live)	failure	2026-10-29T04:00:50Z	2026-10-29T04:07:28Z	ubuntu-latest
+40803800882	Ingest PLACSP	Run placsp (live)	failure	2026-10-29T02:00:48Z	2026-10-29T02:17:26Z	ubuntu-latest
+40803800819	Ingest PLACSP	Run placsp_agregadas (live)	success	2026-10-29T02:00:48Z	2026-10-29T06:55:23Z	ubuntu-latest
+40803800903	Ingest PLACSP	Run placsp_menores (live)	cancelled	2026-10-29T02:00:48Z	2026-10-29T08:01:04Z	ubuntu-latest
+40686927330	Ingest PLACSP	Run placsp (live)	failure	2026-10-28T12:20:04Z	2026-10-28T12:51:57Z	ubuntu-latest
+40678724443	Ingest PLACSP	Run placsp (live)	failure	2026-10-28T11:17:01Z	2026-10-28T12:18:20Z	ubuntu-latest
+40676384069	Ingest PLACSP	Run placsp (live)	failure	2026-10-28T10:59:10Z	2026-10-28T11:08:13Z	ubuntu-latest
+40675361313	Ingest PLACSP	Run placsp (live)	failure	2026-10-28T10:51:10Z	2026-10-28T10:57:50Z	ubuntu-latest
+40667466793	Ingest Catalunya	Run catalunya (live)	success	2026-10-28T09:51:10Z	2026-10-28T10:10:08Z	ubuntu-latest
+40665059727	CI	Web lint / typecheck / build	success	2026-10-28T09:32:44Z	2026-10-28T09:33:27Z	ubuntu-latest
+40665059727	CI	Ingestion CLI + pytest	success	2026-10-28T09:32:44Z	2026-10-28T09:32:58Z	ubuntu-latest
+40660953873	Ingest Catalunya	Run catalunya (live)	success	2026-10-28T09:00:55Z	2026-10-28T09:35:38Z	ubuntu-latest
+40657695515	Ingest Catalunya	Run catalunya (live)	cancelled	2026-10-28T08:33:57Z	2026-10-28T08:36:41Z	ubuntu-latest
+40656372176	CI	Web lint / typecheck / build	success	2026-10-28T08:23:01Z	2026-10-28T08:23:55Z	ubuntu-latest
+40656372176	CI	Ingestion CLI + pytest	success	2026-10-28T08:23:01Z	2026-10-28T08:23:18Z	ubuntu-latest
+40653473168	CI	Ingestion CLI + pytest	success	2026-10-28T07:58:00Z	2026-10-28T07:58:14Z	ubuntu-latest
+40653473168	CI	Web lint / typecheck / build	success	2026-10-28T07:58:00Z	2026-10-28T07:58:52Z	ubuntu-latest
+40652761741	CI	Web lint / typecheck / build	success	2026-10-28T07:51:22Z	2026-10-28T07:52:21Z	ubuntu-latest
+40652761741	CI	Ingestion CLI + pytest	success	2026-10-28T07:51:22Z	2026-10-28T07:51:38Z	ubuntu-latest
+40650810155	CI	Web lint / typecheck / build	success	2026-10-28T07:33:11Z	2026-10-28T07:34:07Z	ubuntu-latest
+40650810155	CI	Ingestion CLI + pytest	success	2026-10-28T07:33:11Z	2026-10-28T07:33:25Z	ubuntu-latest
+40500802803	CI	Web lint / typecheck / build	success	2026-10-27T12:03:36Z	2026-10-27T12:04:13Z	ubuntu-latest
+40500802803	CI	Ingestion CLI + pytest	success	2026-10-27T12:03:35Z	2026-10-27T12:03:53Z	ubuntu-latest
+40497704983	Alerts digest	Run alerts send (write-resend)	failure	2026-10-27T11:38:55Z	2026-10-27T11:39:54Z	ubuntu-latest
+40496717406	Alerts digest	Run alerts send (write-resend)	failure	2026-10-27T11:30:58Z	2026-10-27T11:31:12Z	ubuntu-latest
+40496456621	Alerts match	Run alerts match (write)	success	2026-10-27T11:28:57Z	2026-10-27T11:29:26Z	ubuntu-latest
+40496006135	CI	Web lint / typecheck / build	success	2026-10-27T11:25:17Z	2026-10-27T11:26:15Z	ubuntu-latest
+40496006135	CI	Ingestion CLI + pytest	success	2026-10-27T11:25:17Z	2026-10-27T11:25:32Z	ubuntu-latest
+40495494976	CI	Ingestion CLI + pytest	success	2026-10-27T11:21:16Z	2026-10-27T11:21:32Z	ubuntu-latest
+40495494976	CI	Web lint / typecheck / build	failure	2026-10-27T11:21:17Z	2026-10-27T11:21:43Z	ubuntu-latest
+40493105071	CI	Ingestion CLI + pytest	success	2026-10-27T11:02:25Z	2026-10-27T11:02:40Z	ubuntu-latest
+40493105071	CI	Web lint / typecheck / build	failure	2026-10-27T11:02:25Z	2026-10-27T11:03:18Z	ubuntu-latest
+40493058828	CI	Web lint / typecheck / build	failure	2026-10-27T11:02:04Z	2026-10-27T11:02:42Z	ubuntu-latest
+40493058828	CI	Ingestion CLI + pytest	success	2026-10-27T11:02:04Z	2026-10-27T11:02:19Z	ubuntu-latest
+40492187690	Ingest Euskadi	Run euskadi (live)	success	2026-10-27T10:55:16Z	2026-10-27T10:56:10Z	ubuntu-latest
+40482231598	Ingest PLACSP	Run placsp_agregadas (live)	cancelled	2026-10-27T09:37:52Z	2026-10-27T10:54:15Z	ubuntu-latest
+40480669934	Ingest PLACSP	Run placsp_agregadas (dry-run)	success	2026-10-27T09:25:36Z	2026-10-27T09:25:45Z	ubuntu-latest
+40478398956	Ingest PLACSP	Run placsp_menores (live)	cancelled	2026-10-27T09:07:32Z	2026-10-27T10:54:16Z	ubuntu-latest
+40477696561	Ingest Catalunya	Run catalunya (live)	success	2026-10-27T09:01:46Z	2026-10-27T09:03:52Z	ubuntu-latest
+40477303580	Ingest Euskadi	Run euskadi (live)	success	2026-10-27T08:58:40Z	2026-10-27T08:59:49Z	ubuntu-latest
+40475027400	Ingest Euskadi	Run euskadi (live)	success	2026-10-27T08:39:31Z	2026-10-27T08:39:51Z	ubuntu-latest
+40472717395	Ingest Euskadi	Run euskadi (live)	failure	2026-10-27T08:19:41Z	2026-10-27T08:19:51Z	ubuntu-latest
+40471142525	Ingest Euskadi	Run euskadi (live)	failure	2026-10-27T08:05:33Z	2026-10-27T08:05:53Z	ubuntu-latest
+40300440084	Ingest Euskadi	Run euskadi (live)	failure	2026-10-26T09:33:14Z	2026-10-26T09:33:33Z	ubuntu-latest
+40299941462	Ingest Euskadi	Run euskadi (live)	failure	2026-10-26T09:29:32Z	2026-10-26T09:29:50Z	ubuntu-latest
+40299393416	Ingest Euskadi	Run euskadi (live)	failure	2026-10-26T09:25:16Z	2026-10-26T09:25:27Z	ubuntu-latest
+40298644465	Ingest Euskadi	Run euskadi (live)	failure	2026-10-26T09:19:29Z	2026-10-26T09:19:40Z	ubuntu-latest
+37614491994	CI	Web lint / typecheck / build	success	2026-10-07T11:30:09Z	2026-10-07T11:30:47Z	ubuntu-latest
+37614491994	CI	Ingestion CLI + pytest	success	2026-10-07T11:30:09Z	2026-10-07T11:30:24Z	ubuntu-latest
+37427030710	CI	Ingestion CLI + pytest	success	2026-10-06T07:00:41Z	2026-10-06T07:00:57Z	ubuntu-latest
+37427030710	CI	Web lint / typecheck / build	success	2026-10-06T07:00:41Z	2026-10-06T07:01:10Z	ubuntu-latest
+36851517794	CI	Ingestion CLI + pytest	success	2026-10-01T10:49:27Z	2026-10-01T10:49:40Z	ubuntu-latest
+36851517794	CI	Web lint / typecheck / build	success	2026-10-01T10:49:27Z	2026-10-01T10:50:12Z	ubuntu-latest
+36396111477	CI	Ingestion CLI + pytest	success	2026-09-28T08:13:51Z	2026-09-28T08:14:11Z	ubuntu-latest
+36396111477	CI	Web lint / typecheck / build	failure	2026-09-28T08:13:50Z	2026-09-28T08:14:08Z	ubuntu-latest
+35342962280	CI	Ingestion CLI + pytest	success	2026-09-18T12:06:48Z	2026-09-18T12:07:00Z	ubuntu-latest
+35342962280	CI	Web lint / typecheck / build	success	2026-09-18T12:06:49Z	2026-09-18T12:07:20Z	ubuntu-latest
+35209818616	Ingest Catalunya	Run catalunya (dry-run)	success	2026-09-17T10:18:55Z	2026-09-17T10:19:04Z	ubuntu-latest
+35209539070	Ingest Euskadi	Run euskadi (dry-run)	success	2026-09-17T10:15:40Z	2026-09-17T10:15:51Z	ubuntu-latest
+35209454838	Ingest PLACSP	Run placsp_menores (dry-run)	success	2026-09-17T10:14:50Z	2026-09-17T10:15:01Z	ubuntu-latest
+35196696358	CI	Ingestion CLI + pytest	success	2026-09-17T07:52:13Z	2026-09-17T07:52:28Z	ubuntu-latest
+35196696358	CI	Web lint / typecheck / build	success	2026-09-17T07:52:12Z	2026-09-17T07:52:43Z	ubuntu-latest
+35195993143	CI	Ingestion CLI + pytest	success	2026-09-17T07:43:52Z	2026-09-17T07:44:07Z	ubuntu-latest
+35195993143	CI	Web lint / typecheck / build	success	2026-09-17T07:43:52Z	2026-09-17T07:44:31Z	ubuntu-latest
+35195989076	CI	Ingestion CLI + pytest	success	2026-09-17T07:43:49Z	2026-09-17T07:44:04Z	ubuntu-latest
+35195989076	CI	Web lint / typecheck / build	success	2026-09-17T07:43:49Z	2026-09-17T07:44:16Z	ubuntu-latest
+35081249554	Ingest PLACSP	Run placsp_agregadas (dry-run)	success	2026-09-16T09:45:58Z	2026-09-16T09:46:10Z	ubuntu-latest
+35075280795	CI	Ingestion CLI + pytest	success	2026-09-16T08:42:48Z	2026-09-16T08:43:00Z	ubuntu-latest
+35075280795	CI	Web lint / typecheck / build	success	2026-09-16T08:42:48Z	2026-09-16T08:43:22Z	ubuntu-latest
+34937572216	Ingest PLACSP	Run PLACSP (dry-run)	success	2026-09-15T06:34:53Z	2026-09-15T06:35:07Z	ubuntu-latest
+34937179397	CI	Ingestion CLI + pytest	success	2026-09-15T06:29:45Z	2026-09-15T06:30:00Z	ubuntu-latest
+34937179397	CI	Web lint / typecheck / build	success	2026-09-15T06:29:45Z	2026-09-15T06:30:19Z	ubuntu-latest
+34937143073	CI	Web lint / typecheck / build	success	2026-09-15T06:29:18Z	2026-09-15T06:29:57Z	ubuntu-latest
+34937143073	CI	Ingestion CLI + pytest	success	2026-09-15T06:29:18Z	2026-09-15T06:29:34Z	ubuntu-latest
+34458020316	CI	Web lint / typecheck / build	success	2026-09-10T08:58:03Z	2026-09-10T08:58:43Z	ubuntu-latest
+34458020316	CI	Ingestion CLI + pytest	success	2026-09-10T08:58:02Z	2026-09-10T08:58:11Z	ubuntu-latest
+34457106821	CI	Ingestion CLI + pytest	success	2026-09-10T08:47:56Z	2026-09-10T08:48:09Z	ubuntu-latest
+34457106821	CI	Web lint / typecheck / build	success	2026-09-10T08:47:55Z	2026-09-10T08:48:31Z	ubuntu-latest
+34456106434	CI	Ingestion CLI + pytest	success	2026-09-10T08:36:49Z	2026-09-10T08:37:02Z	ubuntu-latest
+34456106434	CI	Web lint / typecheck / build	success	2026-09-10T08:36:49Z	2026-09-10T08:37:20Z	ubuntu-latest
+34451666152	CI	Ingestion CLI smoke	success	2026-09-10T07:46:42Z	2026-09-10T07:46:53Z	ubuntu-latest
+34451666152	CI	Web lint / typecheck / build	success	2026-09-10T07:46:42Z	2026-09-10T07:47:21Z	ubuntu-latest
+34348210320	CI	Web lint / typecheck / build	success	2026-09-09T11:56:41Z	2026-09-09T11:57:15Z	ubuntu-latest
+34348210320	CI	Ingestion CLI smoke	success	2026-09-09T11:56:41Z	2026-09-09T11:56:52Z	ubuntu-latest
+34346774585	CI	Ingestion CLI smoke	success	2026-09-09T11:40:09Z	2026-09-09T11:40:18Z	ubuntu-latest
+34346774585	CI	Web lint / typecheck / build	success	2026-09-09T11:40:10Z	2026-09-09T11:40:48Z	ubuntu-latest
+34346194919	CI	Web lint / typecheck / build	success	2026-09-09T11:33:35Z	2026-09-09T11:34:12Z	ubuntu-latest
+34346194919	CI	Ingestion CLI smoke	success	2026-09-09T11:33:35Z	2026-09-09T11:33:44Z	ubuntu-latest
+34341955526	CI	Ingestion CLI smoke	success	2026-09-09T10:45:49Z	2026-09-09T10:46:03Z	ubuntu-latest
+34341955526	CI	Web lint / typecheck / build	success	2026-09-09T10:45:48Z	2026-09-09T10:46:26Z	ubuntu-latest
+34341813312	CI	Ingestion CLI smoke	success	2026-09-09T10:44:16Z	2026-09-09T10:44:24Z	ubuntu-latest
+34341813312	CI	Web lint / typecheck / build	success	2026-09-09T10:44:17Z	2026-09-09T10:44:50Z	ubuntu-latest
+34341732527	CI	Web lint / typecheck / build	success	2026-09-09T10:43:23Z	2026-09-09T10:43:56Z	ubuntu-latest
+34341732527	CI	Ingestion CLI smoke	success	2026-09-09T10:43:23Z	2026-09-09T10:43:31Z	ubuntu-latest
+34340477231	CI	Web lint / typecheck / build	success	2026-09-09T10:29:25Z	2026-09-09T10:29:58Z	ubuntu-latest
+34340477231	CI	Ingestion CLI smoke	success	2026-09-09T10:29:25Z	2026-09-09T10:29:36Z	ubuntu-latest
+34330136011	CI	Ingestion CLI smoke	success	2026-09-09T08:37:33Z	2026-09-09T08:37:41Z	ubuntu-latest
+34330136011	CI	Web lint / typecheck / build	success	2026-09-09T08:37:33Z	2026-09-09T08:38:11Z	ubuntu-latest
+34327897169	CI	Web lint / typecheck / build	success	2026-09-09T08:13:03Z	2026-09-09T08:13:37Z	ubuntu-latest
+34327897169	CI	Ingestion CLI smoke	success	2026-09-09T08:13:03Z	2026-09-09T08:13:14Z	ubuntu-latest
+34322254093	CI	Ingestion CLI smoke	success	2026-09-09T07:07:10Z	2026-09-09T07:07:24Z	ubuntu-latest
+34322254093	CI	Web lint / typecheck / build	success	2026-09-09T07:07:10Z	2026-09-09T07:07:52Z	ubuntu-latest
+34321411812	CI	Web lint / typecheck / build	success	2026-09-09T06:56:53Z	2026-09-09T06:57:29Z	ubuntu-latest
+34321411812	CI	Ingestion CLI smoke	success	2026-09-09T06:56:52Z	2026-09-09T06:57:03Z	ubuntu-latest
+34321140451	CI	Web lint / typecheck / build	success	2026-09-09T06:53:30Z	2026-09-09T06:54:02Z	ubuntu-latest
+34321140451	CI	Ingestion CLI smoke	success	2026-09-09T06:53:29Z	2026-09-09T06:53:38Z	ubuntu-latest
+34209015277	CI	Web lint / typecheck / build	success	2026-09-08T09:15:47Z	2026-09-08T09:16:26Z	ubuntu-latest
+34209015277	CI	Ingestion CLI smoke	success	2026-09-08T09:15:48Z	2026-09-08T09:15:59Z	ubuntu-latest
