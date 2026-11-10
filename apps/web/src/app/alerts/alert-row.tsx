@@ -231,56 +231,26 @@ export function AlertRowItem({
   return (
     <li className="py-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className={cn("min-w-0 flex-1", !alert.is_active && "opacity-55")}>
-          <p
-            className={cn(
-              "font-medium",
-              alert.is_active ? "text-foreground" : "text-muted-foreground",
-            )}
-          >
-            {alert.name}
-          </p>
-          <p
-            className={cn(
-              "mt-1 text-sm",
-              alert.is_active
-                ? "text-muted-foreground"
-                : "text-muted-foreground/80",
-            )}
-          >
-            {formatCriteriaSummary(criteria, { municipalityNames })}
-          </p>
-        </div>
-        <div className="flex flex-col items-end gap-2">
-          <div className="flex flex-wrap items-center justify-end gap-2">
-            <ActiveToggle
-              active={alert.is_active}
-              disabled={editing}
-              pending={pending}
-              onToggle={() => void toggleActive()}
-            />
-            <button
-              type="button"
-              disabled={pending || editing}
-              aria-pressed={editing}
-              aria-label="Editar alerta"
-              title="Editar"
-              onClick={() => {
-                setEditing(true);
-                setEditKey((k) => k + 1);
-                setError(null);
-              }}
+        <div className="min-w-0 flex-1">
+          <div className={cn(!alert.is_active && "opacity-55")}>
+            <p
               className={cn(
-                "inline-flex size-8 items-center justify-center rounded-md text-foreground/75 transition-colors",
-                "hover:bg-muted hover:text-foreground",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
-                "disabled:pointer-events-none disabled:opacity-50",
-                editing && "bg-muted text-foreground",
+                "font-medium",
+                alert.is_active ? "text-foreground" : "text-muted-foreground",
               )}
             >
-              <PencilIcon className="size-[1.15rem]" />
-            </button>
-            <RemoveAlertButton alert={alert} disabled={editing} />
+              {alert.name}
+            </p>
+            <p
+              className={cn(
+                "mt-1 text-sm",
+                alert.is_active
+                  ? "text-muted-foreground"
+                  : "text-muted-foreground/80",
+              )}
+            >
+              {formatCriteriaSummary(criteria, { municipalityNames })}
+            </p>
           </div>
           {hasRelatedTenders ? (
             <Button
@@ -289,10 +259,41 @@ export function AlertRowItem({
               size="sm"
               disabled={pending || editing}
               onClick={() => setRelatedOpen(true)}
+              className="mt-2"
             >
               Licitaciones relacionadas
             </Button>
           ) : null}
+        </div>
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <ActiveToggle
+            active={alert.is_active}
+            disabled={editing}
+            pending={pending}
+            onToggle={() => void toggleActive()}
+          />
+          <button
+            type="button"
+            disabled={pending || editing}
+            aria-pressed={editing}
+            aria-label="Editar alerta"
+            title="Editar"
+            onClick={() => {
+              setEditing(true);
+              setEditKey((k) => k + 1);
+              setError(null);
+            }}
+            className={cn(
+              "inline-flex size-8 items-center justify-center rounded-md text-foreground/75 transition-colors",
+              "hover:bg-muted hover:text-foreground",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
+              "disabled:pointer-events-none disabled:opacity-50",
+              editing && "bg-muted text-foreground",
+            )}
+          >
+            <PencilIcon className="size-[1.15rem]" />
+          </button>
+          <RemoveAlertButton alert={alert} disabled={editing} />
         </div>
       </div>
 
