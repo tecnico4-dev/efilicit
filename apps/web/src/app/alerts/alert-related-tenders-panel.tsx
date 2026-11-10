@@ -572,6 +572,17 @@ export function AlertRelatedTendersPanel({
     () => scopedItems.filter((i) => isAlertRelatedInTrashWindow(i)),
     [scopedItems],
   );
+  /** Sin pendientes, el filtro «Estado envío» sobra. */
+  const hasPendingItems = useMemo(
+    () => activeItems.some((i) => i.status === "pending"),
+    [activeItems],
+  );
+
+  useEffect(() => {
+    if (!hasPendingItems && statusFilter !== "all") {
+      setStatusFilter("all");
+    }
+  }, [hasPendingItems, statusFilter]);
 
   const lastSendItems = useMemo(
     () => itemsFromLastSend(activeItems),
@@ -830,7 +841,7 @@ export function AlertRelatedTendersPanel({
           {(() => {
             const activeFilterCount =
               (lastSendOnly || dateFrom || dateTo ? 1 : 0) +
-              (statusFilter !== "all" ? 1 : 0) +
+              (hasPendingItems && statusFilter !== "all" ? 1 : 0) +
               (ratingFilter !== "all" ? 1 : 0) +
               (ratingFilter === "rated" && interestFilter !== "all" ? 1 : 0) +
               (isEmbedded && alertFilter !== "all" ? 1 : 0);
@@ -968,21 +979,23 @@ export function AlertRelatedTendersPanel({
                         </select>
                       </label>
                     ) : null}
-                    <label className="flex min-w-[9rem] flex-col gap-1 text-xs text-muted-foreground">
-                      Estado envío
-                      <select
-                        className="h-9 rounded-md border border-border bg-background px-2 text-sm text-foreground"
-                        value={statusFilter}
-                        onChange={(e) => {
-                          setStatusFilter(e.target.value as StatusFilter);
-                          setPage(1);
-                        }}
-                      >
-                        <option value="all">Todas</option>
-                        <option value="sent">Enviadas</option>
-                        <option value="pending">Pendientes</option>
-                      </select>
-                    </label>
+                    {hasPendingItems ? (
+                      <label className="flex min-w-[9rem] flex-col gap-1 text-xs text-muted-foreground">
+                        Estado envío
+                        <select
+                          className="h-9 rounded-md border border-border bg-background px-2 text-sm text-foreground"
+                          value={statusFilter}
+                          onChange={(e) => {
+                            setStatusFilter(e.target.value as StatusFilter);
+                            setPage(1);
+                          }}
+                        >
+                          <option value="all">Todas</option>
+                          <option value="sent">Enviadas</option>
+                          <option value="pending">Pendientes</option>
+                        </select>
+                      </label>
+                    ) : null}
                     <label className="flex min-w-[9rem] flex-col gap-1 text-xs text-muted-foreground">
                       Valoración
                       <select

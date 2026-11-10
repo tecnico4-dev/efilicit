@@ -448,9 +448,11 @@ export function PublicationDateRange({
         }}
         className={cn(
           "mt-1 flex w-full items-center justify-between rounded-md border border-border bg-background px-3 py-2 text-left text-sm outline-none focus:ring-2 focus:ring-ring",
-          !displayFrom && !displayTo
-            ? "text-muted-foreground"
-            : "text-foreground",
+          // En filtros controlados (alertas) «Cualquier fecha» = mismo peso que «Todas».
+          // En buscador, vacío sigue en muted como placeholder.
+          isControlled || displayFrom || displayTo || summaryOverride
+            ? "text-foreground"
+            : "text-muted-foreground",
           isPreviewing && SEARCH_PREVIEW_GHOST_CLASS,
         )}
       >
