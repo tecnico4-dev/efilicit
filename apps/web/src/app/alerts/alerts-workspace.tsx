@@ -26,7 +26,7 @@ export function AlertsWorkspace({
 
   return (
     <section>
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex flex-wrap items-end justify-between gap-x-3 gap-y-2 border-b border-border">
         <div
           className="flex flex-wrap items-end gap-1"
           role="tablist"
@@ -43,13 +43,16 @@ export function AlertsWorkspace({
             onSelect={() => setTab("coincidences")}
           />
         </div>
-        <DigestFrequencyControl
-          userId={userId}
-          initialFrequency={digestFrequency}
-        />
+        <div className="pb-2">
+          <DigestFrequencyControl
+            userId={userId}
+            initialFrequency={digestFrequency}
+          />
+        </div>
       </div>
 
-      <div className="mt-3" role="tabpanel">
+      {/* -mt-px: la pestaña activa solapa el borde y se une al panel. */}
+      <div className="-mt-px" role="tabpanel">
         {tab === "alerts" ? (
           alertsList
         ) : (
@@ -83,7 +86,7 @@ function SectionTab({
       className={cn(
         "relative z-10 -mb-px inline-flex items-center rounded-t-lg border px-3.5 py-2 text-sm font-medium transition-colors",
         active
-          ? "border-border border-b-[color-mix(in_srgb,var(--surface)_40%,transparent)] bg-surface/40 text-foreground"
+          ? "border-border border-b-background bg-background text-foreground"
           : "border-transparent bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground",
       )}
     >

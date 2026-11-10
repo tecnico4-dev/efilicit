@@ -1163,7 +1163,7 @@ export function AlertRelatedTendersPanel({
 
   if (isEmbedded) {
     return (
-      <div className="relative rounded-xl border border-border bg-background">
+      <div className="relative rounded-b-xl rounded-t-none border border-border bg-background">
         <div className="border-b border-border px-4 py-3 sm:px-5">
           <h2
             id={`alert-related-title-${scopeId}`}

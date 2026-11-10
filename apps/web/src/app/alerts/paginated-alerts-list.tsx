@@ -74,13 +74,13 @@ export function PaginatedAlertsList({
 
   if (!showPager) {
     return (
-      <div className="mt-3 border-t border-border px-4 sm:px-5">{list}</div>
+      <div className="border-t border-border px-4 sm:px-5">{list}</div>
     );
   }
 
   return (
     <div
-      className="mt-3 flex flex-col overflow-hidden rounded-lg border border-border"
+      className="flex flex-col overflow-hidden rounded-b-lg rounded-t-none border border-border"
       style={{ height: "calc(100dvh - 14rem)" }}
     >
       <div
