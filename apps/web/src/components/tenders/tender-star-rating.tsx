@@ -11,6 +11,9 @@ import {
 
 const GOLD = "#e8b923";
 const GOLD_MUTED = "#d4d4d8";
+const GOLD_SOFT_BG = "color-mix(in srgb, #e8b923 14%, transparent)";
+const GOLD_HOVER_BG = "color-mix(in srgb, #e8b923 10%, transparent)";
+const GOLD_BORDER_SOFT = "color-mix(in srgb, #e8b923 45%, transparent)";
 
 function StarIcon({
   filled,
@@ -39,7 +42,7 @@ function StarIcon({
 
 /**
  * Puntuación 1–5 + interés (Eficen / Subcontrata) obligatorio antes de puntuar.
- * Compacto: «3★ Eficen», «3★ Sub».
+ * Compacto: pill dorada «3★ Eficen» / «3★ Sub».
  * Clic en la misma estrella que la nota → quita la puntuación.
  */
 export function TenderStarRating({
@@ -121,11 +124,15 @@ export function TenderStarRating({
         disabled={disabled || pending}
         onClick={() => setEditing(true)}
         className={cn(
-          "inline-flex items-center gap-0.5 rounded-md px-1.5 py-1 text-sm font-semibold tabular-nums transition-colors",
-          "hover:bg-muted/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+          "inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-semibold tabular-nums transition-opacity",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
           (disabled || pending) && "opacity-60",
         )}
-        style={{ color: GOLD }}
+        style={{
+          color: GOLD,
+          borderColor: GOLD_BORDER_SOFT,
+          backgroundColor: GOLD_SOFT_BG,
+        }}
         aria-label={
           kindLabel
             ? `Puntuación ${rating.score} de 5 (${kindLabel}). Pulsar para cambiar.`
@@ -133,13 +140,11 @@ export function TenderStarRating({
         }
         title="Cambiar puntuación"
       >
-        <span>{rating.score}</span>
-        <StarIcon filled className="size-4" />
-        {kindLabel ? (
-          <span className="ml-0.5 text-xs font-semibold text-foreground">
-            {kindLabel}
-          </span>
-        ) : null}
+        <span className="inline-flex items-center gap-0.5">
+          <span>{rating.score}</span>
+          <StarIcon filled className="size-3.5" />
+        </span>
+        {kindLabel ? <span>{kindLabel}</span> : null}
       </button>
     );
   }
@@ -163,14 +168,12 @@ export function TenderStarRating({
         <KindChip
           label="Eficen"
           active={draftKind === "propia"}
-          insist={nudgeKey > 0 && draftKind == null}
           disabled={disabled || pending}
           onClick={() => toggleKind("propia")}
         />
         <KindChip
           label="Subcontrata"
           active={draftKind === "subcontrata"}
-          insist={nudgeKey > 0 && draftKind == null}
           disabled={disabled || pending}
           onClick={() => toggleKind("subcontrata")}
         />
@@ -215,31 +218,46 @@ export function TenderStarRating({
 function KindChip({
   label,
   active,
-  insist,
   disabled,
   onClick,
 }: {
   label: string;
   active: boolean;
-  insist?: boolean;
   disabled?: boolean;
   onClick: () => void;
 }) {
+  const [hovered, setHovered] = useState(false);
+
   return (
     <button
       type="button"
       disabled={disabled}
       onClick={onClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      onFocus={() => setHovered(true)}
+      onBlur={() => setHovered(false)}
       aria-pressed={active}
       className={cn(
         "rounded-md border px-2 py-0.5 text-[11px] font-medium transition-colors",
-        active
-          ? "border-primary/50 bg-primary/15 text-primary-dark"
-          : insist
-            ? "border-primary bg-primary/10 text-primary-dark"
-            : "border-border bg-background text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+        !active && !hovered && "border-border bg-background text-muted-foreground",
         disabled && "opacity-60",
       )}
+      style={
+        active
+          ? {
+              color: GOLD,
+              borderColor: GOLD,
+              backgroundColor: GOLD_SOFT_BG,
+            }
+          : hovered
+            ? {
+                color: GOLD,
+                borderColor: GOLD_BORDER_SOFT,
+                backgroundColor: GOLD_HOVER_BG,
+              }
+            : undefined
+      }
     >
       {label}
     </button>
