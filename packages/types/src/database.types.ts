@@ -562,32 +562,42 @@ export type Database = {
         Row: {
           deliverable_id: string
           linked_at: string
+          offer_case_id: string
           requirement_id: string
         }
         Insert: {
           deliverable_id: string
           linked_at?: string
+          offer_case_id: string
           requirement_id: string
         }
         Update: {
           deliverable_id?: string
           linked_at?: string
+          offer_case_id?: string
           requirement_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "offer_requirement_deliverables_deliverable_id_fkey"
-            columns: ["deliverable_id"]
+            foreignKeyName: "offer_requirement_deliverables_case_fkey"
+            columns: ["offer_case_id"]
             isOneToOne: false
-            referencedRelation: "offer_deliverables"
+            referencedRelation: "offer_cases"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "offer_requirement_deliverables_requirement_id_fkey"
-            columns: ["requirement_id"]
+            foreignKeyName: "offer_requirement_deliverables_deliverable_case_fkey"
+            columns: ["deliverable_id", "offer_case_id"]
+            isOneToOne: false
+            referencedRelation: "offer_deliverables"
+            referencedColumns: ["id", "offer_case_id"]
+          },
+          {
+            foreignKeyName: "offer_requirement_deliverables_requirement_case_fkey"
+            columns: ["requirement_id", "offer_case_id"]
             isOneToOne: false
             referencedRelation: "offer_requirements"
-            referencedColumns: ["id"]
+            referencedColumns: ["id", "offer_case_id"]
           },
         ]
       }
@@ -1133,6 +1143,7 @@ export type Database = {
           created_at: string
           deliverable_id: string | null
           id: string
+          offer_case_id: string
           requirement_id: string | null
           source_id: string
         }
@@ -1140,6 +1151,7 @@ export type Database = {
           created_at?: string
           deliverable_id?: string | null
           id?: string
+          offer_case_id: string
           requirement_id?: string | null
           source_id: string
         }
@@ -1147,16 +1159,24 @@ export type Database = {
           created_at?: string
           deliverable_id?: string | null
           id?: string
+          offer_case_id?: string
           requirement_id?: string | null
           source_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "offer_source_links_source_id_fkey"
-            columns: ["source_id"]
+            foreignKeyName: "offer_source_links_case_fkey"
+            columns: ["offer_case_id"]
+            isOneToOne: false
+            referencedRelation: "offer_cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "offer_source_links_source_case_fkey"
+            columns: ["source_id", "offer_case_id"]
             isOneToOne: false
             referencedRelation: "offer_sources"
-            referencedColumns: ["id"]
+            referencedColumns: ["id", "offer_case_id"]
           },
         ]
       }

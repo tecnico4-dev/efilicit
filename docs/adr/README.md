@@ -41,3 +41,4 @@ No uses un ADR para el estado de una fuente o un parser: eso va en `docs/sources
 | [025](025-catalunya-raw-row-incremental.md) | CCAA RAW incremental por unidad (Catalunya + Euskadi; extiende 022) | Aceptado |
 | [026](026-mis-licitaciones-offer-cases.md) | Mis licitaciones: expediente de oferta (`offer_*`; extiende 023) | Aceptado |
 | [027](027-offer-schema-hardening-is-app-user.md) | Endurecimiento oferta: `is_app_user` + cadena migraciones (bloque A) | Aceptado |
+| [028](028-offer-schema-block-b-integrity.md) | Endurecimiento oferta (bloque B): RESTRICT + evidencias + FK compuestas | Aceptado |
