@@ -20,6 +20,8 @@ export type AlertRelatedQueueItem = {
   createdAt: string;
   sentAt: string | null;
   lastError: string | null;
+  /** Alerta de origen (para filtro en Coincidencias). */
+  alertId: string | null;
   tenderId: string;
   /** Título de fallback si la licitación ya no está en BD. */
   payloadTitle: string | null;
@@ -43,6 +45,7 @@ type QueueRow = {
   created_at: string;
   sent_at: string | null;
   last_error: string | null;
+  alert_id: string | null;
   payload: Json;
 };
 
@@ -78,6 +81,11 @@ function titleFromPayload(payload: Json): string | null {
 function digestFromPayload(payload: Json): string | null {
   const digest = asRecord(payload).digest;
   return typeof digest === "string" && digest.trim() ? digest.trim() : null;
+}
+
+function alertIdFromPayload(payload: Json): string | null {
+  const alertId = asRecord(payload).alert_id;
+  return typeof alertId === "string" && alertId.trim() ? alertId.trim() : null;
 }
 
 /**
@@ -136,7 +144,7 @@ export async function listOwnAlertRelatedQueueItems(
 ): Promise<{ data: AlertRelatedQueueItem[]; error: Error | null }> {
   let query = client
     .from("notification_queue")
-    .select("id, status, created_at, sent_at, last_error, payload")
+    .select("id, status, created_at, sent_at, last_error, alert_id, payload")
     .eq("user_id", input.userId)
     .order("created_at", { ascending: false });
 
@@ -219,6 +227,7 @@ export async function listOwnAlertRelatedQueueItems(
       createdAt: row.created_at,
       sentAt: row.sent_at,
       lastError: row.last_error,
+      alertId: row.alert_id ?? alertIdFromPayload(row.payload),
       tenderId,
       payloadTitle: titleFromPayload(row.payload),
       digestPeriod: digestFromPayload(row.payload),

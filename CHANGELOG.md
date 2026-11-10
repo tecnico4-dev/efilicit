@@ -23,7 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Alertas: pestañas **Mis alertas** | **Coincidencias** (todas las de la cola, misma papelera/filtros/valoración que Relacionadas); en el listado, Editar / Activa / Eliminar pasan a iconos (lápiz, interruptor, papelera) y «Licitaciones relacionadas» sigue en texto.
+- Alertas: pestañas **Mis alertas** | **Coincidencias** (filtro Alerta; sin subtítulo; Interés sin «Sin clasificar» también en Relacionadas); listado con interruptor Activa/Inactiva + editar/eliminar, y «Licitaciones relacionadas» debajo a la derecha.
 - Digest email: hueco entre bloques de alerta con spacer HTML (`height`/celda), no `margin` (Gmail/Outlook lo ignoraban).
 - Digest email: un correo por usuario según frecuencia de cuenta (se ignora `payload.digest` al agrupar; evita dobles al cambiar diaria↔semanal).
 - Digest email: más aire entre bloques de alerta en la parte texto cuando hay varias.

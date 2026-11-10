@@ -37,8 +37,8 @@ import {
 type FolderView = "active" | "trash";
 type StatusFilter = "all" | "sent" | "pending";
 type RatingFilter = "all" | "rated" | "unrated";
-/** Solo visible con Valoradas; «unset» = valorada sin Eficen/Sub. */
-type InterestFilter = "all" | TenderInterestKind | "unset";
+/** Solo visible con Valoradas. */
+type InterestFilter = "all" | TenderInterestKind;
 
 /**
  * Ítems `sent` del último lote de esta alerta: ancla por `sent_at` máximo
@@ -339,6 +339,11 @@ export function AlertRelatedTendersPanel({
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [ratingFilter, setRatingFilter] = useState<RatingFilter>("all");
   const [interestFilter, setInterestFilter] = useState<InterestFilter>("all");
+  /** Solo Coincidencias (embedded): filtrar por alerta de origen. */
+  const [alertFilter, setAlertFilter] = useState<string>("all");
+  const [alertOptions, setAlertOptions] = useState<
+    { id: string; name: string }[]
+  >([]);
   const [pageSize, setPageSize] = useState<PageSize>(DEFAULT_PAGE_SIZE);
   const [page, setPage] = useState(1);
   const [actionPending, setActionPending] = useState(false);
@@ -381,6 +386,37 @@ export function AlertRelatedTendersPanel({
     }
     setItems(queueResult.data);
 
+    if (!alertId) {
+      const ids = [
+        ...new Set(
+          queueResult.data
+            .map((i) => i.alertId)
+            .filter((id): id is string => Boolean(id)),
+        ),
+      ];
+      if (ids.length === 0) {
+        setAlertOptions([]);
+      } else {
+        const { data: alertRows, error: alertErr } = await client
+          .from("alerts")
+          .select("id, name")
+          .eq("user_id", userId)
+          .in("id", ids);
+        if (alertErr) {
+          setLoading(false);
+          setError(alertErr.message);
+          return;
+        }
+        setAlertOptions(
+          [...(alertRows ?? [])]
+            .map((a) => ({ id: a.id, name: a.name }))
+            .sort((a, b) => a.name.localeCompare(b.name, "es")),
+        );
+      }
+    } else {
+      setAlertOptions([]);
+    }
+
     const tenderIds = [
       ...new Set(queueResult.data.map((i) => i.tenderId).filter(Boolean)),
     ];
@@ -408,6 +444,7 @@ export function AlertRelatedTendersPanel({
     setStatusFilter("all");
     setRatingFilter("all");
     setInterestFilter("all");
+    setAlertFilter("all");
     setPage(1);
     setRatings({});
     setListUndo(null);
@@ -446,13 +483,18 @@ export function AlertRelatedTendersPanel({
     [ratings, userId],
   );
 
+  const scopedItems = useMemo(() => {
+    if (!isEmbedded || alertFilter === "all") return items;
+    return items.filter((i) => i.alertId === alertFilter);
+  }, [items, isEmbedded, alertFilter]);
+
   const activeItems = useMemo(
-    () => items.filter((i) => isAlertRelatedActive(i)),
-    [items],
+    () => scopedItems.filter((i) => isAlertRelatedActive(i)),
+    [scopedItems],
   );
   const trashItems = useMemo(
-    () => items.filter((i) => isAlertRelatedInTrashWindow(i)),
-    [items],
+    () => scopedItems.filter((i) => isAlertRelatedInTrashWindow(i)),
+    [scopedItems],
   );
 
   const lastSendItems = useMemo(
@@ -490,12 +532,6 @@ export function AlertRelatedTendersPanel({
       } else if (interestFilter === "subcontrata") {
         list = list.filter(
           (i) => ratings[i.tenderId]?.interestKind === "subcontrata",
-        );
-      } else if (interestFilter === "unset") {
-        list = list.filter(
-          (i) =>
-            ratings[i.tenderId] != null &&
-            ratings[i.tenderId]?.interestKind == null,
         );
       }
     } else if (ratingFilter === "unrated") {
@@ -720,7 +756,8 @@ export function AlertRelatedTendersPanel({
               (lastSendOnly || dateFrom || dateTo ? 1 : 0) +
               (statusFilter !== "all" ? 1 : 0) +
               (ratingFilter !== "all" ? 1 : 0) +
-              (ratingFilter === "rated" && interestFilter !== "all" ? 1 : 0);
+              (ratingFilter === "rated" && interestFilter !== "all" ? 1 : 0) +
+              (isEmbedded && alertFilter !== "all" ? 1 : 0);
             const filterToggle = (
               <button
                 type="button"
@@ -803,6 +840,26 @@ export function AlertRelatedTendersPanel({
 
                 {showFiltersUi && filtersOpen ? (
                   <div className="mb-3 flex shrink-0 flex-col gap-2 rounded-lg border border-border bg-muted/30 px-3 py-2.5 sm:flex-row sm:flex-wrap sm:items-end">
+                    {isEmbedded && alertOptions.length > 0 ? (
+                      <label className="flex min-w-[9rem] flex-col gap-1 text-xs text-muted-foreground">
+                        Alerta
+                        <select
+                          className="h-9 rounded-md border border-border bg-background px-2 text-sm text-foreground"
+                          value={alertFilter}
+                          onChange={(e) => {
+                            setAlertFilter(e.target.value);
+                            setPage(1);
+                          }}
+                        >
+                          <option value="all">Todas</option>
+                          {alertOptions.map((a) => (
+                            <option key={a.id} value={a.id}>
+                              {a.name}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    ) : null}
                     <PublicationDateRange
                       idPrefix={`alert-related-${scopeId}-`}
                       label="Tiempo"
@@ -873,15 +930,14 @@ export function AlertRelatedTendersPanel({
                             setPage(1);
                           }}
                         >
-                          <option value="all">Cualquiera</option>
-                          <option value="propia">Eficen</option>
-                          <option value="subcontrata">Subcontrata</option>
-                          <option value="unset">Sin clasificar</option>
-                        </select>
-                      </label>
+                              <option value="all">Cualquiera</option>
+                              <option value="propia">Eficen</option>
+                              <option value="subcontrata">Subcontrata</option>
+                            </select>
+                          </label>
+                        ) : null}
+                      </div>
                     ) : null}
-                  </div>
-                ) : null}
 
                 <div className="flex shrink-0 flex-wrap items-start justify-between gap-2 px-1">
                   <div
@@ -1025,10 +1081,6 @@ export function AlertRelatedTendersPanel({
               </span>
             ) : null}
           </h2>
-          <p className="mt-0.5 text-sm text-muted-foreground">
-            Licitaciones de todas tus alertas (misma papelera que en cada
-            alerta).
-          </p>
         </div>
         <div className="flex flex-col px-4 pb-4 pt-3 sm:px-5">{body}</div>
         {undoToast}

@@ -46,7 +46,7 @@ function PencilIcon({ className }: { className?: string }) {
   );
 }
 
-/** Interruptor Activa/Inactiva (marca EfiLicit: primary / soft destructive). */
+/** Interruptor Activa/Inactiva con etiqueta (marca EfiLicit). */
 function ActiveToggle({
   active,
   disabled,
@@ -68,7 +68,7 @@ function ActiveToggle({
       disabled={disabled || pending}
       onClick={onToggle}
       className={cn(
-        "relative inline-flex h-8 w-[3.25rem] shrink-0 items-center rounded-full border transition-colors",
+        "relative inline-flex h-8 w-[6.25rem] shrink-0 items-center rounded-full border transition-colors",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
         "disabled:pointer-events-none disabled:opacity-50",
         active
@@ -78,8 +78,19 @@ function ActiveToggle({
     >
       <span
         className={cn(
+          "pointer-events-none absolute inset-y-0 flex items-center text-[10px] font-semibold tracking-wide",
+          active
+            ? "left-2 text-primary-foreground"
+            : "right-2 text-destructive-foreground",
+        )}
+        aria-hidden
+      >
+        {active ? "Activa" : "Inactiva"}
+      </span>
+      <span
+        className={cn(
           "pointer-events-none absolute top-0.5 flex size-6 items-center justify-center rounded-full bg-background shadow-sm transition-transform duration-200",
-          active ? "left-0.5 translate-x-[1.35rem]" : "left-0.5 translate-x-0",
+          active ? "left-0.5 translate-x-[3.55rem]" : "left-0.5 translate-x-0",
         )}
       >
         {active ? (
@@ -224,19 +235,34 @@ export function AlertRowItem({
           <p className="mt-1 text-sm text-muted-foreground">
             {formatCriteriaSummary(criteria, { municipalityNames })}
           </p>
-          <p className="mt-2">
-            {alert.is_active ? (
-              <span className="rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-xs font-semibold text-link">
-                Activa
-              </span>
-            ) : (
-              <span className="rounded-full border border-destructive/30 bg-destructive/10 px-2 py-0.5 text-xs font-semibold text-destructive">
-                Inactiva
-              </span>
-            )}
-          </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-col items-end gap-2">
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            <ActiveToggle
+              active={alert.is_active}
+              disabled={editing}
+              pending={pending}
+              onToggle={() => void toggleActive()}
+            />
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={pending || editing}
+              aria-pressed={editing}
+              aria-label="Editar alerta"
+              title="Editar"
+              onClick={() => {
+                setEditing(true);
+                setEditKey((k) => k + 1);
+                setError(null);
+              }}
+              className="size-8 px-0"
+            >
+              <PencilIcon className="size-4" />
+            </Button>
+            <RemoveAlertButton alert={alert} disabled={editing} />
+          </div>
           {hasRelatedTenders ? (
             <Button
               type="button"
@@ -248,30 +274,6 @@ export function AlertRowItem({
               Licitaciones relacionadas
             </Button>
           ) : null}
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            disabled={pending || editing}
-            aria-pressed={editing}
-            aria-label="Editar alerta"
-            title="Editar"
-            onClick={() => {
-              setEditing(true);
-              setEditKey((k) => k + 1);
-              setError(null);
-            }}
-            className="size-8 px-0"
-          >
-            <PencilIcon className="size-4" />
-          </Button>
-          <ActiveToggle
-            active={alert.is_active}
-            disabled={editing}
-            pending={pending}
-            onToggle={() => void toggleActive()}
-          />
-          <RemoveAlertButton alert={alert} disabled={editing} />
         </div>
       </div>
 
