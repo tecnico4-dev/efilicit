@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Tests locales `ingestion/tests/test_offer_schema_integrity.py`: bloques A/B (`is_app_user`, RESTRICT tender/biblioteca, CHECK evidencias, FK compuestas); skip sin Postgres; rollback sin dejar datos.
 - Valoraciones: dimensión de interés `propia` (Eficen) / `subcontrata` (`tender_ratings.interest_kind`); hay que elegir chip antes de las estrellas (si no, rebotan); compacto `3★ Eficen` / `3★ Sub`. En Relacionadas, filtro Interés solo con Valoradas.
 - Alertas · Licitaciones relacionadas: papelera por ítem (icono) + «Vaciar listado» / «Restaurar todo» / «Vaciar papelera»; pestañas Todas | Papelera (30 días); filtros en panel colapsable (embudo); tiempo / estado / valoración. Solo el modal (`alert_related_trash`); no afecta al buzón.
 - Mis licitaciones (nuevo): esquema completo ADR 026 (`offer_*` + `company_*`: requisitos, entregables, evidencias, equipo, hitos, pliegos, fuentes, bitácora, biblioteca); backfill desde `bid_cases`; UI `/mis-licitaciones` sobre el expediente nuevo.
