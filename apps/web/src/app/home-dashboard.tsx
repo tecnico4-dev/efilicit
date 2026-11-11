@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { PAGE_MAIN_WIDE_CLASS } from "@/components/shell/page-width";
+import { PAGE_MAIN_MEDIUM_CLASS } from "@/components/shell/page-width";
 import { ErrorState } from "@/components/ui/state-message";
 import { calendarDayMadrid, formatDateTimeMadrid } from "@/lib/datetime";
 import { formatTenderStatus } from "@/lib/tender-labels";
@@ -122,7 +122,7 @@ export function HomeDashboard({
   ] as const;
 
   return (
-    <main className={`${PAGE_MAIN_WIDE_CLASS} home-dashboard`}>
+    <main className={`${PAGE_MAIN_MEDIUM_CLASS} home-dashboard`}>
       <p className="home-anim text-center text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
         Efi<span className="text-primary-dark">Licit</span>
       </p>

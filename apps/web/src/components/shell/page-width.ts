@@ -16,5 +16,12 @@ export const PAGE_MAIN_NARROW_CLASS =
 export const PAGE_MAIN_WIDE_CLASS =
   "flex w-full flex-1 flex-col px-4 py-8 sm:px-6 sm:py-10";
 
+/**
+ * Punto medio entre el estándar (max-w-6xl ≈ 72rem) y el ancho completo.
+ * ~90rem ≈ 1440px; centrado con el mismo padding.
+ */
+export const PAGE_MAIN_MEDIUM_CLASS =
+  "mx-auto flex w-full max-w-[90rem] flex-1 flex-col px-4 py-8 sm:px-6 sm:py-10";
+
 /** Separador bajo el H1 de página (mismo patrón que Alertas / AlertsPanel). */
 export const PAGE_TITLE_RULE = "mt-8 border-t border-border pt-8";

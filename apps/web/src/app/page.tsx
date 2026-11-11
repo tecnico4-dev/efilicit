@@ -2,7 +2,7 @@ import {
   getSessionProfile,
   getSupabaseServerClient,
 } from "@/lib/auth/session";
-import { PAGE_MAIN_WIDE_CLASS } from "@/components/shell/page-width";
+import { PAGE_MAIN_MEDIUM_CLASS } from "@/components/shell/page-width";
 import { ErrorState } from "@/components/ui/state-message";
 import {
   countUnreadNotifications,
@@ -21,7 +21,7 @@ export default async function Home() {
     supabase = await getSupabaseServerClient();
   } catch {
     return (
-      <main className={PAGE_MAIN_WIDE_CLASS}>
+      <main className={PAGE_MAIN_MEDIUM_CLASS}>
         <ErrorState>No se pudo conectar con la base de datos.</ErrorState>
       </main>
     );
@@ -31,7 +31,7 @@ export default async function Home() {
   const profile = await getSessionProfile();
   if (!profile.data) {
     return (
-      <main className={PAGE_MAIN_WIDE_CLASS}>
+      <main className={PAGE_MAIN_MEDIUM_CLASS}>
         <ErrorState>
           No hay perfil en public.users:{" "}
           {profile.error?.message ?? "desconocido"}
