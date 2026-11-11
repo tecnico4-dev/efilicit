@@ -52,6 +52,25 @@ Workflow: [`.github/workflows/ingest-placsp.yml`](workflows/ingest-placsp.yml)
 
 Mismo patrón: manual dry-run + dispatch productivo vía cron externo (tabla arriba).
 
+## Cleanup orphan RAW (Storage)
+
+Workflow: [`.github/workflows/cleanup-orphans.yml`](workflows/cleanup-orphans.yml)  
+Script: [`scripts/borrar_huerfanos.py`](../scripts/borrar_huerfanos.py)
+
+- Disparo **solo manual** (`workflow_dispatch`). Sin cron por ahora.
+- Default: **`dry-run`** (lista + CSV artifact). Input **`apply`** borra de verdad.
+- Huérfano = objeto en bucket `raw` sin fila en `source_artifacts` y más antiguo que `min_age_hours` (24).
+- **No** lanzar mientras corre una ingesta.
+- Tras `apply` en producción: conviene `VACUUM (FULL) storage.objects;` en SQL Editor.
+
+| Secret | Uso |
+|---|---|
+| `EFILICIT_DATABASE_URL` | Listar / recheck huérfanos |
+| `SUPABASE_URL` | API Storage (`apply`) |
+| `SUPABASE_SERVICE_ROLE_KEY` | DELETE Storage (`apply`) |
+
+Para probar desde una rama de trabajo: Actions → Cleanup orphan RAW → Run workflow → elige esa rama.
+
 ## Alertas / match + digest (Semana 5+ / ADR 020)
 
 | Workflow | Rol |

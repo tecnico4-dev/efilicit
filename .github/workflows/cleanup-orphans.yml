@@ -1,0 +1,85 @@
+# Limpieza de ficheros huérfanos en Storage bucket `raw`.
+# Huérfano = objeto en storage.objects sin fila en source_artifacts.
+# Disparo: solo workflow_dispatch (manual). Sin on.schedule por ahora.
+# Default = dry-run (simulación). apply borra de verdad.
+# No lanzar mientras corre una ingesta (el script ignora <24 h; aún así evita solapar).
+name: Cleanup orphan RAW
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: >
+          dry-run = lista huérfanos + CSV (no borra).
+          apply = borra vía API Storage (irreversible para esos ficheros).
+        type: choice
+        options:
+          - dry-run
+          - apply
+        default: dry-run
+      min_age_hours:
+        description: "Ignorar objetos más recientes que N horas (evita ingestas en curso)"
+        required: false
+        default: "24"
+
+jobs:
+  cleanup:
+    name: Orphans (${{ inputs.mode }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    concurrency:
+      group: cleanup-orphans
+      cancel-in-progress: false
+    env:
+      EFILICIT_DATABASE_URL: ${{ secrets.EFILICIT_DATABASE_URL }}
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      MODE: ${{ inputs.mode }}
+      MIN_AGE_HOURS: ${{ inputs.min_age_hours }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Guard secrets
+        run: |
+          set -euo pipefail
+          if [ -z "${EFILICIT_DATABASE_URL:-}" ]; then
+            echo "::error::Missing repository secret EFILICIT_DATABASE_URL"
+            exit 1
+          fi
+          if [ "${MODE}" = "apply" ]; then
+            if [ -z "${SUPABASE_SERVICE_ROLE_KEY:-}" ]; then
+              echo "::error::mode=apply requires secret SUPABASE_SERVICE_ROLE_KEY"
+              exit 1
+            fi
+            if [ -z "${SUPABASE_URL:-}" ]; then
+              echo "::error::mode=apply requires secret SUPABASE_URL"
+              exit 1
+            fi
+          fi
+
+      - name: Run orphan cleanup
+        run: |
+          set -euo pipefail
+          EXTRA=(--min-age-hours "${MIN_AGE_HOURS:-24}" --csv "huerfanos_${{ github.run_id }}.csv")
+          if [ "${MODE}" = "apply" ]; then
+            EXTRA+=(--apply)
+          fi
+          uv run --script scripts/borrar_huerfanos.py "${EXTRA[@]}"
+
+      - name: Upload CSV artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: huerfanos-${{ inputs.mode }}-${{ github.run_id }}
+          path: huerfanos_*.csv
+          if-no-files-found: warn
+          retention-days: 14

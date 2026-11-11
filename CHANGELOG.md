@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Workflow manual `cleanup-orphans` (GitHub Actions): lista/borra ficheros huérfanos del bucket `raw` (`scripts/borrar_huerfanos.py`; default dry-run; `apply` opcional; CSV como artifact).
+
 ### Removed
 
 - Pipeline legacy Mis licitaciones: ruta `/my-tenders` (nav «eliminar»), queries `bid-pipeline` y tablas `bid_*` (migración local `20261110140000`). Queda solo `/mis-licitaciones` + `offer_*` / `company_*` ([ADR 026](docs/adr/026-mis-licitaciones-offer-cases.md)).
