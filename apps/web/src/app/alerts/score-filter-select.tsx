@@ -10,7 +10,7 @@ const ALL_SCORES: TenderScore[] = [1, 2, 3, 4, 5];
 /**
  * Resumen cerrado del filtro multi-puntuación.
  * Vacío o las 5 → «Cualquiera»; rangos con `-`; huecos con `, `.
- * Ej.: `1★` · `1★-3★` · `4★-5★` · `1★, 3★-5★`
+ * Ej.: `1★` · `2-3★` · `2★, 4★` · `1-3★, 5★`
  */
 export function formatScoreFilterSummary(
   scores: readonly TenderScore[],
@@ -44,7 +44,7 @@ export function formatScoreFilterSummary(
   runs.push([start, prev]);
 
   return runs
-    .map(([a, b]) => (a === b ? `${a}★` : `${a}★-${b}★`))
+    .map(([a, b]) => (a === b ? `${a}★` : `${a}-${b}★`))
     .join(", ");
 }
 
