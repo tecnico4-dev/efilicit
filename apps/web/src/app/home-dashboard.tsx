@@ -192,8 +192,8 @@ export function HomeDashboard({
           </div>
         </section>
       ) : (
-        <>
-          <section className="home-anim home-anim-delay-6 mt-10">
+        <div className="mt-10 grid grid-cols-1 items-start gap-8 lg:grid-cols-2 lg:gap-6">
+          <section className="home-anim home-anim-delay-6 min-w-0">
             <div className="flex flex-wrap items-baseline justify-between gap-2">
               <h2 className="text-xl font-semibold tracking-tight text-foreground">
                 Atención
@@ -248,7 +248,7 @@ export function HomeDashboard({
             )}
           </section>
 
-          <section className="home-anim home-anim-delay-7 mt-10">
+          <section className="home-anim home-anim-delay-7 min-w-0">
             <div className="flex flex-wrap items-baseline justify-between gap-2">
               <h2 className="text-xl font-semibold tracking-tight text-foreground">
                 Últimos cambios
@@ -291,7 +291,7 @@ export function HomeDashboard({
               </ul>
             )}
           </section>
-        </>
+        </div>
       )}
     </main>
   );
