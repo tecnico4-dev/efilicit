@@ -9,5 +9,12 @@ export const PAGE_MAIN_CLASS =
 export const PAGE_MAIN_NARROW_CLASS =
   "mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10";
 
+/**
+ * Contenido casi a ancho de ventana (p. ej. Favoritos con 3 paneles).
+ * La nav sigue en max-w-6xl; solo afecta al `<main>` de la página.
+ */
+export const PAGE_MAIN_WIDE_CLASS =
+  "flex w-full flex-1 flex-col px-4 py-8 sm:px-6 sm:py-10";
+
 /** Separador bajo el H1 de página (mismo patrón que Alertas / AlertsPanel). */
 export const PAGE_TITLE_RULE = "mt-8 border-t border-border pt-8";
