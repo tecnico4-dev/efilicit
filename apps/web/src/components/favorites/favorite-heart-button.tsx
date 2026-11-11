@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/cn";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
@@ -41,6 +41,11 @@ export function FavoriteHeartButton({
   const router = useRouter();
   const [favorited, setFavorited] = useState(initiallyFavorited);
   const [pending, setPending] = useState(false);
+
+  // Búsqueda carga favoritos async tras el listado; hay que pintar cuando llegue.
+  useEffect(() => {
+    if (!pending) setFavorited(initiallyFavorited);
+  }, [initiallyFavorited, pending]);
 
   async function onToggle(e: React.MouseEvent) {
     e.preventDefault();
