@@ -196,7 +196,7 @@ export function HomeDashboard({
           <section className="home-anim home-anim-delay-6 min-w-0">
             <div className="flex flex-wrap items-baseline justify-between gap-2">
               <h2 className="text-xl font-semibold tracking-tight text-foreground">
-                Atención
+                Última oportunidad
               </h2>
               {favorites.length > 0 ? (
                 <Link
