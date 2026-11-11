@@ -25,9 +25,8 @@ begin;
 -- Producto usuario (no toca offer_*)
 truncate table
   public.recent_searches,
-  public.digest_inbox_notifications,
-  public.notification_reads,
-  public.notification_trash,
+  public.notification_emails,
+  public.notification_favorites,
   public.notification_queue,
   public.tender_ratings,
   public.favorites,
@@ -90,8 +89,7 @@ union all select 'saved_searches', count(*) from public.saved_searches
 union all select 'favorites', count(*) from public.favorites
 union all select 'tender_ratings', count(*) from public.tender_ratings
 union all select 'notification_queue', count(*) from public.notification_queue
-union all select 'notification_reads', count(*) from public.notification_reads
-union all select 'notification_trash', count(*) from public.notification_trash
-union all select 'digest_inbox_notifications', count(*) from public.digest_inbox_notifications
+union all select 'notification_favorites', count(*) from public.notification_favorites
+union all select 'notification_emails', count(*) from public.notification_emails
 union all select 'recent_searches', count(*) from public.recent_searches
 order by 1;

@@ -562,8 +562,7 @@ def render_sql() -> str:
 
             -- Misma lista que scripts/wipe_app_data.sql (mantener alineadas).
             truncate table
-              public.notification_reads,
-              public.notification_trash,
+              public.notification_favorites,
               public.notification_queue,
               public.favorites,
               public.alerts,

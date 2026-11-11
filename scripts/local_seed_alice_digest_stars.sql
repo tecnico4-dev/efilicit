@@ -181,12 +181,12 @@ begin
       now() - interval '1 hour', now() - interval '30 minutes'
     );
 
-  delete from public.digest_inbox_notifications
+  delete from public.notification_emails
   where user_id = v_alice
     and digest_period = v_digest
     and frequency = 'diaria';
 
-  insert into public.digest_inbox_notifications (
+  insert into public.notification_emails (
     user_id, frequency, digest_period, sent_at, tender_count, tender_ids, read_at
   ) values (
     v_alice,

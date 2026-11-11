@@ -25,6 +25,17 @@ type ToastState = {
 
 type UndoToastApi = {
   showUndo: (message: string, onUndo: () => void | Promise<void>) => void;
+  /**
+   * Acción diferida: al caducar el toast (o cerrar ×) ejecuta `onConfirm`.
+   * «Revertir» cancela y ejecuta `onUndo`.
+   */
+  showPendingConfirm: (
+    message: string,
+    opts: {
+      onConfirm: () => void | Promise<void>;
+      onUndo: () => void | Promise<void>;
+    },
+  ) => void;
   /** Aviso temporal con × (sin Revertir). */
   showStatus: (message: string) => void;
   /** Aviso destacado (borde/texto alerta); p. ej. búsqueda acotada a top-K. */
@@ -36,70 +47,117 @@ const UndoToastContext = createContext<UndoToastApi | null>(null);
 export function UndoToastProvider({ children }: { children: ReactNode }) {
   const [toast, setToast] = useState<ToastState | null>(null);
   const undoRef = useRef<(() => void | Promise<void>) | null>(null);
+  const confirmRef = useRef<(() => void | Promise<void>) | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const clear = useCallback(() => {
-    if (timerRef.current) clearTimeout(timerRef.current);
-    timerRef.current = null;
-    setToast(null);
-    undoRef.current = null;
+  const flushConfirm = useCallback(async () => {
+    const fn = confirmRef.current;
+    confirmRef.current = null;
+    if (fn) await fn();
   }, []);
 
+  const clearTimer = useCallback(() => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = null;
+  }, []);
+
+  const dismissUi = useCallback(() => {
+    clearTimer();
+    setToast(null);
+    undoRef.current = null;
+  }, [clearTimer]);
+
   const show = useCallback(
-    (
+    async (
       message: string,
-      opts?: { onUndo?: () => void | Promise<void>; tone?: ToastTone },
+      opts?: {
+        onUndo?: () => void | Promise<void>;
+        onConfirm?: () => void | Promise<void>;
+        tone?: ToastTone;
+      },
     ) => {
-      if (timerRef.current) clearTimeout(timerRef.current);
+      // Si había un confirm pendiente, ejecutar antes de sustituir el toast.
+      if (confirmRef.current) {
+        clearTimer();
+        await flushConfirm();
+      } else {
+        clearTimer();
+      }
+
       const tone = opts?.tone ?? "default";
       undoRef.current = opts?.onUndo ?? null;
+      confirmRef.current = opts?.onConfirm ?? null;
       setToast({ message, tone, onUndo: opts?.onUndo });
-      timerRef.current = setTimeout(
-        clear,
-        tone === "warning" ? TOAST_WARNING_MS : TOAST_MS,
-      );
+      const ms = tone === "warning" ? TOAST_WARNING_MS : TOAST_MS;
+      timerRef.current = setTimeout(() => {
+        void (async () => {
+          await flushConfirm();
+          dismissUi();
+        })();
+      }, ms);
     },
-    [clear],
+    [clearTimer, dismissUi, flushConfirm],
   );
 
   const showUndo = useCallback(
     (msg: string, onUndo: () => void | Promise<void>) => {
-      show(msg, { onUndo });
+      void show(msg, { onUndo });
+    },
+    [show],
+  );
+
+  const showPendingConfirm = useCallback(
+    (
+      msg: string,
+      opts: {
+        onConfirm: () => void | Promise<void>;
+        onUndo: () => void | Promise<void>;
+      },
+    ) => {
+      void show(msg, { onUndo: opts.onUndo, onConfirm: opts.onConfirm });
     },
     [show],
   );
 
   const showStatus = useCallback(
     (msg: string) => {
-      show(msg);
+      void show(msg);
     },
     [show],
   );
 
   const showWarning = useCallback(
     (msg: string) => {
-      show(msg, { tone: "warning" });
+      void show(msg, { tone: "warning" });
     },
     [show],
   );
 
   useEffect(
     () => () => {
-      if (timerRef.current) clearTimeout(timerRef.current);
+      clearTimer();
     },
-    [],
+    [clearTimer],
   );
 
   async function onRevert() {
     const fn = undoRef.current;
-    clear();
+    confirmRef.current = null;
+    dismissUi();
     if (fn) await fn();
+  }
+
+  async function onClose() {
+    await flushConfirm();
+    dismissUi();
   }
 
   const isWarning = toast?.tone === "warning";
 
   return (
-    <UndoToastContext.Provider value={{ showUndo, showStatus, showWarning }}>
+    <UndoToastContext.Provider
+      value={{ showUndo, showPendingConfirm, showStatus, showWarning }}
+    >
       {children}
       {toast ? (
         <div
@@ -114,7 +172,7 @@ export function UndoToastProvider({ children }: { children: ReactNode }) {
           <button
             type="button"
             aria-label="Cerrar"
-            onClick={clear}
+            onClick={() => void onClose()}
             className={cn(
               "absolute -right-2.5 -top-2.5 inline-flex h-6 w-6 items-center justify-center rounded-full border shadow-md",
               isWarning
@@ -145,7 +203,7 @@ export function UndoToastProvider({ children }: { children: ReactNode }) {
               <button
                 type="button"
                 className="font-medium text-link hover:underline"
-                onClick={onRevert}
+                onClick={() => void onRevert()}
               >
                 Revertir
               </button>

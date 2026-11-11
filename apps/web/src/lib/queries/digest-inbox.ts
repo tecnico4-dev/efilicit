@@ -1,6 +1,7 @@
 /**
  * Avisos in-app de digest email (1 aviso = 1 correo enviado).
- * Fuente: digest_inbox_notifications; lectura/papelera en columnas propias.
+ * Fuente: notification_emails; lectura/papelera en columnas propias.
+ * Caducidad de papelera / eliminar definitivo → DELETE de la fila.
  */
 import type { Database } from "@efilicit/types";
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -51,14 +52,14 @@ function mapRow(row: DigestRow): DigestInboxNotification {
   };
 }
 
-/** Lista avisos de digest del usuario (incluye papelera). */
+/** Lista avisos de digest del usuario (incluye papelera en ventana). */
 export async function listOwnDigestInboxNotifications(
   client: SupabaseClient<Database>,
   input: { userId: string; limit?: number },
 ): Promise<{ data: DigestInboxNotification[]; error: Error | null }> {
   const limit = input.limit ?? 50;
   const { data, error } = await client
-    .from("digest_inbox_notifications")
+    .from("notification_emails")
     .select(
       "id, frequency, digest_period, sent_at, tender_count, tender_ids, read_at, trashed_at",
     )
@@ -68,13 +69,27 @@ export async function listOwnDigestInboxNotifications(
 
   if (error) return { data: [], error: new Error(error.message) };
 
-  const mapped = ((data as DigestRow[] | null) ?? []).map(mapRow);
-  // Conservar activos + papelera en ventana; el resto de papelera caducada no se lista.
-  const kept = mapped.filter(
-    (n) =>
-      n.trashedAt == null || isNotificationInTrashWindow(n.trashedAt),
-  );
-  return { data: kept.slice(0, limit), error: null };
+  const rows = (data as DigestRow[] | null) ?? [];
+  const expiredIds = rows
+    .filter(
+      (r) =>
+        r.trashed_at != null && !isNotificationInTrashWindow(r.trashed_at),
+    )
+    .map((r) => r.id);
+
+  if (expiredIds.length > 0) {
+    const { error: delErr } = await client
+      .from("notification_emails")
+      .delete()
+      .eq("user_id", input.userId)
+      .in("id", expiredIds);
+    if (delErr) return { data: [], error: new Error(delErr.message) };
+  }
+
+  const mapped = rows
+    .filter((r) => !expiredIds.includes(r.id))
+    .map(mapRow);
+  return { data: mapped.slice(0, limit), error: null };
 }
 
 export async function markOwnDigestInboxRead(
@@ -82,7 +97,7 @@ export async function markOwnDigestInboxRead(
   input: { userId: string; digestId: string },
 ): Promise<{ error: Error | null }> {
   const { error } = await client
-    .from("digest_inbox_notifications")
+    .from("notification_emails")
     .update({ read_at: new Date().toISOString() })
     .eq("user_id", input.userId)
     .eq("id", input.digestId)
@@ -97,7 +112,7 @@ export async function trashOwnDigestInboxNotification(
   input: { userId: string; digestId: string },
 ): Promise<{ error: Error | null }> {
   const { error } = await client
-    .from("digest_inbox_notifications")
+    .from("notification_emails")
     .update({ trashed_at: new Date().toISOString() })
     .eq("user_id", input.userId)
     .eq("id", input.digestId);
@@ -111,8 +126,23 @@ export async function restoreOwnDigestInboxFromTrash(
   input: { userId: string; digestId: string },
 ): Promise<{ error: Error | null }> {
   const { error } = await client
-    .from("digest_inbox_notifications")
+    .from("notification_emails")
     .update({ trashed_at: null })
+    .eq("user_id", input.userId)
+    .eq("id", input.digestId);
+
+  if (error) return { error: new Error(error.message) };
+  return { error: null };
+}
+
+/** Borra la fila del aviso de email (definitivo). */
+export async function permanentlyDeleteOwnDigestInboxNotification(
+  client: SupabaseClient<Database>,
+  input: { userId: string; digestId: string },
+): Promise<{ error: Error | null }> {
+  const { error } = await client
+    .from("notification_emails")
+    .delete()
     .eq("user_id", input.userId)
     .eq("id", input.digestId);
 

@@ -16,6 +16,8 @@ import {
   NotificationsFolderTabs,
   type NotificationsView,
 } from "./notifications-folder-tabs";
+import { PurgeDigestNotificationButton } from "./purge-digest-notification-button";
+import { PurgeNotificationButton } from "./purge-notification-button";
 import { RestoreDigestNotificationButton } from "./restore-digest-notification-button";
 import { RestoreNotificationButton } from "./restore-notification-button";
 import { TrashDigestNotificationButton } from "./trash-digest-notification-button";
@@ -71,6 +73,14 @@ export function NotificationsList({
   const [view, setView] = useState<NotificationsView>(initialView);
   const [openDigest, setOpenDigest] =
     useState<DigestInboxNotification | null>(null);
+  /** Ids ocultos en UI tras «eliminar definitivo» (pendiente de confirmación). */
+  const [pendingPurgeKeys, setPendingPurgeKeys] = useState<string[]>([]);
+
+  function itemKey(item: InboxItem): string {
+    return item.kind === "digest"
+      ? `digest:${item.data.id}`
+      : `fav:${item.data.eventId}`;
+  }
 
   function onViewChange(next: NotificationsView) {
     setView(next);
@@ -78,10 +88,12 @@ export function NotificationsList({
   }
 
   const active = items.filter((n) => {
+    if (pendingPurgeKeys.includes(itemKey(n))) return false;
     if (n.kind === "favorite_status") return n.data.trashedAt == null;
     return n.data.trashedAt == null;
   });
   const inTrashWindow = items.filter((n) => {
+    if (pendingPurgeKeys.includes(itemKey(n))) return false;
     const trashedAt =
       n.kind === "favorite_status" ? n.data.trashedAt : n.data.trashedAt;
     return trashedAt != null && isNotificationInTrashWindow(trashedAt);
@@ -135,6 +147,18 @@ export function NotificationsList({
                   userId={userId}
                   inTrash={view === "trash"}
                   onOpen={() => setOpenDigest(item.data)}
+                  onPurgeHide={() =>
+                    setPendingPurgeKeys((keys) =>
+                      keys.includes(itemKey(item))
+                        ? keys
+                        : [...keys, itemKey(item)],
+                    )
+                  }
+                  onPurgeShow={() =>
+                    setPendingPurgeKeys((keys) =>
+                      keys.filter((k) => k !== itemKey(item)),
+                    )
+                  }
                 />
               ) : (
                 <FavoriteStatusRow
@@ -142,6 +166,18 @@ export function NotificationsList({
                   n={item.data}
                   userId={userId}
                   inTrash={view === "trash"}
+                  onPurgeHide={() =>
+                    setPendingPurgeKeys((keys) =>
+                      keys.includes(itemKey(item))
+                        ? keys
+                        : [...keys, itemKey(item)],
+                    )
+                  }
+                  onPurgeShow={() =>
+                    setPendingPurgeKeys((keys) =>
+                      keys.filter((k) => k !== itemKey(item)),
+                    )
+                  }
                 />
               ),
             )}
@@ -169,11 +205,15 @@ function DigestRow({
   userId,
   inTrash,
   onOpen,
+  onPurgeHide,
+  onPurgeShow,
 }: {
   n: DigestInboxNotification;
   userId: string;
   inTrash: boolean;
   onOpen: () => void;
+  onPurgeHide: () => void;
+  onPurgeShow: () => void;
 }) {
   if (inTrash && n.trashedAt) {
     return (
@@ -193,10 +233,18 @@ function DigestRow({
             <p className="max-w-[11rem] text-right text-xs text-muted-foreground sm:max-w-[14rem]">
               {formatNotificationTrashExpiry(n.trashedAt)}
             </p>
-            <RestoreDigestNotificationButton
-              userId={userId}
-              digestId={n.id}
-            />
+            <div className="flex items-center gap-0.5">
+              <RestoreDigestNotificationButton
+                userId={userId}
+                digestId={n.id}
+              />
+              <PurgeDigestNotificationButton
+                userId={userId}
+                digestId={n.id}
+                onHide={onPurgeHide}
+                onShow={onPurgeShow}
+              />
+            </div>
           </div>
         </div>
       </li>
@@ -237,10 +285,14 @@ function FavoriteStatusRow({
   n,
   userId,
   inTrash,
+  onPurgeHide,
+  onPurgeShow,
 }: {
   n: FavoriteStatusNotification;
   userId: string;
   inTrash: boolean;
+  onPurgeHide: () => void;
+  onPurgeShow: () => void;
 }) {
   if (inTrash && n.trashedAt) {
     return (
@@ -270,7 +322,15 @@ function FavoriteStatusRow({
             <p className="max-w-[11rem] text-right text-xs text-muted-foreground sm:max-w-[14rem]">
               {formatNotificationTrashExpiry(n.trashedAt)}
             </p>
-            <RestoreNotificationButton userId={userId} eventId={n.eventId} />
+            <div className="flex items-center gap-0.5">
+              <RestoreNotificationButton userId={userId} eventId={n.eventId} />
+              <PurgeNotificationButton
+                userId={userId}
+                eventId={n.eventId}
+                onHide={onPurgeHide}
+                onShow={onPurgeShow}
+              />
+            </div>
           </div>
         </div>
       </li>

@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Buzón: `notification_reads` + `notification_trash` → `notification_favorites` (`read_at` / `trashed_at` / `deleted`); `digest_inbox_notifications` → `notification_emails`. Papelera: eliminar definitivo (favoritos → `deleted`; emails → `DELETE`) con toast Revertir diferido ~7s.
 - Mis licitaciones: desactivado en remoto por defecto (`NEXT_PUBLIC_MIS_LICITACIONES_ENABLED`); nav oculta, rutas redirigen a `/` y no hay alta desde ficha. En local poner `=1` en `apps/web/.env.local`.
 - Mis licitaciones · Lista: paginación como favoritos/alertas (10 por página; 10/50/100 si hay más), en Activas e Histórico.
 - Mis licitaciones: se quita el subtítulo «Espacio de preparación de oferta · pipeline compartido Eficen».
@@ -44,6 +45,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Buzón: `notification_reads` + `notification_trash` → `notification_favorites` (`read_at` / `trashed_at` / `deleted`); `digest_inbox_notifications` → `notification_emails`. Papelera: eliminar definitivo (favoritos → `deleted`; emails → `DELETE`) con toast Revertir diferido ~7s.
 - Alertas · Coincidencias: filtro Alerta con nombres truncados al ancho del control (no desbordan el desplegable).
 - Alertas · filtros (Coincidencias / Relacionadas): con Valoración = Valoradas, además de Interés aparece Puntuación multi-valor (Cualquiera / 1★…5★; resumen `1★`, `2-3★`, `1-3★, 5★`).
 - Alertas · Coincidencias: una fila por licitación (dedupe); basura/restaurar/vaciar afecta a todas las colas de esa licitación. Relacionadas por alerta sigue con una fila por cola; si solo se borra en una alerta, en Coincidencias sigue saliendo en Todas / la otra alerta.

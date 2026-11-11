@@ -1256,7 +1256,7 @@ export type Database = {
           },
         ]
       }
-      digest_inbox_notifications: {
+      notification_emails: {
         Row: {
           created_at: string
           digest_period: string
@@ -1360,32 +1360,38 @@ export type Database = {
           },
         ]
       }
-      notification_reads: {
+      notification_favorites: {
         Row: {
+          deleted: boolean
           event_id: string
-          read_at: string
+          read_at: string | null
+          trashed_at: string | null
           user_id: string
         }
         Insert: {
+          deleted?: boolean
           event_id: string
-          read_at?: string
+          read_at?: string | null
+          trashed_at?: string | null
           user_id: string
         }
         Update: {
+          deleted?: boolean
           event_id?: string
-          read_at?: string
+          read_at?: string | null
+          trashed_at?: string | null
           user_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "notification_reads_event_id_fkey"
+            foreignKeyName: "notification_favorites_event_id_fkey"
             columns: ["event_id"]
             isOneToOne: false
             referencedRelation: "tender_events"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "notification_reads_user_id_fkey"
+            foreignKeyName: "notification_favorites_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"
@@ -1419,39 +1425,6 @@ export type Database = {
           },
           {
             foreignKeyName: "alert_related_trash_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      notification_trash: {
-        Row: {
-          event_id: string
-          trashed_at: string
-          user_id: string
-        }
-        Insert: {
-          event_id: string
-          trashed_at?: string
-          user_id: string
-        }
-        Update: {
-          event_id?: string
-          trashed_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "notification_trash_event_id_fkey"
-            columns: ["event_id"]
-            isOneToOne: false
-            referencedRelation: "tender_events"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "notification_trash_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"

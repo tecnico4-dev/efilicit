@@ -1,6 +1,6 @@
 """Buzón in-app al enviar un digest (1 aviso = 1 correo).
 
-Tras Resend OK, el drain registra un ``digest_inbox_notifications`` con los
+Tras Resend OK, el drain registra un ``notification_emails`` con los
 ``tender_ids`` del email. La web lista el aviso y abre el modal con esa lista.
 """
 
@@ -87,7 +87,7 @@ class InMemoryDigestInbox:
 
 
 class PostgresDigestInbox:
-    """Inserta en ``public.digest_inbox_notifications`` (idempotente)."""
+    """Inserta en ``public.notification_emails`` (idempotente)."""
 
     def __init__(self, conn) -> None:
         self._conn = conn
@@ -114,7 +114,7 @@ class PostgresDigestInbox:
         with self._conn.cursor() as cur:
             cur.execute(
                 """
-                insert into public.digest_inbox_notifications (
+                insert into public.notification_emails (
                   user_id,
                   frequency,
                   digest_period,
