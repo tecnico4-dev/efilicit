@@ -251,7 +251,7 @@ export function HomeDashboard({
           <section className="home-anim home-anim-delay-7 min-w-0">
             <div className="flex flex-wrap items-baseline justify-between gap-2">
               <h2 className="text-xl font-semibold tracking-tight text-foreground">
-                Últimos cambios
+                Cambios en tus favoritos
               </h2>
               <Link
                 href="/notifications"
