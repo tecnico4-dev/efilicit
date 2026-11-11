@@ -42,6 +42,7 @@ import {
   ListPager,
   type PageSize,
 } from "@/app/favorites/list-pager";
+import { AlertFilterSelect } from "./alert-filter-select";
 import { ScoreFilterSelect } from "./score-filter-select";
 
 type FolderView = "active" | "trash";
@@ -1047,31 +1048,17 @@ export function AlertRelatedTendersPanel({
                       }}
                     />
                     {isEmbedded && alertOptions.length > 0 ? (
-                      <label
-                        className="flex flex-col gap-1 text-xs text-muted-foreground"
-                        style={
-                          alertSelectWidthPx != null
-                            ? { width: alertSelectWidthPx }
-                            : { minWidth: FILTER_ALERT_MIN_PX }
-                        }
-                      >
-                        Alerta
-                        <select
-                          className="h-9 w-full truncate rounded-md border border-border bg-background px-2 text-sm text-foreground"
-                          value={alertFilter}
-                          onChange={(e) => {
-                            setAlertFilter(e.target.value);
-                            setPage(1);
-                          }}
-                        >
-                          <option value="all">Todas</option>
-                          {alertOptions.map((a) => (
-                            <option key={a.id} value={a.id}>
-                              {a.name}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
+                      <AlertFilterSelect
+                        id={`alert-related-${scopeId}-alert`}
+                        value={alertFilter}
+                        options={alertOptions}
+                        widthPx={alertSelectWidthPx}
+                        disabled={actionPending}
+                        onChange={(next) => {
+                          setAlertFilter(next);
+                          setPage(1);
+                        }}
+                      />
                     ) : null}
                     {hasPendingItems ? (
                       <label className="flex min-w-[9rem] flex-col gap-1 text-xs text-muted-foreground">
