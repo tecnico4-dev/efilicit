@@ -224,36 +224,45 @@ export function SharedFavoriteList({
               >
                 {tender.title}
               </Link>
-              <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1">
-                <FavoriteKindBubble kind={item.kind} />
-                <p className="text-xs text-muted-foreground">
-                  Añadida por {who} ({formatSharedWhen(item.created_at)})
-                </p>
+              <div className="mt-1.5 flex flex-col gap-2 sm:flex-row sm:items-start sm:gap-3">
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                    <FavoriteKindBubble kind={item.kind} />
+                    <p className="text-xs text-muted-foreground">
+                      Añadida por {who} ({formatSharedWhen(item.created_at)})
+                    </p>
+                  </div>
+                  <dl className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
+                    <div>
+                      <dt className="inline text-muted-foreground">Importe: </dt>
+                      <dd className="inline">
+                        {formatMoney(
+                          tender.estimated_value,
+                          tender.currency,
+                        )}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="inline text-muted-foreground">CPV: </dt>
+                      <dd className="inline font-mono">
+                        {formatCpvListPreview(tender.cpv_codes)}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="inline text-muted-foreground">Estado: </dt>
+                      <dd className="inline">
+                        {formatTenderStatus(tender.status)}
+                      </dd>
+                    </div>
+                  </dl>
+                </div>
+                {note ? (
+                  <p className="w-full shrink-0 rounded-md border border-dashed border-border px-2.5 py-1.5 text-sm text-muted-foreground sm:ml-auto sm:w-[min(100%,16rem)]">
+                    <span className="font-medium text-foreground">Nota:</span>{" "}
+                    {note}
+                  </p>
+                ) : null}
               </div>
-              {note ? (
-                <p className="mt-2 rounded-md border border-dashed border-border px-2.5 py-1.5 text-sm text-muted-foreground">
-                  <span className="font-medium text-foreground">Nota:</span>{" "}
-                  {note}
-                </p>
-              ) : null}
-              <dl className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
-                <div>
-                  <dt className="inline text-muted-foreground">Importe: </dt>
-                  <dd className="inline">
-                    {formatMoney(tender.estimated_value, tender.currency)}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="inline text-muted-foreground">CPV: </dt>
-                  <dd className="inline font-mono">
-                    {formatCpvListPreview(tender.cpv_codes)}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="inline text-muted-foreground">Estado: </dt>
-                  <dd className="inline">{formatTenderStatus(tender.status)}</dd>
-                </div>
-              </dl>
             </div>
             {showRemove ? (
               <RemoveSharedFavoriteButton tenderId={item.tender_id} />
