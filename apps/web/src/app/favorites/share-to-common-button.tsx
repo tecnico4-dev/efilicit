@@ -11,7 +11,10 @@ import {
   SHARED_FAVORITE_NOTES_MAX,
   addSharedFavorite,
   favoriteKindLongLabel,
+  getSharedFavoriteOwner,
+  sharedFavoriteAlreadyMessage,
   type FavoriteKind,
+  type SharedFavoriteOwnerInfo,
 } from "@/lib/queries";
 
 function PaperPlaneIcon({ className }: { className?: string }) {
@@ -35,19 +38,20 @@ function PaperPlaneIcon({ className }: { className?: string }) {
 /**
  * Añadir a Común desde el listado ampliado de favoritos propios.
  * El kind se hereda del favorito personal (no se vuelve a preguntar).
+ * Si ya está en Común: toast inmediato, sin modal.
  */
 export function ShareToCommonButton({
   userId,
   tenderId,
   tenderTitle,
   kind,
-  alreadyShared = false,
+  alreadySharedOwner = null,
 }: {
   userId: string;
   tenderId: string;
   tenderTitle: string;
   kind: FavoriteKind;
-  alreadyShared?: boolean;
+  alreadySharedOwner?: SharedFavoriteOwnerInfo | null;
 }) {
   const router = useRouter();
   const { showStatus } = useUndoToast();
@@ -58,6 +62,7 @@ export function ShareToCommonButton({
   const [error, setError] = useState<string | null>(null);
 
   const kindLabel = favoriteKindLongLabel(kind);
+  const alreadyShared = alreadySharedOwner != null;
 
   useEffect(() => setMounted(true), []);
 
@@ -70,7 +75,35 @@ export function ShareToCommonButton({
     return () => window.removeEventListener("keydown", onKey);
   }, [open]);
 
-  function openModal() {
+  async function onPlaneClick() {
+    if (pending) return;
+
+    if (alreadySharedOwner) {
+      showStatus(sharedFavoriteAlreadyMessage(userId, alreadySharedOwner));
+      return;
+    }
+
+    // Por si el listado está desfasado: comprobar antes de abrir el modal.
+    setPending(true);
+    const client = createSupabaseBrowserClient();
+    const existing = await getSharedFavoriteOwner(client, tenderId);
+    setPending(false);
+
+    if (existing.error) {
+      showStatus(existing.error.message);
+      return;
+    }
+    if (existing.data) {
+      showStatus(
+        sharedFavoriteAlreadyMessage(userId, {
+          addedBy: existing.data.addedBy,
+          displayName: existing.data.displayName,
+        }),
+      );
+      router.refresh();
+      return;
+    }
+
     setNotes("");
     setError(null);
     setOpen(true);
@@ -98,8 +131,7 @@ export function ShareToCommonButton({
 
     if (result.alreadyExists) {
       setOpen(false);
-      const who = result.ownerDisplayName?.trim() || "Otro usuario";
-      showStatus(`${who} ya ha añadido esta licitación.`);
+      showStatus(sharedFavoriteAlreadyMessage(userId, result.owner));
       router.refresh();
       return;
     }
@@ -111,10 +143,11 @@ export function ShareToCommonButton({
     <>
       <button
         type="button"
-        onClick={openModal}
+        disabled={pending}
+        onClick={() => void onPlaneClick()}
         aria-label={
           alreadyShared
-            ? "Ya está en Común (ver o intentar de nuevo)"
+            ? "Ya está en Común"
             : "Añadir a Común"
         }
         title={alreadyShared ? "Ya está en Común" : "Añadir a Común"}
@@ -123,6 +156,7 @@ export function ShareToCommonButton({
           alreadyShared
             ? "text-primary hover:bg-primary/10"
             : "text-muted-foreground hover:bg-muted hover:text-foreground",
+          pending && "opacity-50",
         )}
       >
         <PaperPlaneIcon className="size-4" />

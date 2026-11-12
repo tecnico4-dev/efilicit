@@ -1,7 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import type { FavoriteWithTender } from "@/lib/queries";
+import type {
+  FavoriteWithTender,
+  SharedFavoriteOwnerInfo,
+} from "@/lib/queries";
 import { FavoriteTenderList } from "./favorites-shared";
 import {
   DEFAULT_PAGE_SIZE,
@@ -20,12 +23,12 @@ export function PaginatedFavoriteTenders({
   favorites,
   from = "favorites-tenders",
   shareUserId,
-  sharedTenderIds,
+  sharedOwners,
 }: {
   favorites: FavoriteWithTender[];
   from?: "favorites" | "favorites-tenders";
   shareUserId?: string;
-  sharedTenderIds?: ReadonlySet<string>;
+  sharedOwners?: Readonly<Record<string, SharedFavoriteOwnerInfo>>;
 }) {
   const total = favorites.length;
   const showPager = total > FAVORITES_PAGE_SIZE;
@@ -63,7 +66,7 @@ export function PaginatedFavoriteTenders({
           from={from}
           bordered={false}
           shareUserId={shareUserId}
-          sharedTenderIds={sharedTenderIds}
+          sharedOwners={sharedOwners}
         />
       </div>
     );
@@ -83,7 +86,7 @@ export function PaginatedFavoriteTenders({
           from={from}
           bordered={false}
           shareUserId={shareUserId}
-          sharedTenderIds={sharedTenderIds}
+          sharedOwners={sharedOwners}
         />
       </div>
       <div className="shrink-0 border-t border-border bg-background px-4 py-3">

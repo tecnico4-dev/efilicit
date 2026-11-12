@@ -74,12 +74,15 @@ export {
   addSharedFavorite,
   asSharedFavoriteKind,
   getSharedFavoriteOwner,
+  listSharedFavoriteOwners,
   listSharedFavoriteTenderIds,
   listSharedFavorites,
   removeSharedFavorite,
+  sharedFavoriteAlreadyMessage,
   sharedFavoriteKindLabel,
   sharedFavoriteKindLongLabel,
   type SharedFavoriteKind,
+  type SharedFavoriteOwnerInfo,
   type SharedFavoriteWithTender,
 } from "./shared-favorites";
 export {

@@ -9,7 +9,7 @@ import {
 } from "@/lib/auth/session";
 import {
   listOwnFavorites,
-  listSharedFavoriteTenderIds,
+  listSharedFavoriteOwners,
 } from "@/lib/queries";
 import { EmptyFavoritesTendersHint } from "../empty-hints";
 import { FavoriteKindTabs } from "../favorite-kind-tabs";
@@ -44,10 +44,11 @@ export default async function FavoriteTendersPage() {
   const tenderIds = favorites
     .map((f) => f.tenders?.id)
     .filter((id): id is string => Boolean(id));
-  const sharedIdsResult = await listSharedFavoriteTenderIds(
+  const sharedOwnersResult = await listSharedFavoriteOwners(
     supabase,
     tenderIds,
   );
+  const sharedOwners = Object.fromEntries(sharedOwnersResult.data);
   const propias = favorites.filter((f) => f.kind === "propia");
   const subcontratas = favorites.filter((f) => f.kind === "subcontrata");
 
@@ -75,7 +76,7 @@ export default async function FavoriteTendersPage() {
                 favorites={favorites}
                 from="favorites-tenders"
                 shareUserId={userId}
-                sharedTenderIds={sharedIdsResult.data}
+                sharedOwners={sharedOwners}
               />
             }
             propias={
@@ -86,7 +87,7 @@ export default async function FavoriteTendersPage() {
                   favorites={propias}
                   from="favorites-tenders"
                   shareUserId={userId}
-                  sharedTenderIds={sharedIdsResult.data}
+                  sharedOwners={sharedOwners}
                 />
               )
             }
@@ -98,7 +99,7 @@ export default async function FavoriteTendersPage() {
                   favorites={subcontratas}
                   from="favorites-tenders"
                   shareUserId={userId}
-                  sharedTenderIds={sharedIdsResult.data}
+                  sharedOwners={sharedOwners}
                 />
               )
             }

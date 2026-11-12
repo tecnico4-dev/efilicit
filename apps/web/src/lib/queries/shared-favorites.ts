@@ -38,23 +38,58 @@ export type SharedFavoriteWithTender = SharedFavoriteRow & {
   } | null;
 };
 
+export type SharedFavoriteOwnerInfo = {
+  addedBy: string;
+  displayName: string | null;
+};
+
+/** Quién compartió cada tender ya en Común (p. ej. mis favoritos). */
+export async function listSharedFavoriteOwners(
+  client: SupabaseClient<Database>,
+  tenderIds: string[],
+): Promise<{
+  data: Map<string, SharedFavoriteOwnerInfo>;
+  error: Error | null;
+}> {
+  if (tenderIds.length === 0) return { data: new Map(), error: null };
+
+  const { data, error } = await client
+    .from("shared_favorites")
+    .select("tender_id, added_by, users:added_by ( display_name )")
+    .in("tender_id", tenderIds);
+
+  if (error) return { data: new Map(), error: new Error(error.message) };
+
+  const map = new Map<string, SharedFavoriteOwnerInfo>();
+  for (const row of data ?? []) {
+    const users = row.users as { display_name: string | null } | null;
+    map.set(row.tender_id, {
+      addedBy: row.added_by,
+      displayName: users?.display_name ?? null,
+    });
+  }
+  return { data: map, error: null };
+}
+
 /** IDs ya en Común entre un conjunto (p. ej. mis favoritos). */
 export async function listSharedFavoriteTenderIds(
   client: SupabaseClient<Database>,
   tenderIds: string[],
 ): Promise<{ data: Set<string>; error: Error | null }> {
-  if (tenderIds.length === 0) return { data: new Set(), error: null };
+  const owners = await listSharedFavoriteOwners(client, tenderIds);
+  if (owners.error) return { data: new Set(), error: owners.error };
+  return { data: new Set(owners.data.keys()), error: null };
+}
 
-  const { data, error } = await client
-    .from("shared_favorites")
-    .select("tender_id")
-    .in("tender_id", tenderIds);
-
-  if (error) return { data: new Set(), error: new Error(error.message) };
-  return {
-    data: new Set((data ?? []).map((r) => r.tender_id)),
-    error: null,
-  };
+export function sharedFavoriteAlreadyMessage(
+  currentUserId: string,
+  owner: SharedFavoriteOwnerInfo,
+): string {
+  if (owner.addedBy === currentUserId) {
+    return "Ya has añadido esta licitación.";
+  }
+  const who = owner.displayName?.trim() || "Otro usuario";
+  return `${who} ya ha añadido esta licitación.`;
 }
 
 /** Quién compartió primero (si existe). */
@@ -183,7 +218,7 @@ export async function addSharedFavorite(
   | {
       ok: false;
       alreadyExists: true;
-      ownerDisplayName: string | null;
+      owner: SharedFavoriteOwnerInfo;
     }
   | { ok: false; alreadyExists: false; error: Error }
 > {
@@ -200,7 +235,10 @@ export async function addSharedFavorite(
     return {
       ok: false,
       alreadyExists: true,
-      ownerDisplayName: existing.data.displayName,
+      owner: {
+        addedBy: existing.data.addedBy,
+        displayName: existing.data.displayName,
+      },
     };
   }
 
@@ -217,7 +255,10 @@ export async function addSharedFavorite(
       return {
         ok: false,
         alreadyExists: true,
-        ownerDisplayName: again.data?.displayName ?? null,
+        owner: {
+          addedBy: again.data?.addedBy ?? "",
+          displayName: again.data?.displayName ?? null,
+        },
       };
     }
     return { ok: false, alreadyExists: false, error: new Error(error.message) };

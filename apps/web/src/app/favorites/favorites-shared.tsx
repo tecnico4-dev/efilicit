@@ -11,6 +11,7 @@ import {
   type DigestFrequency,
   type FavoriteKind,
   type FavoriteWithTender,
+  type SharedFavoriteOwnerInfo,
   type SharedFavoriteWithTender,
 } from "@/lib/queries";
 import { formatTenderStatus } from "@/lib/tender-labels";
@@ -108,7 +109,7 @@ export function FavoriteTenderList({
   from = "favorites",
   bordered = true,
   shareUserId,
-  sharedTenderIds,
+  sharedOwners,
 }: {
   favorites: FavoriteWithTender[];
   /** Origen del enlace a la ficha (para el «volver»). */
@@ -117,8 +118,8 @@ export function FavoriteTenderList({
   bordered?: boolean;
   /** Si se pasa, muestra avión «Añadir a Común» (solo listado ampliado). */
   shareUserId?: string;
-  /** Tender ids ya en Común (pinta el avión). */
-  sharedTenderIds?: ReadonlySet<string>;
+  /** Quién compartió cada tender ya en Común (pinta el avión). */
+  sharedOwners?: Readonly<Record<string, SharedFavoriteOwnerInfo>>;
 }) {
   const showShare = Boolean(shareUserId);
 
@@ -176,7 +177,7 @@ export function FavoriteTenderList({
                 tenderId={tender.id}
                 tenderTitle={tender.title}
                 kind={fav.kind}
-                alreadyShared={sharedTenderIds?.has(tender.id) ?? false}
+                alreadySharedOwner={sharedOwners?.[tender.id] ?? null}
               />
             ) : null}
           </li>
