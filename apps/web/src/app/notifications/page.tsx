@@ -10,6 +10,7 @@ import { EmptyState, ErrorState } from "@/components/ui/state-message";
 import {
   isNotificationInTrashWindow,
   listFavoriteStatusNotifications,
+  listOwnCommonInboxNotifications,
   listOwnDigestInboxNotifications,
 } from "@/lib/queries";
 import {
@@ -25,6 +26,10 @@ type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 function first(value: string | string[] | undefined): string {
   if (Array.isArray(value)) return value[0] ?? "";
   return value ?? "";
+}
+
+function itemTrashedAt(item: InboxItem): string | null {
+  return item.data.trashedAt;
 }
 
 export default async function NotificationsPage({
@@ -55,12 +60,14 @@ export default async function NotificationsPage({
     );
   }
 
-  const [favResult, digestResult] = await Promise.all([
+  const [favResult, digestResult, commonResult] = await Promise.all([
     listFavoriteStatusNotifications(supabase, { userId: profile.id }),
     listOwnDigestInboxNotifications(supabase, { userId: profile.id }),
+    listOwnCommonInboxNotifications(supabase, { userId: profile.id }),
   ]);
 
-  const error = favResult.error ?? digestResult.error;
+  const error =
+    favResult.error ?? digestResult.error ?? commonResult.error;
 
   const items: InboxItem[] = [
     ...favResult.data.map(
@@ -77,16 +84,18 @@ export default async function NotificationsPage({
         data,
       }),
     ),
+    ...commonResult.data.map(
+      (data): InboxItem => ({
+        kind: "common",
+        sortAt: data.sharedAt,
+        data,
+      }),
+    ),
   ].sort((a, b) => (a.sortAt < b.sortAt ? 1 : -1));
 
-  const hasActive = items.some((n) =>
-    n.kind === "favorite_status"
-      ? n.data.trashedAt == null
-      : n.data.trashedAt == null,
-  );
+  const hasActive = items.some((n) => itemTrashedAt(n) == null);
   const hasTrash = items.some((n) => {
-    const trashedAt =
-      n.kind === "favorite_status" ? n.data.trashedAt : n.data.trashedAt;
+    const trashedAt = itemTrashedAt(n);
     return trashedAt != null && isNotificationInTrashWindow(trashedAt);
   });
   const showList = hasActive || hasTrash || view === "trash";

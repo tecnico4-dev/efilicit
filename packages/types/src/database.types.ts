@@ -1304,6 +1304,42 @@ export type Database = {
           },
         ]
       }
+      notification_common: {
+        Row: {
+          read_at: string | null
+          tender_id: string
+          trashed_at: string | null
+          user_id: string
+        }
+        Insert: {
+          read_at?: string | null
+          tender_id: string
+          trashed_at?: string | null
+          user_id: string
+        }
+        Update: {
+          read_at?: string | null
+          tender_id?: string
+          trashed_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_common_tender_id_fkey"
+            columns: ["tender_id"]
+            isOneToOne: false
+            referencedRelation: "shared_favorites"
+            referencedColumns: ["tender_id"]
+          },
+          {
+            foreignKeyName: "notification_common_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notification_emails: {
         Row: {
           created_at: string

@@ -5,8 +5,10 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { formatDateMadrid } from "@/lib/datetime";
 import {
+  favoriteKindLongLabel,
   formatNotificationTrashExpiry,
   isNotificationInTrashWindow,
+  type CommonInboxNotification,
   type DigestInboxNotification,
   type FavoriteStatusNotification,
 } from "@/lib/queries";
@@ -16,16 +18,20 @@ import {
   NotificationsFolderTabs,
   type NotificationsView,
 } from "./notifications-folder-tabs";
+import { PurgeCommonNotificationButton } from "./purge-common-notification-button";
 import { PurgeDigestNotificationButton } from "./purge-digest-notification-button";
 import { PurgeNotificationButton } from "./purge-notification-button";
+import { RestoreCommonNotificationButton } from "./restore-common-notification-button";
 import { RestoreDigestNotificationButton } from "./restore-digest-notification-button";
 import { RestoreNotificationButton } from "./restore-notification-button";
+import { TrashCommonNotificationButton } from "./trash-common-notification-button";
 import { TrashDigestNotificationButton } from "./trash-digest-notification-button";
 import { TrashNotificationButton } from "./trash-notification-button";
 
 export type InboxItem =
   | { kind: "favorite_status"; sortAt: string; data: FavoriteStatusNotification }
-  | { kind: "digest"; sortAt: string; data: DigestInboxNotification };
+  | { kind: "digest"; sortAt: string; data: DigestInboxNotification }
+  | { kind: "common"; sortAt: string; data: CommonInboxNotification };
 
 function formatWhen(iso: string): string {
   try {
@@ -60,6 +66,19 @@ function digestCopy(n: DigestInboxNotification): string {
   return `Se ha enviado tu email ${freq}: ${licit}`;
 }
 
+function commonCopy(n: CommonInboxNotification): string {
+  const who = n.addedByDisplayName?.trim() || "Alguien del equipo";
+  return `${who} ha añadido a Común (${favoriteKindLongLabel(n.kind)})`;
+}
+
+function itemUnread(item: InboxItem): boolean {
+  return item.data.unread;
+}
+
+function itemTrashedAt(item: InboxItem): string | null {
+  return item.data.trashedAt;
+}
+
 export function NotificationsList({
   items,
   initialView,
@@ -77,9 +96,9 @@ export function NotificationsList({
   const [pendingPurgeKeys, setPendingPurgeKeys] = useState<string[]>([]);
 
   function itemKey(item: InboxItem): string {
-    return item.kind === "digest"
-      ? `digest:${item.data.id}`
-      : `fav:${item.data.eventId}`;
+    if (item.kind === "digest") return `digest:${item.data.id}`;
+    if (item.kind === "common") return `common:${item.data.tenderId}`;
+    return `fav:${item.data.eventId}`;
   }
 
   function onViewChange(next: NotificationsView) {
@@ -89,26 +108,20 @@ export function NotificationsList({
 
   const active = items.filter((n) => {
     if (pendingPurgeKeys.includes(itemKey(n))) return false;
-    if (n.kind === "favorite_status") return n.data.trashedAt == null;
-    return n.data.trashedAt == null;
+    return itemTrashedAt(n) == null;
   });
   const inTrashWindow = items.filter((n) => {
     if (pendingPurgeKeys.includes(itemKey(n))) return false;
-    const trashedAt =
-      n.kind === "favorite_status" ? n.data.trashedAt : n.data.trashedAt;
+    const trashedAt = itemTrashedAt(n);
     return trashedAt != null && isNotificationInTrashWindow(trashedAt);
   });
-  const unreadCount = active.filter((n) =>
-    n.kind === "favorite_status" ? n.data.unread : n.data.unread,
-  ).length;
+  const unreadCount = active.filter(itemUnread).length;
 
   const visible =
     view === "trash"
       ? inTrashWindow
       : view === "unread"
-        ? active.filter((n) =>
-            n.kind === "favorite_status" ? n.data.unread : n.data.unread,
-          )
+        ? active.filter(itemUnread)
         : active;
 
   const emptyCopy =
@@ -139,48 +152,51 @@ export function NotificationsList({
           </p>
         ) : (
           <ul className="divide-y divide-border">
-            {visible.map((item) =>
-              item.kind === "digest" ? (
-                <DigestRow
-                  key={`digest-${item.data.id}`}
-                  n={item.data}
-                  userId={userId}
-                  inTrash={view === "trash"}
-                  onOpen={() => setOpenDigest(item.data)}
-                  onPurgeHide={() =>
-                    setPendingPurgeKeys((keys) =>
-                      keys.includes(itemKey(item))
-                        ? keys
-                        : [...keys, itemKey(item)],
-                    )
-                  }
-                  onPurgeShow={() =>
-                    setPendingPurgeKeys((keys) =>
-                      keys.filter((k) => k !== itemKey(item)),
-                    )
-                  }
-                />
-              ) : (
+            {visible.map((item) => {
+              const key = itemKey(item);
+              const onPurgeHide = () =>
+                setPendingPurgeKeys((keys) =>
+                  keys.includes(key) ? keys : [...keys, key],
+                );
+              const onPurgeShow = () =>
+                setPendingPurgeKeys((keys) => keys.filter((k) => k !== key));
+
+              if (item.kind === "digest") {
+                return (
+                  <DigestRow
+                    key={key}
+                    n={item.data}
+                    userId={userId}
+                    inTrash={view === "trash"}
+                    onOpen={() => setOpenDigest(item.data)}
+                    onPurgeHide={onPurgeHide}
+                    onPurgeShow={onPurgeShow}
+                  />
+                );
+              }
+              if (item.kind === "common") {
+                return (
+                  <CommonRow
+                    key={key}
+                    n={item.data}
+                    userId={userId}
+                    inTrash={view === "trash"}
+                    onPurgeHide={onPurgeHide}
+                    onPurgeShow={onPurgeShow}
+                  />
+                );
+              }
+              return (
                 <FavoriteStatusRow
-                  key={`fav-${item.data.eventId}`}
+                  key={key}
                   n={item.data}
                   userId={userId}
                   inTrash={view === "trash"}
-                  onPurgeHide={() =>
-                    setPendingPurgeKeys((keys) =>
-                      keys.includes(itemKey(item))
-                        ? keys
-                        : [...keys, itemKey(item)],
-                    )
-                  }
-                  onPurgeShow={() =>
-                    setPendingPurgeKeys((keys) =>
-                      keys.filter((k) => k !== itemKey(item)),
-                    )
-                  }
+                  onPurgeHide={onPurgeHide}
+                  onPurgeShow={onPurgeShow}
                 />
-              ),
-            )}
+              );
+            })}
           </ul>
         )}
       </div>
@@ -275,6 +291,90 @@ function DigestRow({
         </button>
         <div className="flex items-center pr-2">
           <TrashDigestNotificationButton userId={userId} digestId={n.id} />
+        </div>
+      </div>
+    </li>
+  );
+}
+
+function CommonRow({
+  n,
+  userId,
+  inTrash,
+  onPurgeHide,
+  onPurgeShow,
+}: {
+  n: CommonInboxNotification;
+  userId: string;
+  inTrash: boolean;
+  onPurgeHide: () => void;
+  onPurgeShow: () => void;
+}) {
+  const href = `/notifications/open?source=common&tenderId=${encodeURIComponent(n.tenderId)}`;
+
+  if (inTrash && n.trashedAt) {
+    return (
+      <li>
+        <div className="flex items-center gap-3 px-4 py-3">
+          <Link
+            href={href}
+            className="min-w-0 flex-1 transition-colors hover:opacity-90"
+          >
+            <p className="text-sm font-medium text-foreground">{commonCopy(n)}</p>
+            <p className="mt-1 text-sm text-muted-foreground">{n.title}</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {formatWhen(n.sharedAt)}
+            </p>
+          </Link>
+          <div className="flex shrink-0 flex-col items-end gap-1 self-center">
+            <p className="max-w-[11rem] text-right text-xs text-muted-foreground sm:max-w-[14rem]">
+              {formatNotificationTrashExpiry(n.trashedAt)}
+            </p>
+            <div className="flex items-center gap-0.5">
+              <RestoreCommonNotificationButton
+                userId={userId}
+                tenderId={n.tenderId}
+              />
+              <PurgeCommonNotificationButton
+                userId={userId}
+                tenderId={n.tenderId}
+                onHide={onPurgeHide}
+                onShow={onPurgeShow}
+              />
+            </div>
+          </div>
+        </div>
+      </li>
+    );
+  }
+
+  return (
+    <li>
+      <div className="flex items-stretch gap-1">
+        <Link
+          href={href}
+          className="relative min-w-0 flex-1 px-4 py-3 transition-colors hover:bg-muted/60"
+        >
+          {n.unread ? (
+            <span
+              className="absolute right-2 top-1/2 size-2 -translate-y-1/2 rounded-full bg-primary shadow-sm ring-2 ring-background"
+              title="No leída"
+              aria-label="No leída"
+            />
+          ) : null}
+          <p className="pr-4 text-sm font-medium text-foreground">
+            {commonCopy(n)}
+          </p>
+          <p className="mt-1 text-sm text-muted-foreground">{n.title}</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {formatWhen(n.sharedAt)}
+          </p>
+        </Link>
+        <div className="flex items-center pr-2">
+          <TrashCommonNotificationButton
+            userId={userId}
+            tenderId={n.tenderId}
+          />
         </div>
       </div>
     </li>

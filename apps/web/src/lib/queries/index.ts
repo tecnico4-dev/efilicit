@@ -113,6 +113,14 @@ export {
   type DigestTenderListItem,
 } from "./digest-inbox";
 export {
+  listOwnCommonInboxNotifications,
+  markOwnCommonNotificationRead,
+  permanentlyDeleteOwnCommonNotification,
+  restoreOwnCommonNotificationFromTrash,
+  trashOwnCommonNotification,
+  type CommonInboxNotification,
+} from "./notification-common";
+export {
   asTenderInterestKind,
   deleteOwnTenderRating,
   getOwnAlertInterestKindForTender,
