@@ -94,12 +94,7 @@ export function ShareToCommonButton({
       return;
     }
     if (existing.data) {
-      showStatus(
-        sharedFavoriteAlreadyMessage(userId, {
-          addedBy: existing.data.addedBy,
-          displayName: existing.data.displayName,
-        }),
-      );
+      showStatus(sharedFavoriteAlreadyMessage(userId, existing.data));
       router.refresh();
       return;
     }

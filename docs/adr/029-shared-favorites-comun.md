@@ -21,12 +21,13 @@ No es Mis licitaciones / `offer_*` (pipeline de oferta).
 1. Tabla `shared_favorites`:
    - PK = `tender_id` (una fila por licitación).
    - `added_by` → `users.id` (quien la compartió primero).
+   - `added_by_display_name` text nullable: copia del nombre al compartir (para UI/toasts sin leer `users` ajenos; RLS de perfiles sigue own-only).
    - `kind` text NOT NULL: `propia` (Propias de Eficen) | `subcontrata` (obligatorio al compartir).
    - `notes` text nullable (máx. 500).
    - `created_at`.
 2. RLS vía `is_app_user()`: SELECT / INSERT / DELETE para cualquier usuario app. INSERT exige `added_by = yo`. Cualquiera puede DELETE.
 3. UI: alta solo desde `/favorites/tenders` (icono avión + modal: muestra «Calificada como {kind}» heredado del favorito personal + nota). Listado Común y hub con pestañas Eficen/Subcontrata (estilo Mis alertas | Coincidencias) + burbuja. Sin badge en búsqueda/ficha; sin notificaciones en v1.
-4. Si ya existe: no abrir modal; toast inmediato. Si `added_by` soy yo → «Ya has añadido esta licitación»; si otro → «{nombre} ya ha añadido esta licitación» (si el nombre no es visible por RLS de `users`, fallback «Otro usuario»).
+4. Si ya existe: no abrir modal; toast inmediato. Si `added_by` soy yo → «Ya has añadido esta licitación»; si otro → «{added_by_display_name} ya ha añadido esta licitación» (fallback «Otro usuario» si el nombre estaba vacío).
 5. **Tenant único:** Común asume una sola organización invite-only. Multi-empresa futura requeriría otro ADR (scope por org).
 
 ### Alternativas descartadas
@@ -34,6 +35,7 @@ No es Mis licitaciones / `offer_*` (pipeline de oferta).
 - **Flag en `favorites`.** Mezcla privado y compartido; RLS incompatible.
 - **Varios aportadores por tender.** Complejidad innecesaria en MVP; basta el primero.
 - **DELETE solo del autor.** Choca con “es de todos”; se documenta el riesgo de borrado accidental (confirmación en UI).
+- **Ampliar SELECT de `users` entre compañeros.** Expone más que el nombre; se evita con la copia en `added_by_display_name`.
 
 ## Consecuencias
 
@@ -41,11 +43,13 @@ No es Mis licitaciones / `offer_*` (pipeline de oferta).
 
 - Separación clara: personales / Común / oferta.
 - Modelo simple y RLS alineado con otras tablas de equipo.
+- Nombre del autor visible en Común sin relajar RLS de perfiles.
 
 ### Negativas / riesgos
 
 - Cualquier invite puede vaciar Común.
 - No hay aislamiento multi-tenant.
+- Si el usuario cambia `display_name`, las filas ya compartidas conservan el nombre de entonces.
 
 ## Riesgos
 
@@ -57,4 +61,4 @@ No es Mis licitaciones / `offer_*` (pipeline de oferta).
 ## Referencias
 
 - [016](016-auth-invite-only-sin-registro-publico.md) · [023](023-mis-licitaciones-pipeline-compartido.md)
-- Migraciones `20261112100000_shared_favorites.sql`, `20261112110000_shared_favorites_kind.sql`
+- Migraciones `20261112100000_shared_favorites.sql`, `20261112110000_shared_favorites_kind.sql`, `20261112142000_shared_favorites_added_by_display_name.sql`

@@ -258,6 +258,7 @@ export type Database = {
       shared_favorites: {
         Row: {
           added_by: string
+          added_by_display_name: string | null
           created_at: string
           kind: string
           notes: string | null
@@ -265,6 +266,7 @@ export type Database = {
         }
         Insert: {
           added_by: string
+          added_by_display_name?: string | null
           created_at?: string
           kind: string
           notes?: string | null
@@ -272,6 +274,7 @@ export type Database = {
         }
         Update: {
           added_by?: string
+          added_by_display_name?: string | null
           created_at?: string
           kind?: string
           notes?: string | null

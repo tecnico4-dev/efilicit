@@ -25,7 +25,6 @@ type SharedFavoriteRow = Database["public"]["Tables"]["shared_favorites"]["Row"]
 
 export type SharedFavoriteWithTender = SharedFavoriteRow & {
   kind: FavoriteKind;
-  added_by_display_name: string | null;
   tenders: {
     id: string;
     title: string;
@@ -55,17 +54,16 @@ export async function listSharedFavoriteOwners(
 
   const { data, error } = await client
     .from("shared_favorites")
-    .select("tender_id, added_by, users:added_by ( display_name )")
+    .select("tender_id, added_by, added_by_display_name")
     .in("tender_id", tenderIds);
 
   if (error) return { data: new Map(), error: new Error(error.message) };
 
   const map = new Map<string, SharedFavoriteOwnerInfo>();
   for (const row of data ?? []) {
-    const users = row.users as { display_name: string | null } | null;
     map.set(row.tender_id, {
       addedBy: row.added_by,
-      displayName: users?.display_name ?? null,
+      displayName: row.added_by_display_name,
     });
   }
   return { data: map, error: null };
@@ -97,23 +95,22 @@ export async function getSharedFavoriteOwner(
   client: SupabaseClient<Database>,
   tenderId: string,
 ): Promise<{
-  data: { addedBy: string; displayName: string | null } | null;
+  data: SharedFavoriteOwnerInfo | null;
   error: Error | null;
 }> {
   const { data, error } = await client
     .from("shared_favorites")
-    .select("added_by, users:added_by ( display_name )")
+    .select("added_by, added_by_display_name")
     .eq("tender_id", tenderId)
     .maybeSingle();
 
   if (error) return { data: null, error: new Error(error.message) };
   if (!data) return { data: null, error: null };
 
-  const users = data.users as { display_name: string | null } | null;
   return {
     data: {
       addedBy: data.added_by,
-      displayName: users?.display_name ?? null,
+      displayName: data.added_by_display_name,
     },
     error: null,
   };
@@ -122,14 +119,13 @@ export async function getSharedFavoriteOwner(
 function mapSharedRow(row: {
   tender_id: string;
   added_by: string;
+  added_by_display_name: string | null;
   notes: string | null;
   created_at: string;
   kind: string;
-  users: unknown;
   tenders: unknown;
 }): SharedFavoriteWithTender {
   const kind = asFavoriteKind(row.kind) ?? "propia";
-  const users = row.users as { display_name: string | null } | null;
   const tender = row.tenders as
     | {
         id: string;
@@ -147,10 +143,10 @@ function mapSharedRow(row: {
     return {
       tender_id: row.tender_id,
       added_by: row.added_by,
+      added_by_display_name: row.added_by_display_name,
       notes: row.notes,
       created_at: row.created_at,
       kind,
-      added_by_display_name: users?.display_name ?? null,
       tenders: null,
     };
   }
@@ -159,10 +155,10 @@ function mapSharedRow(row: {
   return {
     tender_id: row.tender_id,
     added_by: row.added_by,
+    added_by_display_name: row.added_by_display_name,
     notes: row.notes,
     created_at: row.created_at,
     kind,
-    added_by_display_name: users?.display_name ?? null,
     tenders: {
       ...rest,
       cpv_codes: [...(tender_cpvs ?? []).map((r) => r.cpv_code)].sort(),
@@ -179,10 +175,10 @@ export async function listSharedFavorites(
       `
       tender_id,
       added_by,
+      added_by_display_name,
       notes,
       kind,
       created_at,
-      users:added_by ( display_name ),
       tenders (
         id,
         title,
@@ -203,6 +199,20 @@ export async function listSharedFavorites(
     data: (data ?? []).map((row) => mapSharedRow(row as Parameters<typeof mapSharedRow>[0])),
     error: null,
   };
+}
+
+async function ownDisplayName(
+  client: SupabaseClient<Database>,
+  userId: string,
+): Promise<string | null> {
+  const { data, error } = await client
+    .from("users")
+    .select("display_name")
+    .eq("id", userId)
+    .maybeSingle();
+  if (error || !data) return null;
+  const name = data.display_name?.trim();
+  return name || null;
 }
 
 export async function addSharedFavorite(
@@ -235,16 +245,16 @@ export async function addSharedFavorite(
     return {
       ok: false,
       alreadyExists: true,
-      owner: {
-        addedBy: existing.data.addedBy,
-        displayName: existing.data.displayName,
-      },
+      owner: existing.data,
     };
   }
+
+  const displayName = await ownDisplayName(client, input.userId);
 
   const { error } = await client.from("shared_favorites").insert({
     tender_id: input.tenderId,
     added_by: input.userId,
+    added_by_display_name: displayName,
     kind: input.kind,
     notes,
   });
@@ -255,9 +265,9 @@ export async function addSharedFavorite(
       return {
         ok: false,
         alreadyExists: true,
-        owner: {
-          addedBy: again.data?.addedBy ?? "",
-          displayName: again.data?.displayName ?? null,
+        owner: again.data ?? {
+          addedBy: "",
+          displayName: null,
         },
       };
     }

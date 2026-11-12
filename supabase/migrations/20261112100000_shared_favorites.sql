@@ -24,6 +24,7 @@ grant execute on function public.is_app_user() to authenticated;
 create table public.shared_favorites (
   tender_id uuid primary key references public.tenders (id) on delete cascade,
   added_by uuid not null references public.users (id) on delete restrict,
+  added_by_display_name text null,
   notes text null
     check (notes is null or char_length(notes) <= 500),
   created_at timestamptz not null default now()
@@ -31,6 +32,9 @@ create table public.shared_favorites (
 
 comment on table public.shared_favorites is
   'Carpeta Común: una fila por licitación; added_by = quien la compartió primero. Tenant único (no multi-org).';
+
+comment on column public.shared_favorites.added_by_display_name is
+  'Nombre visible al compartir (copia); evita leer users ajenos por RLS.';
 
 comment on column public.shared_favorites.notes is
   'Nota opcional al compartir (máx. 500). Visible a todo el equipo.';
