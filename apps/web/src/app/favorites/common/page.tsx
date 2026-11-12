@@ -7,11 +7,9 @@ import {
   getSessionProfile,
   getSupabaseServerClient,
 } from "@/lib/auth/session";
-import {
-  listSharedFavorites,
-  sharedFavoriteKindLongLabel,
-} from "@/lib/queries";
+import { listSharedFavorites } from "@/lib/queries";
 import { EmptySharedFavoritesHint } from "../empty-hints";
+import { FavoriteKindTabs } from "../favorite-kind-tabs";
 import { PaginatedSharedFavorites } from "../paginated-shared-favorites";
 
 export const dynamic = "force-dynamic";
@@ -48,33 +46,29 @@ export default async function SharedFavoritesPage() {
             <EmptySharedFavoritesHint />
           </EmptyState>
         ) : (
-          <div className="space-y-10">
-            {(
-              [
-                ["propia", propias],
-                ["subcontrata", subcontratas],
-              ] as const
-            ).map(([kind, group]) => (
-              <section key={kind} aria-labelledby={`common-kind-${kind}`}>
-                <h2
-                  id={`common-kind-${kind}`}
-                  className="text-lg font-semibold tracking-tight text-foreground"
-                >
-                  {sharedFavoriteKindLongLabel(kind)}
-                  <span className="ml-2 text-sm font-normal text-muted-foreground tabular-nums">
-                    ({group.length})
-                  </span>
-                </h2>
-                <div className="mt-3">
-                  {group.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">Ninguna aún.</p>
-                  ) : (
-                    <PaginatedSharedFavorites items={group} />
-                  )}
-                </div>
-              </section>
-            ))}
-          </div>
+          <FavoriteKindTabs
+            ariaLabel="Tipo en Común"
+            propiasCount={propias.length}
+            subcontratasCount={subcontratas.length}
+            propias={
+              propias.length === 0 ? (
+                <p className="rounded-lg rounded-tl-none border border-border px-4 py-8 text-center text-sm text-muted-foreground">
+                  Ninguna aún.
+                </p>
+              ) : (
+                <PaginatedSharedFavorites items={propias} />
+              )
+            }
+            subcontratas={
+              subcontratas.length === 0 ? (
+                <p className="rounded-lg rounded-tl-none border border-border px-4 py-8 text-center text-sm text-muted-foreground">
+                  Ninguna aún.
+                </p>
+              ) : (
+                <PaginatedSharedFavorites items={subcontratas} />
+              )
+            }
+          />
         )}
       </div>
     </main>

@@ -52,9 +52,12 @@ export function PaginatedFavoriteTenders({
     setPage(1);
   }
 
+  const panelClass =
+    "rounded-lg rounded-tl-none border border-border";
+
   if (!showPager) {
     return (
-      <div className="rounded-lg border border-border px-4">
+      <div className={`${panelClass} px-4`}>
         <FavoriteTenderList
           favorites={pageItems}
           from={from}
@@ -68,7 +71,7 @@ export function PaginatedFavoriteTenders({
 
   return (
     <div
-      className="flex flex-col overflow-hidden rounded-lg border border-border"
+      className={`flex flex-col overflow-hidden ${panelClass}`}
       style={{ height: "calc(100dvh - 11.5rem)" }}
     >
       <div

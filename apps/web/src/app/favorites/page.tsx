@@ -2,9 +2,7 @@ import {
   getSessionProfile,
   getSupabaseServerClient,
 } from "@/lib/auth/session";
-import type { ReactNode } from "react";
 import {
-  favoriteKindLongLabel,
   listMunicipalityNamesByCodes,
   listOwnFavorites,
   listOwnSavedSearches,
@@ -29,46 +27,12 @@ import {
   SavedSearchList,
   SharedFavoriteList,
 } from "./favorites-shared";
+import { HubKindPreview } from "./hub-kind-preview";
 
 export const dynamic = "force-dynamic";
 
 const PANEL_CLASS =
   "mt-0 flex h-full min-h-0 flex-col rounded-lg border border-border bg-surface/40 px-4 py-4 sm:px-5";
-
-const HUB_KIND_PREVIEW = Math.max(1, Math.floor(FAVORITES_PREVIEW_LIMIT / 2));
-
-function HubKindPreview<T>({
-  propias,
-  subcontratas,
-  render,
-}: {
-  propias: T[];
-  subcontratas: T[];
-  render: (items: T[]) => ReactNode;
-}) {
-  return (
-    <div className="space-y-4">
-      {(
-        [
-          ["propia", propias],
-          ["subcontrata", subcontratas],
-        ] as const
-      ).map(([kind, group]) => (
-        <div key={kind}>
-          <p className="text-xs font-medium text-muted-foreground">
-            {favoriteKindLongLabel(kind)}
-            <span className="ml-1 tabular-nums">({group.length})</span>
-          </p>
-          {group.length === 0 ? (
-            <p className="mt-1 text-sm text-muted-foreground">Ninguna aún.</p>
-          ) : (
-            <div className="mt-1">{render(group.slice(0, HUB_KIND_PREVIEW))}</div>
-          )}
-        </div>
-      ))}
-    </div>
-  );
-}
 
 export default async function FavoritesPage() {
   const supabase = await getSupabaseServerClient();

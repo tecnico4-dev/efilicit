@@ -8,11 +8,11 @@ import {
   getSupabaseServerClient,
 } from "@/lib/auth/session";
 import {
-  favoriteKindLongLabel,
   listOwnFavorites,
   listSharedFavoriteTenderIds,
 } from "@/lib/queries";
 import { EmptyFavoritesTendersHint } from "../empty-hints";
+import { FavoriteKindTabs } from "../favorite-kind-tabs";
 import { PaginatedFavoriteTenders } from "../paginated-favorite-tenders";
 
 export const dynamic = "force-dynamic";
@@ -57,38 +57,39 @@ export default async function FavoriteTendersPage() {
             <EmptyFavoritesTendersHint />
           </EmptyState>
         ) : (
-          <div className="space-y-10">
-            {(
-              [
-                ["propia", propias],
-                ["subcontrata", subcontratas],
-              ] as const
-            ).map(([kind, group]) => (
-              <section key={kind} aria-labelledby={`fav-kind-${kind}`}>
-                <h2
-                  id={`fav-kind-${kind}`}
-                  className="text-lg font-semibold tracking-tight text-foreground"
-                >
-                  {favoriteKindLongLabel(kind)}
-                  <span className="ml-2 text-sm font-normal text-muted-foreground tabular-nums">
-                    ({group.length})
-                  </span>
-                </h2>
-                <div className="mt-3">
-                  {group.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">Ninguna aún.</p>
-                  ) : (
-                    <PaginatedFavoriteTenders
-                      favorites={group}
-                      from="favorites-tenders"
-                      shareUserId={userId}
-                      sharedTenderIds={sharedIdsResult.data}
-                    />
-                  )}
-                </div>
-              </section>
-            ))}
-          </div>
+          <FavoriteKindTabs
+            ariaLabel="Tipo de favorito"
+            propiasCount={propias.length}
+            subcontratasCount={subcontratas.length}
+            propias={
+              propias.length === 0 ? (
+                <p className="rounded-lg rounded-tl-none border border-border px-4 py-8 text-center text-sm text-muted-foreground">
+                  Ninguna aún.
+                </p>
+              ) : (
+                <PaginatedFavoriteTenders
+                  favorites={propias}
+                  from="favorites-tenders"
+                  shareUserId={userId}
+                  sharedTenderIds={sharedIdsResult.data}
+                />
+              )
+            }
+            subcontratas={
+              subcontratas.length === 0 ? (
+                <p className="rounded-lg rounded-tl-none border border-border px-4 py-8 text-center text-sm text-muted-foreground">
+                  Ninguna aún.
+                </p>
+              ) : (
+                <PaginatedFavoriteTenders
+                  favorites={subcontratas}
+                  from="favorites-tenders"
+                  shareUserId={userId}
+                  sharedTenderIds={sharedIdsResult.data}
+                />
+              )
+            }
+          />
         )}
       </div>
     </main>
