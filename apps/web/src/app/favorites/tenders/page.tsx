@@ -7,7 +7,10 @@ import {
   getSessionProfile,
   getSupabaseServerClient,
 } from "@/lib/auth/session";
-import { listOwnFavorites } from "@/lib/queries";
+import {
+  listOwnFavorites,
+  listSharedFavoriteTenderIds,
+} from "@/lib/queries";
 import { EmptyFavoritesTendersHint } from "../empty-hints";
 import { PaginatedFavoriteTenders } from "../paginated-favorite-tenders";
 
@@ -28,6 +31,13 @@ export default async function FavoriteTendersPage() {
   }
 
   const { data: favorites, error } = await listOwnFavorites(supabase);
+  const tenderIds = favorites
+    .map((f) => f.tenders?.id)
+    .filter((id): id is string => Boolean(id));
+  const sharedIdsResult = await listSharedFavoriteTenderIds(
+    supabase,
+    tenderIds,
+  );
 
   return (
     <main className={PAGE_MAIN_CLASS}>
@@ -46,6 +56,8 @@ export default async function FavoriteTendersPage() {
           <PaginatedFavoriteTenders
             favorites={favorites}
             from="favorites-tenders"
+            shareUserId={profile.data.id}
+            sharedTenderIds={sharedIdsResult.data}
           />
         )}
       </div>

@@ -19,9 +19,13 @@ export const FAVORITES_PAGE_SIZE = DEFAULT_PAGE_SIZE;
 export function PaginatedFavoriteTenders({
   favorites,
   from = "favorites-tenders",
+  shareUserId,
+  sharedTenderIds,
 }: {
   favorites: FavoriteWithTender[];
   from?: "favorites" | "favorites-tenders";
+  shareUserId?: string;
+  sharedTenderIds?: ReadonlySet<string>;
 }) {
   const total = favorites.length;
   const showPager = total > FAVORITES_PAGE_SIZE;
@@ -55,6 +59,8 @@ export function PaginatedFavoriteTenders({
           favorites={pageItems}
           from={from}
           bordered={false}
+          shareUserId={shareUserId}
+          sharedTenderIds={sharedTenderIds}
         />
       </div>
     );
@@ -73,6 +79,8 @@ export function PaginatedFavoriteTenders({
           favorites={pageItems}
           from={from}
           bordered={false}
+          shareUserId={shareUserId}
+          sharedTenderIds={sharedTenderIds}
         />
       </div>
       <div className="shrink-0 border-t border-border bg-background px-4 py-3">

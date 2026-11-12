@@ -113,6 +113,14 @@ export function FavoritesNavItem({ active }: { active: boolean }) {
           </Link>
           <Link
             role="menuitem"
+            href="/favorites/common"
+            className="block px-3 py-2 text-sm text-foreground hover:bg-muted"
+            onClick={() => setOpen(false)}
+          >
+            Común
+          </Link>
+          <Link
+            role="menuitem"
             href="/favorites/searches"
             className="block px-3 py-2 text-sm text-foreground hover:bg-muted"
             onClick={() => setOpen(false)}

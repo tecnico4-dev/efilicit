@@ -64,6 +64,15 @@ export {
   type FavoriteWithTender,
 } from "./favorites";
 export {
+  SHARED_FAVORITE_NOTES_MAX,
+  addSharedFavorite,
+  getSharedFavoriteOwner,
+  listSharedFavoriteTenderIds,
+  listSharedFavorites,
+  removeSharedFavorite,
+  type SharedFavoriteWithTender,
+} from "./shared-favorites";
+export {
   countUnreadFavoriteStatusNotifications,
   countUnreadNotifications,
   daysUntilNotificationTrashPurge,

@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Favoritos · Común: carpeta compartida del equipo (`shared_favorites`, ADR 029). Alta solo desde `/favorites/tenders` (avión + nota); listado en hub y `/favorites/common`; cualquiera puede quitar.
 - Workflow manual `cleanup-orphans` (GitHub Actions): lista/borra ficheros huérfanos del bucket `raw` (`scripts/borrar_huerfanos.py`; default dry-run; `apply` opcional; CSV como artifact).
 
 ### Removed

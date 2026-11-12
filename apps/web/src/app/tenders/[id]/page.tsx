@@ -73,6 +73,12 @@ function backLinkFromParams(
       label: "← Volver a la lista de licitaciones favoritas",
     };
   }
+  if (from === "favorites-common") {
+    return {
+      href: "/favorites/common",
+      label: "← Volver a Común",
+    };
+  }
   if (from === "favorites") {
     return {
       href: "/favorites",

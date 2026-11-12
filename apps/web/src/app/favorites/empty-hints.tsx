@@ -25,3 +25,19 @@ export function EmptySavedSearchesHint() {
     </>
   );
 }
+
+/** Vacío de Común: se añaden desde el listado ampliado de favoritos. */
+export function EmptySharedFavoritesHint() {
+  return (
+    <>
+      Aún no hay licitaciones en Común. Ábrelas desde{" "}
+      <Link
+        href="/favorites/tenders"
+        className="font-medium text-link hover:underline"
+      >
+        Licitaciones favoritas
+      </Link>{" "}
+      y pulsa el avión para compartirlas con el equipo.
+    </>
+  );
+}

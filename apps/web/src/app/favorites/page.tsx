@@ -6,12 +6,14 @@ import {
   listMunicipalityNamesByCodes,
   listOwnFavorites,
   listOwnSavedSearches,
+  listSharedFavorites,
   type DigestFrequency,
 } from "@/lib/queries";
 import { parseCriteria } from "@/lib/criteria-display";
 import {
   EmptyFavoritesTendersHint,
   EmptySavedSearchesHint,
+  EmptySharedFavoritesHint,
 } from "./empty-hints";
 import {
   PAGE_MAIN_WIDE_CLASS,
@@ -23,6 +25,7 @@ import {
   FavoriteTenderList,
   PreviewSection,
   SavedSearchList,
+  SharedFavoriteList,
 } from "./favorites-shared";
 
 export const dynamic = "force-dynamic";
@@ -47,12 +50,14 @@ export default async function FavoritesPage() {
   const digestFrequency: DigestFrequency =
     profile.data.digest_frequency === "semanal" ? "semanal" : "diaria";
 
-  const [favoritesResult, searchesResult] = await Promise.all([
+  const [favoritesResult, sharedResult, searchesResult] = await Promise.all([
     listOwnFavorites(supabase),
+    listSharedFavorites(supabase),
     listOwnSavedSearches(supabase),
   ]);
 
   const favorites = favoritesResult.data;
+  const shared = sharedResult.data;
   const searches = searchesResult.data;
   const municipalityNames = await listMunicipalityNamesByCodes(
     supabase,
@@ -84,15 +89,20 @@ export default async function FavoritesPage() {
           />
         </PreviewSection>
 
-        {/* Hueco provisional: contenido pendiente (nombre final TBD). */}
-        <section className={PANEL_CLASS} aria-labelledby="shared-tenders-heading">
-          <h2
-            id="shared-tenders-heading"
-            className="text-xl font-semibold tracking-tight text-foreground"
-          >
-            Licitaciones compartidas
-          </h2>
-        </section>
+        <PreviewSection
+          title="Común"
+          emptyMessage={<EmptySharedFavoritesHint />}
+          error={sharedResult.error?.message ?? null}
+          totalCount={shared.length}
+          moreHref="/favorites/common"
+          className={PANEL_CLASS}
+        >
+          <SharedFavoriteList
+            items={shared.slice(0, FAVORITES_PREVIEW_LIMIT)}
+            from="favorites"
+            bordered={false}
+          />
+        </PreviewSection>
 
         <PreviewSection
           title="Búsquedas guardadas"

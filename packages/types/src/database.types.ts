@@ -249,6 +249,42 @@ export type Database = {
           },
         ]
       }
+      shared_favorites: {
+        Row: {
+          added_by: string
+          created_at: string
+          notes: string | null
+          tender_id: string
+        }
+        Insert: {
+          added_by: string
+          created_at?: string
+          notes?: string | null
+          tender_id: string
+        }
+        Update: {
+          added_by?: string
+          created_at?: string
+          notes?: string | null
+          tender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shared_favorites_added_by_fkey"
+            columns: ["added_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shared_favorites_tender_id_fkey"
+            columns: ["tender_id"]
+            isOneToOne: true
+            referencedRelation: "tenders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tender_ratings: {
         Row: {
           created_at: string

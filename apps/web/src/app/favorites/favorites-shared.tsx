@@ -6,11 +6,17 @@ import {
   parseCriteria,
 } from "@/lib/criteria-display";
 import { formatCpvListPreview } from "@/lib/cpv";
-import type { DigestFrequency, FavoriteWithTender } from "@/lib/queries";
+import type {
+  DigestFrequency,
+  FavoriteWithTender,
+  SharedFavoriteWithTender,
+} from "@/lib/queries";
 import { formatTenderStatus } from "@/lib/tender-labels";
 import type { Database } from "@efilicit/types";
 import { ConvertToAlertButton } from "./convert-to-alert-button";
 import { RemoveSavedSearchButton } from "./remove-saved-search-button";
+import { RemoveSharedFavoriteButton } from "./remove-shared-favorite-button";
+import { ShareToCommonButton } from "./share-to-common-button";
 
 export const FAVORITES_PREVIEW_LIMIT = 5;
 
@@ -83,13 +89,21 @@ export function FavoriteTenderList({
   favorites,
   from = "favorites",
   bordered = true,
+  shareUserId,
+  sharedTenderIds,
 }: {
   favorites: FavoriteWithTender[];
   /** Origen del enlace a la ficha (para el «volver»). */
   from?: "favorites" | "favorites-tenders";
   /** Línea superior (false dentro de un recuadro con borde propio). */
   bordered?: boolean;
+  /** Si se pasa, muestra avión «Añadir a Común» (solo listado ampliado). */
+  shareUserId?: string;
+  /** Tender ids ya en Común (pinta el avión). */
+  sharedTenderIds?: ReadonlySet<string>;
 }) {
+  const showShare = Boolean(shareUserId);
+
   return (
     <ul
       className={
@@ -108,31 +122,131 @@ export function FavoriteTenderList({
           );
         }
         return (
-          <li key={fav.id} className="py-4">
-            <Link
-              href={`/tenders/${tender.id}?from=${from}`}
-              className="text-base font-medium text-foreground hover:text-link hover:underline"
+          <li key={fav.id} className="flex items-start gap-3 py-4">
+            <div className="min-w-0 flex-1">
+              <Link
+                href={`/tenders/${tender.id}?from=${from}`}
+                className="text-base font-medium text-foreground hover:text-link hover:underline"
+              >
+                {tender.title}
+              </Link>
+              <dl className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
+                <div>
+                  <dt className="inline text-muted-foreground">Importe: </dt>
+                  <dd className="inline">
+                    {formatMoney(tender.estimated_value, tender.currency)}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="inline text-muted-foreground">CPV: </dt>
+                  <dd className="inline font-mono">
+                    {formatCpvListPreview(tender.cpv_codes)}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="inline text-muted-foreground">Estado: </dt>
+                  <dd className="inline">{formatTenderStatus(tender.status)}</dd>
+                </div>
+              </dl>
+            </div>
+            {showShare && shareUserId ? (
+              <ShareToCommonButton
+                userId={shareUserId}
+                tenderId={tender.id}
+                tenderTitle={tender.title}
+                alreadyShared={sharedTenderIds?.has(tender.id) ?? false}
+              />
+            ) : null}
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+function formatSharedWhen(iso: string): string {
+  try {
+    return new Date(iso).toLocaleString("es-ES", {
+      timeZone: "Europe/Madrid",
+      dateStyle: "medium",
+      timeStyle: "short",
+    });
+  } catch {
+    return iso;
+  }
+}
+
+export function SharedFavoriteList({
+  items,
+  from = "favorites",
+  bordered = true,
+  showRemove = false,
+}: {
+  items: SharedFavoriteWithTender[];
+  from?: "favorites" | "favorites-common";
+  bordered?: boolean;
+  showRemove?: boolean;
+}) {
+  return (
+    <ul
+      className={
+        bordered
+          ? "divide-y divide-border border-t border-border"
+          : "divide-y divide-border"
+      }
+    >
+      {items.map((item) => {
+        const tender = item.tenders;
+        if (!tender) {
+          return (
+            <li
+              key={item.tender_id}
+              className="py-4 text-sm text-muted-foreground"
             >
-              {tender.title}
-            </Link>
-            <dl className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
-              <div>
-                <dt className="inline text-muted-foreground">Importe: </dt>
-                <dd className="inline">
-                  {formatMoney(tender.estimated_value, tender.currency)}
-                </dd>
-              </div>
-              <div>
-                <dt className="inline text-muted-foreground">CPV: </dt>
-                <dd className="inline font-mono">
-                  {formatCpvListPreview(tender.cpv_codes)}
-                </dd>
-              </div>
-              <div>
-                <dt className="inline text-muted-foreground">Estado: </dt>
-                <dd className="inline">{formatTenderStatus(tender.status)}</dd>
-              </div>
-            </dl>
+              Licitación no disponible
+            </li>
+          );
+        }
+        const who = item.added_by_display_name?.trim() || "Usuario";
+        return (
+          <li key={item.tender_id} className="flex items-start gap-3 py-4">
+            <div className="min-w-0 flex-1">
+              <Link
+                href={`/tenders/${tender.id}?from=${from}`}
+                className="text-base font-medium text-foreground hover:text-link hover:underline"
+              >
+                {tender.title}
+              </Link>
+              <p className="mt-1.5 text-xs text-muted-foreground">
+                Añadida por {who} · {formatSharedWhen(item.created_at)}
+              </p>
+              {item.notes?.trim() ? (
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {item.notes.trim()}
+                </p>
+              ) : null}
+              <dl className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
+                <div>
+                  <dt className="inline text-muted-foreground">Importe: </dt>
+                  <dd className="inline">
+                    {formatMoney(tender.estimated_value, tender.currency)}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="inline text-muted-foreground">CPV: </dt>
+                  <dd className="inline font-mono">
+                    {formatCpvListPreview(tender.cpv_codes)}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="inline text-muted-foreground">Estado: </dt>
+                  <dd className="inline">{formatTenderStatus(tender.status)}</dd>
+                </div>
+              </dl>
+            </div>
+            {showRemove ? (
+              <RemoveSharedFavoriteButton tenderId={item.tender_id} />
+            ) : null}
           </li>
         );
       })}
