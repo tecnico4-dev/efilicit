@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { formatDateMadrid } from "@/lib/datetime";
 import {
-  favoriteKindLongLabel,
+  favoriteKindLabel,
   formatNotificationTrashExpiry,
   isNotificationInTrashWindow,
   type CommonInboxNotification,
@@ -66,9 +66,23 @@ function digestCopy(n: DigestInboxNotification): string {
   return `Se ha enviado tu email ${freq}: ${licit}`;
 }
 
-function commonCopy(n: CommonInboxNotification): string {
+function CommonHeadline({ n }: { n: CommonInboxNotification }) {
   const who = n.addedByDisplayName?.trim() || "Alguien del equipo";
-  return `${who} ha añadido a Común (${favoriteKindLongLabel(n.kind)})`;
+  const forKind = favoriteKindLabel(n.kind);
+  return (
+    <>
+      {who} ha compartido una licitación interesante para {forKind} en la
+      carpeta{" "}
+      <Link
+        href="/favorites/common"
+        className="font-medium text-primary underline underline-offset-2 hover:text-primary-dark"
+        onClick={(e) => e.stopPropagation()}
+      >
+        común
+      </Link>
+      .
+    </>
+  );
 }
 
 function itemUnread(item: InboxItem): boolean {
@@ -316,16 +330,20 @@ function CommonRow({
     return (
       <li>
         <div className="flex items-center gap-3 px-4 py-3">
-          <Link
-            href={href}
-            className="min-w-0 flex-1 transition-colors hover:opacity-90"
-          >
-            <p className="text-sm font-medium text-foreground">{commonCopy(n)}</p>
-            <p className="mt-1 text-sm text-muted-foreground">{n.title}</p>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-medium text-foreground">
+              <CommonHeadline n={n} />
+            </p>
+            <Link
+              href={href}
+              className="mt-1 block text-sm text-muted-foreground transition-colors hover:opacity-90"
+            >
+              {n.title}
+            </Link>
             <p className="mt-1 text-xs text-muted-foreground">
               {formatWhen(n.sharedAt)}
             </p>
-          </Link>
+          </div>
           <div className="flex shrink-0 flex-col items-end gap-1 self-center">
             <p className="max-w-[11rem] text-right text-xs text-muted-foreground sm:max-w-[14rem]">
               {formatNotificationTrashExpiry(n.trashedAt)}
@@ -351,10 +369,7 @@ function CommonRow({
   return (
     <li>
       <div className="flex items-stretch gap-1">
-        <Link
-          href={href}
-          className="relative min-w-0 flex-1 px-4 py-3 transition-colors hover:bg-muted/60"
-        >
+        <div className="relative min-w-0 flex-1 px-4 py-3 transition-colors hover:bg-muted/60">
           {n.unread ? (
             <span
               className="absolute right-2 top-1/2 size-2 -translate-y-1/2 rounded-full bg-primary shadow-sm ring-2 ring-background"
@@ -363,13 +378,18 @@ function CommonRow({
             />
           ) : null}
           <p className="pr-4 text-sm font-medium text-foreground">
-            {commonCopy(n)}
+            <CommonHeadline n={n} />
           </p>
-          <p className="mt-1 text-sm text-muted-foreground">{n.title}</p>
+          <Link
+            href={href}
+            className="mt-1 block pr-4 text-sm text-muted-foreground transition-colors hover:text-foreground"
+          >
+            {n.title}
+          </Link>
           <p className="mt-1 text-xs text-muted-foreground">
             {formatWhen(n.sharedAt)}
           </p>
-        </Link>
+        </div>
         <div className="flex items-center pr-2">
           <TrashCommonNotificationButton
             userId={userId}

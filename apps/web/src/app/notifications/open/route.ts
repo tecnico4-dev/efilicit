@@ -43,16 +43,20 @@ export async function GET(request: NextRequest) {
         userId: profile.id,
         eventId,
       });
+      const kindResult = await getOwnAlertInterestKindForTender(supabase, {
+        userId: profile.id,
+        tenderId,
+      });
+      if (!kindResult.error) interest = kindResult.data;
     }
-    const kindResult = await getOwnAlertInterestKindForTender(supabase, {
-      userId: profile.id,
-      tenderId,
-    });
-    if (!kindResult.error) interest = kindResult.data;
   }
 
   const target = new URL(`/tenders/${tenderId}`, request.url);
-  target.searchParams.set("from", source === "common" ? "notifications" : "email");
+  // Común: sin valoración en ficha (from=favorites-common). Digest/fav-estado: sí.
+  target.searchParams.set(
+    "from",
+    source === "common" ? "favorites-common" : "email",
+  );
   if (interest) target.searchParams.set("interest", interest);
   return NextResponse.redirect(target);
 }
