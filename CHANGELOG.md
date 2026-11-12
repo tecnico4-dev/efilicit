@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Favoritos · Común: bajo el título, burbuja + «Añadida por X (fecha)»; nota (si hay) en recuadro con borde discontinuo «Nota: …».
 - Buzón · Común: título «…ha compartido una licitación interesante para Eficen/Subcontrata en la carpeta común.» con «común» enlazando a `/favorites/common`; abrir la ficha desde el aviso no pide ni muestra valoración (`from=favorites-common`).
 - Alertas: Clasificación* (Eficen / Subcontrata → `alerts.kind`) obligatoria al crear/convertir/guardar edición; legado puede ser `NULL` (radios vacíos hasta elegir); si ya tenía kind, se conserva al editar; si falta, «Indica el tipo de alerta.» En relacionadas/coincidencias/buzón/ficha (`?interest=` o cola), el chip de interés se preselecciona con el kind de la alerta (se puede cambiar). Digest email: burbuja Eficen/Sub a la derecha de «N coincidencias»; bloques ordenados Eficen → Subcontrata → sin clasificar (sin burbuja); enlaces con `&interest=` si hay kind.
 - Buzón: `notification_reads` + `notification_trash` → `notification_favorites` (`read_at` / `trashed_at` / `deleted`); `digest_inbox_notifications` → `notification_emails`. Papelera: eliminar definitivo (favoritos → `deleted`; emails → `DELETE`) con toast Revertir diferido ~7s.

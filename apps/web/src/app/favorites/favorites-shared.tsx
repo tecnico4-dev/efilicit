@@ -214,24 +214,26 @@ export function SharedFavoriteList({
           );
         }
         const who = item.added_by_display_name?.trim() || "Usuario";
+        const note = item.notes?.trim() || "";
         return (
           <li key={item.tender_id} className="flex items-start gap-3 py-4">
             <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap items-center gap-2">
-                <Link
-                  href={`/tenders/${tender.id}?from=${from}`}
-                  className="text-base font-medium text-foreground hover:text-link hover:underline"
-                >
-                  {tender.title}
-                </Link>
+              <Link
+                href={`/tenders/${tender.id}?from=${from}`}
+                className="text-base font-medium text-foreground hover:text-link hover:underline"
+              >
+                {tender.title}
+              </Link>
+              <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1">
                 <FavoriteKindBubble kind={item.kind} />
+                <p className="text-xs text-muted-foreground">
+                  Añadida por {who} ({formatSharedWhen(item.created_at)})
+                </p>
               </div>
-              <p className="mt-1.5 text-xs text-muted-foreground">
-                Añadida por {who} · {formatSharedWhen(item.created_at)}
-              </p>
-              {item.notes?.trim() ? (
-                <p className="mt-1 text-sm text-muted-foreground">
-                  {item.notes.trim()}
+              {note ? (
+                <p className="mt-2 rounded-md border border-dashed border-border px-2.5 py-1.5 text-sm text-muted-foreground">
+                  <span className="font-medium text-foreground">Nota:</span>{" "}
+                  {note}
                 </p>
               ) : null}
               <dl className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
