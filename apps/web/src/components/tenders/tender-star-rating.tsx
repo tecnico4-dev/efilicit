@@ -48,17 +48,20 @@ function StarIcon({
 export function TenderStarRating({
   rating,
   disabled = false,
+  /** Preselección (p. ej. kind de la alerta) si aún no hay valoración. */
+  defaultInterestKind = null,
   onChange,
 }: {
   rating: TenderRating | null;
   disabled?: boolean;
+  defaultInterestKind?: TenderInterestKind | null;
   onChange: (next: TenderRating | null) => void | Promise<void>;
 }) {
   const [editing, setEditing] = useState(false);
   const [hover, setHover] = useState<number | null>(null);
   const [pending, setPending] = useState(false);
   const [draftKind, setDraftKind] = useState<TenderInterestKind | null>(
-    rating?.interestKind ?? null,
+    rating?.interestKind ?? defaultInterestKind ?? null,
   );
   const [nudgeKey, setNudgeKey] = useState(0);
   const [showNudge, setShowNudge] = useState(false);
@@ -69,9 +72,9 @@ export function TenderStarRating({
       setDraftKind(rating.interestKind);
       setShowNudge(false);
     } else {
-      setDraftKind(null);
+      setDraftKind(defaultInterestKind ?? null);
     }
-  }, [rating]);
+  }, [rating, defaultInterestKind]);
 
   // La animación solo mientras dura; no debe repetirse al reabrir el editor.
   useEffect(() => {
@@ -93,7 +96,7 @@ export function TenderStarRating({
       setEditing(next == null);
       setHover(null);
       if (next) setDraftKind(next.interestKind);
-      else setDraftKind(null);
+      else setDraftKind(defaultInterestKind ?? null);
     } finally {
       setPending(false);
     }

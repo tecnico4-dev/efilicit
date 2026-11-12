@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useUndoToast } from "@/components/undo-toast";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import {
+  asFavoriteKind,
   createOwnAlert,
   deleteOwnAlert,
   listOwnQueueIdsForAlert,
@@ -72,6 +73,7 @@ export function RemoveAlertButton({
       userId: alert.user_id,
       name: alert.name,
       criteria: parseCriteria(alert.criteria),
+      kind: asFavoriteKind(alert.kind),
       frequency: (alert.frequency === "semanal"
         ? "semanal"
         : "diaria") as DigestFrequency,
@@ -94,6 +96,7 @@ export function RemoveAlertButton({
         userId: snapshot.userId,
         name: snapshot.name,
         criteria: snapshot.criteria,
+        kind: snapshot.kind,
         frequency: snapshot.frequency,
       });
       if (!data) {

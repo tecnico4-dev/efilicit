@@ -8,6 +8,7 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import {
   deleteOwnTenderRating,
   upsertOwnTenderRating,
+  type TenderInterestKind,
   type TenderRating,
 } from "@/lib/queries";
 
@@ -36,10 +37,13 @@ export function TenderDetailRating({
   userId,
   tenderId,
   initialRating,
+  defaultInterestKind = null,
 }: {
   userId: string;
   tenderId: string;
   initialRating: TenderRating | null;
+  /** Preselección Eficen/Subcontrata (alerta de origen). */
+  defaultInterestKind?: TenderInterestKind | null;
 }) {
   const router = useRouter();
   const [rating, setRating] = useState<TenderRating | null>(initialRating);
@@ -154,7 +158,11 @@ export function TenderDetailRating({
           Tu valoración
         </p>
         <div className="flex w-full justify-center">
-          <TenderStarRating rating={rating} onChange={onChange} />
+          <TenderStarRating
+            rating={rating}
+            defaultInterestKind={defaultInterestKind}
+            onChange={onChange}
+          />
         </div>
         {error && !exitOpen ? (
           <p className="mt-1 text-xs text-destructive" role="alert">
@@ -179,7 +187,11 @@ export function TenderDetailRating({
                   ¿Te ha parecido interesante esta licitación?
                 </h2>
                 <div className="mt-5 flex justify-center">
-                  <TenderStarRating rating={null} onChange={onExitRate} />
+                  <TenderStarRating
+                    rating={null}
+                    defaultInterestKind={defaultInterestKind}
+                    onChange={onExitRate}
+                  />
                 </div>
                 {error ? (
                   <p

@@ -55,6 +55,16 @@ class _AlertDigestBlock:
     name: str
     items: tuple[NotificationItem, ...]
     total: int
+    kind: str | None = None  # propia | subcontrata | None
+
+
+# Colores burbuja alineados con favoritos web (teal / violeta).
+_KIND_EFICEN_BORDER = "rgba(13,148,136,0.35)"
+_KIND_EFICEN_BG = "rgba(13,148,136,0.12)"
+_KIND_EFICEN_TEXT = "#115e59"
+_KIND_SUB_BORDER = "rgba(139,92,246,0.35)"
+_KIND_SUB_BG = "rgba(139,92,246,0.12)"
+_KIND_SUB_TEXT = "#5b21b6"
 
 
 @dataclass
@@ -107,8 +117,13 @@ def build_digest_message(
     base_url: str | None = None,
     source_urls: Mapping[str, str] | None = None,
     alert_names: Mapping[str, str] | None = None,
+    alert_kinds: Mapping[str, str | None] | None = None,
 ) -> EmailMessage:
-    """Plantilla branded: máx. N alertas × M ítems + CTAs (cola se marca entera)."""
+    """Plantilla branded: máx. N alertas × M ítems + CTAs (cola se marca entera).
+
+    Bloques agrupados por alerta; orden: Eficen → Subcontrata → sin clasificar
+    (estable dentro de cada grupo). Sin ``kind`` no hay burbuja.
+    """
     from efilicit_ingestion.alerts.queue import normalize_digest_frequency
 
     count = len(items)
@@ -119,7 +134,11 @@ def build_digest_message(
     name = (display_name or "usuario").strip() or "usuario"
     urls = dict(source_urls or {})
     names = dict(alert_names or {})
-    all_blocks = group_items_by_alert(items, alert_names=names)
+    kinds = dict(alert_kinds or {})
+    all_blocks = group_items_by_alert(
+        items, alert_names=names, alert_kinds=kinds
+    )
+    all_blocks = _sort_blocks_by_kind(all_blocks)
     total_alerts = len(all_blocks)
     blocks = all_blocks[:_MAX_ALERTS]
     omitted_alerts = total_alerts - len(blocks)
@@ -157,13 +176,16 @@ def group_items_by_alert(
     items: Sequence[NotificationItem],
     *,
     alert_names: Mapping[str, str] | None = None,
+    alert_kinds: Mapping[str, str | None] | None = None,
     max_per_alert: int = _MAX_PER_ALERT,
 ) -> list[_AlertDigestBlock]:
     """Agrupa por alerta; conserva orden de primera aparición; recorta ítems por bloque.
 
-    El tope de nº de alertas visibles lo aplica ``build_digest_message``.
+    El tope de nº de alertas visibles y el orden Eficen/Sub lo aplica
+    ``build_digest_message``.
     """
     names = dict(alert_names or {})
+    kinds = dict(alert_kinds or {})
     order: list[str] = []
     buckets: dict[str, list[NotificationItem]] = defaultdict(list)
     for item in items:
@@ -180,6 +202,8 @@ def group_items_by_alert(
             or _item_alert_name(group[0].payload)
             or ("Alerta" if aid == "_unknown" else "Alerta")
         )
+        raw_kind = kinds.get(aid)
+        kind = raw_kind if raw_kind in ("propia", "subcontrata") else None
         visible = tuple(group[:max_per_alert])
         blocks.append(
             _AlertDigestBlock(
@@ -187,9 +211,51 @@ def group_items_by_alert(
                 name=label,
                 items=visible,
                 total=len(group),
+                kind=kind,
             )
         )
     return blocks
+
+
+def _kind_sort_rank(kind: str | None) -> int:
+    if kind == "propia":
+        return 0
+    if kind == "subcontrata":
+        return 1
+    return 2
+
+
+def _sort_blocks_by_kind(
+    blocks: Sequence[_AlertDigestBlock],
+) -> list[_AlertDigestBlock]:
+    """Eficen → Subcontrata → sin clasificar; estable dentro de cada grupo."""
+    indexed = list(enumerate(blocks))
+    indexed.sort(key=lambda pair: (_kind_sort_rank(pair[1].kind), pair[0]))
+    return [block for _, block in indexed]
+
+
+def _kind_label(kind: str | None) -> str | None:
+    if kind == "propia":
+        return "Eficen"
+    if kind == "subcontrata":
+        return "Subcontrata"
+    return None
+
+
+def _kind_bubble_html(kind: str | None) -> str:
+    label = _kind_label(kind)
+    if not label:
+        return ""
+    if kind == "propia":
+        border, bg, color = _KIND_EFICEN_BORDER, _KIND_EFICEN_BG, _KIND_EFICEN_TEXT
+    else:
+        border, bg, color = _KIND_SUB_BORDER, _KIND_SUB_BG, _KIND_SUB_TEXT
+    return (
+        f'<span style="display:inline-block;padding:2px 8px;border-radius:999px;'
+        f"border:1px solid {border};background:{bg};"
+        f'font-size:11px;font-weight:600;color:{color};line-height:1.4;'
+        f'font-family:Arial,Helvetica,sans-serif;">{_escape(label)}</span>'
+    )
 
 
 def _subject_line(*, label: str, count: int) -> str:
@@ -222,13 +288,16 @@ def _build_text(
         "",
     ]
     for i, block in enumerate(blocks):
-        lines.append(f"## {block.name}")
+        kind_bit = _kind_label(block.kind)
+        heading = f"## {block.name}" + (f" ({kind_bit})" if kind_bit else "")
+        lines.append(heading)
         for item in block.items:
             title = _item_title(item.payload)
             tid = _item_tender_id(item.payload)
             lines.append(f"- {title}")
             if base and tid:
-                lines.append(f"  Ver en EfiLicit: {base}/tenders/{tid}?from=email")
+                href = _tender_detail_href(base, tid, interest=block.kind)
+                lines.append(f"  Ver en EfiLicit: {href}")
             src = source_urls.get(tid) if tid else None
             if src:
                 lines.append(f"  Fuente oficial: {src}")
@@ -362,6 +431,7 @@ def _alert_section(
             item.payload,
             base=base,
             source_url=source_urls.get(_item_tender_id(item.payload) or ""),
+            interest=block.kind,
         )
         for item in block.items
     )
@@ -373,19 +443,42 @@ def _alert_section(
             f"… y {_escape(str(remaining))} más en esta alerta."
             f"</p>"
         )
+    coincidences = (
+        f"{block.total} coincidencia{'s' if block.total != 1 else ''}"
+    )
+    bubble = _kind_bubble_html(block.kind)
+    meta_row = (
+        f'<table role="presentation" width="100%" cellpadding="0" cellspacing="0">'
+        f"<tr>"
+        f'<td style="font-family:Arial,Helvetica,sans-serif;font-size:12px;'
+        f'color:{_MUTED};vertical-align:middle;">{coincidences}</td>'
+    )
+    if bubble:
+        meta_row += (
+            f'<td align="right" style="vertical-align:middle;white-space:nowrap;'
+            f'padding-left:12px;">{bubble}</td>'
+        )
+    meta_row += "</tr></table>"
     return (
         f'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" '
         f'style="margin:0;">'
         f'<tr><td style="padding:0 0 10px;border-bottom:2px solid {_BRAND_BORDER};">'
         f'<p style="margin:0;font-size:16px;font-weight:700;color:{_TEXT};">'
         f"{_escape(block.name)}</p>"
-        f'<p style="margin:4px 0 0;font-size:12px;color:{_MUTED};">'
-        f"{block.total} coincidencia{'s' if block.total != 1 else ''}"
-        f"</p>"
+        f'<div style="margin:4px 0 0;">{meta_row}</div>'
         f"</td></tr>"
         f'<tr><td style="padding:12px 0 0;">{cards}{more_html}</td></tr>'
         f"</table>"
     )
+
+
+def _tender_detail_href(
+    base: str, tender_id: str, *, interest: str | None = None
+) -> str:
+    href = f"{base}/tenders/{tender_id}?from=email"
+    if interest in ("propia", "subcontrata"):
+        href = f"{href}&interest={interest}"
+    return href
 
 
 def _item_card(
@@ -393,13 +486,14 @@ def _item_card(
     *,
     base: str,
     source_url: str | None,
+    interest: str | None = None,
 ) -> str:
     title = _escape(_item_title(payload))
     tid = _item_tender_id(payload)
 
     actions: list[str] = []
     if base and tid:
-        href = f"{base}/tenders/{tid}?from=email"
+        href = _tender_detail_href(base, tid, interest=interest)
         actions.append(
             f'<a href="{_escape(href)}" '
             f'style="display:inline-block;padding:8px 14px;background:{_BRAND};'
@@ -509,6 +603,8 @@ def drain_daily_digests(
     inbox: DigestInbox | None = None,
     resolve_source_urls: Callable[[list[str]], Mapping[str, str]] | None = None,
     resolve_alert_names: Callable[[list[str]], Mapping[str, str]] | None = None,
+    resolve_alert_kinds: Callable[[list[str]], Mapping[str, str | None]]
+    | None = None,
 ) -> DigestDrainResult:
     """Envía un digest por usuario cuando toca según la frecuencia de cuenta.
 
@@ -520,6 +616,7 @@ def drain_daily_digests(
     Si ``inbox`` está definido, materializa un aviso in-app (1 = 1 correo).
     ``resolve_source_urls``: lookup puntual de URLs oficiales (``tender_sources``).
     ``resolve_alert_names``: nombres de alerta para bloques (fallback del payload).
+    ``resolve_alert_kinds``: clasificación Eficen/Subcontrata por alerta.
     """
     if list_pending is not None:
         pending_fn = list_pending
@@ -572,17 +669,19 @@ def drain_daily_digests(
         if resolve_source_urls is not None:
             source_urls = resolve_source_urls(_tender_ids_for_items(items))
 
+        alert_ids = sorted(
+            {
+                (item.alert_id or _item_alert_id(item.payload) or "").strip()
+                for item in items
+                if (item.alert_id or _item_alert_id(item.payload) or "").strip()
+            }
+        )
         alert_names: Mapping[str, str] = {}
-        if resolve_alert_names is not None:
-            alert_ids = sorted(
-                {
-                    (item.alert_id or _item_alert_id(item.payload) or "").strip()
-                    for item in items
-                    if (item.alert_id or _item_alert_id(item.payload) or "").strip()
-                }
-            )
-            if alert_ids:
-                alert_names = resolve_alert_names(alert_ids)
+        alert_kinds: Mapping[str, str | None] = {}
+        if alert_ids and resolve_alert_names is not None:
+            alert_names = resolve_alert_names(alert_ids)
+        if alert_ids and resolve_alert_kinds is not None:
+            alert_kinds = resolve_alert_kinds(alert_ids)
 
         message = build_digest_message(
             to_email=to_email,
@@ -593,6 +692,7 @@ def drain_daily_digests(
             base_url=base,
             source_urls=source_urls,
             alert_names=alert_names,
+            alert_kinds=alert_kinds,
         )
         send_result = sender.send(message)
         now = datetime.now(timezone.utc)

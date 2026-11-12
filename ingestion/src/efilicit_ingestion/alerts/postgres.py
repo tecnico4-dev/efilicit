@@ -16,6 +16,7 @@ Escrituras: upsert idempotente en ``notification_queue`` (ON CONFLICT DO NOTHING
 from __future__ import annotations
 
 from collections.abc import Callable, Sequence
+from dataclasses import dataclass
 from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 from typing import Any
@@ -406,30 +407,52 @@ def load_tender_source_urls(
     return {row["tender_id"]: row["source_url"].strip() for row in rows}
 
 
-def load_alert_names(
+@dataclass(frozen=True)
+class AlertDigestMeta:
+    """Nombre + clasificación para bloques del digest email."""
+
+    name: str
+    kind: str | None = None  # propia | subcontrata | None
+
+
+def load_alert_digest_meta(
     conn: psycopg.Connection,
     alert_ids: list[str],
-) -> dict[str, str]:
-    """``alerts.id`` → ``name`` (trusted; para bloques del digest)."""
+) -> dict[str, AlertDigestMeta]:
+    """``alerts.id`` → nombre/kind (trusted; bloques del digest)."""
     if not alert_ids:
         return {}
     ids = [UUID(a) for a in alert_ids]
     with conn.cursor(row_factory=dict_row) as cur:
         cur.execute(
             """
-            select id::text as alert_id, name
+            select id::text as alert_id, name, kind
             from public.alerts
             where id = any(%s)
             """,
             (ids,),
         )
         rows = cur.fetchall()
-    out: dict[str, str] = {}
+    out: dict[str, AlertDigestMeta] = {}
     for row in rows:
         name = (row["name"] or "").strip()
-        if name:
-            out[row["alert_id"]] = name
+        raw_kind = (row.get("kind") or "").strip()
+        kind = raw_kind if raw_kind in ("propia", "subcontrata") else None
+        if name or kind:
+            out[row["alert_id"]] = AlertDigestMeta(name=name, kind=kind)
     return out
+
+
+def load_alert_names(
+    conn: psycopg.Connection,
+    alert_ids: list[str],
+) -> dict[str, str]:
+    """``alerts.id`` → ``name`` (trusted; para bloques del digest)."""
+    return {
+        aid: meta.name
+        for aid, meta in load_alert_digest_meta(conn, alert_ids).items()
+        if meta.name
+    }
 
 
 def load_user_emails(

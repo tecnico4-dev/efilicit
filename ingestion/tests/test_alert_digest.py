@@ -166,6 +166,70 @@ def test_build_digest_message_blocks_by_alert_and_caps_at_five() -> None:
     assert pending[0].payload.get("alert_name") in {"Software", "Obras"}
 
 
+def test_build_digest_message_sorts_by_kind_and_shows_bubble() -> None:
+    queue = InMemoryNotificationQueue()
+    sub = AlertRule(
+        id="alert-sub",
+        user_id="user-1",
+        name="Subcontratas IT",
+        criteria={"version": 1, "keywords": ["sub"]},
+    )
+    efi = AlertRule(
+        id="alert-efi",
+        user_id="user-1",
+        name="Eficen software",
+        criteria={"version": 1, "keywords": ["eficen"]},
+    )
+    bare = AlertRule(
+        id="alert-bare",
+        user_id="user-1",
+        name="Sin clasificar",
+        criteria={"version": 1, "keywords": ["bare"]},
+    )
+    run_alert_batch(
+        alerts=[sub, efi, bare],
+        tenders=[
+            _tender("t-sub", "Contrato sub"),
+            _tender("t-efi", "Contrato eficen"),
+            _tender("t-bare", "Contrato bare"),
+        ],
+        queue=queue,
+        digest="2026-09-30",
+    )
+    pending = queue.pending_items()
+    msg = build_digest_message(
+        to_email="alice@example.com",
+        digest="2026-09-30",
+        items=pending,
+        display_name="Alice",
+        base_url="https://app.example.com",
+        alert_names={
+            "alert-sub": "Subcontratas IT",
+            "alert-efi": "Eficen software",
+            "alert-bare": "Sin clasificar",
+        },
+        alert_kinds={
+            "alert-sub": "subcontrata",
+            "alert-efi": "propia",
+            "alert-bare": None,
+        },
+    )
+    text = msg.text
+    efi_pos = text.index("## Eficen software (Eficen)")
+    sub_pos = text.index("## Subcontratas IT (Subcontrata)")
+    bare_pos = text.index("## Sin clasificar\n")
+    assert efi_pos < sub_pos < bare_pos
+    assert "(Eficen)" not in text[bare_pos : bare_pos + 40]
+    html = msg.html or ""
+    assert "Eficen</span>" in html
+    assert "Subcontrata</span>" in html
+    assert "interest=propia" in html
+    assert "interest=subcontrata" in html
+    # Sin kind: enlace sin interest.
+    assert "t-bare?from=email&interest=" not in html
+    assert "tenders/t-bare?from=email\"" in html or "tenders/t-bare?from=email'" in html
+
+
 def test_build_digest_message_caps_alert_blocks() -> None:
     queue = InMemoryNotificationQueue()
     alerts = [

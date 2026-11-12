@@ -56,6 +56,12 @@ export {
   type AlertRelatedQueueItem,
 } from "./alert-related-tenders";
 export {
+  asFavoriteKind,
+  favoriteKindLabel,
+  favoriteKindLongLabel,
+  type FavoriteKind,
+} from "./favorite-kind";
+export {
   addOwnFavorite,
   isOwnFavorite,
   listOwnFavoriteTenderIds,
@@ -91,10 +97,13 @@ export {
   type DigestTenderListItem,
 } from "./digest-inbox";
 export {
+  asTenderInterestKind,
   deleteOwnTenderRating,
+  getOwnAlertInterestKindForTender,
+  interestKindShortLabel,
+  listOwnAlertInterestKindsForTenders,
   listOwnTenderRatings,
   upsertOwnTenderRating,
-  interestKindShortLabel,
   type TenderInterestKind,
   type TenderRating,
   type TenderScore,

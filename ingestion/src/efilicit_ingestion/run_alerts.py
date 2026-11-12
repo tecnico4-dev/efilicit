@@ -34,7 +34,7 @@ from efilicit_ingestion.alerts.postgres import (
     PostgresNotificationQueue,
     list_success_sync_windows,
     load_active_alerts,
-    load_alert_names,
+    load_alert_digest_meta,
     load_tender_candidates_for_sync_day,
     load_tender_source_urls,
     load_user_digest_frequencies,
@@ -252,6 +252,26 @@ def _run_write(
                     **load_user_digest_frequencies(conn, user_ids),
                 }
             directory = load_user_email_directory(conn, user_ids)
+            alert_meta_cache: dict = {}
+
+            def _alert_meta(ids: list[str]):
+                missing = [i for i in ids if i not in alert_meta_cache]
+                if missing:
+                    alert_meta_cache.update(load_alert_digest_meta(conn, missing))
+                return alert_meta_cache
+
+            def resolve_alert_names(ids: list[str]) -> dict[str, str]:
+                meta = _alert_meta(ids)
+                return {
+                    aid: meta[aid].name
+                    for aid in ids
+                    if aid in meta and meta[aid].name
+                }
+
+            def resolve_alert_kinds(ids: list[str]) -> dict[str, str | None]:
+                meta = _alert_meta(ids)
+                return {aid: meta[aid].kind for aid in ids if aid in meta}
+
             drain = drain_daily_digests(
                 queue=queue,
                 sender=sender,
@@ -260,7 +280,8 @@ def _run_write(
                 job_date=job_date,
                 inbox=PostgresDigestInbox(conn),
                 resolve_source_urls=lambda ids: load_tender_source_urls(conn, ids),
-                resolve_alert_names=lambda ids: load_alert_names(conn, ids),
+                resolve_alert_names=resolve_alert_names,
+                resolve_alert_kinds=resolve_alert_kinds,
             )
 
         conn.commit()

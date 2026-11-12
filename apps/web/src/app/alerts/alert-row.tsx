@@ -21,7 +21,13 @@ import {
 } from "@/lib/build-criteria-from-form";
 import { cn } from "@/lib/cn";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
-import { ownAlertNameTaken, updateOwnAlert } from "@/lib/queries";
+import { FavoriteKindBubble } from "@/components/favorites/favorite-kind-bubble";
+import {
+  asFavoriteKind,
+  ownAlertNameTaken,
+  updateOwnAlert,
+  type FavoriteKind,
+} from "@/lib/queries";
 import type { Database } from "@efilicit/types";
 import { AlertRelatedTendersPanel } from "./alert-related-tenders-panel";
 import { RemoveAlertButton } from "./remove-alert-button";
@@ -145,10 +151,15 @@ export function AlertRowItem({
 
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(alert.name);
+  /** Si ya tenía kind, se respeta; si es legado (null), vacío hasta que elijan. */
+  const [kind, setKind] = useState<FavoriteKind | "">(
+    () => asFavoriteKind(alert.kind) ?? "",
+  );
   const [editKey, setEditKey] = useState(0);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [relatedOpen, setRelatedOpen] = useState(false);
+  const savedKind = asFavoriteKind(alert.kind);
 
   async function toggleActive() {
     setPending(true);
@@ -174,6 +185,11 @@ export function AlertRowItem({
     }
     if (!name.trim()) {
       setError("Indica un nombre.");
+      return;
+    }
+    const alertKind = asFavoriteKind(kind);
+    if (!alertKind) {
+      setError("Indica el tipo de alerta.");
       return;
     }
     if (hasInvalidAmountRange(form)) {
@@ -212,6 +228,7 @@ export function AlertRowItem({
       alertId: alert.id,
       name: name.trim(),
       criteria: nextCriteria,
+      kind: alertKind,
     });
     setPending(false);
     if (updateError) {
@@ -224,6 +241,7 @@ export function AlertRowItem({
 
   function cancelEdit() {
     setName(alert.name);
+    setKind(asFavoriteKind(alert.kind) ?? "");
     setEditKey((k) => k + 1);
     setError(null);
     setEditing(false);
@@ -234,14 +252,15 @@ export function AlertRowItem({
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <div className={cn(!alert.is_active && "opacity-55")}>
-            <p
+            <div
               className={cn(
-                "font-medium",
+                "flex flex-wrap items-center gap-2 font-medium",
                 alert.is_active ? "text-foreground" : "text-muted-foreground",
               )}
             >
-              {alert.name}
-            </p>
+              <span className="min-w-0">{alert.name}</span>
+              {savedKind ? <FavoriteKindBubble kind={savedKind} /> : null}
+            </div>
             <p
               className={cn(
                 "mt-1 text-sm",
@@ -280,6 +299,8 @@ export function AlertRowItem({
             aria-label="Editar alerta"
             title="Editar"
             onClick={() => {
+              setName(alert.name);
+              setKind(asFavoriteKind(alert.kind) ?? "");
               setEditing(true);
               setEditKey((k) => k + 1);
               setError(null);
@@ -301,6 +322,7 @@ export function AlertRowItem({
       <AlertRelatedTendersPanel
         alertId={alert.id}
         alertName={alert.name}
+        alertKind={asFavoriteKind(alert.kind)}
         userId={alert.user_id}
         open={relatedOpen}
         onClose={() => setRelatedOpen(false)}
@@ -312,19 +334,57 @@ export function AlertRowItem({
           className="mt-4 space-y-3 rounded-lg border border-border bg-surface p-4"
           onSubmit={(e) => e.preventDefault()}
         >
-          <div>
-            <label
-              htmlFor={`${idPrefix}name`}
-              className="block text-sm font-medium text-primary"
-            >
-              Nombre de la alerta*
-            </label>
-            <Input
-              id={`${idPrefix}name`}
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="mt-1 border-primary/25 bg-primary-light/45"
-            />
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:gap-4">
+            <div className="min-w-0 flex-1">
+              <label
+                htmlFor={`${idPrefix}name`}
+                className="block text-sm font-medium text-primary"
+              >
+                Nombre de la alerta*
+              </label>
+              <Input
+                id={`${idPrefix}name`}
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="mt-1 border-primary/25 bg-primary-light/45"
+              />
+            </div>
+            <div className="shrink-0">
+              <p
+                id={`${idPrefix}kind_label`}
+                className="text-sm font-medium text-primary"
+              >
+                Clasificación*
+              </p>
+              <div
+                role="radiogroup"
+                aria-labelledby={`${idPrefix}kind_label`}
+                className="mt-1.5 flex flex-col gap-1"
+              >
+                <label className="inline-flex cursor-pointer items-center gap-1.5 text-sm leading-none text-foreground">
+                  <input
+                    type="radio"
+                    name={`${idPrefix}kind`}
+                    value="propia"
+                    checked={kind === "propia"}
+                    onChange={() => setKind("propia")}
+                    className="size-3.5 shrink-0 accent-primary"
+                  />
+                  Eficen
+                </label>
+                <label className="inline-flex cursor-pointer items-center gap-1.5 text-sm leading-none text-foreground">
+                  <input
+                    type="radio"
+                    name={`${idPrefix}kind`}
+                    value="subcontrata"
+                    checked={kind === "subcontrata"}
+                    onChange={() => setKind("subcontrata")}
+                    className="size-3.5 shrink-0 accent-primary"
+                  />
+                  Subcontrata
+                </label>
+              </div>
+            </div>
           </div>
           {/* Hueco bajo el textbox del nombre → label «Texto» (filtros). */}
           <div className="!mt-8">
