@@ -108,7 +108,7 @@ begin
     (v_t5, '80510000');
 
   insert into public.alerts (
-    id, user_id, name, criteria, is_active, created_at, updated_at
+    id, user_id, name, criteria, kind, is_active, created_at, updated_at
   ) values (
     v_alert,
     v_alice,
@@ -117,6 +117,7 @@ begin
       'version', 1,
       'keywords', jsonb_build_array('software', 'formación', 'portal', 'limpieza', 'oficina')
     ),
+    'propia',
     true,
     now(),
     now()
@@ -124,6 +125,7 @@ begin
   on conflict (id) do update set
     name = excluded.name,
     criteria = excluded.criteria,
+    kind = excluded.kind,
     is_active = true,
     updated_at = now();
 

@@ -22,17 +22,24 @@ import {
 } from "@/lib/build-criteria-from-form";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import {
+  asFavoriteKind,
   createOwnAlert,
   createOwnSavedSearch,
   listOwnSavedSearches,
   ownAlertNameTaken,
   type DigestFrequency,
+  type FavoriteKind,
 } from "@/lib/queries";
 import type { SearchCriteria } from "@efilicit/types";
+import { cn } from "@/lib/cn";
 
 export const ALERT_CREATE_FORM_ID = "alert-create-form";
 
-type BuiltAlert = { name: string; criteria: SearchCriteria };
+type BuiltAlert = {
+  name: string;
+  criteria: SearchCriteria;
+  kind: FavoriteKind;
+};
 
 /**
  * Botón «Crear alerta» + modal con criterios, Crear / Guardar como búsqueda /
@@ -53,6 +60,7 @@ export function AlertsPanel({
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [name, setName] = useState("");
+  const [kind, setKind] = useState<FavoriteKind | "">("");
   const [formKey, setFormKey] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -85,6 +93,7 @@ export function AlertsPanel({
 
   function resetForm() {
     setName("");
+    setKind("");
     setFormKey((k) => k + 1);
     setError(null);
     setConfirmEmptyText(false);
@@ -114,6 +123,11 @@ export function AlertsPanel({
       setError("Indica un nombre.");
       return null;
     }
+    const alertKind = asFavoriteKind(kind);
+    if (!alertKind) {
+      setError("Indica el tipo de alerta.");
+      return null;
+    }
     if (hasInvalidAmountRange(form)) {
       setError("Importe solicitado inválido.");
       return null;
@@ -127,7 +141,7 @@ export function AlertsPanel({
       setError("Indica al menos un criterio de búsqueda.");
       return null;
     }
-    return { name: name.trim(), criteria };
+    return { name: name.trim(), criteria, kind: alertKind };
   }
 
   async function persistAlert(built: BuiltAlert) {
@@ -153,6 +167,7 @@ export function AlertsPanel({
       userId,
       name: built.name,
       criteria: built.criteria,
+      kind: built.kind,
       frequency: digestFrequency,
     });
     setPending(false);
@@ -276,20 +291,48 @@ export function AlertsPanel({
                     className="space-y-4"
                     onSubmit={(e) => e.preventDefault()}
                   >
-                    <div>
-                      <label
-                        htmlFor="item_name"
-                        className="block text-sm font-medium text-primary"
-                      >
-                        Nombre de la alerta*
-                      </label>
-                      <Input
-                        id="item_name"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        className="mt-1 border-primary/25 bg-primary-light/45"
-                        autoFocus
-                      />
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div>
+                        <label
+                          htmlFor="item_name"
+                          className="block text-sm font-medium text-primary"
+                        >
+                          Nombre de la alerta*
+                        </label>
+                        <Input
+                          id="item_name"
+                          value={name}
+                          onChange={(e) => setName(e.target.value)}
+                          className="mt-1 border-primary/25 bg-primary-light/45"
+                          autoFocus
+                        />
+                      </div>
+                      <div>
+                        <label
+                          htmlFor="item_kind"
+                          className="block text-sm font-medium text-primary"
+                        >
+                          Clasificación*
+                        </label>
+                        <select
+                          id="item_kind"
+                          value={kind}
+                          onChange={(e) =>
+                            setKind(
+                              (e.target.value as FavoriteKind | "") || "",
+                            )
+                          }
+                          className={cn(
+                            "mt-1 w-full rounded-lg border border-primary/25 bg-primary-light/45 px-3 py-2.5 text-sm text-foreground shadow-sm outline-none transition-colors",
+                            "focus:ring-2 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-60",
+                            kind === "" && "text-muted-foreground",
+                          )}
+                        >
+                          <option value="" />
+                          <option value="propia">Eficen</option>
+                          <option value="subcontrata">Subcontrata</option>
+                        </select>
+                      </div>
                     </div>
                     {/* Hueco bajo el textbox del nombre → label «Texto» (filtros). */}
                     <div className="!mt-8">
