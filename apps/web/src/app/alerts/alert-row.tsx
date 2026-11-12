@@ -21,9 +21,9 @@ import {
 } from "@/lib/build-criteria-from-form";
 import { cn } from "@/lib/cn";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { FavoriteKindBubble } from "@/components/favorites/favorite-kind-bubble";
 import {
   asFavoriteKind,
-  favoriteKindLabel,
   ownAlertNameTaken,
   updateOwnAlert,
   type FavoriteKind,
@@ -252,26 +252,15 @@ export function AlertRowItem({
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <div className={cn(!alert.is_active && "opacity-55")}>
-            <p
+            <div
               className={cn(
-                "font-medium",
+                "flex flex-wrap items-center gap-2 font-medium",
                 alert.is_active ? "text-foreground" : "text-muted-foreground",
               )}
             >
-              {alert.name}
-              {savedKind ? (
-                <span
-                  className={cn(
-                    "ml-2 text-xs font-normal",
-                    alert.is_active
-                      ? "text-muted-foreground"
-                      : "text-muted-foreground/80",
-                  )}
-                >
-                  · {favoriteKindLabel(savedKind)}
-                </span>
-              ) : null}
-            </p>
+              <span className="min-w-0">{alert.name}</span>
+              {savedKind ? <FavoriteKindBubble kind={savedKind} /> : null}
+            </div>
             <p
               className={cn(
                 "mt-1 text-sm",
