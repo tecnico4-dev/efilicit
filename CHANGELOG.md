@@ -25,7 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Alertas: al crear (modal y convertir desde búsqueda) campo obligatorio Clasificación* (Eficen / Subcontrata → `alerts.kind`); vacío al abrir; si falta, «Indica el tipo de alerta.»
+- Alertas: Clasificación* obligatoria (Eficen / Subcontrata → `alerts.kind`) al crear, convertir desde búsqueda y editar; radios sin preselección en alta; si falta, «Indica el tipo de alerta.»
 - Buzón: `notification_reads` + `notification_trash` → `notification_favorites` (`read_at` / `trashed_at` / `deleted`); `digest_inbox_notifications` → `notification_emails`. Papelera: eliminar definitivo (favoritos → `deleted`; emails → `DELETE`) con toast Revertir diferido ~7s.
 - Mis licitaciones: desactivado en remoto por defecto (`NEXT_PUBLIC_MIS_LICITACIONES_ENABLED`); nav oculta, rutas redirigen a `/` y no hay alta desde ficha. En local poner `=1` en `apps/web/.env.local`.
 - Mis licitaciones · Lista: paginación como favoritos/alertas (10 por página; 10/50/100 si hay más), en Activas e Histórico.
