@@ -16,6 +16,7 @@ import { cn } from "@/lib/cn";
 import { formatCpvListPreview } from "@/lib/cpv";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import {
+  asTenderInterestKind,
   dedupeAlertRelatedByTender,
   deleteOwnTenderRating,
   formatNotificationTrashExpiry,
@@ -514,10 +515,7 @@ export function AlertRelatedTendersPanel({
             .map((a) => ({
               id: a.id,
               name: a.name,
-              kind:
-                a.kind === "propia" || a.kind === "subcontrata"
-                  ? a.kind
-                  : null,
+              kind: asTenderInterestKind(a.kind),
             }))
             .sort((a, b) => a.name.localeCompare(b.name, "es")),
         );
