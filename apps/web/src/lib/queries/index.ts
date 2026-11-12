@@ -66,10 +66,14 @@ export {
 export {
   SHARED_FAVORITE_NOTES_MAX,
   addSharedFavorite,
+  asSharedFavoriteKind,
   getSharedFavoriteOwner,
   listSharedFavoriteTenderIds,
   listSharedFavorites,
   removeSharedFavorite,
+  sharedFavoriteKindLabel,
+  sharedFavoriteKindLongLabel,
+  type SharedFavoriteKind,
   type SharedFavoriteWithTender,
 } from "./shared-favorites";
 export {

@@ -21,10 +21,11 @@ No es Mis licitaciones / `offer_*` (pipeline de oferta).
 1. Tabla `shared_favorites`:
    - PK = `tender_id` (una fila por licitación).
    - `added_by` → `users.id` (quien la compartió primero).
+   - `kind` text NOT NULL: `propia` (Propias de Eficen) | `subcontrata` (obligatorio al compartir).
    - `notes` text nullable (máx. 500).
    - `created_at`.
 2. RLS vía `is_app_user()`: SELECT / INSERT / DELETE para cualquier usuario app. INSERT exige `added_by = yo`. Cualquiera puede DELETE.
-3. UI: alta solo desde `/favorites/tenders` (icono avión + modal nota). Hub Favoritos muestra preview «Común»; sin badge en búsqueda/ficha; sin notificaciones en v1.
+3. UI: alta solo desde `/favorites/tenders` (icono avión + modal: elegir kind + nota). Listado Común con burbuja Eficen/Subcontrata y secciones por campo; hub preview con la misma burbuja. Sin badge en búsqueda/ficha; sin notificaciones en v1.
 4. Si ya existe: no reinsertar; avisar «{nombre} ya ha añadido esta licitación».
 5. **Tenant único:** Común asume una sola organización invite-only. Multi-empresa futura requeriría otro ADR (scope por org).
 
@@ -56,4 +57,4 @@ No es Mis licitaciones / `offer_*` (pipeline de oferta).
 ## Referencias
 
 - [016](016-auth-invite-only-sin-registro-publico.md) · [023](023-mis-licitaciones-pipeline-compartido.md)
-- Migración `20261112100000_shared_favorites.sql`
+- Migraciones `20261112100000_shared_favorites.sql`, `20261112110000_shared_favorites_kind.sql`

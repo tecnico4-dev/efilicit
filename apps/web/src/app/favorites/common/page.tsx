@@ -7,7 +7,10 @@ import {
   getSessionProfile,
   getSupabaseServerClient,
 } from "@/lib/auth/session";
-import { listSharedFavorites } from "@/lib/queries";
+import {
+  listSharedFavorites,
+  sharedFavoriteKindLongLabel,
+} from "@/lib/queries";
 import { EmptySharedFavoritesHint } from "../empty-hints";
 import { PaginatedSharedFavorites } from "../paginated-shared-favorites";
 
@@ -28,6 +31,8 @@ export default async function SharedFavoritesPage() {
   }
 
   const { data: items, error } = await listSharedFavorites(supabase);
+  const propias = items.filter((i) => i.kind === "propia");
+  const subcontratas = items.filter((i) => i.kind === "subcontrata");
 
   return (
     <main className={PAGE_MAIN_CLASS}>
@@ -43,7 +48,33 @@ export default async function SharedFavoritesPage() {
             <EmptySharedFavoritesHint />
           </EmptyState>
         ) : (
-          <PaginatedSharedFavorites items={items} />
+          <div className="space-y-10">
+            {(
+              [
+                ["propia", propias],
+                ["subcontrata", subcontratas],
+              ] as const
+            ).map(([kind, group]) => (
+              <section key={kind} aria-labelledby={`common-kind-${kind}`}>
+                <h2
+                  id={`common-kind-${kind}`}
+                  className="text-lg font-semibold tracking-tight text-foreground"
+                >
+                  {sharedFavoriteKindLongLabel(kind)}
+                  <span className="ml-2 text-sm font-normal text-muted-foreground tabular-nums">
+                    ({group.length})
+                  </span>
+                </h2>
+                <div className="mt-3">
+                  {group.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">Ninguna aún.</p>
+                  ) : (
+                    <PaginatedSharedFavorites items={group} />
+                  )}
+                </div>
+              </section>
+            ))}
+          </div>
         )}
       </div>
     </main>

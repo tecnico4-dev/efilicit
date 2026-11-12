@@ -253,18 +253,21 @@ export type Database = {
         Row: {
           added_by: string
           created_at: string
+          kind: string
           notes: string | null
           tender_id: string
         }
         Insert: {
           added_by: string
           created_at?: string
+          kind: string
           notes?: string | null
           tender_id: string
         }
         Update: {
           added_by?: string
           created_at?: string
+          kind?: string
           notes?: string | null
           tender_id?: string
         }

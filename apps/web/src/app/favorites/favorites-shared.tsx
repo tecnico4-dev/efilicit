@@ -6,10 +6,12 @@ import {
   parseCriteria,
 } from "@/lib/criteria-display";
 import { formatCpvListPreview } from "@/lib/cpv";
-import type {
-  DigestFrequency,
-  FavoriteWithTender,
-  SharedFavoriteWithTender,
+import {
+  sharedFavoriteKindLabel,
+  type DigestFrequency,
+  type FavoriteWithTender,
+  type SharedFavoriteKind,
+  type SharedFavoriteWithTender,
 } from "@/lib/queries";
 import { formatTenderStatus } from "@/lib/tender-labels";
 import type { Database } from "@efilicit/types";
@@ -17,6 +19,17 @@ import { ConvertToAlertButton } from "./convert-to-alert-button";
 import { RemoveSavedSearchButton } from "./remove-saved-search-button";
 import { RemoveSharedFavoriteButton } from "./remove-shared-favorite-button";
 import { ShareToCommonButton } from "./share-to-common-button";
+
+function SharedKindBubble({ kind }: { kind: SharedFavoriteKind }) {
+  return (
+    <span
+      className="inline-flex shrink-0 items-center rounded-full border border-amber-500/35 bg-amber-500/12 px-2 py-0.5 text-[11px] font-medium text-amber-800 dark:text-amber-200"
+      title={kind === "propia" ? "Propias de Eficen" : "Subcontrata"}
+    >
+      {sharedFavoriteKindLabel(kind)}
+    </span>
+  );
+}
 
 export const FAVORITES_PREVIEW_LIMIT = 5;
 
@@ -211,12 +224,15 @@ export function SharedFavoriteList({
         return (
           <li key={item.tender_id} className="flex items-start gap-3 py-4">
             <div className="min-w-0 flex-1">
-              <Link
-                href={`/tenders/${tender.id}?from=${from}`}
-                className="text-base font-medium text-foreground hover:text-link hover:underline"
-              >
-                {tender.title}
-              </Link>
+              <div className="flex flex-wrap items-center gap-2">
+                <Link
+                  href={`/tenders/${tender.id}?from=${from}`}
+                  className="text-base font-medium text-foreground hover:text-link hover:underline"
+                >
+                  {tender.title}
+                </Link>
+                <SharedKindBubble kind={item.kind} />
+              </div>
               <p className="mt-1.5 text-xs text-muted-foreground">
                 Añadida por {who} · {formatSharedWhen(item.created_at)}
               </p>

@@ -6,9 +6,12 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 export const SHARED_FAVORITE_NOTES_MAX = 500;
 
+export type SharedFavoriteKind = "propia" | "subcontrata";
+
 type SharedFavoriteRow = Database["public"]["Tables"]["shared_favorites"]["Row"];
 
 export type SharedFavoriteWithTender = SharedFavoriteRow & {
+  kind: SharedFavoriteKind;
   added_by_display_name: string | null;
   tenders: {
     id: string;
@@ -21,6 +24,19 @@ export type SharedFavoriteWithTender = SharedFavoriteRow & {
     deadline_at: string | null;
   } | null;
 };
+
+export function asSharedFavoriteKind(raw: string): SharedFavoriteKind | null {
+  if (raw === "propia" || raw === "subcontrata") return raw;
+  return null;
+}
+
+export function sharedFavoriteKindLabel(kind: SharedFavoriteKind): string {
+  return kind === "propia" ? "Eficen" : "Subcontrata";
+}
+
+export function sharedFavoriteKindLongLabel(kind: SharedFavoriteKind): string {
+  return kind === "propia" ? "Propias de Eficen" : "Subcontrata";
+}
 
 /** IDs ya en Común entre un conjunto (p. ej. mis favoritos). */
 export async function listSharedFavoriteTenderIds(
@@ -68,6 +84,57 @@ export async function getSharedFavoriteOwner(
   };
 }
 
+function mapSharedRow(row: {
+  tender_id: string;
+  added_by: string;
+  notes: string | null;
+  created_at: string;
+  kind: string;
+  users: unknown;
+  tenders: unknown;
+}): SharedFavoriteWithTender {
+  const kind = asSharedFavoriteKind(row.kind) ?? "propia";
+  const users = row.users as { display_name: string | null } | null;
+  const tender = row.tenders as
+    | {
+        id: string;
+        title: string;
+        status: string | null;
+        estimated_value: number | null;
+        currency: string;
+        publication_date: string | null;
+        deadline_at: string | null;
+        tender_cpvs?: { cpv_code: string }[] | null;
+      }
+    | null;
+
+  if (!tender) {
+    return {
+      tender_id: row.tender_id,
+      added_by: row.added_by,
+      notes: row.notes,
+      created_at: row.created_at,
+      kind,
+      added_by_display_name: users?.display_name ?? null,
+      tenders: null,
+    };
+  }
+
+  const { tender_cpvs, ...rest } = tender;
+  return {
+    tender_id: row.tender_id,
+    added_by: row.added_by,
+    notes: row.notes,
+    created_at: row.created_at,
+    kind,
+    added_by_display_name: users?.display_name ?? null,
+    tenders: {
+      ...rest,
+      cpv_codes: [...(tender_cpvs ?? []).map((r) => r.cpv_code)].sort(),
+    },
+  };
+}
+
 export async function listSharedFavorites(
   client: SupabaseClient<Database>,
 ): Promise<{ data: SharedFavoriteWithTender[]; error: Error | null }> {
@@ -78,6 +145,7 @@ export async function listSharedFavorites(
       tender_id,
       added_by,
       notes,
+      kind,
       created_at,
       users:added_by ( display_name ),
       tenders (
@@ -96,52 +164,20 @@ export async function listSharedFavorites(
 
   if (error) return { data: [], error: new Error(error.message) };
 
-  const rows: SharedFavoriteWithTender[] = (data ?? []).map((row) => {
-    const users = row.users as { display_name: string | null } | null;
-    const tender = row.tenders as
-      | {
-          id: string;
-          title: string;
-          status: string | null;
-          estimated_value: number | null;
-          currency: string;
-          publication_date: string | null;
-          deadline_at: string | null;
-          tender_cpvs?: { cpv_code: string }[] | null;
-        }
-      | null;
-
-    if (!tender) {
-      return {
-        tender_id: row.tender_id,
-        added_by: row.added_by,
-        notes: row.notes,
-        created_at: row.created_at,
-        added_by_display_name: users?.display_name ?? null,
-        tenders: null,
-      };
-    }
-
-    const { tender_cpvs, ...rest } = tender;
-    return {
-      tender_id: row.tender_id,
-      added_by: row.added_by,
-      notes: row.notes,
-      created_at: row.created_at,
-      added_by_display_name: users?.display_name ?? null,
-      tenders: {
-        ...rest,
-        cpv_codes: [...(tender_cpvs ?? []).map((r) => r.cpv_code)].sort(),
-      },
-    };
-  });
-
-  return { data: rows, error: null };
+  return {
+    data: (data ?? []).map((row) => mapSharedRow(row as Parameters<typeof mapSharedRow>[0])),
+    error: null,
+  };
 }
 
 export async function addSharedFavorite(
   client: SupabaseClient<Database>,
-  input: { userId: string; tenderId: string; notes?: string | null },
+  input: {
+    userId: string;
+    tenderId: string;
+    kind: SharedFavoriteKind;
+    notes?: string | null;
+  },
 ): Promise<
   | { ok: true; alreadyExists: false }
   | {
@@ -171,6 +207,7 @@ export async function addSharedFavorite(
   const { error } = await client.from("shared_favorites").insert({
     tender_id: input.tenderId,
     added_by: input.userId,
+    kind: input.kind,
     notes,
   });
 
