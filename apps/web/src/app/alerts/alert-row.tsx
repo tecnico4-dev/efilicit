@@ -34,10 +34,6 @@ import { RemoveAlertButton } from "./remove-alert-button";
 
 type AlertRow = Database["public"]["Tables"]["alerts"]["Row"];
 
-function alertKindOrEmpty(raw: string | null | undefined): FavoriteKind | "" {
-  return asFavoriteKind(raw) ?? "";
-}
-
 function PencilIcon({ className }: { className?: string }) {
   return (
     <svg
@@ -155,9 +151,8 @@ export function AlertRowItem({
 
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(alert.name);
-  const [kind, setKind] = useState<FavoriteKind | "">(() =>
-    alertKindOrEmpty(alert.kind),
-  );
+  /** Vacío al abrir editar: hay que volver a marcar Clasificación. */
+  const [kind, setKind] = useState<FavoriteKind | "">("");
   const [editKey, setEditKey] = useState(0);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -246,7 +241,7 @@ export function AlertRowItem({
 
   function cancelEdit() {
     setName(alert.name);
-    setKind(alertKindOrEmpty(alert.kind));
+    setKind("");
     setEditKey((k) => k + 1);
     setError(null);
     setEditing(false);
@@ -314,7 +309,7 @@ export function AlertRowItem({
             title="Editar"
             onClick={() => {
               setName(alert.name);
-              setKind(alertKindOrEmpty(alert.kind));
+              setKind("");
               setEditing(true);
               setEditKey((k) => k + 1);
               setError(null);
