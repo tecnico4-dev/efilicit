@@ -10,8 +10,8 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import {
   SHARED_FAVORITE_NOTES_MAX,
   addSharedFavorite,
-  sharedFavoriteKindLongLabel,
-  type SharedFavoriteKind,
+  favoriteKindLongLabel,
+  type FavoriteKind,
 } from "@/lib/queries";
 
 function PaperPlaneIcon({ className }: { className?: string }) {
@@ -34,27 +34,30 @@ function PaperPlaneIcon({ className }: { className?: string }) {
 
 /**
  * Añadir a Común desde el listado ampliado de favoritos propios.
- * No se usa en hub / búsqueda / ficha.
+ * El kind se hereda del favorito personal (no se vuelve a preguntar).
  */
 export function ShareToCommonButton({
   userId,
   tenderId,
   tenderTitle,
+  kind,
   alreadyShared = false,
 }: {
   userId: string;
   tenderId: string;
   tenderTitle: string;
+  kind: FavoriteKind;
   alreadyShared?: boolean;
 }) {
   const router = useRouter();
   const { showStatus } = useUndoToast();
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const [kind, setKind] = useState<SharedFavoriteKind | null>(null);
   const [notes, setNotes] = useState("");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const kindLabel = favoriteKindLongLabel(kind);
 
   useEffect(() => setMounted(true), []);
 
@@ -68,7 +71,6 @@ export function ShareToCommonButton({
   }, [open]);
 
   function openModal() {
-    setKind(null);
     setNotes("");
     setError(null);
     setOpen(true);
@@ -76,10 +78,6 @@ export function ShareToCommonButton({
 
   async function onConfirm() {
     if (pending) return;
-    if (kind == null) {
-      setError("Elige Propias de Eficen o Subcontrata.");
-      return;
-    }
     setPending(true);
     setError(null);
     const client = createSupabaseBrowserClient();
@@ -93,7 +91,7 @@ export function ShareToCommonButton({
 
     if (result.ok) {
       setOpen(false);
-      showStatus(`Añadida a Común (${sharedFavoriteKindLongLabel(kind)}).`);
+      showStatus(`Añadida a Común (${kindLabel}).`);
       router.refresh();
       return;
     }
@@ -153,39 +151,13 @@ export function ShareToCommonButton({
                   {tenderTitle}
                 </p>
 
-                <div
-                  className="mt-4"
-                  role="group"
-                  aria-label="Tipo en Común"
-                >
-                  <p className="mb-1.5 text-xs text-muted-foreground">
-                    ¿Dónde la clasificas?
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {(
-                      [
-                        ["propia", "Propias de Eficen"],
-                        ["subcontrata", "Subcontrata"],
-                      ] as const
-                    ).map(([value, label]) => (
-                      <button
-                        key={value}
-                        type="button"
-                        disabled={pending}
-                        aria-pressed={kind === value}
-                        onClick={() => setKind(value)}
-                        className={cn(
-                          "rounded-md border px-3 py-1.5 text-sm font-medium transition-colors",
-                          kind === value
-                            ? "border-primary/50 bg-primary/15 text-primary-dark"
-                            : "border-border bg-background text-muted-foreground hover:bg-muted/60 hover:text-foreground",
-                        )}
-                      >
-                        {label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+                <p className="mt-4 text-sm text-foreground">
+                  Calificada como{" "}
+                  <span className="font-semibold">{kindLabel}</span>
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Así se enviará a Común.
+                </p>
 
                 <label className="mt-4 flex flex-col gap-1.5 text-xs text-muted-foreground">
                   Nota (opcional)
@@ -220,7 +192,7 @@ export function ShareToCommonButton({
                   <Button
                     type="button"
                     size="sm"
-                    disabled={pending || kind == null}
+                    disabled={pending}
                     onClick={() => void onConfirm()}
                   >
                     {pending ? "Añadiendo…" : "Añadir"}

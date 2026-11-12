@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Favoritos personales: `favorites.kind` Propias de Eficen / Subcontrata (ADR 030). Modal obligatorio al guardar (corazón / ficha); listados hub y `/favorites/tenders` por campos + burbuja.
-- Favoritos · Común: carpeta compartida del equipo (`shared_favorites`, ADR 029). Alta solo desde `/favorites/tenders` (avión + modal: Propias de Eficen / Subcontrata + nota); listado en hub y `/favorites/common` con burbuja y campos; cualquiera puede quitar.
+- Favoritos · Común: carpeta compartida del equipo (`shared_favorites`, ADR 029). Alta solo desde `/favorites/tenders` (avión + modal: «Calificada como …» según el favorito personal + nota); listado en hub y `/favorites/common` con burbuja y campos; cualquiera puede quitar.
 - Workflow manual `cleanup-orphans` (GitHub Actions): lista/borra ficheros huérfanos del bucket `raw` (`scripts/borrar_huerfanos.py`; default dry-run; `apply` opcional; CSV como artifact).
 
 ### Removed

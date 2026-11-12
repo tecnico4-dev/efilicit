@@ -170,6 +170,7 @@ export function FavoriteTenderList({
                 userId={shareUserId}
                 tenderId={tender.id}
                 tenderTitle={tender.title}
+                kind={fav.kind}
                 alreadyShared={sharedTenderIds?.has(tender.id) ?? false}
               />
             ) : null}

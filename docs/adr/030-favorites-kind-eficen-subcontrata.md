@@ -19,7 +19,7 @@ Los favoritos personales (`favorites`) no distinguían si el interés era como *
 1. Columna `favorites.kind` NOT NULL: `propia` | `subcontrata` (backfill `propia` en filas existentes).
 2. UI: al añadir favorito desde búsqueda, ficha u otros puntos de entrada → modal obligatorio de elección. Quitar no pide kind.
 3. Listados personales (hub preview y `/favorites/tenders`) agrupados en dos campos + burbuja por ítem.
-4. Independiente de `shared_favorites.kind` y de `tender_ratings.interest_kind` (valoración): son capas distintas.
+4. Al enviar a Común, `shared_favorites.kind` se copia del favorito personal (el modal solo lo muestra; no se vuelve a elegir). Distinto de `tender_ratings.interest_kind` (valoración).
 
 ## Alternativas
 
