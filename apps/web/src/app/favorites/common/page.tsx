@@ -14,6 +14,14 @@ import { PaginatedSharedFavorites } from "../paginated-shared-favorites";
 
 export const dynamic = "force-dynamic";
 
+function emptyKindPanel() {
+  return (
+    <p className="rounded-lg rounded-tl-none border border-border px-4 py-8 text-center text-sm text-muted-foreground">
+      Ninguna aún.
+    </p>
+  );
+}
+
 export default async function SharedFavoritesPage() {
   const supabase = await getSupabaseServerClient();
   const profile = await getSessionProfile();
@@ -48,22 +56,20 @@ export default async function SharedFavoritesPage() {
         ) : (
           <FavoriteKindTabs
             ariaLabel="Tipo en Común"
+            todasCount={items.length}
             propiasCount={propias.length}
             subcontratasCount={subcontratas.length}
+            todas={<PaginatedSharedFavorites items={items} />}
             propias={
               propias.length === 0 ? (
-                <p className="rounded-lg rounded-tl-none border border-border px-4 py-8 text-center text-sm text-muted-foreground">
-                  Ninguna aún.
-                </p>
+                emptyKindPanel()
               ) : (
                 <PaginatedSharedFavorites items={propias} />
               )
             }
             subcontratas={
               subcontratas.length === 0 ? (
-                <p className="rounded-lg rounded-tl-none border border-border px-4 py-8 text-center text-sm text-muted-foreground">
-                  Ninguna aún.
-                </p>
+                emptyKindPanel()
               ) : (
                 <PaginatedSharedFavorites items={subcontratas} />
               )

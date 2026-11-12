@@ -7,25 +7,30 @@ import {
   type FavoriteKind,
 } from "@/lib/queries";
 
+type FavoriteKindTab = "todas" | FavoriteKind;
+
 /**
- * Pestañas Propias de Eficen | Subcontrata (mismo patrón que Mis alertas | Coincidencias).
+ * Pestañas Todas | Propias de Eficen | Subcontrata
+ * (mismo patrón que Mis alertas | Coincidencias).
  */
 export function FavoriteKindTabs({
   ariaLabel,
+  todas,
   propias,
   subcontratas,
+  todasCount,
   propiasCount,
   subcontratasCount,
 }: {
   ariaLabel: string;
+  todas: ReactNode;
   propias: ReactNode;
   subcontratas: ReactNode;
+  todasCount: number;
   propiasCount: number;
   subcontratasCount: number;
 }) {
-  const [tab, setTab] = useState<FavoriteKind>(() =>
-    propiasCount === 0 && subcontratasCount > 0 ? "subcontrata" : "propia",
-  );
+  const [tab, setTab] = useState<FavoriteKindTab>("todas");
 
   return (
     <section>
@@ -36,13 +41,19 @@ export function FavoriteKindTabs({
           aria-label={ariaLabel}
         >
           <KindTab
-            kind="propia"
+            label="Todas"
+            active={tab === "todas"}
+            count={todasCount}
+            onSelect={() => setTab("todas")}
+          />
+          <KindTab
+            label={favoriteKindLongLabel("propia")}
             active={tab === "propia"}
             count={propiasCount}
             onSelect={() => setTab("propia")}
           />
           <KindTab
-            kind="subcontrata"
+            label={favoriteKindLongLabel("subcontrata")}
             active={tab === "subcontrata"}
             count={subcontratasCount}
             onSelect={() => setTab("subcontrata")}
@@ -51,19 +62,19 @@ export function FavoriteKindTabs({
       </div>
 
       <div className="-mt-px" role="tabpanel">
-        {tab === "propia" ? propias : subcontratas}
+        {tab === "todas" ? todas : tab === "propia" ? propias : subcontratas}
       </div>
     </section>
   );
 }
 
 function KindTab({
-  kind,
+  label,
   active,
   count,
   onSelect,
 }: {
-  kind: FavoriteKind;
+  label: string;
   active: boolean;
   count: number;
   onSelect: () => void;
@@ -81,7 +92,7 @@ function KindTab({
           : "border-transparent bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground",
       )}
     >
-      {favoriteKindLongLabel(kind)}
+      {label}
       <span
         className={cn(
           "min-w-5 rounded-full px-1.5 py-0.5 text-center text-[11px] font-semibold tabular-nums",

@@ -17,6 +17,14 @@ import { PaginatedFavoriteTenders } from "../paginated-favorite-tenders";
 
 export const dynamic = "force-dynamic";
 
+function emptyKindPanel() {
+  return (
+    <p className="rounded-lg rounded-tl-none border border-border px-4 py-8 text-center text-sm text-muted-foreground">
+      Ninguna aún.
+    </p>
+  );
+}
+
 export default async function FavoriteTendersPage() {
   const supabase = await getSupabaseServerClient();
   const profile = await getSessionProfile();
@@ -59,13 +67,20 @@ export default async function FavoriteTendersPage() {
         ) : (
           <FavoriteKindTabs
             ariaLabel="Tipo de favorito"
+            todasCount={favorites.length}
             propiasCount={propias.length}
             subcontratasCount={subcontratas.length}
+            todas={
+              <PaginatedFavoriteTenders
+                favorites={favorites}
+                from="favorites-tenders"
+                shareUserId={userId}
+                sharedTenderIds={sharedIdsResult.data}
+              />
+            }
             propias={
               propias.length === 0 ? (
-                <p className="rounded-lg rounded-tl-none border border-border px-4 py-8 text-center text-sm text-muted-foreground">
-                  Ninguna aún.
-                </p>
+                emptyKindPanel()
               ) : (
                 <PaginatedFavoriteTenders
                   favorites={propias}
@@ -77,9 +92,7 @@ export default async function FavoriteTendersPage() {
             }
             subcontratas={
               subcontratas.length === 0 ? (
-                <p className="rounded-lg rounded-tl-none border border-border px-4 py-8 text-center text-sm text-muted-foreground">
-                  Ninguna aún.
-                </p>
+                emptyKindPanel()
               ) : (
                 <PaginatedFavoriteTenders
                   favorites={subcontratas}
