@@ -4,10 +4,12 @@
  */
 import type { Database } from "@efilicit/types";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { asFavoriteKind, type FavoriteKind } from "./favorite-kind";
 
 type FavoriteRow = Database["public"]["Tables"]["favorites"]["Row"];
 
 export type FavoriteWithTender = FavoriteRow & {
+  kind: FavoriteKind;
   tenders: {
     id: string;
     title: string;
@@ -67,6 +69,7 @@ export async function listOwnFavorites(
       id,
       user_id,
       tender_id,
+      kind,
       created_at,
       tenders (
         id,
@@ -85,17 +88,19 @@ export async function listOwnFavorites(
   if (error) return { data: [], error: new Error(error.message) };
 
   const rows = (data ?? []).map((row) => {
+    const kind = asFavoriteKind(row.kind) ?? "propia";
     const tender = row.tenders as
       | (Omit<NonNullable<FavoriteWithTender["tenders"]>, "cpv_codes"> & {
           tender_cpvs?: { cpv_code: string }[] | null;
         })
       | null;
     if (!tender) {
-      return { ...row, tenders: null } as FavoriteWithTender;
+      return { ...row, kind, tenders: null } as FavoriteWithTender;
     }
     const { tender_cpvs, ...rest } = tender;
     return {
       ...row,
+      kind,
       tenders: {
         ...rest,
         cpv_codes: [...(tender_cpvs ?? []).map((r) => r.cpv_code)].sort(),
@@ -108,13 +113,14 @@ export async function listOwnFavorites(
 
 export async function addOwnFavorite(
   client: SupabaseClient<Database>,
-  input: { userId: string; tenderId: string },
+  input: { userId: string; tenderId: string; kind: FavoriteKind },
 ): Promise<{ data: FavoriteRow | null; error: Error | null }> {
   const { data, error } = await client
     .from("favorites")
     .insert({
       user_id: input.userId,
       tender_id: input.tenderId,
+      kind: input.kind,
     })
     .select("*")
     .single();

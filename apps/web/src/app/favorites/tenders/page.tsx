@@ -8,6 +8,7 @@ import {
   getSupabaseServerClient,
 } from "@/lib/auth/session";
 import {
+  favoriteKindLongLabel,
   listOwnFavorites,
   listSharedFavoriteTenderIds,
 } from "@/lib/queries";
@@ -30,6 +31,7 @@ export default async function FavoriteTendersPage() {
     );
   }
 
+  const userId = profile.data.id;
   const { data: favorites, error } = await listOwnFavorites(supabase);
   const tenderIds = favorites
     .map((f) => f.tenders?.id)
@@ -38,6 +40,8 @@ export default async function FavoriteTendersPage() {
     supabase,
     tenderIds,
   );
+  const propias = favorites.filter((f) => f.kind === "propia");
+  const subcontratas = favorites.filter((f) => f.kind === "subcontrata");
 
   return (
     <main className={PAGE_MAIN_CLASS}>
@@ -53,12 +57,38 @@ export default async function FavoriteTendersPage() {
             <EmptyFavoritesTendersHint />
           </EmptyState>
         ) : (
-          <PaginatedFavoriteTenders
-            favorites={favorites}
-            from="favorites-tenders"
-            shareUserId={profile.data.id}
-            sharedTenderIds={sharedIdsResult.data}
-          />
+          <div className="space-y-10">
+            {(
+              [
+                ["propia", propias],
+                ["subcontrata", subcontratas],
+              ] as const
+            ).map(([kind, group]) => (
+              <section key={kind} aria-labelledby={`fav-kind-${kind}`}>
+                <h2
+                  id={`fav-kind-${kind}`}
+                  className="text-lg font-semibold tracking-tight text-foreground"
+                >
+                  {favoriteKindLongLabel(kind)}
+                  <span className="ml-2 text-sm font-normal text-muted-foreground tabular-nums">
+                    ({group.length})
+                  </span>
+                </h2>
+                <div className="mt-3">
+                  {group.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">Ninguna aún.</p>
+                  ) : (
+                    <PaginatedFavoriteTenders
+                      favorites={group}
+                      from="favorites-tenders"
+                      shareUserId={userId}
+                      sharedTenderIds={sharedIdsResult.data}
+                    />
+                  )}
+                </div>
+              </section>
+            ))}
+          </div>
         )}
       </div>
     </main>

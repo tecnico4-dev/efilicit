@@ -56,6 +56,12 @@ export {
   type AlertRelatedQueueItem,
 } from "./alert-related-tenders";
 export {
+  asFavoriteKind,
+  favoriteKindLabel,
+  favoriteKindLongLabel,
+  type FavoriteKind,
+} from "./favorite-kind";
+export {
   addOwnFavorite,
   isOwnFavorite,
   listOwnFavoriteTenderIds,

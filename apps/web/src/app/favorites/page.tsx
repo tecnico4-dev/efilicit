@@ -2,7 +2,9 @@ import {
   getSessionProfile,
   getSupabaseServerClient,
 } from "@/lib/auth/session";
+import type { ReactNode } from "react";
 import {
+  favoriteKindLongLabel,
   listMunicipalityNamesByCodes,
   listOwnFavorites,
   listOwnSavedSearches,
@@ -32,6 +34,41 @@ export const dynamic = "force-dynamic";
 
 const PANEL_CLASS =
   "mt-0 flex h-full min-h-0 flex-col rounded-lg border border-border bg-surface/40 px-4 py-4 sm:px-5";
+
+const HUB_KIND_PREVIEW = Math.max(1, Math.floor(FAVORITES_PREVIEW_LIMIT / 2));
+
+function HubKindPreview<T>({
+  propias,
+  subcontratas,
+  render,
+}: {
+  propias: T[];
+  subcontratas: T[];
+  render: (items: T[]) => ReactNode;
+}) {
+  return (
+    <div className="space-y-4">
+      {(
+        [
+          ["propia", propias],
+          ["subcontrata", subcontratas],
+        ] as const
+      ).map(([kind, group]) => (
+        <div key={kind}>
+          <p className="text-xs font-medium text-muted-foreground">
+            {favoriteKindLongLabel(kind)}
+            <span className="ml-1 tabular-nums">({group.length})</span>
+          </p>
+          {group.length === 0 ? (
+            <p className="mt-1 text-sm text-muted-foreground">Ninguna aún.</p>
+          ) : (
+            <div className="mt-1">{render(group.slice(0, HUB_KIND_PREVIEW))}</div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
 
 export default async function FavoritesPage() {
   const supabase = await getSupabaseServerClient();
@@ -83,9 +120,12 @@ export default async function FavoritesPage() {
           moreHref="/favorites/tenders"
           className={PANEL_CLASS}
         >
-          <FavoriteTenderList
-            favorites={favorites.slice(0, FAVORITES_PREVIEW_LIMIT)}
-            bordered={false}
+          <HubKindPreview
+            propias={favorites.filter((f) => f.kind === "propia")}
+            subcontratas={favorites.filter((f) => f.kind === "subcontrata")}
+            render={(items) => (
+              <FavoriteTenderList favorites={items} bordered={false} />
+            )}
           />
         </PreviewSection>
 
@@ -97,10 +137,16 @@ export default async function FavoritesPage() {
           moreHref="/favorites/common"
           className={PANEL_CLASS}
         >
-          <SharedFavoriteList
-            items={shared.slice(0, FAVORITES_PREVIEW_LIMIT)}
-            from="favorites"
-            bordered={false}
+          <HubKindPreview
+            propias={shared.filter((f) => f.kind === "propia")}
+            subcontratas={shared.filter((f) => f.kind === "subcontrata")}
+            render={(items) => (
+              <SharedFavoriteList
+                items={items}
+                from="favorites"
+                bordered={false}
+              />
+            )}
           />
         </PreviewSection>
 

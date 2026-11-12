@@ -387,6 +387,7 @@ export default async function TenderDetailPage({
             <FavoriteToggle
               userId={favoriteUserId}
               tenderId={tender.id}
+              tenderTitle={tender.title}
               initiallyFavorited={initiallyFavorited}
             />
           </div>

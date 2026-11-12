@@ -136,12 +136,12 @@ begin
   -- Favoritos (antes de los eventos de cambio).
   foreach v_uid in array array_remove(array[v_alice, v_tec], null)
   loop
-    insert into public.favorites (user_id, tender_id, created_at)
+    insert into public.favorites (user_id, tender_id, kind, created_at)
     values
-      (v_uid, v_t1, v_fav_at),
-      (v_uid, v_t2, v_fav_at),
-      (v_uid, v_t3, v_fav_at),
-      (v_uid, v_t4, v_fav_at)
+      (v_uid, v_t1, 'propia', v_fav_at),
+      (v_uid, v_t2, 'propia', v_fav_at),
+      (v_uid, v_t3, 'propia', v_fav_at),
+      (v_uid, v_t4, 'propia', v_fav_at)
     on conflict (user_id, tender_id) do update
       set created_at = least(favorites.created_at, excluded.created_at);
   end loop;

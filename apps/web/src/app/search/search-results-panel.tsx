@@ -323,6 +323,7 @@ export function SearchResultsPanel({
               <FavoriteHeartButton
                 userId={profileUserId}
                 tenderId={row.id}
+                tenderTitle={row.title}
                 initiallyFavorited={favoritedIds.has(row.id)}
               />
             ) : null}

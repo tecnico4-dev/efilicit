@@ -3,15 +3,28 @@
  */
 import type { Database } from "@efilicit/types";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import {
+  asFavoriteKind,
+  favoriteKindLabel,
+  favoriteKindLongLabel,
+  type FavoriteKind,
+} from "./favorite-kind";
 
 export const SHARED_FAVORITE_NOTES_MAX = 500;
 
-export type SharedFavoriteKind = "propia" | "subcontrata";
+/** @deprecated Prefer FavoriteKind */
+export type SharedFavoriteKind = FavoriteKind;
+
+export {
+  asFavoriteKind as asSharedFavoriteKind,
+  favoriteKindLabel as sharedFavoriteKindLabel,
+  favoriteKindLongLabel as sharedFavoriteKindLongLabel,
+};
 
 type SharedFavoriteRow = Database["public"]["Tables"]["shared_favorites"]["Row"];
 
 export type SharedFavoriteWithTender = SharedFavoriteRow & {
-  kind: SharedFavoriteKind;
+  kind: FavoriteKind;
   added_by_display_name: string | null;
   tenders: {
     id: string;
@@ -24,19 +37,6 @@ export type SharedFavoriteWithTender = SharedFavoriteRow & {
     deadline_at: string | null;
   } | null;
 };
-
-export function asSharedFavoriteKind(raw: string): SharedFavoriteKind | null {
-  if (raw === "propia" || raw === "subcontrata") return raw;
-  return null;
-}
-
-export function sharedFavoriteKindLabel(kind: SharedFavoriteKind): string {
-  return kind === "propia" ? "Eficen" : "Subcontrata";
-}
-
-export function sharedFavoriteKindLongLabel(kind: SharedFavoriteKind): string {
-  return kind === "propia" ? "Propias de Eficen" : "Subcontrata";
-}
 
 /** IDs ya en Común entre un conjunto (p. ej. mis favoritos). */
 export async function listSharedFavoriteTenderIds(
@@ -93,7 +93,7 @@ function mapSharedRow(row: {
   users: unknown;
   tenders: unknown;
 }): SharedFavoriteWithTender {
-  const kind = asSharedFavoriteKind(row.kind) ?? "propia";
+  const kind = asFavoriteKind(row.kind) ?? "propia";
   const users = row.users as { display_name: string | null } | null;
   const tender = row.tenders as
     | {
@@ -175,7 +175,7 @@ export async function addSharedFavorite(
   input: {
     userId: string;
     tenderId: string;
-    kind: SharedFavoriteKind;
+    kind: FavoriteKind;
     notes?: string | null;
   },
 ): Promise<

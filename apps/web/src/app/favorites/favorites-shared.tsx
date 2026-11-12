@@ -7,10 +7,10 @@ import {
 } from "@/lib/criteria-display";
 import { formatCpvListPreview } from "@/lib/cpv";
 import {
-  sharedFavoriteKindLabel,
+  favoriteKindLabel,
   type DigestFrequency,
+  type FavoriteKind,
   type FavoriteWithTender,
-  type SharedFavoriteKind,
   type SharedFavoriteWithTender,
 } from "@/lib/queries";
 import { formatTenderStatus } from "@/lib/tender-labels";
@@ -20,13 +20,13 @@ import { RemoveSavedSearchButton } from "./remove-saved-search-button";
 import { RemoveSharedFavoriteButton } from "./remove-shared-favorite-button";
 import { ShareToCommonButton } from "./share-to-common-button";
 
-function SharedKindBubble({ kind }: { kind: SharedFavoriteKind }) {
+function FavoriteKindBubble({ kind }: { kind: FavoriteKind }) {
   return (
     <span
       className="inline-flex shrink-0 items-center rounded-full border border-amber-500/35 bg-amber-500/12 px-2 py-0.5 text-[11px] font-medium text-amber-800 dark:text-amber-200"
       title={kind === "propia" ? "Propias de Eficen" : "Subcontrata"}
     >
-      {sharedFavoriteKindLabel(kind)}
+      {favoriteKindLabel(kind)}
     </span>
   );
 }
@@ -137,12 +137,15 @@ export function FavoriteTenderList({
         return (
           <li key={fav.id} className="flex items-start gap-3 py-4">
             <div className="min-w-0 flex-1">
-              <Link
-                href={`/tenders/${tender.id}?from=${from}`}
-                className="text-base font-medium text-foreground hover:text-link hover:underline"
-              >
-                {tender.title}
-              </Link>
+              <div className="flex flex-wrap items-center gap-2">
+                <Link
+                  href={`/tenders/${tender.id}?from=${from}`}
+                  className="text-base font-medium text-foreground hover:text-link hover:underline"
+                >
+                  {tender.title}
+                </Link>
+                <FavoriteKindBubble kind={fav.kind} />
+              </div>
               <dl className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
                 <div>
                   <dt className="inline text-muted-foreground">Importe: </dt>
@@ -231,7 +234,7 @@ export function SharedFavoriteList({
                 >
                   {tender.title}
                 </Link>
-                <SharedKindBubble kind={item.kind} />
+                <FavoriteKindBubble kind={item.kind} />
               </div>
               <p className="mt-1.5 text-xs text-muted-foreground">
                 Añadida por {who} · {formatSharedWhen(item.created_at)}
