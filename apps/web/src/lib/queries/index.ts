@@ -113,10 +113,13 @@ export {
   type DigestTenderListItem,
 } from "./digest-inbox";
 export {
+  asTenderInterestKind,
   deleteOwnTenderRating,
+  getOwnAlertInterestKindForTender,
+  interestKindShortLabel,
+  listOwnAlertInterestKindsForTenders,
   listOwnTenderRatings,
   upsertOwnTenderRating,
-  interestKindShortLabel,
   type TenderInterestKind,
   type TenderRating,
   type TenderScore,

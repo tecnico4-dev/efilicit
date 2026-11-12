@@ -9,11 +9,13 @@ import { formatCpvListPreview } from "@/lib/cpv";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import {
   deleteOwnTenderRating,
+  listOwnAlertInterestKindsForTenders,
   listOwnTenderRatings,
   listTendersForDigestInbox,
   markOwnDigestInboxRead,
   upsertOwnTenderRating,
   type DigestTenderListItem,
+  type TenderInterestKind,
   type TenderRating,
 } from "@/lib/queries";
 import { formatTenderStatus } from "@/lib/tender-labels";
@@ -27,11 +29,13 @@ import {
 function TenderRow({
   item,
   rating,
+  defaultInterestKind,
   onRatingChange,
   onNavigate,
 }: {
   item: DigestTenderListItem;
   rating: TenderRating | null;
+  defaultInterestKind?: TenderInterestKind | null;
   onRatingChange: (
     tenderId: string,
     next: TenderRating | null,
@@ -48,7 +52,11 @@ function TenderRow({
         ) : (
           <>
             <Link
-              href={`/tenders/${item.tenderId}?from=notifications`}
+              href={
+                defaultInterestKind
+                  ? `/tenders/${item.tenderId}?from=notifications&interest=${defaultInterestKind}`
+                  : `/tenders/${item.tenderId}?from=notifications`
+              }
               className="text-base font-medium text-foreground hover:text-link hover:underline"
               onClick={onNavigate}
             >
@@ -79,6 +87,7 @@ function TenderRow({
         <div className="shrink-0 pt-0.5">
           <TenderStarRating
             rating={rating}
+            defaultInterestKind={defaultInterestKind}
             onChange={(next) => onRatingChange(item.tenderId, next)}
           />
         </div>
@@ -113,6 +122,9 @@ export function DigestTendersPanel({
   const [error, setError] = useState<string | null>(null);
   const [items, setItems] = useState<DigestTenderListItem[]>([]);
   const [ratings, setRatings] = useState<Record<string, TenderRating>>({});
+  const [interestByTender, setInterestByTender] = useState<
+    Record<string, TenderInterestKind>
+  >({});
   const [pageSize, setPageSize] = useState<PageSize>(DEFAULT_PAGE_SIZE);
   const [page, setPage] = useState(1);
 
@@ -136,6 +148,7 @@ export function DigestTendersPanel({
     setError(null);
     setPage(1);
     setRatings({});
+    setInterestByTender({});
     const ids = tenderIdsKey ? tenderIdsKey.split(",") : [];
     const client = createSupabaseBrowserClient();
     void markOwnDigestInboxRead(client, { userId, digestId }).then(() => {
@@ -143,9 +156,13 @@ export function DigestTendersPanel({
     });
 
     void (async () => {
-      const [tendersResult, ratingsResult] = await Promise.all([
+      const [tendersResult, ratingsResult, interestResult] = await Promise.all([
         listTendersForDigestInbox(client, { tenderIds: ids }),
         listOwnTenderRatings(client, { userId, tenderIds: ids }),
+        listOwnAlertInterestKindsForTenders(client, {
+          userId,
+          tenderIds: ids,
+        }),
       ]);
       if (cancelled) return;
       setLoading(false);
@@ -160,6 +177,9 @@ export function DigestTendersPanel({
         return;
       }
       setRatings(ratingsResult.data);
+      if (!interestResult.error) {
+        setInterestByTender(interestResult.data);
+      }
     })();
 
     return () => {
@@ -272,6 +292,9 @@ export function DigestTendersPanel({
                       key={item.tenderId}
                       item={item}
                       rating={ratings[item.tenderId] ?? null}
+                      defaultInterestKind={
+                        interestByTender[item.tenderId] ?? null
+                      }
                       onRatingChange={onRatingChange}
                       onNavigate={onClose}
                     />

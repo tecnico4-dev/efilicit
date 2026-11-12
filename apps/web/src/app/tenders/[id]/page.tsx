@@ -10,8 +10,11 @@ import {
   getOfferCaseIdByTenderId,
   getTenderById,
   isOwnFavorite,
+  asTenderInterestKind,
+  getOwnAlertInterestKindForTender,
   listOwnTenderRatings,
   listTenderStatusHistory,
+  type TenderInterestKind,
   type TenderRating,
   type TenderSourceSummary,
 } from "@/lib/queries";
@@ -313,12 +316,14 @@ export default async function TenderDetailPage({
   let initiallyFavorited = false;
   let existingOfferCaseId: string | null = null;
   let initialRating: TenderRating | null = null;
+  let defaultInterestKind: TenderInterestKind | null =
+    asTenderInterestKind(first(query.interest));
   try {
     const profile = await getSessionProfile();
     if (profile.data) {
       favoriteUserId = profile.data.id;
       displayName = profile.data.display_name;
-      const [fav, offer, ratings] = await Promise.all([
+      const [fav, offer, ratings, alertInterest] = await Promise.all([
         isOwnFavorite(supabase, {
           userId: profile.data.id,
           tenderId: tender.id,
@@ -332,11 +337,20 @@ export default async function TenderDetailPage({
               tenderIds: [tender.id],
             })
           : Promise.resolve(null),
+        showRating && !defaultInterestKind
+          ? getOwnAlertInterestKindForTender(supabase, {
+              userId: profile.data.id,
+              tenderId: tender.id,
+            })
+          : Promise.resolve(null),
       ]);
       initiallyFavorited = fav.data;
       existingOfferCaseId = offer.data;
       if (ratings && !ratings.error) {
         initialRating = ratings.data[tender.id] ?? null;
+      }
+      if (!defaultInterestKind && alertInterest && !alertInterest.error) {
+        defaultInterestKind = alertInterest.data;
       }
     }
   } catch {
@@ -362,6 +376,7 @@ export default async function TenderDetailPage({
             userId={favoriteUserId}
             tenderId={tender.id}
             initialRating={initialRating}
+            defaultInterestKind={defaultInterestKind}
           />
         </div>
       ) : null}

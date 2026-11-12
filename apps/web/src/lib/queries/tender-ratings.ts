@@ -22,9 +22,85 @@ function asScore(raw: number): TenderScore | null {
   return null;
 }
 
-function asInterestKind(raw: string | null): TenderInterestKind | null {
+export function asTenderInterestKind(
+  raw: string | null | undefined,
+): TenderInterestKind | null {
   if (raw === "propia" || raw === "subcontrata") return raw;
   return null;
+}
+
+function asInterestKind(raw: string | null): TenderInterestKind | null {
+  return asTenderInterestKind(raw);
+}
+
+/**
+ * Interés sugerido desde la alerta de cola más reciente que matcheó esta licitación.
+ * Usado en ficha (from=alerts|notifications|email) si no viene `interest` en la URL.
+ */
+export async function getOwnAlertInterestKindForTender(
+  client: SupabaseClient<Database>,
+  input: { userId: string; tenderId: string },
+): Promise<{ data: TenderInterestKind | null; error: Error | null }> {
+  const { data, error } = await client
+    .from("notification_queue")
+    .select("created_at, payload, alerts ( kind )")
+    .eq("user_id", input.userId)
+    .not("alert_id", "is", null)
+    .filter("payload->>tender_id", "eq", input.tenderId)
+    .order("created_at", { ascending: false })
+    .limit(5);
+
+  if (error) return { data: null, error: new Error(error.message) };
+
+  for (const row of data ?? []) {
+    const alerts = row.alerts as { kind: string | null } | null;
+    const kind = asTenderInterestKind(alerts?.kind ?? null);
+    if (kind) return { data: kind, error: null };
+  }
+  return { data: null, error: null };
+}
+
+/**
+ * Mapa tender_id → kind de alerta (cola más reciente) para un lote (buzón digest).
+ */
+export async function listOwnAlertInterestKindsForTenders(
+  client: SupabaseClient<Database>,
+  input: { userId: string; tenderIds: string[] },
+): Promise<{
+  data: Record<string, TenderInterestKind>;
+  error: Error | null;
+}> {
+  const out: Record<string, TenderInterestKind> = {};
+  if (input.tenderIds.length === 0) return { data: out, error: null };
+
+  const wanted = new Set(input.tenderIds);
+  // Cola reciente del usuario; filtramos tender_id en cliente (payload JSON).
+  const { data, error } = await client
+    .from("notification_queue")
+    .select("created_at, payload, alerts ( kind )")
+    .eq("user_id", input.userId)
+    .not("alert_id", "is", null)
+    .order("created_at", { ascending: false })
+    .limit(Math.min(2000, Math.max(200, input.tenderIds.length * 3)));
+
+  if (error) return { data: {}, error: new Error(error.message) };
+
+  for (const row of data ?? []) {
+    const payload = row.payload;
+    const tenderId =
+      payload &&
+      typeof payload === "object" &&
+      !Array.isArray(payload) &&
+      typeof (payload as { tender_id?: unknown }).tender_id === "string"
+        ? (payload as { tender_id: string }).tender_id
+        : null;
+    if (!tenderId || !wanted.has(tenderId) || out[tenderId]) continue;
+    const alerts = row.alerts as { kind: string | null } | null;
+    const kind = asTenderInterestKind(alerts?.kind ?? null);
+    if (kind) out[tenderId] = kind;
+  }
+
+  return { data: out, error: null };
 }
 
 export function interestKindShortLabel(

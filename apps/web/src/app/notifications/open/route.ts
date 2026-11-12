@@ -3,7 +3,10 @@ import {
   getSessionProfile,
   getSupabaseServerClient,
 } from "@/lib/auth/session";
-import { markOwnNotificationRead } from "@/lib/queries";
+import {
+  getOwnAlertInterestKindForTender,
+  markOwnNotificationRead,
+} from "@/lib/queries";
 
 /**
  * Marca un aviso como leído y redirige a la ficha.
@@ -22,12 +25,21 @@ export async function GET(request: NextRequest) {
   const supabase = await getSupabaseServerClient();
   const { data: profile } = await getSessionProfile();
 
+  let interest: string | null = null;
   if (profile?.id) {
     await markOwnNotificationRead(supabase, {
       userId: profile.id,
       eventId,
     });
+    const kindResult = await getOwnAlertInterestKindForTender(supabase, {
+      userId: profile.id,
+      tenderId,
+    });
+    if (!kindResult.error) interest = kindResult.data;
   }
 
-  return NextResponse.redirect(new URL(`/tenders/${tenderId}`, request.url));
+  const target = new URL(`/tenders/${tenderId}`, request.url);
+  target.searchParams.set("from", "email");
+  if (interest) target.searchParams.set("interest", interest);
+  return NextResponse.redirect(target);
 }

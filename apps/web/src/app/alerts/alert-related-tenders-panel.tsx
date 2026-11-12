@@ -269,7 +269,11 @@ function RelatedItemRow({
       <div className="min-w-0 flex-1">
         <div className="flex items-start justify-between gap-3">
           <Link
-            href={`/tenders/${item.tenderId}?from=alerts`}
+            href={
+              defaultInterestKind
+                ? `/tenders/${item.tenderId}?from=alerts&interest=${defaultInterestKind}`
+                : `/tenders/${item.tenderId}?from=alerts`
+            }
             className="min-w-0 flex-1 text-base font-medium text-foreground hover:text-link hover:underline"
             onClick={onNavigate}
           >
