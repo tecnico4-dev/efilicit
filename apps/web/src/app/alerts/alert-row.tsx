@@ -151,15 +151,15 @@ export function AlertRowItem({
 
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(alert.name);
-  /** Vacío al abrir editar: hay que volver a marcar Clasificación. */
-  const [kind, setKind] = useState<FavoriteKind | "">("");
+  /** Si ya tenía kind, se respeta; si es legado (null), vacío hasta que elijan. */
+  const [kind, setKind] = useState<FavoriteKind | "">(
+    () => asFavoriteKind(alert.kind) ?? "",
+  );
   const [editKey, setEditKey] = useState(0);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [relatedOpen, setRelatedOpen] = useState(false);
-  const kindLabel = favoriteKindLabel(
-    asFavoriteKind(alert.kind) ?? "propia",
-  );
+  const savedKind = asFavoriteKind(alert.kind);
 
   async function toggleActive() {
     setPending(true);
@@ -241,7 +241,7 @@ export function AlertRowItem({
 
   function cancelEdit() {
     setName(alert.name);
-    setKind("");
+    setKind(asFavoriteKind(alert.kind) ?? "");
     setEditKey((k) => k + 1);
     setError(null);
     setEditing(false);
@@ -259,16 +259,18 @@ export function AlertRowItem({
               )}
             >
               {alert.name}
-              <span
-                className={cn(
-                  "ml-2 text-xs font-normal",
-                  alert.is_active
-                    ? "text-muted-foreground"
-                    : "text-muted-foreground/80",
-                )}
-              >
-                · {kindLabel}
-              </span>
+              {savedKind ? (
+                <span
+                  className={cn(
+                    "ml-2 text-xs font-normal",
+                    alert.is_active
+                      ? "text-muted-foreground"
+                      : "text-muted-foreground/80",
+                  )}
+                >
+                  · {favoriteKindLabel(savedKind)}
+                </span>
+              ) : null}
             </p>
             <p
               className={cn(
@@ -309,7 +311,7 @@ export function AlertRowItem({
             title="Editar"
             onClick={() => {
               setName(alert.name);
-              setKind("");
+              setKind(asFavoriteKind(alert.kind) ?? "");
               setEditing(true);
               setEditKey((k) => k + 1);
               setError(null);

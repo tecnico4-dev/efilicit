@@ -101,7 +101,8 @@ export async function createOwnAlert(
     userId: string;
     name: string;
     criteria: SearchCriteria;
-    kind: FavoriteKind;
+    /** Obligatorio en UI de alta; null solo al restaurar legado sin clasificar. */
+    kind: FavoriteKind | null;
     frequency?: DigestFrequency;
   },
 ): Promise<{ data: AlertRow | null; error: Error | null }> {

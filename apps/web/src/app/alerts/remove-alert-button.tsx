@@ -73,7 +73,7 @@ export function RemoveAlertButton({
       userId: alert.user_id,
       name: alert.name,
       criteria: parseCriteria(alert.criteria),
-      kind: asFavoriteKind(alert.kind) ?? ("propia" as const),
+      kind: asFavoriteKind(alert.kind),
       frequency: (alert.frequency === "semanal"
         ? "semanal"
         : "diaria") as DigestFrequency,
