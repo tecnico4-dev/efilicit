@@ -27,12 +27,14 @@ import {
   SavedSearchList,
   SharedFavoriteList,
 } from "./favorites-shared";
-import { HubKindPreview } from "./hub-kind-preview";
+import { FavoriteKindTabs } from "./favorite-kind-tabs";
 
 export const dynamic = "force-dynamic";
 
 const PANEL_CLASS =
   "mt-0 flex h-full min-h-0 flex-col rounded-lg border border-border bg-surface/40 px-4 py-4 sm:px-5";
+
+const HUB_KIND_PREVIEW = 3;
 
 export default async function FavoritesPage() {
   const supabase = await getSupabaseServerClient();
@@ -67,6 +69,11 @@ export default async function FavoritesPage() {
     ),
   );
 
+  const favPropias = favorites.filter((f) => f.kind === "propia");
+  const favSub = favorites.filter((f) => f.kind === "subcontrata");
+  const sharedPropias = shared.filter((f) => f.kind === "propia");
+  const sharedSub = shared.filter((f) => f.kind === "subcontrata");
+
   return (
     <main className={PAGE_MAIN_WIDE_CLASS}>
       <h1 className="text-2xl font-semibold tracking-tight text-foreground">
@@ -84,12 +91,30 @@ export default async function FavoritesPage() {
           moreHref="/favorites/tenders"
           className={PANEL_CLASS}
         >
-          <HubKindPreview
-            propias={favorites.filter((f) => f.kind === "propia")}
-            subcontratas={favorites.filter((f) => f.kind === "subcontrata")}
-            render={(items) => (
-              <FavoriteTenderList favorites={items} bordered={false} />
-            )}
+          <FavoriteKindTabs
+            ariaLabel="Tipo de favorito"
+            propiasCount={favPropias.length}
+            subcontratasCount={favSub.length}
+            propias={
+              favPropias.length === 0 ? (
+                <p className="py-3 text-sm text-muted-foreground">Ninguna aún.</p>
+              ) : (
+                <FavoriteTenderList
+                  favorites={favPropias.slice(0, HUB_KIND_PREVIEW)}
+                  bordered={false}
+                />
+              )
+            }
+            subcontratas={
+              favSub.length === 0 ? (
+                <p className="py-3 text-sm text-muted-foreground">Ninguna aún.</p>
+              ) : (
+                <FavoriteTenderList
+                  favorites={favSub.slice(0, HUB_KIND_PREVIEW)}
+                  bordered={false}
+                />
+              )
+            }
           />
         </PreviewSection>
 
@@ -101,16 +126,32 @@ export default async function FavoritesPage() {
           moreHref="/favorites/common"
           className={PANEL_CLASS}
         >
-          <HubKindPreview
-            propias={shared.filter((f) => f.kind === "propia")}
-            subcontratas={shared.filter((f) => f.kind === "subcontrata")}
-            render={(items) => (
-              <SharedFavoriteList
-                items={items}
-                from="favorites"
-                bordered={false}
-              />
-            )}
+          <FavoriteKindTabs
+            ariaLabel="Tipo en Común"
+            propiasCount={sharedPropias.length}
+            subcontratasCount={sharedSub.length}
+            propias={
+              sharedPropias.length === 0 ? (
+                <p className="py-3 text-sm text-muted-foreground">Ninguna aún.</p>
+              ) : (
+                <SharedFavoriteList
+                  items={sharedPropias.slice(0, HUB_KIND_PREVIEW)}
+                  from="favorites"
+                  bordered={false}
+                />
+              )
+            }
+            subcontratas={
+              sharedSub.length === 0 ? (
+                <p className="py-3 text-sm text-muted-foreground">Ninguna aún.</p>
+              ) : (
+                <SharedFavoriteList
+                  items={sharedSub.slice(0, HUB_KIND_PREVIEW)}
+                  from="favorites"
+                  bordered={false}
+                />
+              )
+            }
           />
         </PreviewSection>
 
