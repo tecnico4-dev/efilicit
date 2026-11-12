@@ -21,10 +21,15 @@ import { RemoveSharedFavoriteButton } from "./remove-shared-favorite-button";
 import { ShareToCommonButton } from "./share-to-common-button";
 
 function FavoriteKindBubble({ kind }: { kind: FavoriteKind }) {
+  const isEficen = kind === "propia";
   return (
     <span
-      className="inline-flex shrink-0 items-center rounded-full border border-amber-500/35 bg-amber-500/12 px-2 py-0.5 text-[11px] font-medium text-amber-800 dark:text-amber-200"
-      title={kind === "propia" ? "Propias de Eficen" : "Subcontrata"}
+      className={
+        isEficen
+          ? "inline-flex shrink-0 items-center rounded-full border border-amber-500/35 bg-amber-500/12 px-2 py-0.5 text-[11px] font-medium text-amber-800 dark:text-amber-200"
+          : "inline-flex shrink-0 items-center rounded-full border border-teal-600/35 bg-teal-600/12 px-2 py-0.5 text-[11px] font-medium text-teal-800 dark:text-teal-200"
+      }
+      title={isEficen ? "Propias de Eficen" : "Subcontrata"}
     >
       {favoriteKindLabel(kind)}
     </span>
