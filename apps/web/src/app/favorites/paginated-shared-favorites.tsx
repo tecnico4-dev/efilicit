@@ -50,6 +50,7 @@ export function PaginatedSharedFavorites({
           from="favorites-common"
           bordered={false}
           showRemove
+          noteWide
         />
       </div>
     );
@@ -69,6 +70,7 @@ export function PaginatedSharedFavorites({
           from="favorites-common"
           bordered={false}
           showRemove
+          noteWide
         />
       </div>
       <div className="shrink-0 border-t border-border bg-background px-4 py-3">

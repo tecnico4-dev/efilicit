@@ -187,11 +187,14 @@ export function SharedFavoriteList({
   from = "favorites",
   bordered = true,
   showRemove = false,
+  noteWide = false,
 }: {
   items: SharedFavoriteWithTender[];
   from?: "favorites" | "favorites-common";
   bordered?: boolean;
   showRemove?: boolean;
+  /** Página Común: la nota crece con el hueco; hub favoritos: ancho fijo corto. */
+  noteWide?: boolean;
 }) {
   return (
     <ul
@@ -257,7 +260,13 @@ export function SharedFavoriteList({
                   </dl>
                 </div>
                 {note ? (
-                  <p className="w-full shrink-0 rounded-md border border-dashed border-border px-2.5 py-1.5 text-sm text-muted-foreground sm:ml-auto sm:w-[min(100%,16rem)]">
+                  <p
+                    className={
+                      noteWide
+                        ? "w-full min-w-0 rounded-md border border-dashed border-border px-2.5 py-1.5 text-sm text-muted-foreground sm:ml-auto sm:min-w-[14rem] sm:max-w-[min(100%,36rem)] sm:flex-1"
+                        : "w-full shrink-0 rounded-md border border-dashed border-border px-2.5 py-1.5 text-sm text-muted-foreground sm:ml-auto sm:w-[min(100%,16rem)]"
+                    }
+                  >
                     <span className="font-medium text-foreground">Nota:</span>{" "}
                     {note}
                   </p>
