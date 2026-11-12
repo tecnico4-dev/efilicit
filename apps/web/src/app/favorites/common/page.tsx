@@ -59,19 +59,30 @@ export default async function SharedFavoritesPage() {
             todasCount={items.length}
             propiasCount={propias.length}
             subcontratasCount={subcontratas.length}
-            todas={<PaginatedSharedFavorites items={items} />}
+            todas={
+              <PaginatedSharedFavorites
+                items={items}
+                currentUserId={profile.data.id}
+              />
+            }
             propias={
               propias.length === 0 ? (
                 emptyKindPanel()
               ) : (
-                <PaginatedSharedFavorites items={propias} />
+                <PaginatedSharedFavorites
+                  items={propias}
+                  currentUserId={profile.data.id}
+                />
               )
             }
             subcontratas={
               subcontratas.length === 0 ? (
                 emptyKindPanel()
               ) : (
-                <PaginatedSharedFavorites items={subcontratas} />
+                <PaginatedSharedFavorites
+                  items={subcontratas}
+                  currentUserId={profile.data.id}
+                />
               )
             }
           />

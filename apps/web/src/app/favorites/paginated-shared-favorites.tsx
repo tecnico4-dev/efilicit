@@ -13,8 +13,10 @@ export const SHARED_FAVORITES_PAGE_SIZE = DEFAULT_PAGE_SIZE;
 
 export function PaginatedSharedFavorites({
   items,
+  currentUserId,
 }: {
   items: SharedFavoriteWithTender[];
+  currentUserId: string;
 }) {
   const total = items.length;
   const showPager = total > SHARED_FAVORITES_PAGE_SIZE;
@@ -51,6 +53,7 @@ export function PaginatedSharedFavorites({
           bordered={false}
           showRemove
           noteWide
+          currentUserId={currentUserId}
         />
       </div>
     );
@@ -71,6 +74,7 @@ export function PaginatedSharedFavorites({
           bordered={false}
           showRemove
           noteWide
+          currentUserId={currentUserId}
         />
       </div>
       <div className="shrink-0 border-t border-border bg-background px-4 py-3">

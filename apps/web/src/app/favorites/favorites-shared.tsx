@@ -188,6 +188,7 @@ export function SharedFavoriteList({
   bordered = true,
   showRemove = false,
   noteWide = false,
+  currentUserId,
 }: {
   items: SharedFavoriteWithTender[];
   from?: "favorites" | "favorites-common";
@@ -195,6 +196,8 @@ export function SharedFavoriteList({
   showRemove?: boolean;
   /** Página Común: la nota crece con el hueco; hub favoritos: ancho fijo corto. */
   noteWide?: boolean;
+  /** Necesario con `showRemove` (aviso si quitas la de otro). */
+  currentUserId?: string;
 }) {
   return (
     <ul
@@ -273,8 +276,13 @@ export function SharedFavoriteList({
                 ) : null}
               </div>
             </div>
-            {showRemove ? (
-              <RemoveSharedFavoriteButton tenderId={item.tender_id} />
+            {showRemove && currentUserId ? (
+              <RemoveSharedFavoriteButton
+                tenderId={item.tender_id}
+                userId={currentUserId}
+                addedBy={item.added_by}
+                addedByDisplayName={item.added_by_display_name}
+              />
             ) : null}
           </li>
         );
