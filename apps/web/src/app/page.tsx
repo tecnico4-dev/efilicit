@@ -10,6 +10,7 @@ import {
   listOwnFavorites,
   listOwnSavedSearches,
   listRecentFavoriteStatusNotifications,
+  listSharedFavorites,
 } from "@/lib/queries";
 import { HomeDashboard } from "./home-dashboard";
 
@@ -47,12 +48,14 @@ export default async function Home() {
   const [
     alertsResult,
     favoritesResult,
+    sharedResult,
     searchesResult,
     unreadResult,
     recentResult,
   ] = await Promise.all([
     listOwnAlerts(supabase),
     listOwnFavorites(supabase),
+    listSharedFavorites(supabase),
     listOwnSavedSearches(supabase),
     countUnreadNotifications(supabase, { userId }),
     listRecentFavoriteStatusNotifications(supabase, {
@@ -64,6 +67,7 @@ export default async function Home() {
   const loadErrors = [
     alertsResult.error?.message,
     favoritesResult.error?.message,
+    sharedResult.error?.message,
     searchesResult.error?.message,
     unreadResult.error?.message,
     recentResult.error?.message,
@@ -74,6 +78,7 @@ export default async function Home() {
       displayName={profile.data.display_name?.trim() || ""}
       alerts={alertsResult.data}
       favorites={favoritesResult.data}
+      sharedFavorites={sharedResult.data}
       searches={searchesResult.data}
       digestFrequency={digestFrequency}
       unreadCount={unreadResult.data}

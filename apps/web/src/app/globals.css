@@ -229,6 +229,9 @@ body::-webkit-scrollbar {
 .home-anim-delay-7 {
   animation-delay: 380ms;
 }
+.home-anim-delay-8 {
+  animation-delay: 440ms;
+}
 
 @media (prefers-reduced-motion: reduce) {
   .login-card,

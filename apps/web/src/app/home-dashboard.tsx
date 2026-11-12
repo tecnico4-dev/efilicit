@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import Link from "next/link";
 import { PAGE_MAIN_MEDIUM_CLASS } from "@/components/shell/page-width";
 import { ErrorState } from "@/components/ui/state-message";
@@ -7,11 +8,117 @@ import type {
   DigestFrequency,
   FavoriteStatusNotification,
   FavoriteWithTender,
+  SharedFavoriteWithTender,
 } from "@/lib/queries";
 import type { Database } from "@efilicit/types";
 
 type AlertRow = Database["public"]["Tables"]["alerts"]["Row"];
 type SavedSearchRow = Database["public"]["Tables"]["saved_searches"]["Row"];
+
+const METRIC_ICON_CLASS =
+  "size-9 shrink-0 text-muted-foreground transition-colors group-hover:text-foreground sm:size-10";
+
+function MetricIconShell({
+  children,
+  className,
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className ?? METRIC_ICON_CLASS}
+      aria-hidden
+    >
+      {children}
+    </svg>
+  );
+}
+
+/** Documento con pliegue (base para favoritas / comunes). */
+function TenderDocumentPaths() {
+  return (
+    <>
+      <path d="M6 3.5h8.2L18.5 7.8V20a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 4.5 20V5A1.5 1.5 0 0 1 6 3.5z" />
+      <path d="M14.2 3.5V7.8h4.3" />
+      <path d="M8 12h8" />
+      <path d="M8 16h5.5" />
+    </>
+  );
+}
+
+/** Alerta: triángulo con exclamación (estilo outline del shell). */
+function AlertMetricIcon() {
+  return (
+    <MetricIconShell>
+      <path d="M12 3.6 2.8 19.2a1.2 1.2 0 0 0 1.05 1.8h16.3a1.2 1.2 0 0 0 1.05-1.8L12 3.6z" />
+      <path d="M12 9.2v5" />
+      <path d="M12 17.2h.01" />
+    </MetricIconShell>
+  );
+}
+
+/** Licitaciones favoritas: documento con pliegue. */
+function TendersMetricIcon() {
+  return (
+    <MetricIconShell>
+      <TenderDocumentPaths />
+    </MetricIconShell>
+  );
+}
+
+/** Común: mismo documento que favoritas + badge compartir (recorte, sin pisarse). */
+function SharedTendersMetricIcon() {
+  return (
+    <MetricIconShell>
+      <defs>
+        <mask id="home-metric-shared-cut">
+          <rect width="24" height="24" fill="white" />
+          <circle cx="17.8" cy="17.8" r="6.35" fill="black" />
+        </mask>
+      </defs>
+      <g mask="url(#home-metric-shared-cut)">
+        <TenderDocumentPaths />
+      </g>
+      <circle cx="17.8" cy="17.8" r="5" />
+      <circle cx="15.55" cy="17.8" r="1.05" fill="currentColor" stroke="none" />
+      <circle cx="19.55" cy="15.45" r="1.05" fill="currentColor" stroke="none" />
+      <circle cx="19.55" cy="20.15" r="1.05" fill="currentColor" stroke="none" />
+      <path d="M16.4 17.15 18.55 15.9" />
+      <path d="M16.4 18.45 18.55 19.7" />
+    </MetricIconShell>
+  );
+}
+
+/** Notificaciones: mismo buzón que el header (coherencia de shell). */
+function NotificationsMetricIcon() {
+  return (
+    <MetricIconShell>
+      <rect x="2.5" y="5" width="19" height="14" rx="1.5" />
+      <path d="m2.5 7.5 8.7 5.6a1.4 1.4 0 0 0 1.6 0l8.7-5.6" />
+      <path d="m2.5 17.5 6.2-5" />
+      <path d="m21.5 17.5-6.2-5" />
+    </MetricIconShell>
+  );
+}
+
+/** Búsquedas: lupa outline con brillo en el cristal. */
+function SearchesMetricIcon() {
+  return (
+    <MetricIconShell>
+      <circle cx="10.5" cy="10.5" r="6.25" />
+      <path d="M7.4 8.1c.7-1.5 2.1-2.5 3.7-2.7" />
+      <path d="m15.2 15.2 5.3 5.3" />
+    </MetricIconShell>
+  );
+}
 
 function daysUntilDeadlineMadrid(iso: string | null): number | null {
   if (!iso) return null;
@@ -29,9 +136,9 @@ function deadlineLabel(iso: string | null): string {
   const diff = daysUntilDeadlineMadrid(iso);
   if (diff == null) return "Sin plazo";
   if (diff < 0) return `Venció hace ${Math.abs(diff)} d`;
-  if (diff === 0) return "Hoy";
-  if (diff === 1) return "Mañana";
-  return `${diff} días`;
+  if (diff === 0) return "Vence hoy";
+  if (diff === 1) return "Vence mañana";
+  return `Vence en ${diff} días`;
 }
 
 function deadlineUrgencyClass(iso: string | null): string {
@@ -69,6 +176,7 @@ export function HomeDashboard({
   displayName,
   alerts,
   favorites,
+  sharedFavorites,
   searches,
   digestFrequency,
   unreadCount,
@@ -78,6 +186,7 @@ export function HomeDashboard({
   displayName: string;
   alerts: AlertRow[];
   favorites: FavoriteWithTender[];
+  sharedFavorites: SharedFavoriteWithTender[];
   searches: SavedSearchRow[];
   digestFrequency: DigestFrequency;
   unreadCount: number;
@@ -90,36 +199,61 @@ export function HomeDashboard({
   const isEmptyHome =
     activeAlerts.length === 0 &&
     favorites.length === 0 &&
+    sharedFavorites.length === 0 &&
     searches.length === 0;
   const attention = attentionFavorites(favorites);
 
   const metrics = [
     {
-      label: "Alertas activas",
+      label:
+        activeAlerts.length === 1 ? "Alerta activa" : "Alertas activas",
       value: activeAlerts.length,
       href: "/alerts",
       delay: "home-anim-delay-2",
+      icon: <AlertMetricIcon />,
     },
     {
-      label: "Favoritos",
+      label:
+        favorites.length === 1
+          ? "Licitación favorita"
+          : "Licitaciones favoritas",
       value: favorites.length,
       href: "/favorites/tenders",
       delay: "home-anim-delay-3",
+      icon: <TendersMetricIcon />,
     },
     {
-      label: "Sin leer",
+      label:
+        sharedFavorites.length === 1
+          ? "Licitación común"
+          : "Licitaciones comunes",
+      value: sharedFavorites.length,
+      href: "/favorites/common",
+      delay: "home-anim-delay-4",
+      icon: <SharedTendersMetricIcon />,
+    },
+    {
+      label:
+        unreadCount === 1
+          ? "Notificación sin leer"
+          : "Notificaciones sin leer",
       value: unreadCount,
       href: "/notifications",
-      delay: "home-anim-delay-4",
+      delay: "home-anim-delay-5",
       emphasize: unreadCount > 0,
+      icon: <NotificationsMetricIcon />,
     },
     {
-      label: "Búsquedas",
+      label:
+        searches.length === 1
+          ? "Búsqueda guardada"
+          : "Búsquedas guardadas",
       value: searches.length,
       href: "/favorites/searches",
-      delay: "home-anim-delay-5",
+      delay: "home-anim-delay-6",
+      icon: <SearchesMetricIcon />,
     },
-  ] as const;
+  ];
 
   return (
     <main className={`${PAGE_MAIN_MEDIUM_CLASS} home-dashboard`}>
@@ -140,14 +274,14 @@ export function HomeDashboard({
 
       <section
         aria-label="Resumen"
-        className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-4"
+        className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5"
       >
         {metrics.map((m) => (
           <Link
             key={m.href}
             href={m.href}
             className={[
-              "home-anim home-metric group rounded-xl border border-border/80 bg-surface/70 px-4 py-4",
+              "home-anim home-metric group rounded-xl border border-border/80 bg-surface/70 px-4 py-6 sm:px-5 sm:py-7",
               "transition-[transform,box-shadow,border-color] duration-200",
               "hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-md",
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
@@ -157,9 +291,12 @@ export function HomeDashboard({
                 : "",
             ].join(" ")}
           >
-            <p className="text-2xl font-semibold tabular-nums tracking-tight text-foreground sm:text-3xl">
-              {m.value}
-            </p>
+            <div className="flex items-center gap-3">
+              <p className="text-4xl font-semibold tabular-nums tracking-tight text-foreground sm:text-5xl">
+                {m.value}
+              </p>
+              {m.icon}
+            </div>
             <p className="mt-1 text-xs font-medium text-muted-foreground group-hover:text-foreground sm:text-sm">
               {m.label}
             </p>
@@ -168,7 +305,7 @@ export function HomeDashboard({
       </section>
 
       {isEmptyHome ? (
-        <section className="home-anim home-anim-delay-6 mt-10 rounded-2xl border border-dashed border-border bg-surface/40 px-6 py-10 text-center">
+        <section className="home-anim home-anim-delay-7 mt-10 rounded-2xl border border-dashed border-border bg-surface/40 px-6 py-10 text-center">
           <h2 className="text-lg font-semibold text-foreground">
             Empieza tu seguimiento
           </h2>
@@ -193,7 +330,7 @@ export function HomeDashboard({
         </section>
       ) : (
         <div className="mt-10 grid grid-cols-1 items-start gap-8 lg:grid-cols-2 lg:gap-6">
-          <section className="home-anim home-anim-delay-6 min-w-0">
+          <section className="home-anim home-anim-delay-7 min-w-0">
             <div className="flex flex-wrap items-baseline justify-between gap-2">
               <h2 className="text-xl font-semibold tracking-tight text-foreground">
                 Última oportunidad
@@ -248,7 +385,7 @@ export function HomeDashboard({
             )}
           </section>
 
-          <section className="home-anim home-anim-delay-7 min-w-0">
+          <section className="home-anim home-anim-delay-8 min-w-0">
             <div className="flex flex-wrap items-baseline justify-between gap-2">
               <h2 className="text-xl font-semibold tracking-tight text-foreground">
                 Cambios en tus favoritos
