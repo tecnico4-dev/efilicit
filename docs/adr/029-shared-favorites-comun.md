@@ -26,9 +26,8 @@ No es Mis licitaciones / `offer_*` (pipeline de oferta).
    - `created_at`.
 2. RLS vía `is_app_user()`: SELECT / INSERT / DELETE para cualquier usuario app. INSERT exige `added_by = yo`. Cualquiera puede DELETE.
 3. UI: alta solo desde `/favorites/tenders` (icono avión + modal: muestra «Calificada como {kind}» heredado del favorito personal + nota). Listado Común y hub con pestañas Eficen/Subcontrata (estilo Mis alertas | Coincidencias) + burbuja. Sin badge en búsqueda/ficha; sin notificaciones en v1.
-4. Si ya existe: no abrir modal; toast inmediato. Si `added_by` soy yo → «Ya has añadido esta licitación»; si otro → «{nombre} ya ha añadido esta licitación».
-5. El nombre del compañero requiere poder leer `users.display_name` de otros (política `users_select_app_peers`, ADR 031); sin ella el join RLS devolvía null → «Otro usuario…».
-6. **Tenant único:** Común asume una sola organización invite-only. Multi-empresa futura requeriría otro ADR (scope por org).
+4. Si ya existe: no abrir modal; toast inmediato. Si `added_by` soy yo → «Ya has añadido esta licitación»; si otro → «{nombre} ya ha añadido esta licitación» (si el nombre no es visible por RLS de `users`, fallback «Otro usuario»).
+5. **Tenant único:** Común asume una sola organización invite-only. Multi-empresa futura requeriría otro ADR (scope por org).
 
 ### Alternativas descartadas
 
