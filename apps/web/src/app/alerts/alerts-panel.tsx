@@ -291,8 +291,8 @@ export function AlertsPanel({
                     className="space-y-4"
                     onSubmit={(e) => e.preventDefault()}
                   >
-                    <div className="grid gap-4 sm:grid-cols-2">
-                      <div>
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:gap-4">
+                      <div className="min-w-0 flex-1">
                         <label
                           htmlFor="item_name"
                           className="block text-sm font-medium text-primary"
@@ -307,7 +307,7 @@ export function AlertsPanel({
                           autoFocus
                         />
                       </div>
-                      <div>
+                      <div className="shrink-0">
                         <label
                           htmlFor="item_kind"
                           className="block text-sm font-medium text-primary"
@@ -323,7 +323,7 @@ export function AlertsPanel({
                             )
                           }
                           className={cn(
-                            "mt-1 w-full rounded-lg border border-primary/25 bg-primary-light/45 px-3 py-2.5 text-sm text-foreground shadow-sm outline-none transition-colors",
+                            "mt-1 w-[9.75rem] rounded-lg border border-primary/25 bg-primary-light/45 px-3 py-2.5 text-sm text-foreground shadow-sm outline-none transition-colors",
                             "focus:ring-2 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-60",
                             kind === "" && "text-muted-foreground",
                           )}

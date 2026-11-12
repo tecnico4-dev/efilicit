@@ -110,8 +110,8 @@ export function ConvertToAlertButton({
 
   return (
     <div className="mt-2 space-y-2 rounded-lg border border-border bg-surface p-3">
-      <div className="grid gap-2 sm:grid-cols-2">
-        <label className="block text-sm font-medium text-primary">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:gap-3">
+        <label className="block min-w-0 flex-1 text-sm font-medium text-primary">
           Nombre de la alerta*
           <Input
             value={name}
@@ -120,7 +120,7 @@ export function ConvertToAlertButton({
             autoFocus
           />
         </label>
-        <label className="block text-sm font-medium text-primary">
+        <label className="block shrink-0 text-sm font-medium text-primary">
           Clasificación*
           <select
             value={kind}
@@ -128,7 +128,7 @@ export function ConvertToAlertButton({
               setKind((e.target.value as FavoriteKind | "") || "")
             }
             className={cn(
-              "mt-1 w-full rounded-lg border border-primary/25 bg-primary-light/45 px-3 py-2.5 text-sm text-foreground shadow-sm outline-none transition-colors",
+              "mt-1 w-[9.75rem] rounded-lg border border-primary/25 bg-primary-light/45 px-3 py-2.5 text-sm text-foreground shadow-sm outline-none transition-colors",
               "focus:ring-2 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-60",
               kind === "" && "text-muted-foreground",
             )}
