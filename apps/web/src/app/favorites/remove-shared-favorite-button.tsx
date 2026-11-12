@@ -86,26 +86,13 @@ export function RemoveSharedFavoriteButton({
                 className="w-full max-w-md rounded-xl border border-border bg-surface p-5 shadow-xl"
                 onClick={(e) => e.stopPropagation()}
               >
-                <div className="flex items-start justify-between gap-3">
-                  <h2
-                    id={titleId}
-                    className="text-base font-semibold text-foreground"
-                  >
-                    ¿Estás seguro de que quieres eliminar esta licitación de la
-                    carpeta Común?
-                  </h2>
-                  <button
-                    type="button"
-                    onClick={dismiss}
-                    disabled={pending}
-                    className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-destructive bg-surface text-destructive transition-colors hover:bg-destructive/10 hover:text-destructive disabled:opacity-60"
-                    aria-label="Cerrar"
-                  >
-                    <span aria-hidden className="text-xl leading-none">
-                      ×
-                    </span>
-                  </button>
-                </div>
+                <h2
+                  id={titleId}
+                  className="text-base font-semibold text-foreground"
+                >
+                  ¿Estás seguro de que quieres eliminar esta licitación de la
+                  carpeta Común?
+                </h2>
                 {removingOthers ? (
                   <p className="mt-3 text-sm text-muted-foreground">
                     Se notificará a {ownerName} de que has quitado su
