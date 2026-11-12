@@ -31,7 +31,6 @@ import {
   type FavoriteKind,
 } from "@/lib/queries";
 import type { SearchCriteria } from "@efilicit/types";
-import { cn } from "@/lib/cn";
 
 export const ALERT_CREATE_FORM_ID = "alert-create-form";
 
@@ -308,30 +307,40 @@ export function AlertsPanel({
                         />
                       </div>
                       <div className="shrink-0">
-                        <label
-                          htmlFor="item_kind"
-                          className="block text-sm font-medium text-primary"
+                        <p
+                          id="item_kind_label"
+                          className="text-sm font-medium text-primary"
                         >
                           Clasificación*
-                        </label>
-                        <select
-                          id="item_kind"
-                          value={kind}
-                          onChange={(e) =>
-                            setKind(
-                              (e.target.value as FavoriteKind | "") || "",
-                            )
-                          }
-                          className={cn(
-                            "mt-1 w-[9.75rem] rounded-lg border border-primary/25 bg-primary-light/45 px-3 py-2.5 text-sm text-foreground shadow-sm outline-none transition-colors",
-                            "focus:ring-2 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-60",
-                            kind === "" && "text-muted-foreground",
-                          )}
+                        </p>
+                        <div
+                          role="radiogroup"
+                          aria-labelledby="item_kind_label"
+                          className="mt-1.5 flex flex-col gap-1"
                         >
-                          <option value="" />
-                          <option value="propia">Eficen</option>
-                          <option value="subcontrata">Subcontrata</option>
-                        </select>
+                          <label className="inline-flex cursor-pointer items-center gap-1.5 text-sm leading-none text-foreground">
+                            <input
+                              type="radio"
+                              name="alert_kind"
+                              value="propia"
+                              checked={kind === "propia"}
+                              onChange={() => setKind("propia")}
+                              className="size-3.5 shrink-0 accent-primary"
+                            />
+                            Eficen
+                          </label>
+                          <label className="inline-flex cursor-pointer items-center gap-1.5 text-sm leading-none text-foreground">
+                            <input
+                              type="radio"
+                              name="alert_kind"
+                              value="subcontrata"
+                              checked={kind === "subcontrata"}
+                              onChange={() => setKind("subcontrata")}
+                              className="size-3.5 shrink-0 accent-primary"
+                            />
+                            Subcontrata
+                          </label>
+                        </div>
                       </div>
                     </div>
                     {/* Hueco bajo el textbox del nombre → label «Texto» (filtros). */}
