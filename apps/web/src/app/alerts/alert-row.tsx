@@ -333,6 +333,7 @@ export function AlertRowItem({
       <AlertRelatedTendersPanel
         alertId={alert.id}
         alertName={alert.name}
+        alertKind={asFavoriteKind(alert.kind)}
         userId={alert.user_id}
         open={relatedOpen}
         onClose={() => setRelatedOpen(false)}

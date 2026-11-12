@@ -238,6 +238,7 @@ function maxAlertSelectWidthPx(containerInnerWidth: number): number {
 function RelatedItemRow({
   item,
   rating,
+  defaultInterestKind,
   inTrash,
   pending,
   onRatingChange,
@@ -247,6 +248,7 @@ function RelatedItemRow({
 }: {
   item: AlertRelatedQueueItem;
   rating: TenderRating | null;
+  defaultInterestKind?: TenderInterestKind | null;
   inTrash: boolean;
   pending: boolean;
   onRatingChange: (
@@ -326,6 +328,7 @@ function RelatedItemRow({
         {canRate && !inTrash ? (
           <TenderStarRating
             rating={rating}
+            defaultInterestKind={defaultInterestKind}
             onChange={(next) => onRatingChange(item.tenderId, next)}
           />
         ) : null}
@@ -365,6 +368,7 @@ function RelatedItemRow({
 export function AlertRelatedTendersPanel({
   alertId,
   alertName,
+  alertKind = null,
   userId,
   open,
   onClose,
@@ -373,6 +377,8 @@ export function AlertRelatedTendersPanel({
   /** Si falta, carga la cola de todas las alertas del usuario. */
   alertId?: string;
   alertName?: string;
+  /** Clasificación de la alerta (modal por alerta); preselecciona interés al valorar. */
+  alertKind?: TenderInterestKind | null;
   userId: string;
   open: boolean;
   onClose: () => void;
@@ -398,8 +404,13 @@ export function AlertRelatedTendersPanel({
   /** Solo Coincidencias (embedded): filtrar por alerta de origen. */
   const [alertFilter, setAlertFilter] = useState<string>("all");
   const [alertOptions, setAlertOptions] = useState<
-    { id: string; name: string }[]
+    { id: string; name: string; kind: TenderInterestKind | null }[]
   >([]);
+  const alertKindById = useMemo(() => {
+    const map = new Map<string, TenderInterestKind | null>();
+    for (const a of alertOptions) map.set(a.id, a.kind);
+    return map;
+  }, [alertOptions]);
   /** Ancho fijo del select Alerta mientras la pestaña Coincidencias está abierta. */
   const [alertSelectWidthPx, setAlertSelectWidthPx] = useState<number | null>(
     null,
@@ -486,7 +497,7 @@ export function AlertRelatedTendersPanel({
       } else {
         const { data: alertRows, error: alertErr } = await client
           .from("alerts")
-          .select("id, name")
+          .select("id, name, kind")
           .eq("user_id", userId)
           .in("id", ids);
         if (alertErr) {
@@ -496,7 +507,14 @@ export function AlertRelatedTendersPanel({
         }
         setAlertOptions(
           [...(alertRows ?? [])]
-            .map((a) => ({ id: a.id, name: a.name }))
+            .map((a) => ({
+              id: a.id,
+              name: a.name,
+              kind:
+                a.kind === "propia" || a.kind === "subcontrata"
+                  ? a.kind
+                  : null,
+            }))
             .sort((a, b) => a.name.localeCompare(b.name, "es")),
         );
       }
@@ -1201,6 +1219,13 @@ export function AlertRelatedTendersPanel({
                       }
                       item={item}
                       rating={ratings[item.tenderId] ?? null}
+                      defaultInterestKind={
+                        alertId
+                          ? alertKind
+                          : item.alertId
+                            ? (alertKindById.get(item.alertId) ?? null)
+                            : null
+                      }
                       inTrash={folder === "trash"}
                       pending={actionPending}
                       onRatingChange={onRatingChange}
