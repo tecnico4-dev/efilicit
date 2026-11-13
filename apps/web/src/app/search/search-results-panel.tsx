@@ -27,7 +27,6 @@ import {
 } from "./search-result-cache";
 import { SearchResultsPager } from "./search-results-pager";
 import { ScrollToSearchResults } from "./scroll-to-search-results";
-import { useSearchLoading } from "./search-loading";
 import { sortSearchRows } from "./sort-search-rows";
 import type { SearchSortBy, SearchSortDir } from "./search-sort";
 
@@ -126,7 +125,6 @@ export function SearchResultsPanel({
   profileUserId,
 }: SearchResultsPanelProps) {
   const { showWarning } = useUndoToast();
-  const { setSearching } = useSearchLoading();
   const cached = shouldSearch ? getSearchResultCache(criteriaKey) : null;
   const [rows, setRows] = useState<SearchTenderRow[] | null>(
     () => cached?.rows ?? null,
@@ -161,7 +159,6 @@ export function SearchResultsPanel({
       setUniverseTotal(0);
       setError(null);
       setLoading(false);
-      setSearching(false);
       setFavoritedIds(new Set());
       return;
     }
@@ -187,7 +184,6 @@ export function SearchResultsPanel({
       setUniverseTotal(hit.universeTotal);
       setError(null);
       setLoading(false);
-      setSearching(false);
       maybeToastCap(criteriaKey, hit.universeTotal);
       void loadFavorites(hit.rows);
       return () => {
@@ -196,7 +192,6 @@ export function SearchResultsPanel({
     }
 
     setLoading(true);
-    setSearching(true);
     setError(null);
     setRows(null);
     setUniverseTotal(0);
@@ -215,7 +210,6 @@ export function SearchResultsPanel({
         setRows([]);
         setUniverseTotal(0);
         setLoading(false);
-        setSearching(false);
         return;
       }
       const batch = (result.data ?? []).slice(0, SEARCH_RESULT_CAP);
@@ -227,7 +221,6 @@ export function SearchResultsPanel({
       setRows(batch);
       setUniverseTotal(result.totalCount);
       setLoading(false);
-      setSearching(false);
       maybeToastCap(criteriaKey, result.totalCount);
       await loadFavorites(batch);
     });
@@ -236,7 +229,7 @@ export function SearchResultsPanel({
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- toast/cap por criteriaKey
-  }, [shouldSearch, criteriaKey, profileUserId, setSearching]);
+  }, [shouldSearch, criteriaKey, profileUserId]);
 
   const sorted = useMemo(
     () => (rows ? sortSearchRows(rows, sortBy, sortDir) : []),
@@ -262,12 +255,12 @@ export function SearchResultsPanel({
 
   if (loading || rows == null) {
     return (
-      <div
+      <p
         id={SEARCH_RESULTS_ANCHOR}
-        className="mt-8 scroll-mt-24"
-        aria-busy="true"
-        aria-live="polite"
-      />
+        className="mt-8 scroll-mt-24 text-sm text-muted-foreground"
+      >
+        Buscando…
+      </p>
     );
   }
 

@@ -3,7 +3,6 @@
 import type { ReactNode } from "react";
 import { PAGE_TITLE_RULE } from "@/components/shell/page-width";
 import { ClearSearchFieldsButton } from "./clear-search-fields";
-import { cn } from "@/lib/cn";
 import {
   SearchFeedbackProvider,
   useSearchFeedback,
@@ -12,7 +11,6 @@ import {
   SearchFormPreviewProvider,
   useSimpleFieldsPreview,
 } from "./search-form-preview";
-import { useSearchLoading } from "./search-loading";
 import { SEARCH_FORM_ID } from "./save-search-button";
 
 function readField(form: HTMLFormElement, name: string): string {
@@ -107,7 +105,6 @@ function hasInvalidAmountRange(form: HTMLFormElement): boolean {
 
 function SearchFormInner({ children }: { children: ReactNode }) {
   const { feedback, setFeedback, clearFeedback } = useSearchFeedback();
-  const { searching, setSearching } = useSearchLoading();
   useSimpleFieldsPreview();
 
   return (
@@ -143,7 +140,6 @@ function SearchFormInner({ children }: { children: ReactNode }) {
         }
         ensureEnPlazoParam(e.currentTarget);
         clearFeedback();
-        setSearching(true);
       }}
     >
       {children}
@@ -152,16 +148,9 @@ function SearchFormInner({ children }: { children: ReactNode }) {
         <div className="flex flex-wrap items-center gap-2 sm:gap-3">
           <button
             type="submit"
-            disabled={searching}
-            aria-busy={searching}
-            className={cn(
-              "rounded-md px-4 py-2 text-sm font-medium text-primary-foreground transition-colors",
-              searching
-                ? "cursor-not-allowed bg-primary/55"
-                : "bg-primary hover:bg-primary-dark",
-            )}
+            className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary-dark"
           >
-            {searching ? "Buscando…" : "Buscar"}
+            Buscar
           </button>
           {feedback ? (
             <p

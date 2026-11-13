@@ -29,7 +29,6 @@ import {
   parseSearchSortDir,
 } from "./search-sort";
 import { SearchResultsPanel } from "./search-results-panel";
-import { SearchWorkspace } from "./search-workspace";
 
 function backFromSavedSearch(from: string): { href: string; label: string } | null {
   if (from === "favorites-searches") {
@@ -292,33 +291,15 @@ export default async function SearchPage({
         Buscar licitaciones
       </h1>
 
-      <SearchWorkspace>
-        <SearchForm
-          formKey={`${qInput}|${cpvCodes.join(",")}|${cpvMatch}|${minRaw}|${maxRaw}|${ccaaValid.join(",")}|${municipalityRaw}|${statusesRaw.join(",")}|${proceduresRaw.join(",")}|${contractTypesRaw.join(",")}|${pubFromValid}|${pubToValid}|${enPlazoRaw}|${from}`}
-        >
-          {from === "favorites" || from === "favorites-searches" ? (
-            <input type="hidden" name="from" value={from} />
-          ) : null}
-          <Suspense
-            fallback={
-              <SearchFilterFieldsFallback
-                initial={filterInitial}
-                queryOnlyNoise={queryOnlyNoise}
-                textFieldAction={
-                  <RecentSearchesList
-                    items={recentSearches}
-                    municipalityNames={recentMunicipalityNames}
-                    trailing={
-                      <Suspense fallback={null}>
-                        <SaveSearchSlot />
-                      </Suspense>
-                    }
-                  />
-                }
-              />
-            }
-          >
-            <SearchFilterFields
+      <SearchForm
+        formKey={`${qInput}|${cpvCodes.join(",")}|${cpvMatch}|${minRaw}|${maxRaw}|${ccaaValid.join(",")}|${municipalityRaw}|${statusesRaw.join(",")}|${proceduresRaw.join(",")}|${contractTypesRaw.join(",")}|${pubFromValid}|${pubToValid}|${enPlazoRaw}|${from}`}
+      >
+        {from === "favorites" || from === "favorites-searches" ? (
+          <input type="hidden" name="from" value={from} />
+        ) : null}
+        <Suspense
+          fallback={
+            <SearchFilterFieldsFallback
               initial={filterInitial}
               queryOnlyNoise={queryOnlyNoise}
               textFieldAction={
@@ -333,23 +314,39 @@ export default async function SearchPage({
                 />
               }
             />
-          </Suspense>
-        </SearchForm>
+          }
+        >
+          <SearchFilterFields
+            initial={filterInitial}
+            queryOnlyNoise={queryOnlyNoise}
+            textFieldAction={
+              <RecentSearchesList
+                items={recentSearches}
+                municipalityNames={recentMunicipalityNames}
+                trailing={
+                  <Suspense fallback={null}>
+                    <SaveSearchSlot />
+                  </Suspense>
+                }
+              />
+            }
+          />
+        </Suspense>
+      </SearchForm>
 
-        <SearchResultsPanel
-          shouldSearch={shouldSearch}
-          criteriaKey={criteriaKey}
-          query={q}
-          rpcCriteria={rpcCriteria}
-          filters={filters}
-          page={page}
-          pageSize={pageSize}
-          sortBy={sortBy}
-          sortDir={sortDir}
-          from={from}
-          profileUserId={profileUserId}
-        />
-      </SearchWorkspace>
+      <SearchResultsPanel
+        shouldSearch={shouldSearch}
+        criteriaKey={criteriaKey}
+        query={q}
+        rpcCriteria={rpcCriteria}
+        filters={filters}
+        page={page}
+        pageSize={pageSize}
+        sortBy={sortBy}
+        sortDir={sortDir}
+        from={from}
+        profileUserId={profileUserId}
+      />
     </main>
   );
 }
