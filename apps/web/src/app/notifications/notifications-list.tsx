@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { useUndoToast } from "@/components/undo-toast";
 import { formatDateMadrid } from "@/lib/datetime";
 import {
   favoriteKindLabel,
@@ -139,12 +140,12 @@ export function NotificationsList({
   userId: string;
 }) {
   const router = useRouter();
+  const { showPendingConfirm, showStatus } = useUndoToast();
   const [view, setView] = useState<NotificationsView>(initialView);
   const [openDigest, setOpenDigest] =
     useState<DigestInboxNotification | null>(null);
   /** Ids ocultos en UI tras «eliminar definitivo» (pendiente de confirmación). */
   const [pendingPurgeKeys, setPendingPurgeKeys] = useState<string[]>([]);
-  const [emptyTrashPending, setEmptyTrashPending] = useState(false);
 
   function itemKey(item: InboxItem): string {
     if (item.kind === "digest") return `digest:${item.data.id}`;
@@ -190,58 +191,57 @@ export function NotificationsList({
     router.refresh();
   }
 
-  async function onEmptyTrash() {
-    if (emptyTrashPending || inTrashWindow.length < 2) return;
-    const count = inTrashWindow.length;
-    const ok = window.confirm(
-      `¿Vaciar la papelera (${count})? Se eliminarán definitivamente.`,
-    );
-    if (!ok) return;
+  function onEmptyTrash() {
+    if (inTrashWindow.length < 2) return;
 
     const toPurge = [...inTrashWindow];
     const keys = toPurge.map(itemKey);
-    setEmptyTrashPending(true);
     setPendingPurgeKeys((prev) => {
       const next = new Set(prev);
       for (const key of keys) next.add(key);
       return [...next];
     });
 
-    const client = createSupabaseBrowserClient();
-    const errors: string[] = [];
-    for (const item of toPurge) {
-      let error: { message: string } | null = null;
-      if (item.kind === "digest") {
-        ({ error } = await permanentlyDeleteOwnDigestInboxNotification(
-          client,
-          { userId, digestId: item.data.id },
-        ));
-      } else if (item.kind === "common") {
-        ({ error } = await permanentlyDeleteOwnCommonNotification(client, {
-          userId,
-          tenderId: item.data.tenderId,
-        }));
-      } else if (item.kind === "common_removed") {
-        ({ error } = await permanentlyDeleteOwnCommonRemovedNotification(
-          client,
-          { userId, tenderId: item.data.tenderId },
-        ));
-      } else {
-        ({ error } = await permanentlyDeleteOwnFavoriteNotification(client, {
-          userId,
-          eventId: item.data.eventId,
-        }));
-      }
-      if (error) errors.push(error.message);
-    }
-
-    setEmptyTrashPending(false);
-    if (errors.length > 0) {
-      setPendingPurgeKeys((prev) => prev.filter((k) => !keys.includes(k)));
-      window.alert(`No se pudo vaciar del todo: ${errors[0]}`);
-      return;
-    }
-    router.refresh();
+    showPendingConfirm("Papelera vaciada.", {
+      onConfirm: async () => {
+        const client = createSupabaseBrowserClient();
+        const errors: string[] = [];
+        for (const item of toPurge) {
+          let error: { message: string } | null = null;
+          if (item.kind === "digest") {
+            ({ error } = await permanentlyDeleteOwnDigestInboxNotification(
+              client,
+              { userId, digestId: item.data.id },
+            ));
+          } else if (item.kind === "common") {
+            ({ error } = await permanentlyDeleteOwnCommonNotification(client, {
+              userId,
+              tenderId: item.data.tenderId,
+            }));
+          } else if (item.kind === "common_removed") {
+            ({ error } = await permanentlyDeleteOwnCommonRemovedNotification(
+              client,
+              { userId, tenderId: item.data.tenderId },
+            ));
+          } else {
+            ({ error } = await permanentlyDeleteOwnFavoriteNotification(
+              client,
+              { userId, eventId: item.data.eventId },
+            ));
+          }
+          if (error) errors.push(error.message);
+        }
+        if (errors.length > 0) {
+          setPendingPurgeKeys((prev) => prev.filter((k) => !keys.includes(k)));
+          showStatus(`No se pudo vaciar del todo: ${errors[0]}`);
+          return;
+        }
+        router.refresh();
+      },
+      onUndo: () => {
+        setPendingPurgeKeys((prev) => prev.filter((k) => !keys.includes(k)));
+      },
+    });
   }
 
   return (
@@ -259,9 +259,8 @@ export function NotificationsList({
             type="button"
             variant="outline"
             size="sm"
-            disabled={emptyTrashPending}
             className={`mb-px ${destructiveOutlineBtn}`}
-            onClick={() => void onEmptyTrash()}
+            onClick={onEmptyTrash}
           >
             Vaciar papelera
           </Button>
