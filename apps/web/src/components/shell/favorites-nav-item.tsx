@@ -1,134 +1,53 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 import { cn } from "@/lib/cn";
-
-const OPEN_DELAY_MS = 350;
-const CLOSE_DELAY_MS = 60;
-
-function canHoverFine(): boolean {
-  if (typeof window === "undefined") return true;
-  return window.matchMedia("(hover: hover) and (pointer: fine)").matches;
-}
+import {
+  favoritesSectionHref,
+  readFavoritesLastSection,
+} from "@/app/favorites/favorites-last-section";
 
 /**
- * Favoritos en nav: hover (con retardo) abre un globo con atajos
- * a licitaciones / búsquedas.
- * En táctil/sin hover fino: primer toque abre el menú; segundo va a /favorites.
+ * Favoritos en nav principal: vuelve a la última sección visitada
+ * (por defecto Licitaciones favoritas).
  */
 export function FavoritesNavItem({ active }: { active: boolean }) {
-  const [open, setOpen] = useState(false);
-  const rootRef = useRef<HTMLDivElement | null>(null);
-  const openTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  function clearTimers() {
-    if (openTimer.current) clearTimeout(openTimer.current);
-    if (closeTimer.current) clearTimeout(closeTimer.current);
-    openTimer.current = null;
-    closeTimer.current = null;
-  }
-
-  useEffect(() => () => clearTimers(), []);
+  const pathname = usePathname() || "/";
+  const [href, setHref] = useState("/favorites/tenders");
 
   useEffect(() => {
-    if (!open) return;
-    function onPointerDown(e: PointerEvent) {
-      if (!rootRef.current?.contains(e.target as Node)) {
-        setOpen(false);
-      }
-    }
-    document.addEventListener("pointerdown", onPointerDown);
-    return () => document.removeEventListener("pointerdown", onPointerDown);
-  }, [open]);
-
-  function onEnter() {
-    if (!canHoverFine()) return;
-    if (closeTimer.current) {
-      clearTimeout(closeTimer.current);
-      closeTimer.current = null;
-    }
-    if (open) return;
-    openTimer.current = setTimeout(() => setOpen(true), OPEN_DELAY_MS);
-  }
-
-  function onLeave() {
-    if (!canHoverFine()) return;
-    if (openTimer.current) {
-      clearTimeout(openTimer.current);
-      openTimer.current = null;
-    }
-    closeTimer.current = setTimeout(() => setOpen(false), CLOSE_DELAY_MS);
-  }
-
-  function onPrimaryClick(e: React.MouseEvent<HTMLAnchorElement>) {
-    if (canHoverFine()) return;
-    if (!open) {
-      e.preventDefault();
-      setOpen(true);
-    }
-  }
+    setHref(favoritesSectionHref(readFavoritesLastSection()));
+  }, [active, pathname]);
 
   return (
-    <div
-      ref={rootRef}
-      className="relative"
-      onMouseEnter={onEnter}
-      onMouseLeave={onLeave}
-      onFocus={onEnter}
-      onBlur={(e) => {
-        if (!e.currentTarget.contains(e.relatedTarget as Node | null)) {
-          onLeave();
-        }
-      }}
+    <Link
+      href={href}
+      className={cn(
+        "inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+        active
+          ? "bg-primary text-primary-foreground shadow-sm"
+          : "text-foreground hover:bg-muted",
+      )}
     >
-      <Link
-        href="/favorites"
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 24 24"
+        fill="currentColor"
+        stroke="currentColor"
+        strokeWidth="1.75"
+        strokeLinecap="round"
+        strokeLinejoin="round"
         className={cn(
-          "inline-flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-          active
-            ? "bg-primary text-primary-foreground shadow-sm"
-            : "text-foreground hover:bg-muted",
+          "size-4 shrink-0",
+          active ? "text-primary-foreground" : "text-muted-foreground",
         )}
-        aria-expanded={open}
-        aria-haspopup="menu"
-        onClick={onPrimaryClick}
+        aria-hidden
       >
-        Favoritos
-      </Link>
-
-      {open ? (
-        <div
-          role="menu"
-          className="absolute left-0 top-full z-50 mt-1 min-w-[11rem] rounded-lg border border-border bg-surface py-1 shadow-lg"
-        >
-          <Link
-            role="menuitem"
-            href="/favorites/tenders"
-            className="block px-3 py-2 text-sm text-foreground hover:bg-muted"
-            onClick={() => setOpen(false)}
-          >
-            Licitaciones
-          </Link>
-          <Link
-            role="menuitem"
-            href="/favorites/common"
-            className="block px-3 py-2 text-sm text-foreground hover:bg-muted"
-            onClick={() => setOpen(false)}
-          >
-            Común
-          </Link>
-          <Link
-            role="menuitem"
-            href="/favorites/searches"
-            className="block px-3 py-2 text-sm text-foreground hover:bg-muted"
-            onClick={() => setOpen(false)}
-          >
-            Búsquedas
-          </Link>
-        </div>
-      ) : null}
-    </div>
+        <path d="M19.5 12.572 12 20l-7.5-7.428A5 5 0 1 1 12 5.072a5 5 0 1 1 7.5 7.5Z" />
+      </svg>
+      Favoritos
+    </Link>
   );
 }
