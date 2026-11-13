@@ -153,7 +153,7 @@ export function FavoriteHeartButton({
             setError(null);
           }
         }}
-        gap={6}
+        gap={3}
         matchAnchorWidth={false}
         align="center"
         minWidth={PICKER_WIDTH_PX}
