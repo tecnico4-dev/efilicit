@@ -99,6 +99,21 @@ export async function markOwnCommonRemovedNotificationRead(
   return { error: null };
 }
 
+/** Vuelve a marcar un aviso de retirada de Común como no leído. */
+export async function markOwnCommonRemovedNotificationUnread(
+  client: SupabaseClient<Database>,
+  input: { userId: string; tenderId: string },
+): Promise<{ error: Error | null }> {
+  const { error } = await client
+    .from("notification_common_removed")
+    .update({ read_at: null })
+    .eq("user_id", input.userId)
+    .eq("tender_id", input.tenderId);
+
+  if (error) return { error: new Error(error.message) };
+  return { error: null };
+}
+
 export async function trashOwnCommonRemovedNotification(
   client: SupabaseClient<Database>,
   input: { userId: string; tenderId: string },

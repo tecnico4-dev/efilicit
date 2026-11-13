@@ -6,6 +6,7 @@ import {
   isNotificationInTrashWindow,
   listFavoriteStatusNotifications,
   markOwnNotificationRead,
+  markOwnNotificationUnread,
   statusChangeNotifications,
   trashOwnNotification,
 } from "./notifications";
@@ -188,6 +189,27 @@ describe("mark / trash notification writes", () => {
     expect(client.callsFor("notification_favorites").map((c) => c.method)).toEqual(
       ["upsert", "update"],
     );
+  });
+
+  it("markOwnNotificationUnread pone read_at a null", async () => {
+    const client = createFakeSupabaseClient({
+      tables: {
+        notification_favorites: {
+          byMethod: {
+            update: { data: null },
+          },
+        },
+      },
+    });
+    const { error } = await markOwnNotificationUnread(client as never, {
+      userId: "u1",
+      eventId: "e1",
+    });
+    expect(error).toBeNull();
+    const update = client.callsFor("notification_favorites").find(
+      (c) => c.method === "update",
+    );
+    expect(update?.args[0]).toMatchObject({ read_at: null });
   });
 
   it("trashOwnNotification asegura fila y actualiza trashed_at", async () => {

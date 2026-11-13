@@ -391,6 +391,21 @@ export async function markOwnNotificationRead(
   return { error: null };
 }
 
+/** Vuelve a marcar un aviso de favoritos como no leído (p. ej. menú contextual). */
+export async function markOwnNotificationUnread(
+  client: SupabaseClient<Database>,
+  input: { userId: string; eventId: string },
+): Promise<{ error: Error | null }> {
+  const { error } = await client
+    .from("notification_favorites")
+    .update({ read_at: null })
+    .eq("user_id", input.userId)
+    .eq("event_id", input.eventId);
+
+  if (error) return { error: new Error(error.message) };
+  return { error: null };
+}
+
 /** Mueve un aviso a la papelera. */
 export async function trashOwnNotification(
   client: SupabaseClient<Database>,

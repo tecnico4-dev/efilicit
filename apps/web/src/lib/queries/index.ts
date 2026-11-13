@@ -97,6 +97,7 @@ export {
   listFavoriteStatusNotifications,
   listRecentFavoriteStatusNotifications,
   markOwnNotificationRead,
+  markOwnNotificationUnread,
   NOTIFICATION_TRASH_RETENTION_DAYS,
   permanentlyDeleteOwnFavoriteNotification,
   restoreOwnNotificationFromTrash,
@@ -107,6 +108,7 @@ export {
   listOwnDigestInboxNotifications,
   listTendersForDigestInbox,
   markOwnDigestInboxRead,
+  markOwnDigestInboxUnread,
   permanentlyDeleteOwnDigestInboxNotification,
   restoreOwnDigestInboxFromTrash,
   trashOwnDigestInboxNotification,
@@ -116,6 +118,7 @@ export {
 export {
   listOwnCommonInboxNotifications,
   markOwnCommonNotificationRead,
+  markOwnCommonNotificationUnread,
   permanentlyDeleteOwnCommonNotification,
   restoreOwnCommonNotificationFromTrash,
   trashOwnCommonNotification,
@@ -124,6 +127,7 @@ export {
 export {
   listOwnCommonRemovedInboxNotifications,
   markOwnCommonRemovedNotificationRead,
+  markOwnCommonRemovedNotificationUnread,
   permanentlyDeleteOwnCommonRemovedNotification,
   restoreOwnCommonRemovedNotificationFromTrash,
   trashOwnCommonRemovedNotification,

@@ -107,6 +107,21 @@ export async function markOwnDigestInboxRead(
   return { error: null };
 }
 
+/** Vuelve a marcar un digest del buzón como no leído. */
+export async function markOwnDigestInboxUnread(
+  client: SupabaseClient<Database>,
+  input: { userId: string; digestId: string },
+): Promise<{ error: Error | null }> {
+  const { error } = await client
+    .from("notification_emails")
+    .update({ read_at: null })
+    .eq("user_id", input.userId)
+    .eq("id", input.digestId);
+
+  if (error) return { error: new Error(error.message) };
+  return { error: null };
+}
+
 export async function trashOwnDigestInboxNotification(
   client: SupabaseClient<Database>,
   input: { userId: string; digestId: string },

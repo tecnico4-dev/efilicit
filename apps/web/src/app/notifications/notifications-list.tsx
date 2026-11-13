@@ -10,6 +10,10 @@ import {
   favoriteKindLabel,
   formatNotificationTrashExpiry,
   isNotificationInTrashWindow,
+  markOwnCommonNotificationUnread,
+  markOwnCommonRemovedNotificationUnread,
+  markOwnDigestInboxUnread,
+  markOwnNotificationUnread,
   permanentlyDeleteOwnCommonNotification,
   permanentlyDeleteOwnCommonRemovedNotification,
   permanentlyDeleteOwnDigestInboxNotification,
@@ -22,6 +26,10 @@ import {
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { formatTenderStatus } from "@/lib/tender-labels";
 import { DigestTendersPanel } from "./digest-tenders-panel";
+import {
+  MarkUnreadContextMenu,
+  type MarkUnreadMenuState,
+} from "./mark-unread-context-menu";
 import {
   NotificationsFolderTabs,
   type NotificationsView,
@@ -122,10 +130,6 @@ function CommonRemovedHeadline({
   );
 }
 
-function itemUnread(item: InboxItem): boolean {
-  return item.data.unread;
-}
-
 function itemTrashedAt(item: InboxItem): string | null {
   return item.data.trashedAt;
 }
@@ -146,6 +150,12 @@ export function NotificationsList({
     useState<DigestInboxNotification | null>(null);
   /** Ids ocultos en UI tras «eliminar definitivo» (pendiente de confirmación). */
   const [pendingPurgeKeys, setPendingPurgeKeys] = useState<string[]>([]);
+  /** Claves forzadas a «no leída» tras el menú contextual (antes del refresh). */
+  const [forcedUnreadKeys, setForcedUnreadKeys] = useState<string[]>([]);
+  const [ctxMenu, setCtxMenu] = useState<
+    (MarkUnreadMenuState & { item: InboxItem }) | null
+  >(null);
+  const [markUnreadPending, setMarkUnreadPending] = useState(false);
 
   function itemKey(item: InboxItem): string {
     if (item.kind === "digest") return `digest:${item.data.id}`;
@@ -154,6 +164,11 @@ export function NotificationsList({
       return `common-removed:${item.data.tenderId}`;
     }
     return `fav:${item.data.eventId}`;
+  }
+
+  function itemUnread(item: InboxItem): boolean {
+    if (forcedUnreadKeys.includes(itemKey(item))) return true;
+    return item.data.unread;
   }
 
   function onViewChange(next: NotificationsView) {
@@ -188,6 +203,52 @@ export function NotificationsList({
 
   function closeDigestPanel() {
     setOpenDigest(null);
+    router.refresh();
+  }
+
+  function onRowContextMenu(e: React.MouseEvent, item: InboxItem) {
+    if (view === "trash" || itemUnread(item)) return;
+    e.preventDefault();
+    setCtxMenu({ x: e.clientX, y: e.clientY, item });
+  }
+
+  async function onMarkUnreadFromMenu() {
+    if (!ctxMenu || markUnreadPending) return;
+    const item = ctxMenu.item;
+    const key = itemKey(item);
+    setMarkUnreadPending(true);
+    const client = createSupabaseBrowserClient();
+    let error: { message: string } | null = null;
+    if (item.kind === "digest") {
+      ({ error } = await markOwnDigestInboxUnread(client, {
+        userId,
+        digestId: item.data.id,
+      }));
+    } else if (item.kind === "common") {
+      ({ error } = await markOwnCommonNotificationUnread(client, {
+        userId,
+        tenderId: item.data.tenderId,
+      }));
+    } else if (item.kind === "common_removed") {
+      ({ error } = await markOwnCommonRemovedNotificationUnread(client, {
+        userId,
+        tenderId: item.data.tenderId,
+      }));
+    } else {
+      ({ error } = await markOwnNotificationUnread(client, {
+        userId,
+        eventId: item.data.eventId,
+      }));
+    }
+    setMarkUnreadPending(false);
+    setCtxMenu(null);
+    if (error) {
+      showStatus(`No se pudo marcar como no leída: ${error.message}`);
+      return;
+    }
+    setForcedUnreadKeys((prev) =>
+      prev.includes(key) ? prev : [...prev, key],
+    );
     router.refresh();
   }
 
@@ -289,9 +350,11 @@ export function NotificationsList({
                     n={item.data}
                     userId={userId}
                     inTrash={view === "trash"}
+                    unread={itemUnread(item)}
                     onOpen={() => setOpenDigest(item.data)}
                     onPurgeHide={onPurgeHide}
                     onPurgeShow={onPurgeShow}
+                    onContextMenu={(e) => onRowContextMenu(e, item)}
                   />
                 );
               }
@@ -302,8 +365,10 @@ export function NotificationsList({
                     n={item.data}
                     userId={userId}
                     inTrash={view === "trash"}
+                    unread={itemUnread(item)}
                     onPurgeHide={onPurgeHide}
                     onPurgeShow={onPurgeShow}
+                    onContextMenu={(e) => onRowContextMenu(e, item)}
                   />
                 );
               }
@@ -314,8 +379,10 @@ export function NotificationsList({
                     n={item.data}
                     userId={userId}
                     inTrash={view === "trash"}
+                    unread={itemUnread(item)}
                     onPurgeHide={onPurgeHide}
                     onPurgeShow={onPurgeShow}
+                    onContextMenu={(e) => onRowContextMenu(e, item)}
                   />
                 );
               }
@@ -325,14 +392,23 @@ export function NotificationsList({
                   n={item.data}
                   userId={userId}
                   inTrash={view === "trash"}
+                  unread={itemUnread(item)}
                   onPurgeHide={onPurgeHide}
                   onPurgeShow={onPurgeShow}
+                  onContextMenu={(e) => onRowContextMenu(e, item)}
                 />
               );
             })}
           </ul>
         )}
       </div>
+
+      <MarkUnreadContextMenu
+        menu={ctxMenu}
+        pending={markUnreadPending}
+        onClose={() => setCtxMenu(null)}
+        onMarkUnread={() => void onMarkUnreadFromMenu()}
+      />
 
       {openDigest ? (
         <DigestTendersPanel
@@ -353,16 +429,20 @@ function DigestRow({
   n,
   userId,
   inTrash,
+  unread,
   onOpen,
   onPurgeHide,
   onPurgeShow,
+  onContextMenu,
 }: {
   n: DigestInboxNotification;
   userId: string;
   inTrash: boolean;
+  unread: boolean;
   onOpen: () => void;
   onPurgeHide: () => void;
   onPurgeShow: () => void;
+  onContextMenu: (e: React.MouseEvent) => void;
 }) {
   if (inTrash && n.trashedAt) {
     return (
@@ -401,14 +481,14 @@ function DigestRow({
   }
 
   return (
-    <li>
+    <li onContextMenu={onContextMenu}>
       <div className="flex items-stretch gap-1">
         <button
           type="button"
           onClick={onOpen}
           className="relative min-w-0 flex-1 px-4 py-3 text-left transition-colors hover:bg-muted/60"
         >
-          {n.unread ? (
+          {unread ? (
             <span
               className="absolute right-2 top-1/2 size-2 -translate-y-1/2 rounded-full bg-primary shadow-sm ring-2 ring-background"
               title="No leída"
@@ -434,14 +514,18 @@ function CommonRow({
   n,
   userId,
   inTrash,
+  unread,
   onPurgeHide,
   onPurgeShow,
+  onContextMenu,
 }: {
   n: CommonInboxNotification;
   userId: string;
   inTrash: boolean;
+  unread: boolean;
   onPurgeHide: () => void;
   onPurgeShow: () => void;
+  onContextMenu: (e: React.MouseEvent) => void;
 }) {
   const href = `/notifications/open?source=common&tenderId=${encodeURIComponent(n.tenderId)}`;
 
@@ -486,10 +570,10 @@ function CommonRow({
   }
 
   return (
-    <li>
+    <li onContextMenu={onContextMenu}>
       <div className="flex items-stretch gap-1">
         <div className="relative min-w-0 flex-1 px-4 py-3 transition-colors hover:bg-muted/60">
-          {n.unread ? (
+          {unread ? (
             <span
               className="absolute right-2 top-1/2 size-2 -translate-y-1/2 rounded-full bg-primary shadow-sm ring-2 ring-background"
               title="No leída"
@@ -524,14 +608,18 @@ function CommonRemovedRow({
   n,
   userId,
   inTrash,
+  unread,
   onPurgeHide,
   onPurgeShow,
+  onContextMenu,
 }: {
   n: CommonRemovedInboxNotification;
   userId: string;
   inTrash: boolean;
+  unread: boolean;
   onPurgeHide: () => void;
   onPurgeShow: () => void;
+  onContextMenu: (e: React.MouseEvent) => void;
 }) {
   const href = `/notifications/open?source=common-removed&tenderId=${encodeURIComponent(n.tenderId)}`;
 
@@ -578,10 +666,10 @@ function CommonRemovedRow({
   }
 
   return (
-    <li>
+    <li onContextMenu={onContextMenu}>
       <div className="flex items-stretch gap-1">
         <div className="relative min-w-0 flex-1 px-4 py-3 transition-colors hover:bg-muted/60">
-          {n.unread ? (
+          {unread ? (
             <span
               className="absolute right-2 top-1/2 size-2 -translate-y-1/2 rounded-full bg-primary shadow-sm ring-2 ring-background"
               title="No leída"
@@ -617,14 +705,18 @@ function FavoriteStatusRow({
   n,
   userId,
   inTrash,
+  unread,
   onPurgeHide,
   onPurgeShow,
+  onContextMenu,
 }: {
   n: FavoriteStatusNotification;
   userId: string;
   inTrash: boolean;
+  unread: boolean;
   onPurgeHide: () => void;
   onPurgeShow: () => void;
+  onContextMenu: (e: React.MouseEvent) => void;
 }) {
   if (inTrash && n.trashedAt) {
     return (
@@ -670,13 +762,13 @@ function FavoriteStatusRow({
   }
 
   return (
-    <li>
+    <li onContextMenu={onContextMenu}>
       <div className="flex items-stretch gap-1">
         <Link
           href={`/notifications/open?eventId=${encodeURIComponent(n.eventId)}&tenderId=${encodeURIComponent(n.tenderId)}`}
           className="relative min-w-0 flex-1 px-4 py-3 transition-colors hover:bg-muted/60"
         >
-          {n.unread ? (
+          {unread ? (
             <span
               className="absolute right-2 top-1/2 size-2 -translate-y-1/2 rounded-full bg-primary shadow-sm ring-2 ring-background"
               title="No leída"
