@@ -9,7 +9,7 @@ import {
   removeOwnFavorite,
   type FavoriteKind,
 } from "@/lib/queries";
-import { FavoriteKindModal } from "./favorite-kind-modal";
+import { FavoriteKindSplitPicker } from "./favorite-kind-split-picker";
 
 function HeartIcon({ filled }: { filled: boolean }) {
   return (
@@ -32,30 +32,42 @@ function HeartIcon({ filled }: { filled: boolean }) {
 
 /**
  * Corazón en lista de resultados: vacío = no favorito; rojo = favorito.
- * Al añadir abre modal obligatorio Eficen / Subcontrata.
+ * Al añadir: burbuja Eficen / Subcontrata bajo el corazón (sin modal).
  * Solo se monta con sesión.
  */
 export function FavoriteHeartButton({
   userId,
   tenderId,
-  tenderTitle,
   initiallyFavorited,
 }: {
   userId: string;
   tenderId: string;
+  /** Conservado por compatibilidad con callers; la burbuja no muestra título. */
   tenderTitle?: string | null;
   initiallyFavorited: boolean;
 }) {
   const router = useRouter();
   const [favorited, setFavorited] = useState(initiallyFavorited);
   const [pending, setPending] = useState(false);
-  const [modalOpen, setModalOpen] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Búsqueda carga favoritos async tras el listado; hay que pintar cuando llegue.
   useEffect(() => {
-    if (!pending && !modalOpen) setFavorited(initiallyFavorited);
-  }, [initiallyFavorited, pending, modalOpen]);
+    if (!pending && !pickerOpen) setFavorited(initiallyFavorited);
+  }, [initiallyFavorited, pending, pickerOpen]);
+
+  useEffect(() => {
+    if (!pickerOpen || pending) return;
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        setPickerOpen(false);
+        setError(null);
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [pickerOpen, pending]);
 
   async function onToggle(e: React.MouseEvent) {
     e.preventDefault();
@@ -74,16 +86,23 @@ export function FavoriteHeartButton({
         return;
       }
       setFavorited(false);
+      setPickerOpen(false);
       setPending(false);
       router.refresh();
       return;
     }
 
+    if (pickerOpen) {
+      setPickerOpen(false);
+      setError(null);
+      return;
+    }
+
     setError(null);
-    setModalOpen(true);
+    setPickerOpen(true);
   }
 
-  async function onConfirmKind(kind: FavoriteKind) {
+  async function onPickKind(kind: FavoriteKind) {
     if (pending) return;
     setPending(true);
     setError(null);
@@ -99,18 +118,19 @@ export function FavoriteHeartButton({
       return;
     }
     setFavorited(true);
-    setModalOpen(false);
+    setPickerOpen(false);
     router.refresh();
   }
 
   return (
-    <>
+    <div className="flex shrink-0 flex-col items-end gap-1.5">
       <button
         type="button"
         disabled={pending}
         onClick={onToggle}
         aria-label={favorited ? "Quitar de favoritos" : "Guardar en favoritos"}
         aria-pressed={favorited}
+        aria-expanded={!favorited && pickerOpen}
         className={cn(
           "shrink-0 rounded-md p-1.5 transition-colors outline-none",
           "focus-visible:ring-2 focus-visible:ring-ring/50 disabled:opacity-50",
@@ -122,19 +142,18 @@ export function FavoriteHeartButton({
         <HeartIcon filled={favorited} />
       </button>
 
-      <FavoriteKindModal
-        open={modalOpen}
-        title={tenderTitle}
-        pending={pending}
-        error={error}
-        onClose={() => {
-          if (!pending) {
-            setModalOpen(false);
-            setError(null);
-          }
-        }}
-        onConfirm={(kind) => void onConfirmKind(kind)}
-      />
-    </>
+      {pickerOpen && !favorited ? (
+        <FavoriteKindSplitPicker
+          pending={pending}
+          onPick={(kind) => void onPickKind(kind)}
+        />
+      ) : null}
+
+      {error ? (
+        <p className="max-w-[10rem] text-right text-[11px] text-destructive" role="alert">
+          {error}
+        </p>
+      ) : null}
+    </div>
   );
 }

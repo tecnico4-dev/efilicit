@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Favoritos: al guardar, burbuja partida Eficen (teal) / Subcontrata (violeta) bajo el corazón (o botón de ficha) en lugar del modal grande; al elegir, flash breve y se guarda con ese kind.
 - Favoritos · Común: quitar pide confirmación modal (Sí/No); si no eres quien la añadió, avisa que se notificará al autor (aviso aún no implementado).
 - Favoritos · Común: bajo el título, burbuja + «Añadida por X (fecha)» e importe/CPV/estado a la izquierda; nota (si hay) a la derecha en recuadro discontinuo «Nota: …» (crece hacia abajo si hace falta).
 - Buzón · Común: título «…ha compartido una licitación interesante para Eficen/Subcontrata en la carpeta común.» con «común» enlazando a `/favorites/common`; abrir la ficha desde el aviso no pide ni muestra valoración (`from=favorites-common`).

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
@@ -9,16 +9,15 @@ import {
   removeOwnFavorite,
   type FavoriteKind,
 } from "@/lib/queries";
-import { FavoriteKindModal } from "./favorite-kind-modal";
+import { FavoriteKindSplitPicker } from "./favorite-kind-split-picker";
 
 /**
- * Marca / desmarca favorito. Al añadir: modal obligatorio Eficen / Subcontrata.
+ * Marca / desmarca favorito. Al añadir: burbuja Eficen / Subcontrata.
  * Solo se monta con sesión (la ficha no lo renderiza para anónimos).
  */
 export function FavoriteToggle({
   userId,
   tenderId,
-  tenderTitle,
   initiallyFavorited,
 }: {
   userId: string;
@@ -29,8 +28,20 @@ export function FavoriteToggle({
   const router = useRouter();
   const [favorited, setFavorited] = useState(initiallyFavorited);
   const [pending, setPending] = useState(false);
-  const [modalOpen, setModalOpen] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!pickerOpen || pending) return;
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        setPickerOpen(false);
+        setError(null);
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [pickerOpen, pending]);
 
   async function onToggle() {
     if (pending) return;
@@ -49,14 +60,20 @@ export function FavoriteToggle({
         return;
       }
       setFavorited(false);
+      setPickerOpen(false);
       router.refresh();
       return;
     }
 
-    setModalOpen(true);
+    if (pickerOpen) {
+      setPickerOpen(false);
+      return;
+    }
+
+    setPickerOpen(true);
   }
 
-  async function onConfirmKind(kind: FavoriteKind) {
+  async function onPickKind(kind: FavoriteKind) {
     if (pending) return;
     setPending(true);
     setError(null);
@@ -72,17 +89,18 @@ export function FavoriteToggle({
       return;
     }
     setFavorited(true);
-    setModalOpen(false);
+    setPickerOpen(false);
     router.refresh();
   }
 
   return (
-    <div className="flex flex-col items-start gap-1">
+    <div className="flex flex-col items-start gap-1.5">
       <Button
         type="button"
         variant="outline"
         size="sm"
         disabled={pending}
+        aria-expanded={!favorited && pickerOpen}
         onClick={() => void onToggle()}
         className={
           favorited
@@ -90,31 +108,25 @@ export function FavoriteToggle({
             : undefined
         }
       >
-        {pending && !modalOpen
+        {pending && !pickerOpen
           ? "…"
           : favorited
             ? "Quitar de favoritos"
             : "Guardar en favoritos"}
       </Button>
-      {error && !modalOpen ? (
+
+      {pickerOpen && !favorited ? (
+        <FavoriteKindSplitPicker
+          pending={pending}
+          onPick={(kind) => void onPickKind(kind)}
+        />
+      ) : null}
+
+      {error ? (
         <p className="text-xs text-destructive" role="alert">
           {error}
         </p>
       ) : null}
-
-      <FavoriteKindModal
-        open={modalOpen}
-        title={tenderTitle}
-        pending={pending}
-        error={error}
-        onClose={() => {
-          if (!pending) {
-            setModalOpen(false);
-            setError(null);
-          }
-        }}
-        onConfirm={(kind) => void onConfirmKind(kind)}
-      />
     </div>
   );
 }
