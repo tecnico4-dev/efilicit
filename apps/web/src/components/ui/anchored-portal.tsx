@@ -30,7 +30,10 @@ export function AnchoredPortal({
   minWidth,
   maxWidth,
   maxHeight = 224,
-  /** `auto` = scroll en el panel; `hidden` = el hijo gestiona el scroll (cabecera fija). */
+  /**
+   * `auto` = scroll; `hidden` = recorta (ambos ejes, sin barra);
+   * `visible` = deja salir animaciones (p. ej. rebote).
+   */
   overflowY = "auto",
 }: {
   open: boolean;
@@ -44,9 +47,9 @@ export function AnchoredPortal({
   align?: "start" | "center";
   minWidth?: number;
   maxWidth?: number;
-  /** Altura máx. del panel (scroll interno). */
-  maxHeight?: number;
-  overflowY?: "auto" | "hidden";
+  /** Altura máx. del panel (scroll interno). Omitir con `overflowY="visible"`. */
+  maxHeight?: number | null;
+  overflowY?: "auto" | "hidden" | "visible";
 }) {
   const [mounted, setMounted] = useState(false);
   const [style, setStyle] = useState<CSSProperties | null>(null);
@@ -77,8 +80,9 @@ export function AnchoredPortal({
 
     const spaceBelow = vh - r.bottom - gap - 8;
     const spaceAbove = r.top - gap - 8;
+    const heightCap = maxHeight ?? 160;
     const placeAbove =
-      spaceBelow < Math.min(maxHeight, 160) && spaceAbove > spaceBelow;
+      spaceBelow < Math.min(heightCap, 160) && spaceAbove > spaceBelow;
 
     const next: CSSProperties = {
       position: "fixed",
@@ -86,10 +90,13 @@ export function AnchoredPortal({
       width: matchAnchorWidth ? r.width : panelW,
       minWidth: minWidth,
       maxWidth: maxWidth,
-      maxHeight,
       zIndex: 300,
-      overflowY,
     };
+    if (maxHeight != null) next.maxHeight = maxHeight;
+    // Un solo eje `hidden` + el otro `visible` → el visible pasa a `auto` (barra).
+    if (overflowY === "hidden") next.overflow = "hidden";
+    else if (overflowY === "visible") next.overflow = "visible";
+    else next.overflowY = overflowY;
 
     if (placeAbove) {
       next.bottom = vh - r.top + gap;

@@ -135,8 +135,8 @@ export function FavoriteToggle({
         align="start"
         minWidth={PICKER_WIDTH_PX}
         maxWidth={PICKER_WIDTH_PX}
-        maxHeight={72}
-        overflowY="hidden"
+        maxHeight={null}
+        overflowY="visible"
         className="border-0 bg-transparent p-0 py-0 shadow-none"
       >
         <FavoriteKindSplitPicker
