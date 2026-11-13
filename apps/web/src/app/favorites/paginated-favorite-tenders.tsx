@@ -5,7 +5,7 @@ import type {
   FavoriteWithTender,
   SharedFavoriteOwnerInfo,
 } from "@/lib/queries";
-import { FavoriteTenderList } from "./favorites-shared";
+import { FavoriteTenderList } from "./favorite-tender-list";
 import {
   DEFAULT_PAGE_SIZE,
   ListPager,

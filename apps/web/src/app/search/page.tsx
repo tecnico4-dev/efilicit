@@ -39,8 +39,8 @@ function backFromSavedSearch(from: string): { href: string; label: string } | nu
   }
   if (from === "favorites") {
     return {
-      href: "/favorites",
-      label: "← Volver a la lista de favoritos",
+      href: "/favorites/tenders",
+      label: "← Volver a licitaciones favoritas",
     };
   }
   return null;

@@ -85,59 +85,62 @@ export function AppHeader({
   const inFavorites = pathname.startsWith("/favorites");
 
   return (
-    <header className="sticky top-0 z-40 border-b border-border/80 bg-surface/95 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-surface/85">
-      <div className="flex w-full flex-wrap items-center gap-3 px-4 py-3 sm:px-6 lg:px-8">
-        <Link
-          href="/"
-          className="text-lg font-bold tracking-tight text-foreground"
-        >
-          Efi<span className="text-primary-dark">Licit</span>
-        </Link>
-
-        <nav
-          aria-label="Principal"
-          className="-mx-1 flex max-w-full flex-1 flex-nowrap items-center gap-1.5 overflow-x-auto px-1 sm:flex-wrap sm:overflow-visible"
-        >
+    <header className="z-40 border-b border-border/80">
+      {/* Solo la franja principal queda fija; el subnav de Favoritos se oculta al hacer scroll. */}
+      <div className="sticky top-0 z-40 border-b border-border/80 bg-surface/95 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-surface/85">
+        <div className="flex w-full flex-wrap items-center gap-3 px-4 py-3 sm:px-6 lg:px-8">
           <Link
-            href="/search"
-            className={navClass(pathname.startsWith("/search"))}
+            href="/"
+            className="text-lg font-bold tracking-tight text-foreground"
           >
-            <NavSearchIcon />
-            Búsqueda
+            Efi<span className="text-primary-dark">Licit</span>
           </Link>
-          <FavoritesNavItem active={inFavorites} />
-          <Link
-            href="/alerts"
-            className={navClass(pathname.startsWith("/alerts"))}
-          >
-            <NavAlertIcon />
-            Alertas
-          </Link>
-        </nav>
 
-        <div className="flex items-center gap-2">
-          {isMisLicitacionesEnabled() ? (
+          <nav
+            aria-label="Principal"
+            className="-mx-1 flex max-w-full flex-1 flex-nowrap items-center gap-1.5 overflow-x-auto px-1 sm:flex-wrap sm:overflow-visible"
+          >
             <Link
-              href="/mis-licitaciones"
-              className={navClass(pathname.startsWith("/mis-licitaciones"))}
+              href="/search"
+              className={navClass(pathname.startsWith("/search"))}
             >
-              Mis licitaciones
+              <NavSearchIcon />
+              Búsqueda
             </Link>
-          ) : null}
-          {notifications}
-          {userId ? (
-            <AccountMenu
-              displayName={displayName}
-              userId={userId}
-              digestFrequency={digestFrequency}
-            />
-          ) : null}
+            <FavoritesNavItem active={inFavorites} />
+            <Link
+              href="/alerts"
+              className={navClass(pathname.startsWith("/alerts"))}
+            >
+              <NavAlertIcon />
+              Alertas
+            </Link>
+          </nav>
+
+          <div className="flex items-center gap-2">
+            {isMisLicitacionesEnabled() ? (
+              <Link
+                href="/mis-licitaciones"
+                className={navClass(pathname.startsWith("/mis-licitaciones"))}
+              >
+                Mis licitaciones
+              </Link>
+            ) : null}
+            {notifications}
+            {userId ? (
+              <AccountMenu
+                displayName={displayName}
+                userId={userId}
+                digestFrequency={digestFrequency}
+              />
+            ) : null}
+          </div>
         </div>
       </div>
 
       {inFavorites ? (
-        <div className="border-t border-primary/25 bg-primary-light/45 dark:bg-primary/15">
-          <div className="mx-auto w-full max-w-6xl px-4 py-2 sm:px-6">
+        <div className="border-b border-primary/25 bg-primary-light/45 dark:bg-primary/15">
+          <div className="flex w-full px-4 py-2 sm:px-6 lg:px-8">
             <FavoritesSubnav />
           </div>
         </div>

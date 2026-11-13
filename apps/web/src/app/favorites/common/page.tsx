@@ -1,7 +1,4 @@
-import {
-  PAGE_MAIN_CLASS,
-  PAGE_TITLE_RULE,
-} from "@/components/shell/page-width";
+import { PAGE_MAIN_CLASS } from "@/components/shell/page-width";
 import { EmptyState, ErrorState } from "@/components/ui/state-message";
 import {
   getSessionProfile,
@@ -42,52 +39,46 @@ export default async function SharedFavoritesPage() {
 
   return (
     <main className={PAGE_MAIN_CLASS}>
-      <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-        Común
-      </h1>
-
-      <div className={PAGE_TITLE_RULE}>
-        {error ? (
-          <ErrorState>{error.message}</ErrorState>
-        ) : items.length === 0 ? (
-          <EmptyState>
-            <EmptySharedFavoritesHint />
-          </EmptyState>
-        ) : (
-          <FavoriteKindTabs
-            ariaLabel="Tipo en Común"
-            todasCount={items.length}
-            propiasCount={propias.length}
-            subcontratasCount={subcontratas.length}
-            todas={
+      {error ? (
+        <ErrorState>{error.message}</ErrorState>
+      ) : items.length === 0 ? (
+        <EmptyState>
+          <EmptySharedFavoritesHint />
+        </EmptyState>
+      ) : (
+        <FavoriteKindTabs
+          ariaLabel="Tipo en Común"
+          todasCount={items.length}
+          propiasCount={propias.length}
+          subcontratasCount={subcontratas.length}
+          todas={
+            <PaginatedSharedFavorites
+              items={items}
+              currentUserId={profile.data.id}
+            />
+          }
+          propias={
+            propias.length === 0 ? (
+              emptyKindPanel()
+            ) : (
               <PaginatedSharedFavorites
-                items={items}
+                items={propias}
                 currentUserId={profile.data.id}
               />
-            }
-            propias={
-              propias.length === 0 ? (
-                emptyKindPanel()
-              ) : (
-                <PaginatedSharedFavorites
-                  items={propias}
-                  currentUserId={profile.data.id}
-                />
-              )
-            }
-            subcontratas={
-              subcontratas.length === 0 ? (
-                emptyKindPanel()
-              ) : (
-                <PaginatedSharedFavorites
-                  items={subcontratas}
-                  currentUserId={profile.data.id}
-                />
-              )
-            }
-          />
-        )}
-      </div>
+            )
+          }
+          subcontratas={
+            subcontratas.length === 0 ? (
+              emptyKindPanel()
+            ) : (
+              <PaginatedSharedFavorites
+                items={subcontratas}
+                currentUserId={profile.data.id}
+              />
+            )
+          }
+        />
+      )}
     </main>
   );
 }

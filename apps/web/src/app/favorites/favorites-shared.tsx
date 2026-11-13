@@ -1,6 +1,4 @@
 import Link from "next/link";
-import type { ReactNode } from "react";
-import { EmptyState, ErrorState } from "@/components/ui/state-message";
 import {
   formatCriteriaSummary,
   parseCriteria,
@@ -8,8 +6,6 @@ import {
 import { formatCpvListPreview } from "@/lib/cpv";
 import {
   type DigestFrequency,
-  type FavoriteWithTender,
-  type SharedFavoriteOwnerInfo,
   type SharedFavoriteWithTender,
 } from "@/lib/queries";
 import { FavoriteKindBubble } from "@/components/favorites/favorite-kind-bubble";
@@ -18,9 +14,6 @@ import type { Database } from "@efilicit/types";
 import { ConvertToAlertButton } from "./convert-to-alert-button";
 import { RemoveSavedSearchButton } from "./remove-saved-search-button";
 import { RemoveSharedFavoriteButton } from "./remove-shared-favorite-button";
-import { ShareToCommonButton } from "./share-to-common-button";
-
-export const FAVORITES_PREVIEW_LIMIT = 5;
 
 type SavedSearchRow = Database["public"]["Tables"]["saved_searches"]["Row"];
 
@@ -85,89 +78,6 @@ export function searchHrefFromCriteria(
   if (from) params.set("from", from);
   const qs = params.toString();
   return qs ? `/search?${qs}` : "/search";
-}
-
-export function FavoriteTenderList({
-  favorites,
-  from = "favorites",
-  bordered = true,
-  shareUserId,
-  sharedOwners,
-}: {
-  favorites: FavoriteWithTender[];
-  /** Origen del enlace a la ficha (para el «volver»). */
-  from?: "favorites" | "favorites-tenders";
-  /** Línea superior (false dentro de un recuadro con borde propio). */
-  bordered?: boolean;
-  /** Si se pasa, muestra avión «Añadir a Común» (solo listado ampliado). */
-  shareUserId?: string;
-  /** Quién compartió cada tender ya en Común (pinta el avión). */
-  sharedOwners?: Readonly<Record<string, SharedFavoriteOwnerInfo>>;
-}) {
-  const showShare = Boolean(shareUserId);
-
-  return (
-    <ul
-      className={
-        bordered
-          ? "divide-y divide-border border-t border-border"
-          : "divide-y divide-border"
-      }
-    >
-      {favorites.map((fav) => {
-        const tender = fav.tenders;
-        if (!tender) {
-          return (
-            <li key={fav.id} className="py-4 text-sm text-muted-foreground">
-              Licitación no disponible
-            </li>
-          );
-        }
-        return (
-          <li key={fav.id} className="flex items-start gap-3 py-4">
-            <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap items-center gap-2">
-                <Link
-                  href={`/tenders/${tender.id}?from=${from}`}
-                  className="text-base font-medium text-foreground hover:text-link hover:underline"
-                >
-                  {tender.title}
-                </Link>
-                <FavoriteKindBubble kind={fav.kind} />
-              </div>
-              <dl className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
-                <div>
-                  <dt className="inline text-muted-foreground">Importe: </dt>
-                  <dd className="inline">
-                    {formatMoney(tender.estimated_value, tender.currency)}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="inline text-muted-foreground">CPV: </dt>
-                  <dd className="inline font-mono">
-                    {formatCpvListPreview(tender.cpv_codes)}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="inline text-muted-foreground">Estado: </dt>
-                  <dd className="inline">{formatTenderStatus(tender.status)}</dd>
-                </div>
-              </dl>
-            </div>
-            {showShare && shareUserId ? (
-              <ShareToCommonButton
-                userId={shareUserId}
-                tenderId={tender.id}
-                tenderTitle={tender.title}
-                kind={fav.kind}
-                alreadySharedOwner={sharedOwners?.[tender.id] ?? null}
-              />
-            ) : null}
-          </li>
-        );
-      })}
-    </ul>
-  );
 }
 
 function formatSharedWhen(iso: string): string {
@@ -351,58 +261,3 @@ export function SavedSearchList({
   );
 }
 
-/** Lista recortada con fade + «Mostrar más» solo si hay más del límite. */
-export function PreviewSection({
-  title,
-  emptyMessage,
-  error,
-  totalCount,
-  moreHref,
-  children,
-  className,
-}: {
-  title: string;
-  emptyMessage: ReactNode;
-  error: string | null;
-  totalCount: number;
-  moreHref: string;
-  children: ReactNode;
-  className?: string;
-}) {
-  const showMore = totalCount > FAVORITES_PREVIEW_LIMIT;
-
-  return (
-    <section className={className ?? "mt-16 first:mt-10"}>
-      <h2 className="text-xl font-semibold tracking-tight text-foreground">
-        {title}
-      </h2>
-      {error ? (
-        <ErrorState className="mt-4">{error}</ErrorState>
-      ) : totalCount === 0 ? (
-        <EmptyState className="mt-4">{emptyMessage}</EmptyState>
-      ) : (
-        <div className="mt-4 flex min-h-0 flex-1 flex-col">
-          <div className={showMore ? "relative min-h-0 flex-1" : "min-h-0 flex-1"}>
-            {children}
-            {showMore ? (
-              <div
-                className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-background to-transparent"
-                aria-hidden
-              />
-            ) : null}
-          </div>
-          {showMore ? (
-            <p className="relative z-10 py-3 text-center">
-              <Link
-                href={moreHref}
-                className="text-sm font-medium text-primary hover:text-primary-dark hover:underline"
-              >
-                Mostrar más
-              </Link>
-            </p>
-          ) : null}
-        </div>
-      )}
-    </section>
-  );
-}

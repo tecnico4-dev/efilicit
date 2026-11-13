@@ -27,6 +27,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Favoritos · Licitaciones: corazón a la izquierda del avión; al quitar, la fila desaparece con toast Revertir (recupera el kind).
+- Favoritos: sin hub de tres columnas; subnav azulado bajo la cabecera (iconos + contadores); recuerda la última sección; sin H1 redundante en cada página.
+- Favoritos · pestañas Eficen/Subcontrata: solo si hay ítems en ambos kinds; si no, lista directa o vacío.
 - Favoritos: al guardar, burbuja partida Eficen (teal) / Subcontrata (violeta) bajo el corazón (o botón de ficha) en lugar del modal grande; al elegir, flash breve y se guarda con ese kind.
 - Favoritos · Común: quitar pide confirmación modal (Sí/No); si no eres quien la añadió, avisa que se notificará al autor (aviso aún no implementado).
 - Favoritos · Común: bajo el título, burbuja + «Añadida por X (fecha)» e importe/CPV/estado a la izquierda; nota (si hay) a la derecha en recuadro discontinuo «Nota: …» (crece hacia abajo si hace falta).

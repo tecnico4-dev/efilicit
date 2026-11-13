@@ -1,7 +1,4 @@
-import {
-  PAGE_MAIN_CLASS,
-  PAGE_TITLE_RULE,
-} from "@/components/shell/page-width";
+import { PAGE_MAIN_CLASS } from "@/components/shell/page-width";
 import { EmptyState, ErrorState } from "@/components/ui/state-message";
 import {
   getSessionProfile,
@@ -45,27 +42,21 @@ export default async function SavedSearchesPage() {
 
   return (
     <main className={PAGE_MAIN_CLASS}>
-      <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-        Búsquedas guardadas
-      </h1>
-
-      <div className={PAGE_TITLE_RULE}>
-        {error ? (
-          <ErrorState>{error.message}</ErrorState>
-        ) : searches.length === 0 ? (
-          <EmptyState>
-            <EmptySavedSearchesHint />
-          </EmptyState>
-        ) : (
-          <PaginatedSavedSearches
-            searches={searches}
-            userId={profile.data.id}
-            digestFrequency={digestFrequency}
-            searchFrom="favorites-searches"
-            municipalityNames={municipalityNames}
-          />
-        )}
-      </div>
+      {error ? (
+        <ErrorState>{error.message}</ErrorState>
+      ) : searches.length === 0 ? (
+        <EmptyState>
+          <EmptySavedSearchesHint />
+        </EmptyState>
+      ) : (
+        <PaginatedSavedSearches
+          searches={searches}
+          userId={profile.data.id}
+          digestFrequency={digestFrequency}
+          searchFrom="favorites-searches"
+          municipalityNames={municipalityNames}
+        />
+      )}
     </main>
   );
 }

@@ -1,7 +1,4 @@
-import {
-  PAGE_MAIN_CLASS,
-  PAGE_TITLE_RULE,
-} from "@/components/shell/page-width";
+import { PAGE_MAIN_CLASS } from "@/components/shell/page-width";
 import { EmptyState, ErrorState } from "@/components/ui/state-message";
 import {
   getSessionProfile,
@@ -54,58 +51,52 @@ export default async function FavoriteTendersPage() {
 
   return (
     <main className={PAGE_MAIN_CLASS}>
-      <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-        Licitaciones favoritas
-      </h1>
-
-      <div className={PAGE_TITLE_RULE}>
-        {error ? (
-          <ErrorState>{error.message}</ErrorState>
-        ) : favorites.length === 0 ? (
-          <EmptyState>
-            <EmptyFavoritesTendersHint />
-          </EmptyState>
-        ) : (
-          <FavoriteKindTabs
-            ariaLabel="Tipo de favorito"
-            todasCount={favorites.length}
-            propiasCount={propias.length}
-            subcontratasCount={subcontratas.length}
-            todas={
+      {error ? (
+        <ErrorState>{error.message}</ErrorState>
+      ) : favorites.length === 0 ? (
+        <EmptyState>
+          <EmptyFavoritesTendersHint />
+        </EmptyState>
+      ) : (
+        <FavoriteKindTabs
+          ariaLabel="Tipo de favorito"
+          todasCount={favorites.length}
+          propiasCount={propias.length}
+          subcontratasCount={subcontratas.length}
+          todas={
+            <PaginatedFavoriteTenders
+              favorites={favorites}
+              from="favorites-tenders"
+              shareUserId={userId}
+              sharedOwners={sharedOwners}
+            />
+          }
+          propias={
+            propias.length === 0 ? (
+              emptyKindPanel()
+            ) : (
               <PaginatedFavoriteTenders
-                favorites={favorites}
+                favorites={propias}
                 from="favorites-tenders"
                 shareUserId={userId}
                 sharedOwners={sharedOwners}
               />
-            }
-            propias={
-              propias.length === 0 ? (
-                emptyKindPanel()
-              ) : (
-                <PaginatedFavoriteTenders
-                  favorites={propias}
-                  from="favorites-tenders"
-                  shareUserId={userId}
-                  sharedOwners={sharedOwners}
-                />
-              )
-            }
-            subcontratas={
-              subcontratas.length === 0 ? (
-                emptyKindPanel()
-              ) : (
-                <PaginatedFavoriteTenders
-                  favorites={subcontratas}
-                  from="favorites-tenders"
-                  shareUserId={userId}
-                  sharedOwners={sharedOwners}
-                />
-              )
-            }
-          />
-        )}
-      </div>
+            )
+          }
+          subcontratas={
+            subcontratas.length === 0 ? (
+              emptyKindPanel()
+            ) : (
+              <PaginatedFavoriteTenders
+                favorites={subcontratas}
+                from="favorites-tenders"
+                shareUserId={userId}
+                sharedOwners={sharedOwners}
+              />
+            )
+          }
+        />
+      )}
     </main>
   );
 }

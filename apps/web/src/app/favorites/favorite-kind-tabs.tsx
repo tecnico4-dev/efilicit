@@ -10,8 +10,9 @@ import {
 type FavoriteKindTab = "todas" | FavoriteKind;
 
 /**
- * Pestañas Todas | Propias de Eficen | Subcontrata
- * (mismo patrón que Mis alertas | Coincidencias).
+ * Pestañas Todas | Propias de Eficen | Subcontrata.
+ * Solo si hay ítems en ambos kinds; si solo hay uno, lista directa sin pestañas.
+ * El vacío total lo resuelve la página (mensaje «aún no hay…»).
  */
 export function FavoriteKindTabs({
   ariaLabel,
@@ -31,6 +32,11 @@ export function FavoriteKindTabs({
   subcontratasCount: number;
 }) {
   const [tab, setTab] = useState<FavoriteKindTab>("todas");
+  const showTabs = propiasCount > 0 && subcontratasCount > 0;
+
+  if (!showTabs) {
+    return <section>{todas}</section>;
+  }
 
   return (
     <section>
