@@ -32,15 +32,6 @@ export function TenderFavoriteActions({
 
   return (
     <div className="flex flex-wrap items-center gap-1">
-      {favorited && kind ? (
-        <ShareToCommonButton
-          userId={userId}
-          tenderId={tenderId}
-          tenderTitle={tenderTitle}
-          kind={kind}
-          alreadySharedOwner={sharedOwner}
-        />
-      ) : null}
       <FavoriteHeartButton
         userId={userId}
         tenderId={tenderId}
@@ -52,6 +43,15 @@ export function TenderFavoriteActions({
           if (!next) setSharedOwner(null);
         }}
       />
+      {favorited && kind ? (
+        <ShareToCommonButton
+          userId={userId}
+          tenderId={tenderId}
+          tenderTitle={tenderTitle}
+          kind={kind}
+          alreadySharedOwner={sharedOwner}
+        />
+      ) : null}
     </div>
   );
 }
