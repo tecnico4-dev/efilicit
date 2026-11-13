@@ -4,13 +4,14 @@ import { useEffect, useState } from "react";
 import { cn } from "@/lib/cn";
 import { type FavoriteKind } from "@/lib/queries";
 
-/** Solo el anillo exterior: teal (Eficen) → violeta (Subcontrata). */
+/** Reborde exterior + corte `/`: degradado homogéneo teal → violeta. */
 const BORDER_GRADIENT =
   "linear-gradient(135deg, #0f766e 0%, #0d9488 42%, #7c3aed 58%, #6d28d9 100%)";
 
 /**
- * Burbuja partida en diagonal (/) Eficen (teal) | Subcontrata (violeta).
- * Mitades del mismo ancho; borde exterior degradado; corte central neutro.
+ * Burbuja partida en diagonal (/).
+ * - Borde exterior y `/`: degradado oscuro teal → violeta.
+ * - Fondos de cada mitad: teal / violeta claritos (opacos).
  */
 export function FavoriteKindSplitPicker({
   pending = false,
@@ -61,7 +62,7 @@ export function FavoriteKindSplitPicker({
         e.stopPropagation();
       }}
     >
-      {/* Fondo = mismo degradado: se ve en el corte `/` (parte del reborde). */}
+      {/* Mismo degradado: solo se ve en el hueco del `/`. */}
       <div
         className="relative h-full w-full overflow-hidden rounded-full"
         style={{ background: BORDER_GRADIENT }}
@@ -73,9 +74,8 @@ export function FavoriteKindSplitPicker({
           onClick={() => pick("propia")}
           className={cn(
             "absolute inset-0 transition-colors disabled:opacity-80",
-            "bg-teal-600/12 text-teal-800 hover:bg-teal-600/28 dark:text-teal-200",
-            flash === "propia" &&
-              "bg-teal-600/45 text-teal-950 dark:text-teal-50",
+            "bg-teal-100 text-teal-900 hover:bg-teal-200 dark:bg-teal-900/80 dark:text-teal-100 dark:hover:bg-teal-800",
+            flash === "propia" && "bg-teal-300 dark:bg-teal-600",
           )}
           style={{
             clipPath: "polygon(0 0, 54% 0, 46% 100%, 0 100%)",
@@ -92,9 +92,8 @@ export function FavoriteKindSplitPicker({
           onClick={() => pick("subcontrata")}
           className={cn(
             "absolute inset-0 transition-colors disabled:opacity-80",
-            "bg-violet-500/12 text-violet-800 hover:bg-violet-500/28 dark:text-violet-200",
-            flash === "subcontrata" &&
-              "bg-violet-500/45 text-violet-950 dark:text-violet-50",
+            "bg-violet-100 text-violet-900 hover:bg-violet-200 dark:bg-violet-900/80 dark:text-violet-100 dark:hover:bg-violet-800",
+            flash === "subcontrata" && "bg-violet-300 dark:bg-violet-600",
           )}
           style={{
             clipPath: "polygon(56% 0, 100% 0, 100% 100%, 48% 100%)",
