@@ -173,7 +173,7 @@ function TrashIcon({ className }: { className?: string }) {
   );
 }
 
-/** Embudo / filtro (outline). */
+/** Sliders horizontales (mismo icono que Filtrar en favoritos). */
 function FilterIcon({ className }: { className?: string }) {
   return (
     <svg
@@ -186,7 +186,12 @@ function FilterIcon({ className }: { className?: string }) {
       strokeLinejoin="round"
       aria-hidden
     >
-      <path d="M4 5h16l-6.5 7.5v4.5L10.5 19v-6.5L4 5z" />
+      <path d="M4 7h16" />
+      <circle cx="8" cy="7" r="2.25" fill="var(--surface)" />
+      <path d="M4 12h16" />
+      <circle cx="16" cy="12" r="2.25" fill="var(--surface)" />
+      <path d="M4 17h16" />
+      <circle cx="12" cy="17" r="2.25" fill="var(--surface)" />
     </svg>
   );
 }
