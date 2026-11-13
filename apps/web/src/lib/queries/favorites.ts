@@ -38,6 +38,22 @@ export async function isOwnFavorite(
   return { data: Boolean(data), error: null };
 }
 
+/** Kind del favorito propio, o null si no está en favoritos. */
+export async function getOwnFavoriteKind(
+  client: SupabaseClient<Database>,
+  input: { userId: string; tenderId: string },
+): Promise<{ data: FavoriteKind | null; error: Error | null }> {
+  const { data, error } = await client
+    .from("favorites")
+    .select("kind")
+    .eq("user_id", input.userId)
+    .eq("tender_id", input.tenderId)
+    .maybeSingle();
+
+  if (error) return { data: null, error: new Error(error.message) };
+  return { data: asFavoriteKind(data?.kind ?? null), error: null };
+}
+
 /** IDs de licitaciones favoritas entre un conjunto (p. ej. resultados de búsqueda). */
 export async function listOwnFavoriteTenderIds(
   client: SupabaseClient<Database>,

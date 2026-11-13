@@ -46,8 +46,15 @@ export function FavoriteHeartButton({
   tenderId: string;
   tenderTitle?: string | null;
   initiallyFavorited: boolean;
-  /** Avisa al listado para actualizar el Set de favoritos sin recargar. */
-  onFavoritedChange?: (tenderId: string, favorited: boolean) => void;
+  /**
+   * Avisa al padre (listado / ficha).
+   * Al añadir, `kind` es el elegido; al quitar, `null`.
+   */
+  onFavoritedChange?: (
+    tenderId: string,
+    favorited: boolean,
+    kind: FavoriteKind | null,
+  ) => void;
 }) {
   const anchorRef = useRef<HTMLButtonElement>(null);
   const [favorited, setFavorited] = useState(initiallyFavorited);
@@ -92,7 +99,7 @@ export function FavoriteHeartButton({
       setFavorited(false);
       setPickerOpen(false);
       setPending(false);
-      onFavoritedChange?.(tenderId, false);
+      onFavoritedChange?.(tenderId, false, null);
       return;
     }
 
@@ -122,7 +129,7 @@ export function FavoriteHeartButton({
     }
     setFavorited(true);
     setPickerOpen(false);
-    onFavoritedChange?.(tenderId, true);
+    onFavoritedChange?.(tenderId, true, kind);
   }
 
   return (

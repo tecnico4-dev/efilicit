@@ -63,6 +63,7 @@ export {
 } from "./favorite-kind";
 export {
   addOwnFavorite,
+  getOwnFavoriteKind,
   isOwnFavorite,
   listOwnFavoriteTenderIds,
   listOwnFavorites,

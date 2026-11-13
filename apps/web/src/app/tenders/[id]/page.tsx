@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { FavoriteHeartButton } from "@/components/favorites/favorite-heart-button";
+import { TenderFavoriteActions } from "@/components/favorites/tender-favorite-actions";
 import { OfferCaseToggle } from "@/components/mis-licitaciones/offer-case-toggle";
 import { PAGE_MAIN_CLASS } from "@/components/shell/page-width";
 import { ErrorState } from "@/components/ui/state-message";
@@ -8,12 +8,15 @@ import { getSessionProfile, getSupabaseServerClient } from "@/lib/auth/session";
 import { isMisLicitacionesEnabled } from "@/lib/features/mis-licitaciones";
 import {
   getOfferCaseIdByTenderId,
+  getOwnFavoriteKind,
+  getSharedFavoriteOwner,
   getTenderById,
-  isOwnFavorite,
   asTenderInterestKind,
   getOwnAlertInterestKindForTender,
   listOwnTenderRatings,
   listTenderStatusHistory,
+  type FavoriteKind,
+  type SharedFavoriteOwnerInfo,
   type TenderInterestKind,
   type TenderRating,
   type TenderSourceSummary,
@@ -84,13 +87,13 @@ function backLinkFromParams(
   if (from === "favorites-common") {
     return {
       href: "/favorites/common",
-      label: "← Volver a Común",
+      label: "← Volver a la carpeta común",
     };
   }
   if (from === "favorites") {
     return {
-      href: "/favorites",
-      label: "← Volver a la lista de favoritos",
+      href: "/favorites/tenders",
+      label: "← Volver a licitaciones favoritas",
     };
   }
   if (from === "mis-licitaciones" && isMisLicitacionesEnabled()) {
@@ -319,6 +322,8 @@ export default async function TenderDetailPage({
   let favoriteUserId: string | null = null;
   let displayName: string | null = null;
   let initiallyFavorited = false;
+  let favoriteKind: FavoriteKind | null = null;
+  let sharedOwner: SharedFavoriteOwnerInfo | null = null;
   let existingOfferCaseId: string | null = null;
   let initialRating: TenderRating | null = null;
   let defaultInterestKind: TenderInterestKind | null =
@@ -328,28 +333,32 @@ export default async function TenderDetailPage({
     if (profile.data) {
       favoriteUserId = profile.data.id;
       displayName = profile.data.display_name;
-      const [fav, offer, ratings, alertInterest] = await Promise.all([
-        isOwnFavorite(supabase, {
-          userId: profile.data.id,
-          tenderId: tender.id,
-        }),
-        misLicitacionesOn
-          ? getOfferCaseIdByTenderId(supabase, tender.id)
-          : Promise.resolve({ data: null as string | null, error: null }),
-        showRating
-          ? listOwnTenderRatings(supabase, {
-              userId: profile.data.id,
-              tenderIds: [tender.id],
-            })
-          : Promise.resolve(null),
-        showRating && !defaultInterestKind
-          ? getOwnAlertInterestKindForTender(supabase, {
-              userId: profile.data.id,
-              tenderId: tender.id,
-            })
-          : Promise.resolve(null),
-      ]);
-      initiallyFavorited = fav.data;
+      const [favKind, shared, offer, ratings, alertInterest] =
+        await Promise.all([
+          getOwnFavoriteKind(supabase, {
+            userId: profile.data.id,
+            tenderId: tender.id,
+          }),
+          getSharedFavoriteOwner(supabase, tender.id),
+          misLicitacionesOn
+            ? getOfferCaseIdByTenderId(supabase, tender.id)
+            : Promise.resolve({ data: null as string | null, error: null }),
+          showRating
+            ? listOwnTenderRatings(supabase, {
+                userId: profile.data.id,
+                tenderIds: [tender.id],
+              })
+            : Promise.resolve(null),
+          showRating && !defaultInterestKind
+            ? getOwnAlertInterestKindForTender(supabase, {
+                userId: profile.data.id,
+                tenderId: tender.id,
+              })
+            : Promise.resolve(null),
+        ]);
+      favoriteKind = favKind.error ? null : favKind.data;
+      initiallyFavorited = favoriteKind != null;
+      sharedOwner = shared.error ? null : shared.data;
       existingOfferCaseId = offer.data;
       if (ratings && !ratings.error) {
         initialRating = ratings.data[tender.id] ?? null;
@@ -404,11 +413,13 @@ export default async function TenderDetailPage({
                 existingCaseId={existingOfferCaseId}
               />
             ) : null}
-            <FavoriteHeartButton
+            <TenderFavoriteActions
               userId={favoriteUserId}
               tenderId={tender.id}
               tenderTitle={tender.title}
               initiallyFavorited={initiallyFavorited}
+              initialKind={favoriteKind}
+              initialSharedOwner={sharedOwner}
             />
           </div>
         ) : null}
