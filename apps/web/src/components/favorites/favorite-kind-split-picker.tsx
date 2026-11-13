@@ -78,7 +78,8 @@ export function FavoriteKindSplitPicker({
             flash === "propia" && "bg-teal-300 dark:bg-teal-600",
           )}
           style={{
-            clipPath: "polygon(0 0, 54% 0, 46% 100%, 0 100%)",
+            // Hueco ~1% → `/` más fino que el reborde exterior.
+            clipPath: "polygon(0 0, 53% 0, 47% 100%, 0 100%)",
           }}
         >
           <span className="absolute left-[25%] top-1/2 -translate-x-1/2 -translate-y-1/2 text-[11px] font-medium">
@@ -96,7 +97,7 @@ export function FavoriteKindSplitPicker({
             flash === "subcontrata" && "bg-violet-300 dark:bg-violet-600",
           )}
           style={{
-            clipPath: "polygon(56% 0, 100% 0, 100% 100%, 48% 100%)",
+            clipPath: "polygon(54% 0, 100% 0, 100% 100%, 48% 100%)",
           }}
         >
           <span className="absolute left-[75%] top-1/2 -translate-x-1/2 -translate-y-1/2 text-[11px] font-medium">
