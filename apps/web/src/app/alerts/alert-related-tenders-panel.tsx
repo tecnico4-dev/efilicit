@@ -985,7 +985,7 @@ export function AlertRelatedTendersPanel({
                     : "border-border bg-surface text-muted-foreground hover:bg-muted hover:text-foreground",
                 )}
               >
-                <FilterIcon className="size-4" />
+                <FilterIcon className="size-5" />
                 {activeFilterCount > 0 ? (
                   <span
                     className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-0.5 text-[10px] font-bold leading-none text-primary-foreground"
