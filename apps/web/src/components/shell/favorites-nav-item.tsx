@@ -46,6 +46,14 @@ export function FavoritesNavItem({ active }: { active: boolean }) {
         aria-hidden
       >
         <path d="M19.5 12.572 12 20l-7.5-7.428A5 5 0 1 1 12 5.072a5 5 0 1 1 7.5 7.5Z" />
+        {/* Brillito como en la lupa del inicio / nav. */}
+        <path
+          d="M8.15 8.35c.55-1.15 1.65-1.95 2.95-2.15"
+          fill="none"
+          stroke="white"
+          strokeOpacity="0.55"
+          strokeWidth="1.5"
+        />
       </svg>
       Favoritos
     </Link>
