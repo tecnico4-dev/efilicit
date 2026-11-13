@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Favoritos · propias y Común: botón Filtrar (modal con criterios de búsqueda; Aplicar / Limpiar / Cancelar; contador Filtrar(n)).
 - Favoritos · Licitaciones: corazón a la izquierda del avión; al quitar, la fila desaparece con toast Revertir (recupera el kind).
 - Favoritos: sin hub de tres columnas; subnav azulado bajo la cabecera (iconos + contadores); recuerda la última sección; sin H1 redundante en cada página.
 - Favoritos · pestañas Eficen/Subcontrata: solo si hay ítems en ambos kinds; si no, lista directa o vacío.

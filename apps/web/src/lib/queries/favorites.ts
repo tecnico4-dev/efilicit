@@ -14,6 +14,8 @@ export type FavoriteWithTender = FavoriteRow & {
     id: string;
     title: string;
     status: string | null;
+    procedure_type: string | null;
+    contract_type: string | null;
     estimated_value: number | null;
     currency: string;
     cpv_codes: string[];
@@ -91,6 +93,8 @@ export async function listOwnFavorites(
         id,
         title,
         status,
+        procedure_type,
+        contract_type,
         estimated_value,
         currency,
         publication_date,

@@ -1,3 +1,4 @@
+import type { CriteriaFilterOptionsProp } from "@/components/criteria/criteria-filters";
 import { PAGE_MAIN_CLASS } from "@/components/shell/page-width";
 import { EmptyState, ErrorState } from "@/components/ui/state-message";
 import {
@@ -6,21 +7,13 @@ import {
 } from "@/lib/auth/session";
 import {
   listOwnFavorites,
+  listSearchFilterOptions,
   listSharedFavoriteOwners,
 } from "@/lib/queries";
 import { EmptyFavoritesTendersHint } from "../empty-hints";
-import { FavoriteKindTabs } from "../favorite-kind-tabs";
-import { PaginatedFavoriteTenders } from "../paginated-favorite-tenders";
+import { OwnFavoritesSection } from "../own-favorites-section";
 
 export const dynamic = "force-dynamic";
-
-function emptyKindPanel() {
-  return (
-    <p className="rounded-lg rounded-tl-none border border-border px-4 py-8 text-center text-sm text-muted-foreground">
-      Ninguna aún.
-    </p>
-  );
-}
 
 export default async function FavoriteTendersPage() {
   const supabase = await getSupabaseServerClient();
@@ -37,7 +30,24 @@ export default async function FavoriteTendersPage() {
   }
 
   const userId = profile.data.id;
-  const { data: favorites, error } = await listOwnFavorites(supabase);
+  const [favoritesResult, filterListed] = await Promise.all([
+    listOwnFavorites(supabase),
+    listSearchFilterOptions(supabase),
+  ]);
+  const { data: favorites, error } = favoritesResult;
+  const filterOptions: CriteriaFilterOptionsProp = filterListed.error
+    ? {
+        statuses: [],
+        procedureTypes: [],
+        contractTypes: [],
+        ccaaCodesWithTenders: [],
+      }
+    : {
+        statuses: filterListed.data.statuses,
+        procedureTypes: filterListed.data.procedureTypes,
+        contractTypes: filterListed.data.contractTypes,
+        ccaaCodesWithTenders: [...filterListed.data.ccaaCodesWithTenders],
+      };
   const tenderIds = favorites
     .map((f) => f.tenders?.id)
     .filter((id): id is string => Boolean(id));
@@ -46,8 +56,6 @@ export default async function FavoriteTendersPage() {
     tenderIds,
   );
   const sharedOwners = Object.fromEntries(sharedOwnersResult.data);
-  const propias = favorites.filter((f) => f.kind === "propia");
-  const subcontratas = favorites.filter((f) => f.kind === "subcontrata");
 
   return (
     <main className={PAGE_MAIN_CLASS}>
@@ -58,43 +66,11 @@ export default async function FavoriteTendersPage() {
           <EmptyFavoritesTendersHint />
         </EmptyState>
       ) : (
-        <FavoriteKindTabs
-          ariaLabel="Tipo de favorito"
-          todasCount={favorites.length}
-          propiasCount={propias.length}
-          subcontratasCount={subcontratas.length}
-          todas={
-            <PaginatedFavoriteTenders
-              favorites={favorites}
-              from="favorites-tenders"
-              shareUserId={userId}
-              sharedOwners={sharedOwners}
-            />
-          }
-          propias={
-            propias.length === 0 ? (
-              emptyKindPanel()
-            ) : (
-              <PaginatedFavoriteTenders
-                favorites={propias}
-                from="favorites-tenders"
-                shareUserId={userId}
-                sharedOwners={sharedOwners}
-              />
-            )
-          }
-          subcontratas={
-            subcontratas.length === 0 ? (
-              emptyKindPanel()
-            ) : (
-              <PaginatedFavoriteTenders
-                favorites={subcontratas}
-                from="favorites-tenders"
-                shareUserId={userId}
-                sharedOwners={sharedOwners}
-              />
-            )
-          }
+        <OwnFavoritesSection
+          favorites={favorites}
+          userId={userId}
+          sharedOwners={sharedOwners}
+          filterOptions={filterOptions}
         />
       )}
     </main>

@@ -1,23 +1,18 @@
+import type { CriteriaFilterOptionsProp } from "@/components/criteria/criteria-filters";
 import { PAGE_MAIN_CLASS } from "@/components/shell/page-width";
 import { EmptyState, ErrorState } from "@/components/ui/state-message";
 import {
   getSessionProfile,
   getSupabaseServerClient,
 } from "@/lib/auth/session";
-import { listSharedFavorites } from "@/lib/queries";
+import {
+  listSearchFilterOptions,
+  listSharedFavorites,
+} from "@/lib/queries";
 import { EmptySharedFavoritesHint } from "../empty-hints";
-import { FavoriteKindTabs } from "../favorite-kind-tabs";
-import { PaginatedSharedFavorites } from "../paginated-shared-favorites";
+import { CommonFavoritesSection } from "../common-favorites-section";
 
 export const dynamic = "force-dynamic";
-
-function emptyKindPanel() {
-  return (
-    <p className="rounded-lg rounded-tl-none border border-border px-4 py-8 text-center text-sm text-muted-foreground">
-      Ninguna aún.
-    </p>
-  );
-}
 
 export default async function SharedFavoritesPage() {
   const supabase = await getSupabaseServerClient();
@@ -33,9 +28,24 @@ export default async function SharedFavoritesPage() {
     );
   }
 
-  const { data: items, error } = await listSharedFavorites(supabase);
-  const propias = items.filter((i) => i.kind === "propia");
-  const subcontratas = items.filter((i) => i.kind === "subcontrata");
+  const [sharedResult, filterListed] = await Promise.all([
+    listSharedFavorites(supabase),
+    listSearchFilterOptions(supabase),
+  ]);
+  const { data: items, error } = sharedResult;
+  const filterOptions: CriteriaFilterOptionsProp = filterListed.error
+    ? {
+        statuses: [],
+        procedureTypes: [],
+        contractTypes: [],
+        ccaaCodesWithTenders: [],
+      }
+    : {
+        statuses: filterListed.data.statuses,
+        procedureTypes: filterListed.data.procedureTypes,
+        contractTypes: filterListed.data.contractTypes,
+        ccaaCodesWithTenders: [...filterListed.data.ccaaCodesWithTenders],
+      };
 
   return (
     <main className={PAGE_MAIN_CLASS}>
@@ -46,37 +56,10 @@ export default async function SharedFavoritesPage() {
           <EmptySharedFavoritesHint />
         </EmptyState>
       ) : (
-        <FavoriteKindTabs
-          ariaLabel="Tipo en Común"
-          todasCount={items.length}
-          propiasCount={propias.length}
-          subcontratasCount={subcontratas.length}
-          todas={
-            <PaginatedSharedFavorites
-              items={items}
-              currentUserId={profile.data.id}
-            />
-          }
-          propias={
-            propias.length === 0 ? (
-              emptyKindPanel()
-            ) : (
-              <PaginatedSharedFavorites
-                items={propias}
-                currentUserId={profile.data.id}
-              />
-            )
-          }
-          subcontratas={
-            subcontratas.length === 0 ? (
-              emptyKindPanel()
-            ) : (
-              <PaginatedSharedFavorites
-                items={subcontratas}
-                currentUserId={profile.data.id}
-              />
-            )
-          }
+        <CommonFavoritesSection
+          items={items}
+          currentUserId={profile.data.id}
+          filterOptions={filterOptions}
         />
       )}
     </main>
