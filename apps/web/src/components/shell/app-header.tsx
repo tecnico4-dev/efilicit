@@ -85,9 +85,9 @@ export function AppHeader({
   const inFavorites = pathname.startsWith("/favorites");
 
   return (
-    <header className="z-40 border-b border-border/80">
-      {/* Solo la franja principal queda fija; el subnav de Favoritos se oculta al hacer scroll. */}
-      <div className="sticky top-0 z-40 border-b border-border/80 bg-surface/95 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-surface/85">
+    <>
+      {/* Nav principal siempre fijo. */}
+      <header className="sticky top-0 z-40 border-b border-border/80 bg-surface/95 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-surface/85">
         <div className="flex w-full flex-wrap items-center gap-3 px-4 py-3 sm:px-6 lg:px-8">
           <Link
             href="/"
@@ -136,8 +136,9 @@ export function AppHeader({
             ) : null}
           </div>
         </div>
-      </div>
+      </header>
 
+      {/* Subnav Favoritos: fluye con la página y se oculta al bajar. */}
       {inFavorites ? (
         <div className="border-b border-primary/25 bg-primary-light/45 dark:bg-primary/15">
           <div className="flex w-full px-4 py-2 sm:px-6 lg:px-8">
@@ -145,6 +146,6 @@ export function AppHeader({
           </div>
         </div>
       ) : null}
-    </header>
+    </>
   );
 }
