@@ -149,17 +149,37 @@ function deadlineUrgencyClass(iso: string | null): string {
   return "text-muted-foreground";
 }
 
-/** Favoritos con plazo más cercano primero; sin plazo al final. Máx. 5. */
+/**
+ * Última oportunidad: máx. 5.
+ * - Oculta si venció hace más de 5 días.
+ * - Primero por vencer (más cercano primero); luego vencidas recientes;
+ *   sin plazo al final.
+ */
 function attentionFavorites(favorites: FavoriteWithTender[]): FavoriteWithTender[] {
   return [...favorites]
-    .filter((f) => f.tenders)
+    .filter((f) => {
+      if (!f.tenders) return false;
+      const diff = daysUntilDeadlineMadrid(f.tenders.deadline_at);
+      if (diff != null && diff < -5) return false;
+      return true;
+    })
     .sort((a, b) => {
-      const da = a.tenders?.deadline_at;
-      const db = b.tenders?.deadline_at;
-      if (!da && !db) return 0;
-      if (!da) return 1;
-      if (!db) return -1;
-      return da < db ? -1 : da > db ? 1 : 0;
+      const da = a.tenders?.deadline_at ?? null;
+      const db = b.tenders?.deadline_at ?? null;
+      const diffA = daysUntilDeadlineMadrid(da);
+      const diffB = daysUntilDeadlineMadrid(db);
+
+      if (diffA == null && diffB == null) return 0;
+      if (diffA == null) return 1;
+      if (diffB == null) return -1;
+
+      const upcomingA = diffA >= 0;
+      const upcomingB = diffB >= 0;
+      if (upcomingA !== upcomingB) return upcomingA ? -1 : 1;
+
+      // Por vencer: más cercano primero. Vencidas: más reciente primero.
+      if (upcomingA) return diffA - diffB;
+      return diffB - diffA;
     })
     .slice(0, 5);
 }
