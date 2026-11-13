@@ -3,16 +3,22 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { Button } from "@/components/ui/button";
 import { formatDateMadrid } from "@/lib/datetime";
 import {
   favoriteKindLabel,
   formatNotificationTrashExpiry,
   isNotificationInTrashWindow,
+  permanentlyDeleteOwnCommonNotification,
+  permanentlyDeleteOwnCommonRemovedNotification,
+  permanentlyDeleteOwnDigestInboxNotification,
+  permanentlyDeleteOwnFavoriteNotification,
   type CommonInboxNotification,
   type CommonRemovedInboxNotification,
   type DigestInboxNotification,
   type FavoriteStatusNotification,
 } from "@/lib/queries";
+import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { formatTenderStatus } from "@/lib/tender-labels";
 import { DigestTendersPanel } from "./digest-tenders-panel";
 import {
@@ -28,6 +34,9 @@ import { RestoreNotificationButton } from "./restore-notification-button";
 import { TrashCommonNotificationButton } from "./trash-common-notification-button";
 import { TrashDigestNotificationButton } from "./trash-digest-notification-button";
 import { TrashNotificationButton } from "./trash-notification-button";
+
+const destructiveOutlineBtn =
+  "border-destructive text-destructive hover:bg-destructive/10 hover:text-destructive";
 
 export type InboxItem =
   | { kind: "favorite_status"; sortAt: string; data: FavoriteStatusNotification }
@@ -135,6 +144,7 @@ export function NotificationsList({
     useState<DigestInboxNotification | null>(null);
   /** Ids ocultos en UI tras «eliminar definitivo» (pendiente de confirmación). */
   const [pendingPurgeKeys, setPendingPurgeKeys] = useState<string[]>([]);
+  const [emptyTrashPending, setEmptyTrashPending] = useState(false);
 
   function itemKey(item: InboxItem): string {
     if (item.kind === "digest") return `digest:${item.data.id}`;
@@ -180,15 +190,83 @@ export function NotificationsList({
     router.refresh();
   }
 
+  async function onEmptyTrash() {
+    if (emptyTrashPending || inTrashWindow.length < 2) return;
+    const count = inTrashWindow.length;
+    const ok = window.confirm(
+      `¿Vaciar la papelera (${count})? Se eliminarán definitivamente.`,
+    );
+    if (!ok) return;
+
+    const toPurge = [...inTrashWindow];
+    const keys = toPurge.map(itemKey);
+    setEmptyTrashPending(true);
+    setPendingPurgeKeys((prev) => {
+      const next = new Set(prev);
+      for (const key of keys) next.add(key);
+      return [...next];
+    });
+
+    const client = createSupabaseBrowserClient();
+    const errors: string[] = [];
+    for (const item of toPurge) {
+      let error: { message: string } | null = null;
+      if (item.kind === "digest") {
+        ({ error } = await permanentlyDeleteOwnDigestInboxNotification(
+          client,
+          { userId, digestId: item.data.id },
+        ));
+      } else if (item.kind === "common") {
+        ({ error } = await permanentlyDeleteOwnCommonNotification(client, {
+          userId,
+          tenderId: item.data.tenderId,
+        }));
+      } else if (item.kind === "common_removed") {
+        ({ error } = await permanentlyDeleteOwnCommonRemovedNotification(
+          client,
+          { userId, tenderId: item.data.tenderId },
+        ));
+      } else {
+        ({ error } = await permanentlyDeleteOwnFavoriteNotification(client, {
+          userId,
+          eventId: item.data.eventId,
+        }));
+      }
+      if (error) errors.push(error.message);
+    }
+
+    setEmptyTrashPending(false);
+    if (errors.length > 0) {
+      setPendingPurgeKeys((prev) => prev.filter((k) => !keys.includes(k)));
+      window.alert(`No se pudo vaciar del todo: ${errors[0]}`);
+      return;
+    }
+    router.refresh();
+  }
+
   return (
     <div>
-      <NotificationsFolderTabs
-        view={view}
-        allCount={active.length}
-        unreadCount={unreadCount}
-        trashCount={inTrashWindow.length}
-        onViewChange={onViewChange}
-      />
+      <div className="flex flex-wrap items-end justify-between gap-x-3 gap-y-2">
+        <NotificationsFolderTabs
+          view={view}
+          allCount={active.length}
+          unreadCount={unreadCount}
+          trashCount={inTrashWindow.length}
+          onViewChange={onViewChange}
+        />
+        {view === "trash" && inTrashWindow.length >= 2 ? (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={emptyTrashPending}
+            className={`mb-px ${destructiveOutlineBtn}`}
+            onClick={() => void onEmptyTrash()}
+          >
+            Vaciar papelera
+          </Button>
+        ) : null}
+      </div>
       <div className="relative z-0 overflow-hidden rounded-lg rounded-tl-none border border-border bg-surface/40">
         {visible.length === 0 ? (
           <p className="px-4 py-8 text-center text-sm text-muted-foreground">
