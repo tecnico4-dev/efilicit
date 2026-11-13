@@ -6,6 +6,7 @@ import type { DigestFrequency } from "@/lib/queries";
 import { isMisLicitacionesEnabled } from "@/lib/features/mis-licitaciones";
 import { cn } from "@/lib/cn";
 import type { ReactNode } from "react";
+import { FavoritesSubnav } from "@/app/favorites/favorites-subnav";
 import { AccountMenu } from "./account-menu";
 import { FavoritesNavItem } from "./favorites-nav-item";
 
@@ -37,9 +38,11 @@ export function AppHeader({
 
   if (!isAuthenticated) return null;
 
+  const inFavorites = pathname.startsWith("/favorites");
+
   return (
     <header className="sticky top-0 z-40 border-b border-border/80 bg-surface/95 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-surface/85">
-      <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center gap-3 px-4 py-3 sm:px-6">
+      <div className="flex w-full flex-wrap items-center gap-3 px-4 py-3 sm:px-6 lg:px-8">
         <Link
           href="/"
           className="text-lg font-bold tracking-tight text-foreground"
@@ -57,7 +60,7 @@ export function AppHeader({
           >
             Búsqueda
           </Link>
-          <FavoritesNavItem active={pathname.startsWith("/favorites")} />
+          <FavoritesNavItem active={inFavorites} />
           <Link
             href="/alerts"
             className={navClass(pathname.startsWith("/alerts"))}
@@ -85,6 +88,14 @@ export function AppHeader({
           ) : null}
         </div>
       </div>
+
+      {inFavorites ? (
+        <div className="border-t border-primary/25 bg-primary-light/45 dark:bg-primary/15">
+          <div className="mx-auto w-full max-w-6xl px-4 py-2 sm:px-6">
+            <FavoritesSubnav />
+          </div>
+        </div>
+      ) : null}
     </header>
   );
 }
