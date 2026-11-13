@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { FavoriteToggle } from "@/components/favorites/favorite-toggle";
+import { FavoriteHeartButton } from "@/components/favorites/favorite-heart-button";
 import { OfferCaseToggle } from "@/components/mis-licitaciones/offer-case-toggle";
 import { PAGE_MAIN_CLASS } from "@/components/shell/page-width";
 import { ErrorState } from "@/components/ui/state-message";
@@ -404,7 +404,7 @@ export default async function TenderDetailPage({
                 existingCaseId={existingOfferCaseId}
               />
             ) : null}
-            <FavoriteToggle
+            <FavoriteHeartButton
               userId={favoriteUserId}
               tenderId={tender.id}
               tenderTitle={tender.title}
