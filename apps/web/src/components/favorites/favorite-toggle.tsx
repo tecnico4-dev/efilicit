@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { AnchoredPortal } from "@/components/ui/anchored-portal";
 import { Button } from "@/components/ui/button";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import {
@@ -11,8 +12,10 @@ import {
 } from "@/lib/queries";
 import { FavoriteKindSplitPicker } from "./favorite-kind-split-picker";
 
+const PICKER_WIDTH_PX = 200;
+
 /**
- * Marca / desmarca favorito. Al añadir: burbuja flotante Eficen / Subcontrata.
+ * Marca / desmarca favorito. Al añadir: burbuja en portal fijo (escapa overflow).
  */
 export function FavoriteToggle({
   userId,
@@ -25,7 +28,7 @@ export function FavoriteToggle({
   initiallyFavorited: boolean;
 }) {
   const router = useRouter();
-  const rootRef = useRef<HTMLDivElement>(null);
+  const anchorRef = useRef<HTMLSpanElement>(null);
   const [favorited, setFavorited] = useState(initiallyFavorited);
   const [pending, setPending] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -34,28 +37,14 @@ export function FavoriteToggle({
 
   useEffect(() => {
     if (!pickerOpen || pending) return;
-
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") {
         setPickerOpen(false);
         setError(null);
       }
     }
-
-    function onPointerDown(e: PointerEvent) {
-      const root = rootRef.current;
-      if (!root) return;
-      if (e.target instanceof Node && root.contains(e.target)) return;
-      setPickerOpen(false);
-      setError(null);
-    }
-
     window.addEventListener("keydown", onKey);
-    document.addEventListener("pointerdown", onPointerDown, true);
-    return () => {
-      window.removeEventListener("keydown", onKey);
-      document.removeEventListener("pointerdown", onPointerDown, true);
-    };
+    return () => window.removeEventListener("keydown", onKey);
   }, [pickerOpen, pending]);
 
   async function onToggle() {
@@ -109,41 +98,58 @@ export function FavoriteToggle({
   }
 
   return (
-    <div ref={rootRef} className="relative inline-flex flex-col items-start">
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        disabled={pending}
-        aria-expanded={!favorited && pickerOpen}
-        onClick={() => void onToggle()}
-        className={
-          favorited
-            ? "border-destructive text-destructive hover:bg-destructive/10 hover:text-destructive"
-            : undefined
-        }
-      >
-        {pending && !pickerOpen
-          ? "…"
-          : favorited
-            ? "Quitar de favoritos"
-            : "Guardar en favoritos"}
-      </Button>
+    <div className="relative inline-flex flex-col items-start">
+      <span ref={anchorRef} className="inline-flex">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={pending}
+          aria-expanded={!favorited && pickerOpen}
+          onClick={() => void onToggle()}
+          className={
+            favorited
+              ? "border-destructive text-destructive hover:bg-destructive/10 hover:text-destructive"
+              : undefined
+          }
+        >
+          {pending && !pickerOpen
+            ? "…"
+            : favorited
+              ? "Quitar de favoritos"
+              : "Guardar en favoritos"}
+        </Button>
+      </span>
 
-      {pickerOpen && !favorited ? (
-        <div className="absolute left-0 top-full z-50 mt-1.5">
-          <FavoriteKindSplitPicker
-            pending={pending}
-            nudgeKey={nudgeKey}
-            onPick={(kind) => void onPickKind(kind)}
-          />
-          {error ? (
-            <p className="mt-1 text-xs text-destructive" role="alert">
-              {error}
-            </p>
-          ) : null}
-        </div>
-      ) : null}
+      <AnchoredPortal
+        open={pickerOpen && !favorited}
+        anchorRef={anchorRef}
+        onDismiss={() => {
+          if (!pending) {
+            setPickerOpen(false);
+            setError(null);
+          }
+        }}
+        gap={6}
+        matchAnchorWidth={false}
+        align="start"
+        minWidth={PICKER_WIDTH_PX}
+        maxWidth={PICKER_WIDTH_PX}
+        maxHeight={72}
+        overflowY="hidden"
+        className="border-0 bg-transparent p-0 py-0 shadow-none"
+      >
+        <FavoriteKindSplitPicker
+          pending={pending}
+          nudgeKey={nudgeKey}
+          onPick={(kind) => void onPickKind(kind)}
+        />
+        {error ? (
+          <p className="mt-1 text-xs text-destructive" role="alert">
+            {error}
+          </p>
+        ) : null}
+      </AnchoredPortal>
     </div>
   );
 }

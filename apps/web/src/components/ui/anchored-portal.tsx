@@ -25,6 +25,8 @@ export function AnchoredPortal({
   /** Espacio bajo el ancla (px). */
   gap = 4,
   matchAnchorWidth = true,
+  /** Alineación horizontal respecto al ancla. */
+  align = "start",
   minWidth,
   maxWidth,
   maxHeight = 224,
@@ -39,6 +41,7 @@ export function AnchoredPortal({
   className?: string;
   gap?: number;
   matchAnchorWidth?: boolean;
+  align?: "start" | "center";
   minWidth?: number;
   maxWidth?: number;
   /** Altura máx. del panel (scroll interno). */
@@ -62,9 +65,13 @@ export function AnchoredPortal({
 
     const panelW = matchAnchorWidth
       ? r.width
-      : Math.min(maxWidth ?? r.width, Math.max(minWidth ?? r.width, r.width));
+      : Math.min(
+          maxWidth ?? Number.POSITIVE_INFINITY,
+          Math.max(minWidth ?? 0, r.width),
+        );
 
-    let left = r.left;
+    let left =
+      align === "center" ? r.left + r.width / 2 - panelW / 2 : r.left;
     if (left + panelW > vw - 8) left = Math.max(8, vw - 8 - panelW);
     if (left < 8) left = 8;
 
@@ -93,7 +100,16 @@ export function AnchoredPortal({
     }
 
     setStyle(next);
-  }, [anchorRef, gap, matchAnchorWidth, minWidth, maxWidth, maxHeight, overflowY]);
+  }, [
+    anchorRef,
+    gap,
+    matchAnchorWidth,
+    align,
+    minWidth,
+    maxWidth,
+    maxHeight,
+    overflowY,
+  ]);
 
   useLayoutEffect(() => {
     if (!open) {

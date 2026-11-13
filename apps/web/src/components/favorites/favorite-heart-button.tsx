@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { AnchoredPortal } from "@/components/ui/anchored-portal";
 import { cn } from "@/lib/cn";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import {
@@ -30,9 +31,11 @@ function HeartIcon({ filled }: { filled: boolean }) {
   );
 }
 
+const PICKER_WIDTH_PX = 200;
+
 /**
  * Corazón en lista de resultados: vacío = no favorito; rojo = favorito.
- * Al añadir: burbuja flotante Eficen / Subcontrata bajo el corazón (sin crecer la fila).
+ * Al añadir: burbuja en portal fijo bajo el corazón (escapa overflow del listado).
  */
 export function FavoriteHeartButton({
   userId,
@@ -45,7 +48,7 @@ export function FavoriteHeartButton({
   initiallyFavorited: boolean;
 }) {
   const router = useRouter();
-  const rootRef = useRef<HTMLDivElement>(null);
+  const anchorRef = useRef<HTMLButtonElement>(null);
   const [favorited, setFavorited] = useState(initiallyFavorited);
   const [pending, setPending] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -58,28 +61,14 @@ export function FavoriteHeartButton({
 
   useEffect(() => {
     if (!pickerOpen || pending) return;
-
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") {
         setPickerOpen(false);
         setError(null);
       }
     }
-
-    function onPointerDown(e: PointerEvent) {
-      const root = rootRef.current;
-      if (!root) return;
-      if (e.target instanceof Node && root.contains(e.target)) return;
-      setPickerOpen(false);
-      setError(null);
-    }
-
     window.addEventListener("keydown", onKey);
-    document.addEventListener("pointerdown", onPointerDown, true);
-    return () => {
-      window.removeEventListener("keydown", onKey);
-      document.removeEventListener("pointerdown", onPointerDown, true);
-    };
+    return () => window.removeEventListener("keydown", onKey);
   }, [pickerOpen, pending]);
 
   async function onToggle(e: React.MouseEvent) {
@@ -135,8 +124,9 @@ export function FavoriteHeartButton({
   }
 
   return (
-    <div ref={rootRef} className="relative shrink-0">
+    <div className="relative shrink-0">
       <button
+        ref={anchorRef}
         type="button"
         disabled={pending}
         onClick={onToggle}
@@ -154,23 +144,38 @@ export function FavoriteHeartButton({
         <HeartIcon filled={favorited} />
       </button>
 
-      {pickerOpen && !favorited ? (
-        <div className="absolute left-1/2 top-full z-50 mt-1.5 -translate-x-1/2">
-          <FavoriteKindSplitPicker
-            pending={pending}
-            nudgeKey={nudgeKey}
-            onPick={(kind) => void onPickKind(kind)}
-          />
-          {error ? (
-            <p
-              className="mt-1 max-w-[12.5rem] text-center text-[11px] text-destructive"
-              role="alert"
-            >
-              {error}
-            </p>
-          ) : null}
-        </div>
-      ) : null}
+      <AnchoredPortal
+        open={pickerOpen && !favorited}
+        anchorRef={anchorRef}
+        onDismiss={() => {
+          if (!pending) {
+            setPickerOpen(false);
+            setError(null);
+          }
+        }}
+        gap={6}
+        matchAnchorWidth={false}
+        align="center"
+        minWidth={PICKER_WIDTH_PX}
+        maxWidth={PICKER_WIDTH_PX}
+        maxHeight={72}
+        overflowY="hidden"
+        className="border-0 bg-transparent p-0 py-0 shadow-none"
+      >
+        <FavoriteKindSplitPicker
+          pending={pending}
+          nudgeKey={nudgeKey}
+          onPick={(kind) => void onPickKind(kind)}
+        />
+        {error ? (
+          <p
+            className="mt-1 max-w-[12.5rem] text-center text-[11px] text-destructive"
+            role="alert"
+          >
+            {error}
+          </p>
+        ) : null}
+      </AnchoredPortal>
     </div>
   );
 }
