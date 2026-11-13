@@ -61,7 +61,11 @@ export function FavoriteKindSplitPicker({
         e.stopPropagation();
       }}
     >
-      <div className="relative h-full w-full overflow-hidden rounded-full bg-border">
+      {/* Fondo = mismo degradado: se ve en el corte `/` (parte del reborde). */}
+      <div
+        className="relative h-full w-full overflow-hidden rounded-full"
+        style={{ background: BORDER_GRADIENT }}
+      >
         <button
           type="button"
           disabled={pending || flash != null}
