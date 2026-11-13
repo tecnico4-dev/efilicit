@@ -194,6 +194,27 @@ body::-webkit-scrollbar {
   animation: interest-chip-nudge 420ms ease-in-out;
 }
 
+/* Rebote al volver a pulsar el corazón sin elegir Eficen/Subcontrata. */
+@keyframes fav-kind-nudge {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  28% {
+    transform: scale(1.08);
+  }
+  55% {
+    transform: scale(0.95);
+  }
+  78% {
+    transform: scale(1.04);
+  }
+}
+
+.fav-kind-nudge {
+  animation: fav-kind-nudge 380ms ease-in-out;
+}
+
 .home-dashboard {
   background:
     radial-gradient(

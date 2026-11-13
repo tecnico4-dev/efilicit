@@ -1,21 +1,38 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { cn } from "@/lib/cn";
 import { type FavoriteKind } from "@/lib/queries";
 
 /**
  * Burbuja partida en diagonal (/) Eficen (teal) | Subcontrata (violeta).
- * Al elegir una mitad: flash breve y el padre guarda el favorito.
+ * Mitades del mismo ancho; etiquetas centradas en cada hueco.
  */
 export function FavoriteKindSplitPicker({
   pending = false,
+  nudgeKey = 0,
   onPick,
+  className,
 }: {
   pending?: boolean;
+  /** Incrementar para disparar rebote (p. ej. re-click en el corazón). */
+  nudgeKey?: number;
   onPick: (kind: FavoriteKind) => void;
+  className?: string;
 }) {
   const [flash, setFlash] = useState<FavoriteKind | null>(null);
+  const [nudge, setNudge] = useState(false);
+
+  useEffect(() => {
+    if (nudgeKey <= 0) return;
+    setNudge(false);
+    const id = window.requestAnimationFrame(() => setNudge(true));
+    const t = window.setTimeout(() => setNudge(false), 400);
+    return () => {
+      window.cancelAnimationFrame(id);
+      window.clearTimeout(t);
+    };
+  }, [nudgeKey]);
 
   function pick(kind: FavoriteKind) {
     if (pending || flash != null) return;
@@ -29,7 +46,11 @@ export function FavoriteKindSplitPicker({
     <div
       role="group"
       aria-label="Clasificar favorito"
-      className="relative h-7 w-[11.75rem] max-w-full shrink-0 overflow-hidden rounded-full border-2 border-border bg-border shadow-sm"
+      className={cn(
+        "relative h-7 w-[12.5rem] shrink-0 overflow-hidden rounded-full border-2 border-border bg-border shadow-md",
+        nudge && "fav-kind-nudge",
+        className,
+      )}
       onClick={(e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -46,11 +67,11 @@ export function FavoriteKindSplitPicker({
           flash === "propia" && "bg-teal-600/45 text-teal-950 dark:text-teal-50",
         )}
         style={{
-          // Mitad izquierda con corte / (arriba más a la derecha).
-          clipPath: "polygon(0 0, 56% 0, 44% 100%, 0 100%)",
+          // Mitad izquierda; corte / simétrico (~50%).
+          clipPath: "polygon(0 0, 54% 0, 46% 100%, 0 100%)",
         }}
       >
-        <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[11px] font-medium">
+        <span className="absolute left-[25%] top-1/2 -translate-x-1/2 -translate-y-1/2 text-[11px] font-medium">
           Eficen
         </span>
       </button>
@@ -66,11 +87,10 @@ export function FavoriteKindSplitPicker({
             "bg-violet-500/45 text-violet-950 dark:text-violet-50",
         )}
         style={{
-          // Mitad derecha; hueco ~2% deja la diagonal visible (fondo border).
-          clipPath: "polygon(58% 0, 100% 0, 100% 100%, 46% 100%)",
+          clipPath: "polygon(56% 0, 100% 0, 100% 100%, 48% 100%)",
         }}
       >
-        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[11px] font-medium">
+        <span className="absolute left-[75%] top-1/2 -translate-x-1/2 -translate-y-1/2 text-[11px] font-medium">
           Subcontrata
         </span>
       </button>

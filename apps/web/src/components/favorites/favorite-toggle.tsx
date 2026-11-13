@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
@@ -12,8 +12,7 @@ import {
 import { FavoriteKindSplitPicker } from "./favorite-kind-split-picker";
 
 /**
- * Marca / desmarca favorito. Al añadir: burbuja Eficen / Subcontrata.
- * Solo se monta con sesión (la ficha no lo renderiza para anónimos).
+ * Marca / desmarca favorito. Al añadir: burbuja flotante Eficen / Subcontrata.
  */
 export function FavoriteToggle({
   userId,
@@ -26,21 +25,37 @@ export function FavoriteToggle({
   initiallyFavorited: boolean;
 }) {
   const router = useRouter();
+  const rootRef = useRef<HTMLDivElement>(null);
   const [favorited, setFavorited] = useState(initiallyFavorited);
   const [pending, setPending] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [nudgeKey, setNudgeKey] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!pickerOpen || pending) return;
+
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") {
         setPickerOpen(false);
         setError(null);
       }
     }
+
+    function onPointerDown(e: PointerEvent) {
+      const root = rootRef.current;
+      if (!root) return;
+      if (e.target instanceof Node && root.contains(e.target)) return;
+      setPickerOpen(false);
+      setError(null);
+    }
+
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    document.addEventListener("pointerdown", onPointerDown, true);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.removeEventListener("pointerdown", onPointerDown, true);
+    };
   }, [pickerOpen, pending]);
 
   async function onToggle() {
@@ -66,7 +81,7 @@ export function FavoriteToggle({
     }
 
     if (pickerOpen) {
-      setPickerOpen(false);
+      setNudgeKey((k) => k + 1);
       return;
     }
 
@@ -94,7 +109,7 @@ export function FavoriteToggle({
   }
 
   return (
-    <div className="flex flex-col items-start gap-1.5">
+    <div ref={rootRef} className="relative inline-flex flex-col items-start">
       <Button
         type="button"
         variant="outline"
@@ -116,16 +131,18 @@ export function FavoriteToggle({
       </Button>
 
       {pickerOpen && !favorited ? (
-        <FavoriteKindSplitPicker
-          pending={pending}
-          onPick={(kind) => void onPickKind(kind)}
-        />
-      ) : null}
-
-      {error ? (
-        <p className="text-xs text-destructive" role="alert">
-          {error}
-        </p>
+        <div className="absolute left-0 top-full z-50 mt-1.5">
+          <FavoriteKindSplitPicker
+            pending={pending}
+            nudgeKey={nudgeKey}
+            onPick={(kind) => void onPickKind(kind)}
+          />
+          {error ? (
+            <p className="mt-1 text-xs text-destructive" role="alert">
+              {error}
+            </p>
+          ) : null}
+        </div>
       ) : null}
     </div>
   );

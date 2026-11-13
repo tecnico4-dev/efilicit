@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/cn";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
@@ -32,8 +32,7 @@ function HeartIcon({ filled }: { filled: boolean }) {
 
 /**
  * Corazón en lista de resultados: vacío = no favorito; rojo = favorito.
- * Al añadir: burbuja Eficen / Subcontrata bajo el corazón (sin modal).
- * Solo se monta con sesión.
+ * Al añadir: burbuja flotante Eficen / Subcontrata bajo el corazón (sin crecer la fila).
  */
 export function FavoriteHeartButton({
   userId,
@@ -42,31 +41,45 @@ export function FavoriteHeartButton({
 }: {
   userId: string;
   tenderId: string;
-  /** Conservado por compatibilidad con callers; la burbuja no muestra título. */
   tenderTitle?: string | null;
   initiallyFavorited: boolean;
 }) {
   const router = useRouter();
+  const rootRef = useRef<HTMLDivElement>(null);
   const [favorited, setFavorited] = useState(initiallyFavorited);
   const [pending, setPending] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [nudgeKey, setNudgeKey] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
-  // Búsqueda carga favoritos async tras el listado; hay que pintar cuando llegue.
   useEffect(() => {
     if (!pending && !pickerOpen) setFavorited(initiallyFavorited);
   }, [initiallyFavorited, pending, pickerOpen]);
 
   useEffect(() => {
     if (!pickerOpen || pending) return;
+
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") {
         setPickerOpen(false);
         setError(null);
       }
     }
+
+    function onPointerDown(e: PointerEvent) {
+      const root = rootRef.current;
+      if (!root) return;
+      if (e.target instanceof Node && root.contains(e.target)) return;
+      setPickerOpen(false);
+      setError(null);
+    }
+
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    document.addEventListener("pointerdown", onPointerDown, true);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.removeEventListener("pointerdown", onPointerDown, true);
+    };
   }, [pickerOpen, pending]);
 
   async function onToggle(e: React.MouseEvent) {
@@ -93,8 +106,7 @@ export function FavoriteHeartButton({
     }
 
     if (pickerOpen) {
-      setPickerOpen(false);
-      setError(null);
+      setNudgeKey((k) => k + 1);
       return;
     }
 
@@ -123,7 +135,7 @@ export function FavoriteHeartButton({
   }
 
   return (
-    <div className="flex shrink-0 flex-col items-end gap-1.5">
+    <div ref={rootRef} className="relative shrink-0">
       <button
         type="button"
         disabled={pending}
@@ -143,16 +155,21 @@ export function FavoriteHeartButton({
       </button>
 
       {pickerOpen && !favorited ? (
-        <FavoriteKindSplitPicker
-          pending={pending}
-          onPick={(kind) => void onPickKind(kind)}
-        />
-      ) : null}
-
-      {error ? (
-        <p className="max-w-[10rem] text-right text-[11px] text-destructive" role="alert">
-          {error}
-        </p>
+        <div className="absolute left-1/2 top-full z-50 mt-1.5 -translate-x-1/2">
+          <FavoriteKindSplitPicker
+            pending={pending}
+            nudgeKey={nudgeKey}
+            onPick={(kind) => void onPickKind(kind)}
+          />
+          {error ? (
+            <p
+              className="mt-1 max-w-[12.5rem] text-center text-[11px] text-destructive"
+              role="alert"
+            >
+              {error}
+            </p>
+          ) : null}
+        </div>
       ) : null}
     </div>
   );
