@@ -60,8 +60,13 @@ function backLinkFromParams(
   params: Record<string, string | string[] | undefined>,
 ): { href: string; label: string } | null {
   const from = first(params.from);
-  // Buzón / alertas / correo digest: sin enlace «volver».
-  if (from === "notifications" || from === "alerts" || from === "email") {
+  // Buzón / alertas / correo / aviso de retirada de Común: sin enlace «volver».
+  if (
+    from === "notifications" ||
+    from === "alerts" ||
+    from === "email" ||
+    from === "common-removed"
+  ) {
     return null;
   }
   if (from === "home") {

@@ -61,11 +61,16 @@ export async function GET(request: NextRequest) {
   }
 
   const target = new URL(`/tenders/${tenderId}`, request.url);
-  // Común (alta/retirada): sin valoración en ficha. Digest/fav-estado: sí.
-  target.searchParams.set(
-    "from",
-    isCommonSource ? "favorites-common" : "email",
-  );
+  // Alta Común → volver a Común, sin valoración.
+  // Retirada Común → sin «volver» ni valoración.
+  // Digest/fav-estado → valoración.
+  const from =
+    source === "common"
+      ? "favorites-common"
+      : source === "common-removed"
+        ? "common-removed"
+        : "email";
+  target.searchParams.set("from", from);
   if (interest) target.searchParams.set("interest", interest);
   return NextResponse.redirect(target);
 }
