@@ -28,8 +28,9 @@ No es Mis licitaciones / `offer_*` (pipeline de oferta).
 2. RLS vía `is_app_user()`: SELECT / INSERT / DELETE para cualquier usuario app. INSERT exige `added_by = yo`. Cualquiera puede DELETE.
 3. UI: alta solo desde `/favorites/tenders` (icono avión + modal: muestra «Calificada como {kind}» heredado del favorito personal + nota). Listado Común y hub con pestañas Eficen/Subcontrata (estilo Mis alertas | Coincidencias) + burbuja. Sin badge en búsqueda/ficha.
 4. Si ya existe: no abrir modal; toast inmediato. Si `added_by` soy yo → «Ya has añadido esta licitación»; si otro → «{added_by_display_name} ya ha añadido esta licitación» (fallback «Otro usuario» si el nombre estaba vacío).
-5. Avisos in-app (`notification_common`): PK `(user_id, tender_id)`; FK a `shared_favorites(tender_id)` **ON DELETE CASCADE**; fan-out por trigger a todos los usuarios app excepto `added_by`. Autor/kind/fecha se leen de `shared_favorites` (sin denormalizar). `read_at` / `trashed_at`; caducidad 30 días o eliminar definitivo → **DELETE** de la fila (sin `deleted`).
-6. **Tenant único:** Común asume una sola organización invite-only. Multi-empresa futura requeriría otro ADR (scope por org).
+5. Avisos in-app al **añadir** (`notification_common`): PK `(user_id, tender_id)`; FK a `shared_favorites(tender_id)` **ON DELETE CASCADE**; fan-out por trigger a todos los usuarios app excepto `added_by`. Autor/kind/fecha se leen de `shared_favorites` (sin denormalizar). `read_at` / `trashed_at`; caducidad 30 días o eliminar definitivo → **DELETE** de la fila (sin `deleted`).
+6. Avisos in-app al **quitar** (`notification_common_removed`): PK `(user_id, tender_id)` con `user_id` = autor original; FK a `tenders` (no a `shared_favorites`, para sobrevivir al DELETE); columnas `removed_by` / `removed_by_display_name`; trigger `AFTER DELETE` en `shared_favorites` (SECURITY DEFINER) inserta aviso solo si quien borra ≠ `added_by`. Misma papelera 30 días / DELETE definitivo. Badge unread incluye esta tabla.
+7. **Tenant único:** Común asume una sola organización invite-only. Multi-empresa futura requeriría otro ADR (scope por org).
 
 ### Alternativas descartadas
 
@@ -62,4 +63,4 @@ No es Mis licitaciones / `offer_*` (pipeline de oferta).
 ## Referencias
 
 - [016](016-auth-invite-only-sin-registro-publico.md) · [023](023-mis-licitaciones-pipeline-compartido.md)
-- Migraciones `20261112100000_shared_favorites.sql`, `20261112110000_shared_favorites_kind.sql`, `20261112142000_shared_favorites_added_by_display_name.sql`, `20261112160000_notification_common.sql`
+- Migraciones `20261112100000_shared_favorites.sql`, `20261112110000_shared_favorites_kind.sql`, `20261112142000_shared_favorites_added_by_display_name.sql`, `20261112160000_notification_common.sql`, `20261113120000_notification_common_removed.sql`

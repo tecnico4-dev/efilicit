@@ -9,6 +9,7 @@ import {
   formatNotificationTrashExpiry,
   isNotificationInTrashWindow,
   type CommonInboxNotification,
+  type CommonRemovedInboxNotification,
   type DigestInboxNotification,
   type FavoriteStatusNotification,
 } from "@/lib/queries";
@@ -31,7 +32,12 @@ import { TrashNotificationButton } from "./trash-notification-button";
 export type InboxItem =
   | { kind: "favorite_status"; sortAt: string; data: FavoriteStatusNotification }
   | { kind: "digest"; sortAt: string; data: DigestInboxNotification }
-  | { kind: "common"; sortAt: string; data: CommonInboxNotification };
+  | { kind: "common"; sortAt: string; data: CommonInboxNotification }
+  | {
+      kind: "common_removed";
+      sortAt: string;
+      data: CommonRemovedInboxNotification;
+    };
 
 function formatWhen(iso: string): string {
   try {
@@ -85,6 +91,27 @@ function CommonHeadline({ n }: { n: CommonInboxNotification }) {
   );
 }
 
+function CommonRemovedHeadline({
+  n,
+}: {
+  n: CommonRemovedInboxNotification;
+}) {
+  const who = n.removedByDisplayName?.trim() || "Alguien del equipo";
+  return (
+    <>
+      {who} ha quitado tu licitación de la carpeta{" "}
+      <Link
+        href="/favorites/common"
+        className="font-medium text-primary underline underline-offset-2 hover:text-primary-dark"
+        onClick={(e) => e.stopPropagation()}
+      >
+        común
+      </Link>
+      .
+    </>
+  );
+}
+
 function itemUnread(item: InboxItem): boolean {
   return item.data.unread;
 }
@@ -112,6 +139,9 @@ export function NotificationsList({
   function itemKey(item: InboxItem): string {
     if (item.kind === "digest") return `digest:${item.data.id}`;
     if (item.kind === "common") return `common:${item.data.tenderId}`;
+    if (item.kind === "common_removed") {
+      return `common-removed:${item.data.tenderId}`;
+    }
     return `fav:${item.data.eventId}`;
   }
 
@@ -191,6 +221,18 @@ export function NotificationsList({
               if (item.kind === "common") {
                 return (
                   <CommonRow
+                    key={key}
+                    n={item.data}
+                    userId={userId}
+                    inTrash={view === "trash"}
+                    onPurgeHide={onPurgeHide}
+                    onPurgeShow={onPurgeShow}
+                  />
+                );
+              }
+              if (item.kind === "common_removed") {
+                return (
+                  <CommonRemovedRow
                     key={key}
                     n={item.data}
                     userId={userId}
@@ -394,6 +436,99 @@ function CommonRow({
           <TrashCommonNotificationButton
             userId={userId}
             tenderId={n.tenderId}
+          />
+        </div>
+      </div>
+    </li>
+  );
+}
+
+function CommonRemovedRow({
+  n,
+  userId,
+  inTrash,
+  onPurgeHide,
+  onPurgeShow,
+}: {
+  n: CommonRemovedInboxNotification;
+  userId: string;
+  inTrash: boolean;
+  onPurgeHide: () => void;
+  onPurgeShow: () => void;
+}) {
+  const href = `/notifications/open?source=common-removed&tenderId=${encodeURIComponent(n.tenderId)}`;
+
+  if (inTrash && n.trashedAt) {
+    return (
+      <li>
+        <div className="flex items-center gap-3 px-4 py-3">
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-medium text-foreground">
+              <CommonRemovedHeadline n={n} />
+            </p>
+            <Link
+              href={href}
+              className="mt-1 block text-sm text-muted-foreground transition-colors hover:opacity-90"
+            >
+              {n.title}
+            </Link>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {formatWhen(n.removedAt)}
+            </p>
+          </div>
+          <div className="flex shrink-0 flex-col items-end gap-1 self-center">
+            <p className="max-w-[11rem] text-right text-xs text-muted-foreground sm:max-w-[14rem]">
+              {formatNotificationTrashExpiry(n.trashedAt)}
+            </p>
+            <div className="flex items-center gap-0.5">
+              <RestoreCommonNotificationButton
+                userId={userId}
+                tenderId={n.tenderId}
+                variant="removed"
+              />
+              <PurgeCommonNotificationButton
+                userId={userId}
+                tenderId={n.tenderId}
+                variant="removed"
+                onHide={onPurgeHide}
+                onShow={onPurgeShow}
+              />
+            </div>
+          </div>
+        </div>
+      </li>
+    );
+  }
+
+  return (
+    <li>
+      <div className="flex items-stretch gap-1">
+        <div className="relative min-w-0 flex-1 px-4 py-3 transition-colors hover:bg-muted/60">
+          {n.unread ? (
+            <span
+              className="absolute right-2 top-1/2 size-2 -translate-y-1/2 rounded-full bg-primary shadow-sm ring-2 ring-background"
+              title="No leída"
+              aria-label="No leída"
+            />
+          ) : null}
+          <p className="pr-4 text-sm font-medium text-foreground">
+            <CommonRemovedHeadline n={n} />
+          </p>
+          <Link
+            href={href}
+            className="mt-1 block pr-4 text-sm text-muted-foreground transition-colors hover:text-foreground"
+          >
+            {n.title}
+          </Link>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {formatWhen(n.removedAt)}
+          </p>
+        </div>
+        <div className="flex items-center pr-2">
+          <TrashCommonNotificationButton
+            userId={userId}
+            tenderId={n.tenderId}
+            variant="removed"
           />
         </div>
       </div>

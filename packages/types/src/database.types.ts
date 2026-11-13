@@ -1340,6 +1340,58 @@ export type Database = {
           },
         ]
       }
+      notification_common_removed: {
+        Row: {
+          created_at: string
+          read_at: string | null
+          removed_by: string | null
+          removed_by_display_name: string | null
+          tender_id: string
+          trashed_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          read_at?: string | null
+          removed_by?: string | null
+          removed_by_display_name?: string | null
+          tender_id: string
+          trashed_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          read_at?: string | null
+          removed_by?: string | null
+          removed_by_display_name?: string | null
+          tender_id?: string
+          trashed_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_common_removed_removed_by_fkey"
+            columns: ["removed_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_common_removed_tender_id_fkey"
+            columns: ["tender_id"]
+            isOneToOne: false
+            referencedRelation: "tenders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_common_removed_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notification_emails: {
         Row: {
           created_at: string

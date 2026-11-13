@@ -11,6 +11,7 @@ import {
   isNotificationInTrashWindow,
   listFavoriteStatusNotifications,
   listOwnCommonInboxNotifications,
+  listOwnCommonRemovedInboxNotifications,
   listOwnDigestInboxNotifications,
 } from "@/lib/queries";
 import {
@@ -60,14 +61,21 @@ export default async function NotificationsPage({
     );
   }
 
-  const [favResult, digestResult, commonResult] = await Promise.all([
-    listFavoriteStatusNotifications(supabase, { userId: profile.id }),
-    listOwnDigestInboxNotifications(supabase, { userId: profile.id }),
-    listOwnCommonInboxNotifications(supabase, { userId: profile.id }),
-  ]);
+  const [favResult, digestResult, commonResult, commonRemovedResult] =
+    await Promise.all([
+      listFavoriteStatusNotifications(supabase, { userId: profile.id }),
+      listOwnDigestInboxNotifications(supabase, { userId: profile.id }),
+      listOwnCommonInboxNotifications(supabase, { userId: profile.id }),
+      listOwnCommonRemovedInboxNotifications(supabase, {
+        userId: profile.id,
+      }),
+    ]);
 
   const error =
-    favResult.error ?? digestResult.error ?? commonResult.error;
+    favResult.error ??
+    digestResult.error ??
+    commonResult.error ??
+    commonRemovedResult.error;
 
   const items: InboxItem[] = [
     ...favResult.data.map(
@@ -88,6 +96,13 @@ export default async function NotificationsPage({
       (data): InboxItem => ({
         kind: "common",
         sortAt: data.sharedAt,
+        data,
+      }),
+    ),
+    ...commonRemovedResult.data.map(
+      (data): InboxItem => ({
+        kind: "common_removed",
+        sortAt: data.removedAt,
         data,
       }),
     ),

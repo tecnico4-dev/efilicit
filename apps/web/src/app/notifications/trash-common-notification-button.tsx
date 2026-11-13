@@ -6,15 +6,20 @@ import { useUndoToast } from "@/components/undo-toast";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import {
   restoreOwnCommonNotificationFromTrash,
+  restoreOwnCommonRemovedNotificationFromTrash,
   trashOwnCommonNotification,
+  trashOwnCommonRemovedNotification,
 } from "@/lib/queries";
 
 export function TrashCommonNotificationButton({
   userId,
   tenderId,
+  variant = "added",
 }: {
   userId: string;
   tenderId: string;
+  /** Aviso de alta en Común vs aviso de retirada. */
+  variant?: "added" | "removed";
 }) {
   const router = useRouter();
   const { showUndo, showStatus } = useUndoToast();
@@ -26,10 +31,10 @@ export function TrashCommonNotificationButton({
     if (pending) return;
     setPending(true);
     const client = createSupabaseBrowserClient();
-    const { error } = await trashOwnCommonNotification(client, {
-      userId,
-      tenderId,
-    });
+    const { error } =
+      variant === "removed"
+        ? await trashOwnCommonRemovedNotification(client, { userId, tenderId })
+        : await trashOwnCommonNotification(client, { userId, tenderId });
     setPending(false);
     if (error) {
       showStatus(`No se pudo mover a la papelera: ${error.message}`);
@@ -37,7 +42,14 @@ export function TrashCommonNotificationButton({
     }
     showUndo("Notificación movida a la papelera.", async () => {
       const c = createSupabaseBrowserClient();
-      await restoreOwnCommonNotificationFromTrash(c, { userId, tenderId });
+      if (variant === "removed") {
+        await restoreOwnCommonRemovedNotificationFromTrash(c, {
+          userId,
+          tenderId,
+        });
+      } else {
+        await restoreOwnCommonNotificationFromTrash(c, { userId, tenderId });
+      }
       router.refresh();
     });
     router.refresh();

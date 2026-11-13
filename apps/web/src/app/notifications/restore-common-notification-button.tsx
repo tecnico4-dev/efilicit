@@ -6,15 +6,19 @@ import { useUndoToast } from "@/components/undo-toast";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import {
   restoreOwnCommonNotificationFromTrash,
+  restoreOwnCommonRemovedNotificationFromTrash,
   trashOwnCommonNotification,
+  trashOwnCommonRemovedNotification,
 } from "@/lib/queries";
 
 export function RestoreCommonNotificationButton({
   userId,
   tenderId,
+  variant = "added",
 }: {
   userId: string;
   tenderId: string;
+  variant?: "added" | "removed";
 }) {
   const router = useRouter();
   const { showUndo, showStatus } = useUndoToast();
@@ -26,10 +30,16 @@ export function RestoreCommonNotificationButton({
     if (pending) return;
     setPending(true);
     const client = createSupabaseBrowserClient();
-    const { error } = await restoreOwnCommonNotificationFromTrash(client, {
-      userId,
-      tenderId,
-    });
+    const { error } =
+      variant === "removed"
+        ? await restoreOwnCommonRemovedNotificationFromTrash(client, {
+            userId,
+            tenderId,
+          })
+        : await restoreOwnCommonNotificationFromTrash(client, {
+            userId,
+            tenderId,
+          });
     setPending(false);
     if (error) {
       showStatus(`No se pudo recuperar: ${error.message}`);
@@ -37,7 +47,11 @@ export function RestoreCommonNotificationButton({
     }
     showUndo("Notificación recuperada.", async () => {
       const c = createSupabaseBrowserClient();
-      await trashOwnCommonNotification(c, { userId, tenderId });
+      if (variant === "removed") {
+        await trashOwnCommonRemovedNotification(c, { userId, tenderId });
+      } else {
+        await trashOwnCommonNotification(c, { userId, tenderId });
+      }
       router.refresh();
     });
     router.refresh();

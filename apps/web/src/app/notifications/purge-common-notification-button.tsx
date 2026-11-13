@@ -4,18 +4,23 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useUndoToast } from "@/components/undo-toast";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
-import { permanentlyDeleteOwnCommonNotification } from "@/lib/queries";
+import {
+  permanentlyDeleteOwnCommonNotification,
+  permanentlyDeleteOwnCommonRemovedNotification,
+} from "@/lib/queries";
 
 export function PurgeCommonNotificationButton({
   userId,
   tenderId,
   onHide,
   onShow,
+  variant = "added",
 }: {
   userId: string;
   tenderId: string;
   onHide: () => void;
   onShow: () => void;
+  variant?: "added" | "removed";
 }) {
   const router = useRouter();
   const { showPendingConfirm, showStatus } = useUndoToast();
@@ -32,10 +37,16 @@ export function PurgeCommonNotificationButton({
     showPendingConfirm("Notificación eliminada definitivamente.", {
       onConfirm: async () => {
         const client = createSupabaseBrowserClient();
-        const { error } = await permanentlyDeleteOwnCommonNotification(client, {
-          userId,
-          tenderId,
-        });
+        const { error } =
+          variant === "removed"
+            ? await permanentlyDeleteOwnCommonRemovedNotification(client, {
+                userId,
+                tenderId,
+              })
+            : await permanentlyDeleteOwnCommonNotification(client, {
+                userId,
+                tenderId,
+              });
         if (error) {
           showStatus(`No se pudo eliminar: ${error.message}`);
           onShow();
