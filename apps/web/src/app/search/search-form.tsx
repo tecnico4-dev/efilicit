@@ -157,7 +157,7 @@ function SearchFormInner({ children }: { children: ReactNode }) {
             className={cn(
               "rounded-md px-4 py-2 text-sm font-medium text-primary-foreground transition-colors",
               searching
-                ? "cursor-not-allowed bg-primary/55"
+                ? "pointer-events-none bg-primary/55"
                 : "bg-primary hover:bg-primary-dark",
             )}
           >
