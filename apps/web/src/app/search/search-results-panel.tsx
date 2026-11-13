@@ -250,9 +250,7 @@ export function SearchResultsPanel({
   if (!shouldSearch) return null;
 
   if (error) {
-    return (
-      <ErrorState className="mt-8">Error al buscar: {error}</ErrorState>
-    );
+    return <ErrorState className="mt-8">{error}</ErrorState>;
   }
 
   if (loading || rows == null) {
@@ -325,6 +323,14 @@ export function SearchResultsPanel({
                 tenderId={row.id}
                 tenderTitle={row.title}
                 initiallyFavorited={favoritedIds.has(row.id)}
+                onFavoritedChange={(id, next) => {
+                  setFavoritedIds((prev) => {
+                    const copy = new Set(prev);
+                    if (next) copy.add(id);
+                    else copy.delete(id);
+                    return copy;
+                  });
+                }}
               />
             ) : null}
           </div>

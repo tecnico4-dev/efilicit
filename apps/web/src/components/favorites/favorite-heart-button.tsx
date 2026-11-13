@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 import { AnchoredPortal } from "@/components/ui/anchored-portal";
 import { cn } from "@/lib/cn";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
@@ -41,13 +40,15 @@ export function FavoriteHeartButton({
   userId,
   tenderId,
   initiallyFavorited,
+  onFavoritedChange,
 }: {
   userId: string;
   tenderId: string;
   tenderTitle?: string | null;
   initiallyFavorited: boolean;
+  /** Avisa al listado para actualizar el Set de favoritos sin recargar. */
+  onFavoritedChange?: (tenderId: string, favorited: boolean) => void;
 }) {
-  const router = useRouter();
   const anchorRef = useRef<HTMLButtonElement>(null);
   const [favorited, setFavorited] = useState(initiallyFavorited);
   const [pending, setPending] = useState(false);
@@ -55,9 +56,10 @@ export function FavoriteHeartButton({
   const [nudgeKey, setNudgeKey] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
+  // Solo cuando el padre trae un valor nuevo (p. ej. otra búsqueda), no al cerrar el picker.
   useEffect(() => {
-    if (!pending && !pickerOpen) setFavorited(initiallyFavorited);
-  }, [initiallyFavorited, pending, pickerOpen]);
+    setFavorited(initiallyFavorited);
+  }, [initiallyFavorited]);
 
   useEffect(() => {
     if (!pickerOpen || pending) return;
@@ -90,7 +92,7 @@ export function FavoriteHeartButton({
       setFavorited(false);
       setPickerOpen(false);
       setPending(false);
-      router.refresh();
+      onFavoritedChange?.(tenderId, false);
       return;
     }
 
@@ -120,7 +122,7 @@ export function FavoriteHeartButton({
     }
     setFavorited(true);
     setPickerOpen(false);
-    router.refresh();
+    onFavoritedChange?.(tenderId, true);
   }
 
   return (
