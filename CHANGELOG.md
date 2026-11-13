@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Buscador: `search_tenders` con `statement_timeout` 20s; si aún así corta, mensaje claro pidiendo afinar filtros (sin el error crudo de Postgres).
 - Buscador: FTS ignora tildes (`unaccent` en `search_vector` + `search_tenders`); título/descripción se siguen guardando con tildes.
 - Mis licitaciones (bloque B, local): `tender_id` RESTRICT; evidencias con CHECK por tipo + RESTRICT a `company_*`; FK compuestas para no mezclar expedientes; wipe salta licitaciones con `offer_cases` — [ADR 028](docs/adr/028-offer-schema-block-b-integrity.md).
 - Mis licitaciones / migraciones locales: `is_app_user()` se recrea tras el rollback que la dropeaba; ALTER/backfill `bid_*` con guardas si las tablas no existen — [ADR 027](docs/adr/027-offer-schema-hardening-is-app-user.md). Solo Studio local.

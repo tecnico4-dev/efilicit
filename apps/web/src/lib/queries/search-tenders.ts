@@ -105,6 +105,26 @@ function buildRpcArgs(input: SearchTendersInput): SearchTendersArgs {
   };
 }
 
+function isSearchStatementTimeout(message: string): boolean {
+  const m = message.toLowerCase();
+  return (
+    m.includes("statement timeout") ||
+    m.includes("canceling statement") ||
+    m.includes("cancelling statement")
+  );
+}
+
+/** Mensaje de UI si Postgres cancela por statement_timeout. */
+export const SEARCH_TIMEOUT_USER_MESSAGE =
+  "Esta búsqueda es demasiado amplia. Afina los filtros y vuelve a intentarlo.";
+
+function mapSearchError(message: string): Error {
+  if (isSearchStatementTimeout(message)) {
+    return new Error(SEARCH_TIMEOUT_USER_MESSAGE);
+  }
+  return new Error(`Error al buscar: ${message}`);
+}
+
 /**
  * Búsqueda canónica sobre `tenders` (FTS + pg_trgm + filtros Criteria v1).
  * Usa la RPC `public.search_tenders`. No usa service_role.
@@ -121,7 +141,7 @@ export async function searchTenders(
   const { data, error } = await client.rpc("search_tenders", buildRpcArgs(input));
 
   if (error) {
-    return { data: null, totalCount: 0, error: new Error(error.message) };
+    return { data: null, totalCount: 0, error: mapSearchError(error.message) };
   }
 
   const rows = (data ?? []) as SearchTenderRpcRow[];
