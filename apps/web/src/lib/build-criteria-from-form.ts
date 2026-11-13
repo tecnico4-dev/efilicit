@@ -8,6 +8,11 @@ import { normalizeCpvCode } from "@/lib/cpv";
 function readField(form: HTMLFormElement, name: string): string {
   const el = form.elements.namedItem(name);
   if (el instanceof RadioNodeList) {
+    for (const node of el) {
+      if (node instanceof HTMLInputElement && node.value.trim() !== "") {
+        return node.value.trim();
+      }
+    }
     return String(el.value ?? "").trim();
   }
   if (el instanceof HTMLInputElement) {
@@ -123,4 +128,55 @@ export function hasInvalidAmountRange(form: HTMLFormElement): boolean {
   const max = Number(maxRaw);
   if (Number.isNaN(min) || Number.isNaN(max)) return false;
   return min > max;
+}
+
+/**
+ * «Solo en plazo» va marcado por defecto: no cuenta como criterio por sí solo.
+ */
+export function hasAnyCriterion(form: HTMLFormElement): boolean {
+  const names = [
+    "q",
+    "cpv",
+    "min",
+    "max",
+    "ccaa",
+    "municipality",
+    "status",
+    "procedure",
+    "contract_type",
+    "pub_from",
+    "pub_to",
+  ] as const;
+  return names.some((name) => {
+    if (
+      name === "ccaa" ||
+      name === "status" ||
+      name === "procedure" ||
+      name === "contract_type"
+    ) {
+      const el = form.elements.namedItem(name);
+      if (el instanceof RadioNodeList) {
+        return [...el].some(
+          (node) =>
+            node instanceof HTMLInputElement && node.value.trim() !== "",
+        );
+      }
+    }
+    return readField(form, name) !== "";
+  });
+}
+
+/** Checkbox desmarcado no viaja en GET: inyectamos `en_plazo=0`. */
+export function ensureEnPlazoParam(form: HTMLFormElement) {
+  const el = form.elements.namedItem("en_plazo");
+  const checked = el instanceof HTMLInputElement && el.checked;
+  form.querySelectorAll('input[data-en-plazo-off="1"]').forEach((n) => n.remove());
+  if (!checked) {
+    const hidden = document.createElement("input");
+    hidden.type = "hidden";
+    hidden.name = "en_plazo";
+    hidden.value = "0";
+    hidden.dataset.enPlazoOff = "1";
+    form.appendChild(hidden);
+  }
 }

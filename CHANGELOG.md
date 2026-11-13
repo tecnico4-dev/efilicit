@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Web: suite unitaria con Vitest (`pnpm --filter @efilicit/web test`): helpers puros, validación del buscador, queries con fake Supabase y regresiones (dedupe Coincidencias, reasignar cola, purga buzón 30 días, `en_plazo=0`, «Otro» al final). Paso en CI.
 - Favoritos · Común: aviso in-app al autor si otro quita su licitación (`notification_common_removed`, `removed_by` / `removed_by_display_name`; trigger tras DELETE; buzón + badge). Solo local hasta migración remota pedida.
 - Favoritos personales: `favorites.kind` Propias de Eficen / Subcontrata (ADR 030). Modal obligatorio al guardar (corazón / ficha); pestañas Eficen/Subcontrata en `/favorites/tenders` y Común; hub muestra las más recientes mezcladas con burbuja.
 - Favoritos · Común: carpeta compartida del equipo (`shared_favorites`, ADR 029). Alta solo desde `/favorites/tenders` (avión + modal: «Calificada como …» según el favorito personal + nota); `added_by_display_name` al compartir; aviso in-app al equipo (`notification_common`); listado en hub y `/favorites/common` con burbuja y campos; cualquiera puede quitar.

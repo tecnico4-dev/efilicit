@@ -43,6 +43,9 @@ jobs:
       - name: Typecheck packages
         run: pnpm -r run typecheck
 
+      - name: Unit tests web
+        run: pnpm --filter @efilicit/web test
+
       - name: Build web
         run: pnpm --filter @efilicit/web build
 

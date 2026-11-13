@@ -2,6 +2,12 @@
 
 import type { ReactNode } from "react";
 import { PAGE_TITLE_RULE } from "@/components/shell/page-width";
+import {
+  ensureEnPlazoParam,
+  hasAnyCriterion,
+  hasInvalidAmountRange,
+  hasInvalidPublicationRange,
+} from "@/lib/build-criteria-from-form";
 import { ClearSearchFieldsButton } from "./clear-search-fields";
 import {
   SearchFeedbackProvider,
@@ -12,96 +18,6 @@ import {
   useSimpleFieldsPreview,
 } from "./search-form-preview";
 import { SEARCH_FORM_ID } from "./save-search-button";
-
-function readField(form: HTMLFormElement, name: string): string {
-  const el = form.elements.namedItem(name);
-  if (el instanceof RadioNodeList) {
-    for (const node of el) {
-      if (node instanceof HTMLInputElement && node.value.trim() !== "") {
-        return node.value.trim();
-      }
-    }
-    return "";
-  }
-  if (
-    el instanceof HTMLInputElement ||
-    el instanceof HTMLSelectElement ||
-    el instanceof HTMLTextAreaElement
-  ) {
-    return el.value.trim();
-  }
-  return "";
-}
-
-/**
- * «Solo en plazo» va marcado por defecto: no cuenta como criterio por sí solo.
- */
-function hasAnyCriterion(form: HTMLFormElement): boolean {
-  const names = [
-    "q",
-    "cpv",
-    "min",
-    "max",
-    "ccaa",
-    "municipality",
-    "status",
-    "procedure",
-    "contract_type",
-    "pub_from",
-    "pub_to",
-  ] as const;
-  return names.some((name) => {
-    if (
-      name === "ccaa" ||
-      name === "status" ||
-      name === "procedure" ||
-      name === "contract_type"
-    ) {
-      const el = form.elements.namedItem(name);
-      if (el instanceof RadioNodeList) {
-        return [...el].some(
-          (node) =>
-            node instanceof HTMLInputElement && node.value.trim() !== "",
-        );
-      }
-    }
-    return readField(form, name) !== "";
-  });
-}
-
-/** Checkbox desmarcado no viaja en GET: inyectamos `en_plazo=0`. */
-function ensureEnPlazoParam(form: HTMLFormElement) {
-  const el = form.elements.namedItem("en_plazo");
-  const checked = el instanceof HTMLInputElement && el.checked;
-  form.querySelectorAll('input[data-en-plazo-off="1"]').forEach((n) => n.remove());
-  if (!checked) {
-    const hidden = document.createElement("input");
-    hidden.type = "hidden";
-    hidden.name = "en_plazo";
-    hidden.value = "0";
-    hidden.dataset.enPlazoOff = "1";
-    form.appendChild(hidden);
-  }
-}
-
-/** Fechas de publicación: ambas rellenadas y desde > hasta. */
-function hasInvalidPublicationRange(form: HTMLFormElement): boolean {
-  const from = readField(form, "pub_from");
-  const to = readField(form, "pub_to");
-  if (from === "" || to === "") return false;
-  return from > to;
-}
-
-/** Mínimo y máximo rellenados, y mínimo > máximo. */
-function hasInvalidAmountRange(form: HTMLFormElement): boolean {
-  const minRaw = readField(form, "min");
-  const maxRaw = readField(form, "max");
-  if (minRaw === "" || maxRaw === "") return false;
-  const min = Number(minRaw);
-  const max = Number(maxRaw);
-  if (Number.isNaN(min) || Number.isNaN(max)) return false;
-  return min > max;
-}
 
 function SearchFormInner({ children }: { children: ReactNode }) {
   const { feedback, setFeedback, clearFeedback } = useSearchFeedback();

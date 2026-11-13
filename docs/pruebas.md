@@ -511,9 +511,28 @@ Pasos comunes: stack local → (opcional) `db reset` + limpiar Storage → pytes
 
 ---
 
+---
+
+# Parte W — Unitarios web (`apps/web`)
+
+> Sin red ni UI. Vitest + fake Supabase (`src/test/fake-supabase.ts`).
+
+```powershell
+pnpm --filter @efilicit/web test
+# watch:
+pnpm --filter @efilicit/web test:watch
+```
+
+Cubre helpers (`criteria-display`, keywords, CPV, plazos, redirects…), validación del formulario de búsqueda, queries frágiles (buzón, digest, alertas/coincidencias, favoritos) y regresiones de producto. CI ejecuta el mismo paso antes del build.
+
+No sustituye las pruebas E2E de fuentes de este documento ni RLS (`verify:rls`).
+
+---
+
 ## Referencias
 
 - Semana 2: [plans/semana02-plan.md](plans/semana02-plan.md), [plans/fase2-checklist.md](plans/fase2-checklist.md), [sources/placsp.md](sources/placsp.md)
 - Semana 3: [plans/semana03-plan.md](plans/semana03-plan.md), [plans/fase3-checklist.md](plans/fase3-checklist.md), [sources/placsp_agregadas.md](sources/placsp_agregadas.md), [sources/catalunya.md](sources/catalunya.md), [sources/euskadi.md](sources/euskadi.md)
 - CLI: `ingestion/README.md` (`run-placsp`, `run-catalunya`, `run-euskadi`)
 - Roadmap: [04-roadmap-mvp.md](04-roadmap-mvp.md) § Semanas 2–3
+- Web unitarios: `apps/web` (`vitest.config.mts`, `src/**/*.test.ts`)
