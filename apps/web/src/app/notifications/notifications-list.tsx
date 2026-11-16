@@ -739,7 +739,6 @@ function FavoriteStatusRow({
             </p>
             <p className="mt-1 text-xs text-muted-foreground">
               {formatWhen(n.occurredAt)}
-              {n.sourceCode ? ` · ${n.sourceCode}` : null}
             </p>
           </Link>
           <div className="flex shrink-0 flex-col items-end gap-1 self-center">
@@ -788,7 +787,6 @@ function FavoriteStatusRow({
           </p>
           <p className="mt-1 text-xs text-muted-foreground">
             {formatWhen(n.occurredAt)}
-            {n.sourceCode ? ` · ${n.sourceCode}` : null}
           </p>
         </Link>
         <div className="flex items-center pr-2">
