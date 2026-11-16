@@ -43,3 +43,5 @@ No uses un ADR para el estado de una fuente o un parser: eso va en `docs/sources
 | [027](027-offer-schema-hardening-is-app-user.md) | Endurecimiento oferta: `is_app_user` + cadena migraciones (bloque A) | Aceptado |
 | [028](028-offer-schema-block-b-integrity.md) | Endurecimiento oferta (bloque B): RESTRICT + evidencias + FK compuestas | Aceptado |
 | [029](029-shared-favorites-comun.md) | Favoritos Común (`shared_favorites`) | Aceptado |
+| [030](030-favorites-kind-eficen-subcontrata.md) | Favoritos: dimensión Eficen / Subcontrata (`kind`) | Aceptado |
+| [031](031-retencion-purge-tenders.md) | Retención canónica: purge de licitaciones con escudos | Aceptado |

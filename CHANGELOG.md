@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Retención canónica: workflow manual `cleanup-tenders` + `scripts/purge_tenders.py` (dry-run/apply; plazo ≥ N meses; fuente opcional; escudos offer/favoritos/común/ratings/alerta viva/abiertas; poda `notification_emails`) — [ADR 031](docs/adr/031-retencion-purge-tenders.md).
 - `notification_queue.tender_id` + UNIQUE parcial `(alert_id, tender_id)` (migración local): dedupe dejando la fila más antigua, claves sin `:digest:`.
 - Web: suite unitaria con Vitest (`pnpm --filter @efilicit/web test`): helpers puros, validación del buscador, queries con fake Supabase y regresiones (dedupe Coincidencias, reasignar cola, purga buzón 30 días, `en_plazo=0`, «Otro» al final). Paso en CI.
 - Favoritos · Común: aviso in-app al autor si otro quita su licitación (`notification_common_removed`, `removed_by` / `removed_by_display_name`; trigger tras DELETE; buzón + badge). Solo local hasta migración remota pedida.

@@ -71,6 +71,23 @@ Script: [`scripts/borrar_huerfanos.py`](../scripts/borrar_huerfanos.py)
 
 Para probar desde una rama de trabajo: Actions → Cleanup orphan RAW → Run workflow → elige esa rama.
 
+## Cleanup tenders (retención / ADR 031)
+
+Workflow: [`.github/workflows/cleanup-tenders.yml`](workflows/cleanup-tenders.yml)  
+Script: [`scripts/purge_tenders.py`](../scripts/purge_tenders.py) · ADR: [031](../docs/adr/031-retencion-purge-tenders.md)
+
+- Disparo **solo manual**. Default **`dry-run`**; **`apply`** borra.
+- Include: `min_deadline_age_months` (default 3), `source_code` opcional (vacío = todas), `limit` opcional.
+- Escudos (skip total): Mis licitaciones, favoritos personales/común, valoraciones, alerta viva (papelera 30d protege; dismiss permanente no), abierta/`deadline` null o futuro.
+- Tras borrar: poda `notification_emails.tender_ids` / `tender_count`; RAW solo si el artifact queda sin refs.
+- **No** lanzar durante ingesta. Workflows nuevos pueden no listarse en Actions hasta pasar por `main`.
+
+| Secret | Uso |
+|---|---|
+| `EFILICIT_DATABASE_URL` | Candidatas / escudos / DELETE |
+| `SUPABASE_URL` | API Storage (`apply`) |
+| `SUPABASE_SERVICE_ROLE_KEY` | DELETE Storage (`apply`) |
+
 ## Alertas / match + digest (Semana 5+ / ADR 020)
 
 | Workflow | Rol |
