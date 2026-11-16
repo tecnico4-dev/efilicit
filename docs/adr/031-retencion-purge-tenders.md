@@ -23,10 +23,11 @@ El plan Free de Supabase no aguanta histórico ilimitado (~3,6 KB canónicos por
    - `limit` opcional: tope de borrables tras escudos.
 3. **Escudos (skip total** de esa licitación si aplica cualquiera):
    - `offer_cases` (Mis licitaciones) — coherente con RESTRICT ADR 028.
-   - `favorites` o `shared_favorites`.
+   - `favorites`, `favorites_common` (ex `shared_favorites`) o `favorites_shared`.
    - `tender_ratings`.
    - Match de alerta **vivo**: fila en `notification_queue` sin `alert_related_trash`, o con papelera aún en ventana de 30 días. Dismiss permanente (vaciar papelera → `trashed_at` fuera de ventana) **no** escuda.
    - Abierta / en plazo: `deadline_at IS NULL` **o** `deadline_at > now()` (red de seguridad; con el filtro de 3 meses casi no salta).
+   - Si una tabla de escudo **no existe** en el proyecto (p. ej. `offer_cases` aún no migrado a remoto), el script la **omite** y sigue con el resto.
 4. **No son escudo** (sí limpieza colateral tras `apply`):
    - `notification_emails.tender_ids` / `tender_count` (histórico de digest): podar IDs borrados; si la lista queda vacía, borrar la fila.
    - Avisos de favoritos/común y cola ya desestimada: caen por CASCADE al borrar el tender o se ignoran.

@@ -7,7 +7,8 @@
 Por defecto solo simula (dry-run). Con ``--apply`` borra tenders no protegidos,
 limpia artifacts/RAW huérfanos de ese lote y poda ``notification_emails``.
 
-Escudos (skip total): offer_cases, favorites, shared_favorites, tender_ratings,
+Escudos (skip total): offer_cases, favorites, favorites_common, favorites_shared,
+tender_ratings,
 alerta viva (notification_queue sin dismiss permanente de papelera 30d),
 abierta/en plazo (deadline NULL o > now()).
 
@@ -42,7 +43,112 @@ from psycopg.rows import dict_row
 BUCKET = "raw"
 TRASH_DAYS = 30
 
-CANDIDATES_SQL = """
+# Escudos opcionales: si la tabla no está en remoto (p. ej. offer_* aún local),
+# se omite ese WHEN. Ver ``build_candidates_sql``.
+SHIELD_TABLES = (
+    "offer_cases",
+    "favorites",
+    "favorites_common",
+    "shared_favorites",  # nombre legado si remoto aún no renombró
+    "favorites_shared",
+    "tender_ratings",
+    "notification_queue",
+    "alert_related_trash",
+)
+
+
+def list_public_tables(conn: psycopg.Connection) -> set[str]:
+    rows = conn.execute(
+        """
+        select table_name
+        from information_schema.tables
+        where table_schema = 'public'
+        """
+    ).fetchall()
+    out: set[str] = set()
+    for r in rows:
+        if isinstance(r, dict):
+            out.add(str(r["table_name"]))
+        else:
+            out.add(str(r[0]))
+    return out
+
+
+def build_candidates_sql(tables: set[str]) -> str:
+    """CASE de escudos solo con tablas existentes (tolerante a esquema incompleto)."""
+    whens: list[str] = []
+    if "offer_cases" in tables:
+        whens.append(
+            """
+      when exists (
+        select 1 from public.offer_cases oc where oc.tender_id = b.id
+      ) then 'offer'"""
+        )
+    if "favorites" in tables:
+        whens.append(
+            """
+      when exists (
+        select 1 from public.favorites f where f.tender_id = b.id
+      ) then 'favorite'"""
+        )
+    if "favorites_common" in tables:
+        whens.append(
+            """
+      when exists (
+        select 1 from public.favorites_common sf where sf.tender_id = b.id
+      ) then 'favorites_common'"""
+        )
+    elif "shared_favorites" in tables:
+        whens.append(
+            """
+      when exists (
+        select 1 from public.shared_favorites sf where sf.tender_id = b.id
+      ) then 'favorites_common'"""
+        )
+    if "favorites_shared" in tables:
+        whens.append(
+            """
+      when exists (
+        select 1 from public.favorites_shared fs where fs.tender_id = b.id
+      ) then 'favorites_shared'"""
+        )
+    if "tender_ratings" in tables:
+        whens.append(
+            """
+      when exists (
+        select 1 from public.tender_ratings r where r.tender_id = b.id
+      ) then 'rating'"""
+        )
+    if "notification_queue" in tables:
+        # alert_related_trash es opcional: sin ella, cualquier fila de cola protege.
+        if "alert_related_trash" in tables:
+            whens.append(
+                """
+      when exists (
+        select 1
+        from public.notification_queue nq
+        left join public.alert_related_trash art
+          on art.queue_id = nq.id and art.user_id = nq.user_id
+        where nq.tender_id = b.id
+          and (
+            art.queue_id is null
+            or art.trashed_at > (now() - make_interval(days => %(trash_days)s))
+          )
+      ) then 'alert_related'"""
+            )
+        else:
+            whens.append(
+                """
+      when exists (
+        select 1 from public.notification_queue nq where nq.tender_id = b.id
+      ) then 'alert_related'"""
+            )
+    whens.append(
+        """
+      when b.deadline_at is null or b.deadline_at > now() then 'open_deadline'"""
+    )
+    case_body = "".join(whens)
+    return f"""
 with base as (
   select t.id, t.title, t.status, t.deadline_at
   from public.tenders t
@@ -64,31 +170,7 @@ shielded as (
     b.title,
     b.status,
     b.deadline_at,
-    case
-      when exists (
-        select 1 from public.offer_cases oc where oc.tender_id = b.id
-      ) then 'offer'
-      when exists (
-        select 1 from public.favorites f where f.tender_id = b.id
-      ) then 'favorite'
-      when exists (
-        select 1 from public.shared_favorites sf where sf.tender_id = b.id
-      ) then 'shared_favorite'
-      when exists (
-        select 1 from public.tender_ratings r where r.tender_id = b.id
-      ) then 'rating'
-      when exists (
-        select 1
-        from public.notification_queue nq
-        left join public.alert_related_trash art
-          on art.queue_id = nq.id and art.user_id = nq.user_id
-        where nq.tender_id = b.id
-          and (
-            art.queue_id is null
-            or art.trashed_at > (now() - make_interval(days => %(trash_days)s))
-          )
-      ) then 'alert_related'
-      when b.deadline_at is null or b.deadline_at > now() then 'open_deadline'
+    case{case_body}
       else null
     end as shield
   from base b
@@ -97,6 +179,10 @@ select id, title, status, deadline_at, shield
 from shielded
 order by deadline_at asc nulls last, id
 """
+
+
+# Compat tests / imports: SQL «completo» (todas las tablas de escudo presentes).
+CANDIDATES_SQL = build_candidates_sql(set(SHIELD_TABLES))
 
 ARTIFACTS_SQL = """
 select distinct a.id, a.storage_path
@@ -163,18 +249,25 @@ def pick_shield(
     *,
     in_offer: bool = False,
     in_favorite: bool = False,
+    in_favorites_common: bool = False,
+    in_favorites_shared: bool = False,
     in_shared_favorite: bool = False,
     has_rating: bool = False,
     alert_related_alive: bool = False,
     open_or_null_deadline: bool = False,
 ) -> str | None:
-    """Misma prioridad que el CASE de ``CANDIDATES_SQL`` (ADR 031)."""
+    """Misma prioridad que el CASE de ``CANDIDATES_SQL`` (ADR 031).
+
+    ``in_shared_favorite`` se acepta como alias de ``in_favorites_common``.
+    """
     if in_offer:
         return "offer"
     if in_favorite:
         return "favorite"
-    if in_shared_favorite:
-        return "shared_favorite"
+    if in_favorites_common or in_shared_favorite:
+        return "favorites_common"
+    if in_favorites_shared:
+        return "favorites_shared"
     if has_rating:
         return "rating"
     if alert_related_alive:
@@ -310,8 +403,13 @@ def main() -> int:
     storage_names: list[str] = []
 
     with psycopg.connect(db_url, autocommit=False, row_factory=dict_row) as conn:
+        tables = list_public_tables(conn)
+        missing = [t for t in SHIELD_TABLES if t not in tables]
+        if missing:
+            print(f"Escudos omitidos (tabla ausente): {', '.join(missing)}")
+        candidates_sql = build_candidates_sql(tables)
         rows: list[dict[str, Any]] = conn.execute(
-            CANDIDATES_SQL,
+            candidates_sql,
             {"months": months, "source": source, "trash_days": TRASH_DAYS},
         ).fetchall()
 
@@ -421,33 +519,36 @@ def main() -> int:
                 conn.commit()
             print(f"  source_artifacts borrados: {len(orphan_arts):,}")
 
-        emails = conn.execute(EMAILS_TOUCHING_SQL, {"ids": ids}).fetchall()
-        deleted_ids = set(ids)
-        updated_emails = 0
-        removed_emails = 0
-        for em in emails:
-            action, new = prune_email_tender_ids(em["tender_ids"], deleted_ids)
-            if action == "noop":
-                continue
-            if action == "delete":
-                conn.execute(
-                    "delete from public.notification_emails where id = %(id)s",
-                    {"id": em["id"]},
-                )
-                removed_emails += 1
-            else:
-                conn.execute(
-                    "update public.notification_emails "
-                    "set tender_ids = %(ids)s::uuid[], tender_count = %(n)s "
-                    "where id = %(id)s",
-                    {"ids": new, "n": len(new), "id": em["id"]},
-                )
-                updated_emails += 1
-        conn.commit()
-        print(
-            f"  notification_emails: {updated_emails:,} actualizados, "
-            f"{removed_emails:,} eliminados (lista vacía)"
-        )
+        if "notification_emails" in tables:
+            emails = conn.execute(EMAILS_TOUCHING_SQL, {"ids": ids}).fetchall()
+            deleted_ids = set(ids)
+            updated_emails = 0
+            removed_emails = 0
+            for em in emails:
+                action, new = prune_email_tender_ids(em["tender_ids"], deleted_ids)
+                if action == "noop":
+                    continue
+                if action == "delete":
+                    conn.execute(
+                        "delete from public.notification_emails where id = %(id)s",
+                        {"id": em["id"]},
+                    )
+                    removed_emails += 1
+                else:
+                    conn.execute(
+                        "update public.notification_emails "
+                        "set tender_ids = %(ids)s::uuid[], tender_count = %(n)s "
+                        "where id = %(id)s",
+                        {"ids": new, "n": len(new), "id": em["id"]},
+                    )
+                    updated_emails += 1
+            conn.commit()
+            print(
+                f"  notification_emails: {updated_emails:,} actualizados, "
+                f"{removed_emails:,} eliminados (lista vacía)"
+            )
+        else:
+            print("  notification_emails: tabla ausente, se omite poda")
 
         cur = conn.execute(
             """

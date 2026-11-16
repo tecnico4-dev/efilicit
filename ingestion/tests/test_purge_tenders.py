@@ -107,7 +107,9 @@ def test_pick_shield_favorite_before_shared() -> None:
 
 
 def test_pick_shield_shared_favorite() -> None:
-    assert purge.pick_shield(in_shared_favorite=True) == "shared_favorite"
+    assert purge.pick_shield(in_shared_favorite=True) == "favorites_common"
+    assert purge.pick_shield(in_favorites_common=True) == "favorites_common"
+    assert purge.pick_shield(in_favorites_shared=True) == "favorites_shared"
 
 
 def test_pick_shield_rating() -> None:
@@ -126,7 +128,8 @@ def test_pick_shield_priority_order() -> None:
     order = [
         ("offer", {"in_offer": True}),
         ("favorite", {"in_favorite": True}),
-        ("shared_favorite", {"in_shared_favorite": True}),
+        ("favorites_common", {"in_favorites_common": True}),
+        ("favorites_shared", {"in_favorites_shared": True}),
         ("rating", {"has_rating": True}),
         ("alert_related", {"alert_related_alive": True}),
         ("open_deadline", {"open_or_null_deadline": True}),
@@ -255,13 +258,15 @@ def test_candidates_sql_lists_all_shields_and_tables() -> None:
     for token in (
         "offer_cases",
         "favorites",
-        "shared_favorites",
+        "favorites_common",
+        "favorites_shared",
         "tender_ratings",
         "notification_queue",
         "alert_related_trash",
         "'offer'",
         "'favorite'",
-        "'shared_favorite'",
+        "'favorites_common'",
+        "'favorites_shared'",
         "'rating'",
         "'alert_related'",
         "'open_deadline'",
@@ -269,6 +274,35 @@ def test_candidates_sql_lists_all_shields_and_tables() -> None:
         "tender_sources",
     ):
         assert token in sql, f"falta {token} en CANDIDATES_SQL"
+
+
+def test_build_candidates_sql_omits_missing_offer_cases() -> None:
+    tables = {
+        "favorites",
+        "favorites_common",
+        "tender_ratings",
+        "notification_queue",
+        "alert_related_trash",
+    }
+    sql = purge.build_candidates_sql(tables)
+    assert "offer_cases" not in sql
+    assert "'offer'" not in sql
+    assert "favorites" in sql
+    assert "'open_deadline'" in sql
+
+
+def test_build_candidates_sql_legacy_shared_favorites_fallback() -> None:
+    sql = purge.build_candidates_sql({"shared_favorites"})
+    assert "shared_favorites" in sql
+    assert "favorites_common" not in sql
+    assert "'favorites_common'" in sql
+
+
+def test_build_candidates_sql_alert_without_trash_table() -> None:
+    sql = purge.build_candidates_sql({"notification_queue"})
+    assert "notification_queue" in sql
+    assert "alert_related_trash" not in sql
+    assert "'alert_related'" in sql
 
 
 def test_emails_sql_uses_array_overlap() -> None:
