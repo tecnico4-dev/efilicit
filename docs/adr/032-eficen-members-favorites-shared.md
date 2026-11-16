@@ -27,7 +27,7 @@ Además: compartir una licitación favorita a **personas concretas** (no solo a 
 4. **`favorites_shared`** (peer share):
    - Columnas: `id`, `tender_id`, `from_user_id`, `to_user_id`, `kind`, `notes`, `created_at`.
    - **N filas** (una por destinatario). `UNIQUE (tender_id, from_user_id, to_user_id)`. `CHECK (from <> to)`.
-   - RLS: SELECT/DELETE si soy `from` o `to`; INSERT solo como `from` + `is_app_user()`.
+   - RLS: SELECT/DELETE si soy `from` o `to`; INSERT solo como `from` + `is_app_user()`; `to_user_id` debe ser `eficen_members.user_id` activo (no subquery a `users`: RLS own-only impediría enviar a peers).
    - UI: avión → Común | Personas (multi-select); ruta `/favorites/shared` (enviadas + recibidas). Sin avisos in-app peer en este ADR.
 5. **`users` sigue own-only.** Nombres de compañeros vía `eficen_members` (o copia denormalizada ya existente en Común).
 
