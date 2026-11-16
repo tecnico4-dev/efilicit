@@ -78,15 +78,6 @@ export function ShareFavoriteButton({
   useEffect(() => setMounted(true), []);
 
   useEffect(() => {
-    if (!open) return;
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape" && !pending) setOpen(false);
-    }
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [open, pending]);
-
-  useEffect(() => {
     if (!open || destination !== "people") return;
     let cancelled = false;
     setMembersLoading(true);
@@ -248,12 +239,8 @@ export function ShareFavoriteButton({
               role="dialog"
               aria-modal="true"
               aria-labelledby="share-favorite-title"
-              onClick={dismiss}
             >
-              <div
-                className="w-full max-w-md rounded-2xl border border-border bg-background p-5 shadow-xl"
-                onClick={(e) => e.stopPropagation()}
-              >
+              <div className="w-full max-w-md rounded-2xl border border-border bg-background p-5 shadow-xl">
                 <h2
                   id="share-favorite-title"
                   className="text-lg font-semibold text-foreground"
@@ -264,18 +251,16 @@ export function ShareFavoriteButton({
                   {tenderTitle}
                 </p>
 
-                <label className="mt-4 flex flex-col gap-1.5 text-sm text-foreground">
-                  <span>
-                    Calificada como{" "}
-                    <span className="sr-only">clasificación</span>
-                  </span>
+                <label className="mt-4 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-foreground">
+                  <span>Calificada como</span>
                   <select
                     value={sendKind}
                     disabled={pending}
                     onChange={(e) =>
                       setSendKind(e.target.value as FavoriteKind)
                     }
-                    className="rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    aria-label="Clasificación"
+                    className="max-w-[11.5rem] rounded border border-border/70 bg-muted/40 py-0.5 pl-1.5 pr-1 text-xs text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                   >
                     {KIND_OPTIONS.map((k) => (
                       <option key={k} value={k}>
