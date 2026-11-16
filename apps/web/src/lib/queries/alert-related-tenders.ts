@@ -71,7 +71,19 @@ function parseStatus(raw: string): AlertQueueStatus | null {
 
 function tenderIdFromPayload(payload: Json): string | null {
   const tenderId = asRecord(payload).tender_id;
-  return typeof tenderId === "string" && tenderId.trim() ? tenderId : null;
+  return typeof tenderId === "string" && tenderId.trim() ? tenderId.trim() : null;
+}
+
+/**
+ * Fuente de verdad: columna `tender_id`; `payload.tender_id` solo legado.
+ */
+export function resolveQueueTenderId(row: {
+  tender_id?: string | null;
+  payload?: Json;
+}): string | null {
+  const fromCol = row.tender_id?.trim();
+  if (fromCol) return fromCol;
+  return tenderIdFromPayload(row.payload ?? null);
 }
 
 function titleFromPayload(payload: Json): string | null {
@@ -214,7 +226,7 @@ export async function listOwnAlertRelatedQueueItems(
   const tenderIds = [
     ...new Set(
       rows
-        .map((r) => r.tender_id?.trim() || tenderIdFromPayload(r.payload))
+        .map((r) => resolveQueueTenderId(r))
         .filter((id): id is string => Boolean(id)),
     ),
   ];
@@ -264,8 +276,7 @@ export async function listOwnAlertRelatedQueueItems(
   const out: AlertRelatedQueueItem[] = [];
   for (const row of rows) {
     const status = parseStatus(row.status);
-    const tenderId =
-      row.tender_id?.trim() || tenderIdFromPayload(row.payload);
+    const tenderId = resolveQueueTenderId(row);
     if (!status || !tenderId) continue;
     out.push({
       queueId: row.id,

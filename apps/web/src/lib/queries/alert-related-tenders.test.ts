@@ -8,6 +8,7 @@ import {
   listOwnQueueIdsForAlert,
   queueIdsForTender,
   reassignOwnAlertQueueItems,
+  resolveQueueTenderId,
   type AlertRelatedQueueItem,
 } from "./alert-related-tenders";
 
@@ -30,6 +31,24 @@ function item(
     ...overrides,
   };
 }
+
+describe("resolveQueueTenderId", () => {
+  it("prioriza columna y cae al payload", () => {
+    expect(
+      resolveQueueTenderId({
+        tender_id: "t-col",
+        payload: { tender_id: "t-payload" },
+      }),
+    ).toBe("t-col");
+    expect(
+      resolveQueueTenderId({
+        tender_id: null,
+        payload: { tender_id: "t-payload" },
+      }),
+    ).toBe("t-payload");
+    expect(resolveQueueTenderId({ tender_id: "  ", payload: {} })).toBeNull();
+  });
+});
 
 describe("dedupeAlertRelatedByTender", () => {
   it("conserva la primera aparición por tender", () => {

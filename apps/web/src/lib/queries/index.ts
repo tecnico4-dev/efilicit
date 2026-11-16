@@ -54,6 +54,7 @@ export {
   trashOwnAlertRelatedMany,
   type AlertQueueStatus,
   type AlertRelatedQueueItem,
+  resolveQueueTenderId,
 } from "./alert-related-tenders";
 export {
   asFavoriteKind,

@@ -27,6 +27,7 @@ describe("getOwnAlertInterestKindForTender", () => {
               data: [
                 {
                   created_at: "2026-11-05T00:00:00Z",
+                  tender_id: "t1",
                   payload: { tender_id: "t1" },
                   alerts: { kind: "subcontrata" },
                 },

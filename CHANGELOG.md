@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Alertas: borrar es irreversible (modal Aceptar/Cancelar/×; sin toast Revertir). `notification_queue.alert_id` pasa a `ON DELETE CASCADE` (local).
-- Alertas cola: el job escribe `tender_id` tipado y hace `ON CONFLICT (alert_id, tender_id)`; Relacionadas/Coincidencias prefieren la columna (fallback `payload`).
+- Alertas cola: el job escribe `tender_id` tipado y hace `ON CONFLICT (alert_id, tender_id)`; la web usa la columna como fuente de verdad (interés/Relacionadas; fallback `payload` solo legado).
 
 ### Added
 
