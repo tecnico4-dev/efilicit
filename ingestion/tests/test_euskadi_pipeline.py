@@ -121,17 +121,28 @@ def test_euskadi_postgres_upsert_does_not_duplicate() -> None:
     with connect() as conn:
         for r in records:
             sid = r.payload["canonical"]["source_tender_id"]
+            # ADR 028/031: no borrar tenders con expediente en Mis licitaciones.
             conn.execute(
                 """
                 delete from public.tenders t
                 using public.tender_sources ts
                 where ts.tender_id = t.id
                   and ts.source_code = %s and ts.source_tender_id = %s
+                  and not exists (
+                    select 1 from public.offer_cases oc where oc.tender_id = t.id
+                  )
                 """,
                 (SOURCE_CODE, sid),
             )
         conn.execute(
-            "delete from public.contracting_authorities where tax_id = %s",
+            """
+            delete from public.contracting_authorities ca
+            where ca.tax_id = %s
+              and not exists (
+                select 1 from public.tenders t
+                where t.contracting_authority_id = ca.id
+              )
+            """,
             ("S4833001C",),
         )
         conn.commit()
@@ -139,7 +150,11 @@ def test_euskadi_postgres_upsert_does_not_duplicate() -> None:
         first = repo.upsert_records(source_code=SOURCE_CODE, records=records)
         second = repo.upsert_records(source_code=SOURCE_CODE, records=records)
         conn.commit()
-        assert first.new == 2 and second.updated == 0
+        # Idempotencia: 2ª pasada no crea filas nuevas. Si un tender del fixture
+        # está en offer_cases, el DELETE previo se salta (ADR 028) y puede no
+        # contar como updated si el contenido no cambia.
+        assert first.seen == 2 and len(first.tender_ids) == 2
+        assert second.seen == 2 and second.new == 0 and len(second.tender_ids) == 2
         row = conn.execute(
             """
             select t.title, a.tax_id, a.identity_confidence

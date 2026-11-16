@@ -138,12 +138,125 @@ def fmt_mb(n: int) -> str:
 
 
 def storage_object_name(storage_path: str | None) -> str | None:
+    """Convierte ``source_artifacts.storage_path`` en nombre dentro del bucket ``raw``."""
     if not storage_path:
         return None
     p = storage_path.lstrip("/")
     if p.startswith(f"{BUCKET}/"):
         return p[len(BUCKET) + 1 :]
     return p
+
+
+def resolve_source_code(raw: str | None) -> str | None:
+    """Vacío / solo espacios → todas las fuentes (None)."""
+    if raw is None:
+        return None
+    s = raw.strip()
+    return s or None
+
+
+def clamp_batch(n: int) -> int:
+    return max(1, min(int(n), 1000))
+
+
+def pick_shield(
+    *,
+    in_offer: bool = False,
+    in_favorite: bool = False,
+    in_shared_favorite: bool = False,
+    has_rating: bool = False,
+    alert_related_alive: bool = False,
+    open_or_null_deadline: bool = False,
+) -> str | None:
+    """Misma prioridad que el CASE de ``CANDIDATES_SQL`` (ADR 031)."""
+    if in_offer:
+        return "offer"
+    if in_favorite:
+        return "favorite"
+    if in_shared_favorite:
+        return "shared_favorite"
+    if has_rating:
+        return "rating"
+    if alert_related_alive:
+        return "alert_related"
+    if open_or_null_deadline:
+        return "open_deadline"
+    return None
+
+
+def alert_related_is_alive(
+    trashed_at: dt.datetime | None,
+    *,
+    now: dt.datetime | None = None,
+    trash_days: int = TRASH_DAYS,
+) -> bool:
+    """True si no hay trash o la papelera sigue en ventana (dismiss permanente = False)."""
+    if trashed_at is None:
+        return True
+    now = now or dt.datetime.now(dt.timezone.utc)
+    if trashed_at.tzinfo is None:
+        trashed_at = trashed_at.replace(tzinfo=dt.timezone.utc)
+    return trashed_at > now - dt.timedelta(days=trash_days)
+
+
+def deadline_is_include_candidate(
+    deadline_at: dt.datetime | None,
+    *,
+    now: dt.datetime | None = None,
+    months: int = 3,
+) -> bool:
+    """Regla include: deadline no null y vencido hace al menos ``months`` meses."""
+    if deadline_at is None:
+        return False
+    now = now or dt.datetime.now(dt.timezone.utc)
+    if deadline_at.tzinfo is None:
+        deadline_at = deadline_at.replace(tzinfo=dt.timezone.utc)
+    # Aproximación testeable: 30 días × months (SQL usa make_interval months).
+    return deadline_at <= now - dt.timedelta(days=30 * max(0, months))
+
+
+def partition_by_shield(
+    rows: list[dict[str, Any]],
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]], Counter[str]]:
+    """Separa protegidas / borrables según columna ``shield``."""
+    shield_counts: Counter[str] = Counter()
+    protected: list[dict[str, Any]] = []
+    deletable: list[dict[str, Any]] = []
+    for r in rows:
+        shield = r.get("shield")
+        if shield:
+            shield_counts[str(shield)] += 1
+            protected.append(r)
+        else:
+            deletable.append(r)
+    return protected, deletable, shield_counts
+
+
+def apply_deletable_limit(
+    deletable: list[dict[str, Any]], limit: int
+) -> list[dict[str, Any]]:
+    if limit and limit > 0:
+        return deletable[:limit]
+    return deletable
+
+
+def prune_email_tender_ids(
+    existing: list[UUID] | None, deleted: set[UUID]
+) -> tuple[str, list[UUID]]:
+    """Devuelve (noop|update|delete, lista resultante)."""
+    old = list(existing or [])
+    new = [tid for tid in old if tid not in deleted]
+    if len(new) == len(old):
+        return "noop", old
+    if not new:
+        return "delete", []
+    return "update", new
+
+
+def orphan_artifact_ids(
+    candidate_ids: list[UUID], still_used: set[UUID]
+) -> list[UUID]:
+    return [aid for aid in candidate_ids if aid not in still_used]
 
 
 def main() -> int:
@@ -185,8 +298,8 @@ def main() -> int:
     )
     args = ap.parse_args()
     months = max(0, args.min_deadline_age_months)
-    batch = max(1, min(args.batch, 1000))
-    source = args.source_code.strip() or None
+    batch = clamp_batch(args.batch)
+    source = resolve_source_code(args.source_code)
 
     db_url = os.environ.get("EFILICIT_DATABASE_URL")
     if not db_url:
@@ -202,18 +315,8 @@ def main() -> int:
             {"months": months, "source": source, "trash_days": TRASH_DAYS},
         ).fetchall()
 
-        shield_counts: Counter[str] = Counter()
-        protected: list[dict[str, Any]] = []
-        deletable: list[dict[str, Any]] = []
-        for r in rows:
-            if r["shield"]:
-                shield_counts[str(r["shield"])] += 1
-                protected.append(r)
-            else:
-                deletable.append(r)
-
-        if args.limit and args.limit > 0:
-            deletable = deletable[: args.limit]
+        protected, deletable, shield_counts = partition_by_shield(rows)
+        deletable = apply_deletable_limit(deletable, args.limit)
 
         print(
             f"Candidatas (deadline ≤ now()-{months}m"
@@ -300,7 +403,7 @@ def main() -> int:
                     ARTIFACT_STILL_USED_SQL, {"ids": art_ids}
                 ).fetchall()
             }
-        orphan_arts = [aid for aid in art_ids if aid not in still_used]
+        orphan_arts = orphan_artifact_ids(art_ids, still_used)
         storage_names = [
             name
             for aid in orphan_arts
@@ -323,11 +426,10 @@ def main() -> int:
         updated_emails = 0
         removed_emails = 0
         for em in emails:
-            old: list[UUID] = list(em["tender_ids"] or [])
-            new = [tid for tid in old if tid not in deleted_ids]
-            if len(new) == len(old):
+            action, new = prune_email_tender_ids(em["tender_ids"], deleted_ids)
+            if action == "noop":
                 continue
-            if not new:
+            if action == "delete":
                 conn.execute(
                     "delete from public.notification_emails where id = %(id)s",
                     {"id": em["id"]},
