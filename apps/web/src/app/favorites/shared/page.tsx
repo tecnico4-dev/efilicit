@@ -1,12 +1,13 @@
+import type { CriteriaFilterOptionsProp } from "@/components/criteria/criteria-filters";
 import { PAGE_MAIN_FAVORITES_CLASS } from "@/components/shell/page-width";
 import { EmptyState, ErrorState } from "@/components/ui/state-message";
 import {
   getSessionProfile,
   getSupabaseServerClient,
 } from "@/lib/auth/session";
-import { listOwnFavoriteShares } from "@/lib/queries";
+import { listOwnFavoriteShares, listSearchFilterOptions } from "@/lib/queries";
 import { EmptyPeerSharesHint } from "../empty-hints";
-import { PeerSharesList } from "../peer-shares-list";
+import { PeerSharesSection } from "../peer-shares-section";
 
 export const dynamic = "force-dynamic";
 
@@ -24,10 +25,24 @@ export default async function PeerSharedFavoritesPage() {
     );
   }
 
-  const { data: items, error } = await listOwnFavoriteShares(
-    supabase,
-    profile.data.id,
-  );
+  const [sharesResult, filterListed] = await Promise.all([
+    listOwnFavoriteShares(supabase, profile.data.id),
+    listSearchFilterOptions(supabase),
+  ]);
+  const { data: items, error } = sharesResult;
+  const filterOptions: CriteriaFilterOptionsProp = filterListed.error
+    ? {
+        statuses: [],
+        procedureTypes: [],
+        contractTypes: [],
+        ccaaCodesWithTenders: [],
+      }
+    : {
+        statuses: filterListed.data.statuses,
+        procedureTypes: filterListed.data.procedureTypes,
+        contractTypes: filterListed.data.contractTypes,
+        ccaaCodesWithTenders: [...filterListed.data.ccaaCodesWithTenders],
+      };
 
   return (
     <main className={PAGE_MAIN_FAVORITES_CLASS}>
@@ -38,7 +53,7 @@ export default async function PeerSharedFavoritesPage() {
           <EmptyPeerSharesHint />
         </EmptyState>
       ) : (
-        <PeerSharesList items={items} />
+        <PeerSharesSection items={items} filterOptions={filterOptions} />
       )}
     </main>
   );

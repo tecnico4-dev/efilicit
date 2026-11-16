@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { FavoriteKindBubble } from "@/components/favorites/favorite-kind-bubble";
+import { ShareDirectionBubble } from "@/components/favorites/share-direction-bubble";
 import { formatCpvListPreview } from "@/lib/cpv";
 import { formatTenderStatus } from "@/lib/tender-labels";
 import type { FavoriteShareRow } from "@/lib/queries";
@@ -18,56 +19,94 @@ function formatWhen(iso: string): string {
   }
 }
 
-export function PeerSharesList({ items }: { items: FavoriteShareRow[] }) {
+/** Listado peer-share con el mismo layout que Común. */
+export function PeerSharesList({
+  items,
+  bordered = true,
+  noteWide = false,
+}: {
+  items: FavoriteShareRow[];
+  bordered?: boolean;
+  noteWide?: boolean;
+}) {
   return (
-    <ul className="divide-y divide-border rounded-lg border border-border">
+    <ul
+      className={
+        bordered
+          ? "divide-y divide-border border-t border-border"
+          : "divide-y divide-border"
+      }
+    >
       {items.map((row) => {
-        const title = row.tender?.title?.trim() || "Licitación";
+        const tender = row.tender;
+        if (!tender) {
+          return (
+            <li key={row.id} className="py-4 text-sm text-muted-foreground">
+              Licitación no disponible
+            </li>
+          );
+        }
         const who = row.counterpartDisplayName?.trim() || "Otro usuario";
-        const directionLabel =
-          row.direction === "sent" ? `Enviada a ${who}` : `Recibida de ${who}`;
+        const meta =
+          row.direction === "sent"
+            ? `Enviada a ${who} (${formatWhen(row.createdAt)})`
+            : `Recibida de ${who} (${formatWhen(row.createdAt)})`;
+        const note = row.notes?.trim() || "";
         return (
-          <li key={row.id} className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-start sm:justify-between">
-            <div className="min-w-0 flex-1 space-y-1.5">
-              <div className="flex flex-wrap items-center gap-2">
-                <span
-                  className={
-                    row.direction === "sent"
-                      ? "inline-flex rounded-full border border-sky-600/30 bg-sky-600/10 px-2 py-0.5 text-[11px] font-medium text-sky-900"
-                      : "inline-flex rounded-full border border-amber-600/30 bg-amber-600/10 px-2 py-0.5 text-[11px] font-medium text-amber-900"
-                  }
-                >
-                  {row.direction === "sent" ? "Enviada" : "Recibida"}
-                </span>
-                <FavoriteKindBubble kind={row.kind} />
-              </div>
+          <li key={row.id} className="flex items-start gap-3 py-4">
+            <div className="min-w-0 flex-1">
               <Link
-                href={`/tenders/${row.tenderId}?from=favorites-shared`}
-                className="text-sm font-medium text-link hover:underline"
+                href={`/tenders/${tender.id}?from=favorites-shared`}
+                className="text-base font-medium text-foreground hover:text-link hover:underline"
               >
-                {title}
+                {tender.title}
               </Link>
-              <p className="text-xs text-muted-foreground">
-                {directionLabel} · {formatWhen(row.createdAt)}
-              </p>
-              {row.tender ? (
-                <p className="text-xs text-muted-foreground">
-                  {formatMoney(row.tender.estimated_value, row.tender.currency)}
-                  {" · "}
-                  {formatCpvListPreview(row.tender.cpv_codes)}
-                  {" · "}
-                  {formatTenderStatus(row.tender.status)}
-                </p>
-              ) : null}
-              {row.notes?.trim() ? (
-                <p className="rounded-md border border-dashed border-border px-2 py-1.5 text-xs text-foreground">
-                  Nota: {row.notes.trim()}
-                </p>
-              ) : null}
+              <div className="mt-1.5 flex flex-col gap-2 sm:flex-row sm:items-start sm:gap-3">
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                    <ShareDirectionBubble direction={row.direction} />
+                    <FavoriteKindBubble kind={row.kind} />
+                    <p className="text-xs text-muted-foreground">{meta}</p>
+                  </div>
+                  <dl className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
+                    <div>
+                      <dt className="inline text-muted-foreground">Importe: </dt>
+                      <dd className="inline">
+                        {formatMoney(
+                          tender.estimated_value,
+                          tender.currency,
+                        )}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="inline text-muted-foreground">CPV: </dt>
+                      <dd className="inline font-mono">
+                        {formatCpvListPreview(tender.cpv_codes)}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="inline text-muted-foreground">Estado: </dt>
+                      <dd className="inline">
+                        {formatTenderStatus(tender.status)}
+                      </dd>
+                    </div>
+                  </dl>
+                </div>
+                {note ? (
+                  <p
+                    className={
+                      noteWide
+                        ? "w-full min-w-0 rounded-md border border-dashed border-border px-2.5 py-1.5 text-sm text-muted-foreground sm:ml-auto sm:min-w-[14rem] sm:max-w-[min(100%,36rem)] sm:flex-1"
+                        : "w-full shrink-0 rounded-md border border-dashed border-border px-2.5 py-1.5 text-sm text-muted-foreground sm:ml-auto sm:w-[min(100%,16rem)]"
+                    }
+                  >
+                    <span className="font-medium text-foreground">Nota:</span>{" "}
+                    {note}
+                  </p>
+                ) : null}
+              </div>
             </div>
-            <div className="shrink-0">
-              <RemoveFavoriteShareButton shareId={row.id} />
-            </div>
+            <RemoveFavoriteShareButton shareId={row.id} />
           </li>
         );
       })}

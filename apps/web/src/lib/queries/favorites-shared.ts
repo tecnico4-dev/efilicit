@@ -25,6 +25,8 @@ export type FavoriteShareRow = {
     id: string;
     title: string;
     status: string | null;
+    procedure_type: string | null;
+    contract_type: string | null;
     estimated_value: number | null;
     currency: string;
     cpv_codes: string[];
@@ -116,6 +118,8 @@ type ListDbRow = {
     id: string;
     title: string;
     status: string | null;
+    procedure_type: string | null;
+    contract_type: string | null;
     estimated_value: number | null;
     currency: string;
     publication_date: string | null;
@@ -146,6 +150,8 @@ export async function listOwnFavoriteShares(
         id,
         title,
         status,
+        procedure_type,
+        contract_type,
         estimated_value,
         currency,
         publication_date,
@@ -191,6 +197,8 @@ export async function listOwnFavoriteShares(
               id: tender.id,
               title: tender.title,
               status: tender.status,
+              procedure_type: tender.procedure_type,
+              contract_type: tender.contract_type,
               estimated_value: tender.estimated_value,
               currency: tender.currency,
               publication_date: tender.publication_date,
