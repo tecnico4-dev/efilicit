@@ -240,10 +240,30 @@ export function ShareFavoriteButton({
               aria-modal="true"
               aria-labelledby="share-favorite-title"
             >
-              <div className="w-full max-w-md rounded-2xl border border-border bg-background p-5 shadow-xl">
+              <div className="relative w-full max-w-md rounded-2xl border border-border bg-background p-5 shadow-xl">
+                <button
+                  type="button"
+                  disabled={pending}
+                  onClick={dismiss}
+                  aria-label="Cerrar"
+                  title="Cerrar"
+                  className="absolute right-3 top-3 inline-flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50"
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.75"
+                    strokeLinecap="round"
+                    className="size-3.5"
+                    aria-hidden
+                  >
+                    <path d="M6 6l12 12M18 6 6 18" />
+                  </svg>
+                </button>
                 <h2
                   id="share-favorite-title"
-                  className="text-lg font-semibold text-foreground"
+                  className="pr-8 text-lg font-semibold text-foreground"
                 >
                   Enviar licitación
                 </h2>
