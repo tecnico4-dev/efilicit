@@ -293,8 +293,8 @@ def test_build_candidates_sql_omits_missing_offer_cases() -> None:
 
 def test_build_candidates_sql_legacy_shared_favorites_fallback() -> None:
     sql = purge.build_candidates_sql({"shared_favorites"})
-    assert "shared_favorites" in sql
-    assert "favorites_common" not in sql
+    assert "public.shared_favorites" in sql
+    assert "public.favorites_common" not in sql
     assert "'favorites_common'" in sql
 
 
