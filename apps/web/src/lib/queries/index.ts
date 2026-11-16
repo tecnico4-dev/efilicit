@@ -101,9 +101,11 @@ export {
   markOwnNotificationUnread,
   NOTIFICATION_TRASH_RETENTION_DAYS,
   permanentlyDeleteOwnFavoriteNotification,
+  resolveStatusWatchFolder,
   restoreOwnNotificationFromTrash,
   trashOwnNotification,
   type FavoriteStatusNotification,
+  type StatusWatchFolder,
 } from "./notifications";
 export {
   listOwnDigestInboxNotifications,

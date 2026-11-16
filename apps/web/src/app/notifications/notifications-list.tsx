@@ -701,6 +701,38 @@ function CommonRemovedRow({
   );
 }
 
+function StatusWatchFolderLine({
+  folder,
+}: {
+  folder: FavoriteStatusNotification["watchFolder"];
+}) {
+  if (folder === "ambas") return null;
+  if (folder === "propia") {
+    return (
+      <p className="mt-1 text-sm text-muted-foreground">
+        Carpeta:{" "}
+        <Link
+          href="/favorites/tenders"
+          className="font-medium text-primary underline underline-offset-2 hover:text-primary-dark"
+        >
+          Favoritos propios
+        </Link>
+      </p>
+    );
+  }
+  return (
+    <p className="mt-1 text-sm text-muted-foreground">
+      Carpeta:{" "}
+      <Link
+        href="/favorites/common"
+        className="font-medium text-primary underline underline-offset-2 hover:text-primary-dark"
+      >
+        Favoritos comunes
+      </Link>
+    </p>
+  );
+}
+
 function FavoriteStatusRow({
   n,
   userId,
@@ -718,29 +750,34 @@ function FavoriteStatusRow({
   onPurgeShow: () => void;
   onContextMenu: (e: React.MouseEvent) => void;
 }) {
+  const openHref = `/notifications/open?eventId=${encodeURIComponent(n.eventId)}&tenderId=${encodeURIComponent(n.tenderId)}`;
+
   if (inTrash && n.trashedAt) {
     return (
       <li>
         <div className="flex items-center gap-3 px-4 py-3">
-          <Link
-            href={`/notifications/open?eventId=${encodeURIComponent(n.eventId)}&tenderId=${encodeURIComponent(n.tenderId)}`}
-            className="min-w-0 flex-1 transition-colors hover:opacity-90"
-          >
-            <p className="text-sm font-medium text-foreground">{n.title}</p>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Estado:{" "}
-              <span className="text-foreground">
-                {formatTenderStatus(n.previousStatus)}
-              </span>
-              {" → "}
-              <span className="font-medium text-foreground">
-                {formatTenderStatus(n.newStatus)}
-              </span>
-            </p>
+          <div className="min-w-0 flex-1">
+            <Link
+              href={openHref}
+              className="block transition-colors hover:opacity-90"
+            >
+              <p className="text-sm font-medium text-foreground">{n.title}</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Estado:{" "}
+                <span className="text-foreground">
+                  {formatTenderStatus(n.previousStatus)}
+                </span>
+                {" → "}
+                <span className="font-medium text-foreground">
+                  {formatTenderStatus(n.newStatus)}
+                </span>
+              </p>
+            </Link>
+            <StatusWatchFolderLine folder={n.watchFolder} />
             <p className="mt-1 text-xs text-muted-foreground">
               {formatWhen(n.occurredAt)}
             </p>
-          </Link>
+          </div>
           <div className="flex shrink-0 flex-col items-end gap-1 self-center">
             <p className="max-w-[11rem] text-right text-xs text-muted-foreground sm:max-w-[14rem]">
               {formatNotificationTrashExpiry(n.trashedAt)}
@@ -763,10 +800,7 @@ function FavoriteStatusRow({
   return (
     <li onContextMenu={onContextMenu}>
       <div className="flex items-stretch gap-1">
-        <Link
-          href={`/notifications/open?eventId=${encodeURIComponent(n.eventId)}&tenderId=${encodeURIComponent(n.tenderId)}`}
-          className="relative min-w-0 flex-1 px-4 py-3 transition-colors hover:bg-muted/60"
-        >
+        <div className="relative min-w-0 flex-1 px-4 py-3 transition-colors hover:bg-muted/60">
           {unread ? (
             <span
               className="absolute right-2 top-1/2 size-2 -translate-y-1/2 rounded-full bg-primary shadow-sm ring-2 ring-background"
@@ -774,21 +808,24 @@ function FavoriteStatusRow({
               aria-label="No leída"
             />
           ) : null}
-          <p className="pr-4 text-sm font-medium text-foreground">{n.title}</p>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Estado:{" "}
-            <span className="text-foreground">
-              {formatTenderStatus(n.previousStatus)}
-            </span>
-            {" → "}
-            <span className="font-medium text-foreground">
-              {formatTenderStatus(n.newStatus)}
-            </span>
-          </p>
+          <Link href={openHref} className="block pr-4">
+            <p className="text-sm font-medium text-foreground">{n.title}</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Estado:{" "}
+              <span className="text-foreground">
+                {formatTenderStatus(n.previousStatus)}
+              </span>
+              {" → "}
+              <span className="font-medium text-foreground">
+                {formatTenderStatus(n.newStatus)}
+              </span>
+            </p>
+          </Link>
+          <StatusWatchFolderLine folder={n.watchFolder} />
           <p className="mt-1 text-xs text-muted-foreground">
             {formatWhen(n.occurredAt)}
           </p>
-        </Link>
+        </div>
         <div className="flex items-center pr-2">
           <TrashNotificationButton userId={userId} eventId={n.eventId} />
         </div>

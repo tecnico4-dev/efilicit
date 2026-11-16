@@ -8,6 +8,7 @@ import {
   markOwnNotificationRead,
   markOwnNotificationUnread,
   mergeStatusWatchmarks,
+  resolveStatusWatchFolder,
   statusChangeNotifications,
   trashOwnNotification,
 } from "./notifications";
@@ -57,6 +58,17 @@ describe("mergeStatusWatchmarks", () => {
       ["t2", "2026-11-01T00:00:00Z"],
       ["t3", "2026-11-03T00:00:00Z"],
     ]);
+  });
+});
+
+describe("resolveStatusWatchFolder", () => {
+  it("clasifica propia, comun, ambas o null", () => {
+    const personal = new Set(["t1", "t2"]);
+    const shared = new Set(["t2", "t3"]);
+    expect(resolveStatusWatchFolder("t1", personal, shared)).toBe("propia");
+    expect(resolveStatusWatchFolder("t3", personal, shared)).toBe("comun");
+    expect(resolveStatusWatchFolder("t2", personal, shared)).toBe("ambas");
+    expect(resolveStatusWatchFolder("t9", personal, shared)).toBeNull();
   });
 });
 
@@ -199,6 +211,7 @@ describe("listFavoriteStatusNotifications (fake supabase)", () => {
     expect(data).toHaveLength(1);
     expect(data[0]?.newStatus).toBe("adjudicada");
     expect(data[0]?.unread).toBe(true);
+    expect(data[0]?.watchFolder).toBe("propia");
   });
 
   it("lista cambios solo presentes en Común", async () => {
@@ -220,6 +233,7 @@ describe("listFavoriteStatusNotifications (fake supabase)", () => {
     expect(data).toHaveLength(1);
     expect(data[0]?.eventId).toBe("e2");
     expect(data[0]?.title).toBe("Obra común");
+    expect(data[0]?.watchFolder).toBe("comun");
   });
 
   it("propio + Común misma licitación → un solo aviso", async () => {
@@ -249,6 +263,7 @@ describe("listFavoriteStatusNotifications (fake supabase)", () => {
     expect(data[0]?.eventId).toBe("e2");
     // Título preferido del favorito personal cuando hay ambos.
     expect(data[0]?.title).toBe("Obra propia");
+    expect(data[0]?.watchFolder).toBe("ambas");
     expect(client.callsFor("tender_events")).toHaveLength(1);
   });
 

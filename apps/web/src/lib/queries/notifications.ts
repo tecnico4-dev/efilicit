@@ -14,6 +14,9 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 /** Días visibles en la pestaña Papelera. */
 export const NOTIFICATION_TRASH_RETENTION_DAYS = 30;
 
+/** Origen del seguimiento para copy del buzón (`ambas` → no mostrar «Carpeta»). */
+export type StatusWatchFolder = "propia" | "comun" | "ambas";
+
 export type FavoriteStatusNotification = {
   eventId: string;
   tenderId: string;
@@ -28,6 +31,8 @@ export type FavoriteStatusNotification = {
   unread: boolean;
   /** ISO si está en papelera (ventana 30 días). */
   trashedAt: string | null;
+  /** Favorito personal, Común, o ambos (DTO; no columna BD). */
+  watchFolder: StatusWatchFolder;
 };
 
 type WatchedTenderRow = {
@@ -111,6 +116,20 @@ export function mergeStatusWatchmarks(
   return out;
 }
 
+/** Carpeta de seguimiento para UI; `null` si no está en ninguna. */
+export function resolveStatusWatchFolder(
+  tenderId: string,
+  personalIds: ReadonlySet<string>,
+  sharedIds: ReadonlySet<string>,
+): StatusWatchFolder | null {
+  const inPersonal = personalIds.has(tenderId);
+  const inShared = sharedIds.has(tenderId);
+  if (inPersonal && inShared) return "ambas";
+  if (inPersonal) return "propia";
+  if (inShared) return "comun";
+  return null;
+}
+
 function titlesFromWatched(
   personal: ReadonlyArray<WatchedTenderRow>,
   shared: ReadonlyArray<WatchedTenderRow>,
@@ -161,6 +180,13 @@ export async function listFavoriteStatusNotifications(
   if (favCreated.size === 0) return { data: [], error: null };
 
   const titles = titlesFromWatched(favorites, shared);
+  const personalIds = new Set(favorites.map((f) => f.tender_id));
+  const sharedIds = new Set(shared.map((f) => f.tender_id));
+  const folders = new Map<string, StatusWatchFolder>();
+  for (const tenderId of favCreated.keys()) {
+    const folder = resolveStatusWatchFolder(tenderId, personalIds, sharedIds);
+    if (folder) folders.set(tenderId, folder);
+  }
   const tenderIds = [...favCreated.keys()];
 
   const { data: events, error: evError } = await client
@@ -180,6 +206,7 @@ export async function listFavoriteStatusNotifications(
     (events as EventRow[] | null) ?? [],
     favCreated,
     titles,
+    folders,
   );
 
   const eventIds = changes.map((c) => c.eventId);
@@ -397,6 +424,8 @@ export async function listRecentFavoriteStatusNotifications(
     sourceCode: r.source_code,
     unread: Boolean(r.unread),
     trashedAt: null,
+    // Preview home no muestra «Carpeta»; ambas oculta la línea si se reutiliza.
+    watchFolder: "ambas",
   }));
   return { data: rows, error: null };
 }
@@ -512,6 +541,7 @@ export function statusChangeNotifications(
   events: EventRow[],
   favCreated: Map<string, string>,
   titles: Map<string, string>,
+  folders: Map<string, StatusWatchFolder> = new Map(),
 ): FavoriteStatusNotification[] {
   const byTender = new Map<string, EventRow[]>();
   for (const e of events) {
@@ -555,6 +585,7 @@ export function statusChangeNotifications(
           sourceCode: e.source_code,
           unread: true,
           trashedAt: null,
+          watchFolder: folders.get(tenderId) ?? "propia",
         });
       }
       prevStatus = e.event_status;
