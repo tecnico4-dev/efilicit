@@ -93,36 +93,27 @@ def test_validate_artifact_agregadas_accepts_zip_magic() -> None:
 def test_build_raw_storage_path_convention() -> None:
     storage_path, object_key = build_raw_storage_path(
         "placsp",
-        "licitacionesPerfilesContratanteCompleto3_202609.zip",
-        day="2026/09/11",
+        "entries/abc.atom.xml",
     )
-    assert object_key == (
-        "placsp/2026/09/11/licitacionesPerfilesContratanteCompleto3_202609.zip"
-    )
+    assert object_key == "placsp/entries/abc.atom.xml"
     assert storage_path == f"raw/{object_key}"
 
 
 def test_build_raw_storage_path_agregadas_prefix() -> None:
     storage_path, object_key = build_raw_storage_path(
         AGREGADAS_SOURCE,
-        "PlataformasAgregadasSinMenores_202609.zip",
-        day="2026/09/15",
+        "entries/abc.atom.xml",
     )
-    assert object_key == (
-        "placsp_agregadas/2026/09/15/PlataformasAgregadasSinMenores_202609.zip"
-    )
+    assert object_key == "placsp_agregadas/entries/abc.atom.xml"
     assert storage_path == f"raw/{object_key}"
 
 
 def test_build_raw_storage_path_menores_prefix() -> None:
     storage_path, object_key = build_raw_storage_path(
         MENORES_SOURCE,
-        "contratosMenoresPerfilesContratantes_202609.zip",
-        day="2026/09/17",
+        "entries/abc.atom.xml",
     )
-    assert object_key == (
-        "placsp_menores/2026/09/17/contratosMenoresPerfilesContratantes_202609.zip"
-    )
+    assert object_key == "placsp_menores/entries/abc.atom.xml"
     assert storage_path == f"raw/{object_key}"
 
 

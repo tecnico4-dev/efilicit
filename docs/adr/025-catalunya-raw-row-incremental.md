@@ -8,6 +8,8 @@
 
 **Reemplazado por:** Ninguno
 
+**Extendido por:** [033](033-placsp-commit-por-pagina-raw-sin-fecha.md) (path Storage sin carpeta de día)
+
 ---
 
 ## Contexto

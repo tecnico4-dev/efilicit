@@ -146,7 +146,7 @@ discover (páginas cabeza) → fetch página → expand ítems
 | Workflow Actions manual | OK (`ingest-euskadi.yml`) |
 | Verificación live API + idempotencia | OK (Paso 9.5) → [docs/pruebas.md](../pruebas.md) Parte D |
 
-**RAW:** un aviso con `id` = un artefacto content-addressed `rows/{checksum}.json` bajo `raw/euskadi/AAAA/MM/DD/…`. La página no se materializa en Storage.
+**RAW:** un aviso con `id` = un artefacto content-addressed bajo `raw/euskadi/rows/{checksum}.json` (ADR 025 / 033; sin carpeta de día). La página no se materializa en Storage.
 
 **Idempotencia:** mismo aviso sin cambio de contenido → mismo checksum → skip; upsert canónico unique `(euskadi, id)`.
 

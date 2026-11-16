@@ -8,7 +8,7 @@
 
 **Reemplazado por:** Ninguno
 
-**Extendido por:** [025](025-catalunya-raw-row-incremental.md) (mismo patrón content-addressed / skip-by-checksum para unidades CCAA: Cat + Euskadi)
+**Extendido por:** [025](025-catalunya-raw-row-incremental.md) (mismo patrón content-addressed / skip-by-checksum para unidades CCAA: Cat + Euskadi); [033](033-placsp-commit-por-pagina-raw-sin-fecha.md) (commit por página Atom + path Storage sin fecha)
 
 ---
 

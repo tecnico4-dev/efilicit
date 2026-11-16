@@ -199,7 +199,7 @@ Estrategia prevista (alineada con la fuente, detalle de implementación en Pasos
 
 1. **Descubrimiento (`discover`):** localizar el/los paquetes o ficheros `.atom` pendientes (mes actual / día, o rango configurado).
 2. **Descarga (`fetch`):** obtener bytes; checksum SHA-256; control de tamaño/timeout/retry.
-3. **RAW (ADR 022):** no se guarda el ZIP entero. Cada `atom:entry` nueva (checksum desconocido) → objeto en `raw/placsp/…/entries/{sha256}.atom.xml`. Entries ya vistas se saltan (Storage + parse).
+3. **RAW (ADR 022 / 033):** no se guarda el ZIP entero. Cada `atom:entry` nueva (checksum desconocido) → objeto en `raw/placsp/entries/{sha256}.atom.xml`. Entries ya vistas se saltan (Storage + parse). Commit BD por cada `.atom` del ZIP.
 4. **Parseo:** solo entries nuevas → `SourceRecord` (sin contaminar el modelo canónico con nombres CODICE crudos en tablas).
 5. **Upsert:** por `(source_code, source_tender_id)`; reejecutar no duplica.
 6. **Checkpoint:** cursor en `source_sync` (p. ej. último paquete/`artifact_key` procesado).

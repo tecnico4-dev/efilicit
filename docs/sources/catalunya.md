@@ -147,7 +147,7 @@ discover (páginas SoQL ventana) → fetch página → expand filas
 | Workflow Actions manual | OK |
 | Verificación live SODA + idempotencia | OK → [docs/pruebas.md](../pruebas.md) Parte C |
 
-**RAW:** una fila SODA con `id_intern` = un artefacto content-addressed `rows/{checksum}.json` bajo `raw/catalunya/AAAA/MM/DD/…`. La página no se materializa en Storage.
+**RAW:** una fila SODA con `id_intern` = un artefacto content-addressed bajo `raw/catalunya/rows/{checksum}.json` (ADR 025 / 033; sin carpeta de día). La página no se materializa en Storage.
 
 **Idempotencia:** misma fila sin cambio de contenido → mismo checksum → skip; upsert canónico sigue siendo unique `(catalunya, id_intern)`.
 

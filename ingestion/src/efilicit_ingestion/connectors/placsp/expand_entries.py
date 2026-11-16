@@ -33,17 +33,44 @@ class ExpandedPlacspEntry:
     source_url: str | None
 
 
-def expand_placsp_entries(
+@dataclass(frozen=True, slots=True)
+class ExpandedPlacspPage:
+    """Un fichero ``.atom`` del ZIP (unidad de commit en ADR 033)."""
+
+    member_name: str
+    entries: list[ExpandedPlacspEntry]
+
+
+def expand_placsp_pages(
     raw: bytes,
     package: RemoteArtifact,
-) -> list[ExpandedPlacspEntry]:
-    """ZIP (``PK``) o Atom suelto → lista de entries con checksum estable."""
+) -> list[ExpandedPlacspPage]:
+    """ZIP (``PK``) o Atom suelto → páginas Atom (un member = una página)."""
     if not raw:
         raise PlacspParseError(f"empty payload for {package.artifact_key}")
 
     if raw.startswith(b"PK"):
-        return _expand_zip(raw, package)
-    return _expand_atom_document(raw, package, member_name=package.artifact_key)
+        return _expand_zip_pages(raw, package)
+    return [
+        ExpandedPlacspPage(
+            member_name=package.artifact_key,
+            entries=_expand_atom_document(
+                raw, package, member_name=package.artifact_key
+            ),
+        )
+    ]
+
+
+def expand_placsp_entries(
+    raw: bytes,
+    package: RemoteArtifact,
+) -> list[ExpandedPlacspEntry]:
+    """ZIP (``PK``) o Atom suelto → lista plana de entries (compat)."""
+    pages = expand_placsp_pages(raw, package)
+    out: list[ExpandedPlacspEntry] = []
+    for page in pages:
+        out.extend(page.entries)
+    return out
 
 
 def wrap_entry_as_atom_feed(entry: etree._Element) -> bytes:
@@ -61,7 +88,9 @@ def entry_artifact_key(checksum: str) -> str:
     return f"entries/{checksum}.atom.xml"
 
 
-def _expand_zip(raw: bytes, package: RemoteArtifact) -> list[ExpandedPlacspEntry]:
+def _expand_zip_pages(
+    raw: bytes, package: RemoteArtifact
+) -> list[ExpandedPlacspPage]:
     try:
         with zipfile.ZipFile(BytesIO(raw)) as zf:
             names = sorted(
@@ -73,12 +102,15 @@ def _expand_zip(raw: bytes, package: RemoteArtifact) -> list[ExpandedPlacspEntry
                 raise PlacspParseError(
                     f"ZIP has no .atom members: {package.artifact_key}"
                 )
-            out: list[ExpandedPlacspEntry] = []
-            for name in names:
-                out.extend(
-                    _expand_atom_document(zf.read(name), package, member_name=name)
+            return [
+                ExpandedPlacspPage(
+                    member_name=name,
+                    entries=_expand_atom_document(
+                        zf.read(name), package, member_name=name
+                    ),
                 )
-            return out
+                for name in names
+            ]
     except zipfile.BadZipFile as exc:
         raise PlacspParseError(
             f"invalid ZIP artifact: {package.artifact_key}"
