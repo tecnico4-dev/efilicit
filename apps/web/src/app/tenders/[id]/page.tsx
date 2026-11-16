@@ -461,7 +461,7 @@ export default async function TenderDetailPage({
         </Field>
         <Field label="Tipo de contrato">{formatContractType(tender.contract_type)}</Field>
         <Field label="Procedimiento">{formatProcedureType(tender.procedure_type)}</Field>
-        <Field label="Publicación">{formatDateMadrid(tender.publication_date)}</Field>
+        <Field label="Actualizado">{formatDateMadrid(tender.publication_date)}</Field>
         <Field label="Plazo">{formatDateTimeMadrid(tender.deadline_at)}</Field>
         <Field label="Comunidad autónoma">
           {tender.place_ccaa?.name ?? "—"}

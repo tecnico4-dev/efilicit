@@ -13,7 +13,7 @@ export const SEARCH_SORT_OPTIONS = [
   { value: "procedure_type", label: "Procedimiento" },
   { value: "contract_type", label: "Tipo de contrato" },
   { value: "estimated_value", label: "Importe" },
-  { value: "publication_date", label: "Fecha de publicación" },
+  { value: "publication_date", label: "Actualizado" },
   { value: "deadline_at", label: "Fecha límite" },
   { value: "created_at", label: "Alta en EfiLicit" },
   { value: "updated_at", label: "Actualización" },

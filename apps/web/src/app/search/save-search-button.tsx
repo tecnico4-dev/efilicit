@@ -198,7 +198,7 @@ export function SaveSearchButton({ userId }: { userId: string }) {
     const pubTo = built.publication_date_to;
     if (pubFrom && pubTo && pubFrom > pubTo) {
       setFeedback({
-        text: "Rango de fechas de publicación inválido.",
+        text: "Rango de fechas de actualización inválido.",
         isError: true,
       });
       return;

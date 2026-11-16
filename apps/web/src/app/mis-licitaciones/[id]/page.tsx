@@ -294,7 +294,7 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
                         }
                       />
                       <Fact
-                        label="Publicación"
+                        label="Actualizado"
                         value={
                           tenderSummary?.publication_date
                             ? formatDateMadrid(tenderSummary.publication_date)
@@ -466,7 +466,7 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
               calendario: (
                 <ul className="space-y-0 text-sm">
                   <CalRow
-                    label="Publicación"
+                    label="Actualizado"
                     value={
                       tenderSummary?.publication_date
                         ? formatDateMadrid(tenderSummary.publication_date)

@@ -147,7 +147,7 @@ export function TenderFichaModalButton({ tender }: { tender: TenderDetail }) {
                     <Field label="Procedimiento">
                       {formatProcedureType(tender.procedure_type)}
                     </Field>
-                    <Field label="Publicación">
+                    <Field label="Actualizado">
                       {formatDateMadrid(tender.publication_date)}
                     </Field>
                     <Field label="Plazo">

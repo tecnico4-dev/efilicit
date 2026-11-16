@@ -29,7 +29,7 @@ type Props = {
   initialTo?: string;
   /** Prefijo de ids (alertas). */
   idPrefix?: string;
-  /** Etiqueta del control (default: Publicación). */
+  /** Etiqueta del control (default: Actualizado). */
   label?: string;
   /**
    * Modo controlado (p. ej. modal de alertas): sin inputs hidden ni eventos de form.
@@ -128,14 +128,14 @@ function summaryLabel(from: string, to: string): string {
 type PanelMode = "menu" | "calendar";
 
 /**
- * Un solo control de publicación: atajos + calendario de rango.
+ * Un solo control de fecha actualizado (`publication_date`): atajos + calendario de rango.
  * Emite `pub_from` / `pub_to` (YYYY-MM-DD) como hidden inputs.
  */
 export function PublicationDateRange({
   initialFrom = "",
   initialTo = "",
   idPrefix = "",
-  label = "Publicación",
+  label = "Actualizado",
   from: controlledFrom,
   to: controlledTo,
   onChange,

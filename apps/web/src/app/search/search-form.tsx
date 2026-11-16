@@ -49,7 +49,7 @@ function SearchFormInner({ children }: { children: ReactNode }) {
         if (hasInvalidPublicationRange(e.currentTarget)) {
           e.preventDefault();
           setFeedback({
-            text: "Rango de fechas de publicación inválido.",
+            text: "Rango de fechas de actualización inválido.",
             isError: true,
           });
           return;

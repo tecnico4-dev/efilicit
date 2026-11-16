@@ -197,7 +197,7 @@ export function AlertRowItem({
       return;
     }
     if (hasInvalidPublicationRange(form)) {
-      setError("Rango de fechas de publicación inválido.");
+      setError("Rango de fechas de actualización inválido.");
       return;
     }
     const nextCriteria = buildCriteriaFromSearchForm(form);
