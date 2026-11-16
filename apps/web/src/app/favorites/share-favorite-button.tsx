@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ChangeEvent } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -41,9 +41,11 @@ function PaperPlaneIcon({ className }: { className?: string }) {
 
 type Destination = "common" | "people";
 
+const KIND_OPTIONS: FavoriteKind[] = ["propia", "subcontrata"];
+
 /**
- * Avión → modal centrado «Enviar licitación» (Común | Personas).
- * Kind heredado del favorito personal.
+ * Avión → modal centrado «Enviar licitación» (Carpeta común | destinatarios).
+ * Kind editable; por defecto el del favorito personal.
  */
 export function ShareFavoriteButton({
   userId,
@@ -63,14 +65,14 @@ export function ShareFavoriteButton({
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [destination, setDestination] = useState<Destination>("common");
+  const [sendKind, setSendKind] = useState<FavoriteKind>(kind);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notes, setNotes] = useState("");
   const [members, setMembers] = useState<EficenMemberForShare[]>([]);
-  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [selected, setSelected] = useState<string[]>([]);
   const [membersLoading, setMembersLoading] = useState(false);
 
-  const kindLabel = favoriteKindLongLabel(kind);
   const alreadyInCommon = alreadySharedOwner != null;
 
   useEffect(() => setMounted(true), []);
@@ -108,9 +110,10 @@ export function ShareFavoriteButton({
   async function onPlaneClick() {
     if (pending) return;
     setDestination("common");
+    setSendKind(kind);
     setNotes("");
     setError(null);
-    setSelected(new Set());
+    setSelected([]);
     setOpen(true);
   }
 
@@ -119,17 +122,17 @@ export function ShareFavoriteButton({
     setOpen(false);
   }
 
-  function toggleMember(userIdTo: string) {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(userIdTo)) next.delete(userIdTo);
-      else next.add(userIdTo);
-      return next;
-    });
+  function onRecipientsChange(e: ChangeEvent<HTMLSelectElement>) {
+    const values = Array.from(e.target.selectedOptions, (o) => o.value).filter(
+      Boolean,
+    );
+    setSelected(values);
+    if (values.length > 0) setError(null);
   }
 
   async function onConfirm() {
     if (pending) return;
+    const kindLabel = favoriteKindLongLabel(sendKind);
 
     if (destination === "common") {
       if (alreadySharedOwner) {
@@ -156,7 +159,7 @@ export function ShareFavoriteButton({
       const result = await addSharedFavorite(client, {
         userId,
         tenderId,
-        kind,
+        kind: sendKind,
         notes,
       });
       setPending(false);
@@ -176,8 +179,8 @@ export function ShareFavoriteButton({
       return;
     }
 
-    if (selected.size === 0) {
-      setError("Selecciona al menos una persona.");
+    if (selected.length === 0) {
+      setError("Selecciona al menos un destinatario.");
       return;
     }
     setPending(true);
@@ -186,8 +189,8 @@ export function ShareFavoriteButton({
     const result = await addFavoriteShares(client, {
       fromUserId: userId,
       tenderId,
-      toUserIds: [...selected],
-      kind,
+      toUserIds: selected,
+      kind: sendKind,
       notes,
     });
     setPending(false);
@@ -217,7 +220,7 @@ export function ShareFavoriteButton({
   }
 
   const confirmDisabled =
-    pending || (destination === "people" && selected.size === 0);
+    pending || (destination === "people" && selected.length === 0);
 
   return (
     <>
@@ -261,52 +264,68 @@ export function ShareFavoriteButton({
                   {tenderTitle}
                 </p>
 
-                <p className="mt-4 text-sm text-foreground">
-                  Calificada como{" "}
-                  <span className="font-semibold">{kindLabel}</span>
-                </p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Así se enviará.
-                </p>
+                <label className="mt-4 flex flex-col gap-1.5 text-sm text-foreground">
+                  <span>
+                    Calificada como{" "}
+                    <span className="sr-only">clasificación</span>
+                  </span>
+                  <select
+                    value={sendKind}
+                    disabled={pending}
+                    onChange={(e) =>
+                      setSendKind(e.target.value as FavoriteKind)
+                    }
+                    className="rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    {KIND_OPTIONS.map((k) => (
+                      <option key={k} value={k}>
+                        {favoriteKindLongLabel(k)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
 
-                <fieldset className="mt-4 space-y-2">
+                <fieldset className="mt-4">
                   <legend className="text-xs text-muted-foreground">
                     Destino
                   </legend>
-                  <label className="flex cursor-pointer items-center gap-2 text-sm">
-                    <input
-                      type="radio"
-                      name="share-destination"
-                      checked={destination === "common"}
-                      disabled={pending}
-                      onChange={() => {
-                        setDestination("common");
-                        setError(null);
-                      }}
-                    />
-                    <span>
-                      Común
-                      {alreadyInCommon ? (
-                        <span className="text-muted-foreground">
-                          {" "}
-                          (ya está)
-                        </span>
-                      ) : null}
-                    </span>
-                  </label>
-                  <label className="flex cursor-pointer items-center gap-2 text-sm">
-                    <input
-                      type="radio"
-                      name="share-destination"
-                      checked={destination === "people"}
-                      disabled={pending}
-                      onChange={() => {
-                        setDestination("people");
-                        setError(null);
-                      }}
-                    />
-                    Personas
-                  </label>
+                  <div className="mt-2 flex flex-wrap items-center gap-x-6 gap-y-2">
+                    <label className="inline-flex cursor-pointer items-center gap-2 text-sm">
+                      <input
+                        type="radio"
+                        name="share-destination"
+                        checked={destination === "common"}
+                        disabled={pending}
+                        onChange={() => {
+                          setDestination("common");
+                          setError(null);
+                        }}
+                      />
+                      <span>
+                        Carpeta común
+                        {alreadyInCommon ? (
+                          <span className="text-muted-foreground">
+                            {" "}
+                            (ya está)
+                          </span>
+                        ) : null}
+                      </span>
+                    </label>
+                    <label className="inline-flex cursor-pointer items-center gap-2 text-sm">
+                      <input
+                        type="radio"
+                        name="share-destination"
+                        checked={destination === "people"}
+                        disabled={pending}
+                        onChange={() => {
+                          setDestination("people");
+                          setSelected([]);
+                          setError(null);
+                        }}
+                      />
+                      Elegir destinatario(s)
+                    </label>
+                  </div>
                 </fieldset>
 
                 {destination === "people" ? (
@@ -319,33 +338,31 @@ export function ShareFavoriteButton({
                         <code className="text-[11px]">eficen_members</code>.
                       </p>
                     ) : (
-                      <ul className="max-h-40 space-y-1 overflow-y-auto rounded-md border border-border p-2">
-                        {members.map((m) => {
-                          const checked = selected.has(m.userId);
-                          return (
-                            <li key={m.id}>
-                              <label className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-muted">
-                                <input
-                                  type="checkbox"
-                                  checked={checked}
-                                  onChange={() => toggleMember(m.userId)}
-                                  disabled={pending}
-                                  className="size-3.5"
-                                />
-                                <span className="min-w-0 flex-1 truncate">
-                                  {m.displayName}
-                                  {m.roleTitle ? (
-                                    <span className="text-muted-foreground">
-                                      {" "}
-                                      · {m.roleTitle}
-                                    </span>
-                                  ) : null}
-                                </span>
-                              </label>
-                            </li>
-                          );
-                        })}
-                      </ul>
+                      <label className="flex flex-col gap-1.5 text-xs text-muted-foreground">
+                        Destinatarios
+                        <select
+                          multiple
+                          value={selected}
+                          disabled={pending}
+                          onChange={onRecipientsChange}
+                          size={Math.min(6, Math.max(3, members.length))}
+                          className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                          aria-label="Elegir destinatarios"
+                        >
+                          {members.map((m) => (
+                            <option key={m.id} value={m.userId}>
+                              {m.roleTitle
+                                ? `${m.displayName} · ${m.roleTitle}`
+                                : m.displayName}
+                            </option>
+                          ))}
+                        </select>
+                        <span className="text-[11px]">
+                          {selected.length === 0
+                            ? "Ninguno seleccionado (Ctrl/Cmd + clic para varios)."
+                            : `${selected.length} seleccionado${selected.length === 1 ? "" : "s"}.`}
+                        </span>
+                      </label>
                     )}
                   </div>
                 ) : null}
