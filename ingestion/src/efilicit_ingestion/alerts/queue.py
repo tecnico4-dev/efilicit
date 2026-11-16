@@ -99,6 +99,7 @@ def match_to_notification(
     return NotificationItem(
         user_id=match.user_id,
         alert_id=match.alert_id,
+        tender_id=match.tender_id,
         idempotency_key=key,
         payload={
             "tender_id": match.tender_id,
@@ -158,6 +159,15 @@ class NotificationQueue(Protocol):
         ...
 
 
+def _item_tender_id(item: NotificationItem) -> str | None:
+    if item.tender_id and str(item.tender_id).strip():
+        return str(item.tender_id).strip()
+    raw = item.payload.get("tender_id")
+    if isinstance(raw, str) and raw.strip():
+        return raw.strip()
+    return None
+
+
 class InMemoryNotificationQueue:
     """Cola en memoria para tests / dry-run (sin red ni Postgres)."""
 
@@ -165,6 +175,15 @@ class InMemoryNotificationQueue:
         self._by_key: dict[str, NotificationItem] = {}
 
     def enqueue(self, item: NotificationItem) -> tuple[NotificationItem, bool]:
+        # Candado de negocio: misma alerta + misma licitación (como UNIQUE parcial).
+        tender_id = _item_tender_id(item)
+        if item.alert_id and tender_id:
+            for existing in self._by_key.values():
+                if (
+                    existing.alert_id == item.alert_id
+                    and _item_tender_id(existing) == tender_id
+                ):
+                    return existing, False
         existing = self._by_key.get(item.idempotency_key)
         if existing is not None:
             # No reabrir enviados / cancelled ni duplicar pendientes.
@@ -172,6 +191,7 @@ class InMemoryNotificationQueue:
         stored = NotificationItem(
             user_id=item.user_id,
             alert_id=item.alert_id,
+            tender_id=tender_id,
             idempotency_key=item.idempotency_key,
             payload=dict(item.payload),
             status=item.status,

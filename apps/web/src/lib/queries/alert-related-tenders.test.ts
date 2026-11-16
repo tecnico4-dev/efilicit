@@ -4,6 +4,7 @@ import {
   dedupeAlertRelatedByTender,
   isAlertRelatedActive,
   isAlertRelatedInTrashWindow,
+  listOwnAlertRelatedQueueItems,
   listOwnQueueIdsForAlert,
   queueIdsForTender,
   reassignOwnAlertQueueItems,
@@ -116,5 +117,59 @@ describe("listOwnQueueIdsForAlert", () => {
     });
     expect(error).toBeNull();
     expect(data).toEqual(["q1", "q2"]);
+  });
+});
+
+describe("listOwnAlertRelatedQueueItems", () => {
+  it("prefiere tender_id de columna frente al payload", async () => {
+    const client = createFakeSupabaseClient({
+      tables: {
+        notification_queue: {
+          byMethod: {
+            select: {
+              data: [
+                {
+                  id: "q1",
+                  status: "sent",
+                  created_at: "2026-11-01T00:00:00Z",
+                  sent_at: "2026-11-01T01:00:00Z",
+                  last_error: null,
+                  alert_id: "a1",
+                  tender_id: "t-column",
+                  payload: { tender_id: "t-payload", title: "X" },
+                },
+              ],
+            },
+          },
+        },
+        alert_related_trash: {
+          byMethod: { select: { data: [] } },
+        },
+        tenders: {
+          byMethod: {
+            select: {
+              data: [
+                {
+                  id: "t-column",
+                  title: "Desde columna",
+                  status: "publicada",
+                  estimated_value: 10,
+                  currency: "EUR",
+                  tender_cpvs: [],
+                },
+              ],
+            },
+          },
+        },
+      },
+    });
+    const { data, error } = await listOwnAlertRelatedQueueItems(
+      client as never,
+      { userId: "u1", alertId: "a1" },
+    );
+    expect(error).toBeNull();
+    expect(data).toHaveLength(1);
+    expect(data[0]?.tenderId).toBe("t-column");
+    expect(data[0]?.tender?.title).toBe("Desde columna");
   });
 });

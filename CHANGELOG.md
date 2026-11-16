@@ -10,10 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Alertas: borrar es irreversible (modal Aceptar/Cancelar/×; sin toast Revertir). `notification_queue.alert_id` pasa a `ON DELETE CASCADE` (local).
+- Alertas cola: el job escribe `tender_id` tipado y hace `ON CONFLICT (alert_id, tender_id)`; Relacionadas/Coincidencias prefieren la columna (fallback `payload`).
 
 ### Added
 
-- `notification_queue.tender_id` + UNIQUE parcial `(alert_id, tender_id)` (migración local): dedupe dejando la fila más antigua, claves sin `:digest:`. El job de enqueue aún no escribe la columna.
+- `notification_queue.tender_id` + UNIQUE parcial `(alert_id, tender_id)` (migración local): dedupe dejando la fila más antigua, claves sin `:digest:`.
 - Web: suite unitaria con Vitest (`pnpm --filter @efilicit/web test`): helpers puros, validación del buscador, queries con fake Supabase y regresiones (dedupe Coincidencias, reasignar cola, purga buzón 30 días, `en_plazo=0`, «Otro» al final). Paso en CI.
 - Favoritos · Común: aviso in-app al autor si otro quita su licitación (`notification_common_removed`, `removed_by` / `removed_by_display_name`; trigger tras DELETE; buzón + badge). Solo local hasta migración remota pedida.
 - Favoritos personales: `favorites.kind` Propias de Eficen / Subcontrata (ADR 030). Modal obligatorio al guardar (corazón / ficha); pestañas Eficen/Subcontrata en `/favorites/tenders` y Común; hub muestra las más recientes mezcladas con burbuja.

@@ -121,6 +121,43 @@ def test_different_digest_days_do_not_reenqueue() -> None:
     assert second.enqueued_new == 0
     assert second.enqueued_existing == 1
     assert len(queue.all_items()) == 1
+    item = queue.all_items()[0]
+    assert item.tender_id == "t-soft"
+
+
+def test_legacy_digest_key_does_not_reenqueue_same_alert_tender() -> None:
+    """Fila histórica con :digest: bloquea un enqueue canónico del mismo par."""
+    from efilicit_ingestion.alerts.models import AlertMatch, NotificationItem
+    from efilicit_ingestion.alerts.queue import match_to_notification
+
+    queue = InMemoryNotificationQueue()
+    legacy = NotificationItem(
+        user_id="user-1",
+        alert_id="alert-1",
+        tender_id="t-soft",
+        idempotency_key="alert:alert-1:tender:t-soft:digest:2026-11-07",
+        payload={"tender_id": "t-soft", "title": "Legacy"},
+        status="sent",
+    )
+    stored, created = queue.enqueue(legacy)
+    assert created is True
+    assert stored.status == "sent"
+
+    match = AlertMatch(
+        alert_id="alert-1",
+        user_id="user-1",
+        tender_id="t-soft",
+        score=1.0,
+        priority="high",
+        reasons=("keyword",),
+    )
+    tender = _tender("t-soft", "Mantenimiento de software", "72000000")
+    modern = match_to_notification(match, tender, frequency="diaria")
+    assert ":digest:" not in modern.idempotency_key
+    again, created_again = queue.enqueue(modern)
+    assert created_again is False
+    assert again.status == "sent"
+    assert len(queue.all_items()) == 1
 
 
 def test_empty_criteria_skipped() -> None:

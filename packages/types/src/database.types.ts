@@ -1451,6 +1451,7 @@ export type Database = {
           scheduled_at: string
           sent_at: string | null
           status: string
+          tender_id: string
           user_id: string
         }
         Insert: {
@@ -1464,6 +1465,7 @@ export type Database = {
           scheduled_at?: string
           sent_at?: string | null
           status?: string
+          tender_id: string
           user_id: string
         }
         Update: {
@@ -1477,6 +1479,7 @@ export type Database = {
           scheduled_at?: string
           sent_at?: string | null
           status?: string
+          tender_id?: string
           user_id?: string
         }
         Relationships: [
@@ -1485,6 +1488,13 @@ export type Database = {
             columns: ["alert_id"]
             isOneToOne: false
             referencedRelation: "alerts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_queue_tender_id_fkey"
+            columns: ["tender_id"]
+            isOneToOne: false
+            referencedRelation: "tenders"
             referencedColumns: ["id"]
           },
           {

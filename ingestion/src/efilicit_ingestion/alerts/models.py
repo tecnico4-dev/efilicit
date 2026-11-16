@@ -82,6 +82,8 @@ class NotificationItem:
     scheduled_at: datetime | None = None
     sent_at: datetime | None = None
     id: str | None = None
+    # Columna tipada ``tender_id`` (también en payload por compat).
+    tender_id: str | None = None
 
 
 @dataclass

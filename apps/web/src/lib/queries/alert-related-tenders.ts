@@ -46,6 +46,7 @@ type QueueRow = {
   sent_at: string | null;
   last_error: string | null;
   alert_id: string | null;
+  tender_id: string | null;
   payload: Json;
 };
 
@@ -186,7 +187,9 @@ export async function listOwnAlertRelatedQueueItems(
 ): Promise<{ data: AlertRelatedQueueItem[]; error: Error | null }> {
   let query = client
     .from("notification_queue")
-    .select("id, status, created_at, sent_at, last_error, alert_id, payload")
+    .select(
+      "id, status, created_at, sent_at, last_error, alert_id, tender_id, payload",
+    )
     .eq("user_id", input.userId)
     .order("created_at", { ascending: false });
 
@@ -211,7 +214,7 @@ export async function listOwnAlertRelatedQueueItems(
   const tenderIds = [
     ...new Set(
       rows
-        .map((r) => tenderIdFromPayload(r.payload))
+        .map((r) => r.tender_id?.trim() || tenderIdFromPayload(r.payload))
         .filter((id): id is string => Boolean(id)),
     ),
   ];
@@ -261,7 +264,8 @@ export async function listOwnAlertRelatedQueueItems(
   const out: AlertRelatedQueueItem[] = [];
   for (const row of rows) {
     const status = parseStatus(row.status);
-    const tenderId = tenderIdFromPayload(row.payload);
+    const tenderId =
+      row.tender_id?.trim() || tenderIdFromPayload(row.payload);
     if (!status || !tenderId) continue;
     out.push({
       queueId: row.id,

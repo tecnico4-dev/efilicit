@@ -532,10 +532,16 @@ def load_user_digest_frequencies(
 
 
 def _row_to_item(row: dict[str, Any]) -> NotificationItem:
+    tender_id = _as_str(row.get("tender_id"))
+    if not tender_id:
+        payload = row.get("payload") or {}
+        if isinstance(payload, dict):
+            tender_id = _as_str(payload.get("tender_id"))
     return NotificationItem(
         id=str(row["id"]),
         user_id=str(row["user_id"]),
         alert_id=_as_str(row["alert_id"]),
+        tender_id=tender_id,
         idempotency_key=row["idempotency_key"],
         payload=dict(row["payload"] or {}),
         status=row["status"],
@@ -547,33 +553,42 @@ def _row_to_item(row: dict[str, Any]) -> NotificationItem:
 
 
 class PostgresNotificationQueue:
-    """Cola ``notification_queue`` con upsert por ``idempotency_key``.
+    """Cola ``notification_queue`` idempotente por alerta×licitación.
 
-    ON CONFLICT DO NOTHING: si la clave ya existe (pending o sent), se reutiliza
-    la fila y no se reabre un envío previo.
+    Inserta ``tender_id`` tipado. ``ON CONFLICT`` del UNIQUE parcial
+    ``(alert_id, tender_id)``: no reabre filas ya existentes (pending o sent).
+    ``idempotency_key`` sigue siendo única (logs / re-runs).
     """
 
     def __init__(self, conn: psycopg.Connection) -> None:
         self._conn = conn
 
     def enqueue(self, item: NotificationItem) -> tuple[NotificationItem, bool]:
+        tender_id = item.tender_id or _as_str((item.payload or {}).get("tender_id"))
+        if not tender_id:
+            raise ValueError(
+                "notification_queue.enqueue requires tender_id "
+                "(column or payload.tender_id)"
+            )
         with self._conn.cursor(row_factory=dict_row) as cur:
             cur.execute(
                 """
                 insert into public.notification_queue (
-                  user_id, alert_id, status, idempotency_key,
+                  user_id, alert_id, tender_id, status, idempotency_key,
                   attempts, last_error, payload, scheduled_at, sent_at
                 )
                 values (
-                  %s::uuid, %s::uuid, %s, %s,
+                  %s::uuid, %s::uuid, %s::uuid, %s, %s,
                   %s, %s, %s, coalesce(%s, now()), %s
                 )
-                on conflict (idempotency_key) do nothing
+                on conflict (alert_id, tender_id) where (alert_id is not null)
+                do nothing
                 returning *
                 """,
                 (
                     item.user_id,
                     item.alert_id,
+                    tender_id,
                     item.status,
                     item.idempotency_key,
                     item.attempts,
@@ -587,18 +602,33 @@ class PostgresNotificationQueue:
             if inserted is not None:
                 return _row_to_item(inserted), True
 
-            cur.execute(
-                """
-                select *
-                from public.notification_queue
-                where idempotency_key = %s
-                """,
-                (item.idempotency_key,),
-            )
-            existing = cur.fetchone()
+            existing = None
+            if item.alert_id:
+                cur.execute(
+                    """
+                    select *
+                    from public.notification_queue
+                    where alert_id = %s::uuid
+                      and tender_id = %s::uuid
+                    """,
+                    (item.alert_id, tender_id),
+                )
+                existing = cur.fetchone()
+            if existing is None:
+                cur.execute(
+                    """
+                    select *
+                    from public.notification_queue
+                    where idempotency_key = %s
+                    """,
+                    (item.idempotency_key,),
+                )
+                existing = cur.fetchone()
             if existing is None:
                 raise RuntimeError(
-                    f"notification_queue missing after conflict: {item.idempotency_key}"
+                    "notification_queue missing after conflict: "
+                    f"alert={item.alert_id} tender={tender_id} "
+                    f"key={item.idempotency_key}"
                 )
             return _row_to_item(existing), False
 
