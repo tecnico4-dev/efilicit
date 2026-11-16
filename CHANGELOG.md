@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Alertas: borrar es irreversible (modal Aceptar/Cancelar/×; sin toast Revertir). `notification_queue.alert_id` pasa a `ON DELETE CASCADE` (local).
+
 ### Added
 
 - `notification_queue.tender_id` + UNIQUE parcial `(alert_id, tender_id)` (migración local): dedupe dejando la fila más antigua, claves sin `:digest:`. El job de enqueue aún no escribe la columna.

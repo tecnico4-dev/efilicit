@@ -1,19 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useId, useState } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
-import { useUndoToast } from "@/components/undo-toast";
+import { Button } from "@/components/ui/button";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
-import {
-  asFavoriteKind,
-  createOwnAlert,
-  deleteOwnAlert,
-  listOwnQueueIdsForAlert,
-  reassignOwnAlertQueueItems,
-  updateOwnAlert,
-  type DigestFrequency,
-} from "@/lib/queries";
-import { parseCriteria } from "@/lib/criteria-display";
+import { deleteOwnAlert } from "@/lib/queries";
 import type { Database } from "@efilicit/types";
 
 type AlertRow = Database["public"]["Tables"]["alerts"]["Row"];
@@ -39,7 +31,11 @@ function TrashIcon({ className }: { className?: string }) {
   );
 }
 
-/** Elimina una alerta con aviso y Revertir (mismo patrón que búsquedas). */
+/**
+ * Elimina una alerta tras confirmación modal (irreversible).
+ * CASCADE en BD borra también las filas de `notification_queue` de esa alerta.
+ * Sin toast Revertir.
+ */
 export function RemoveAlertButton({
   alert,
   disabled = false,
@@ -48,39 +44,28 @@ export function RemoveAlertButton({
   disabled?: boolean;
 }) {
   const router = useRouter();
-  const { showUndo } = useUndoToast();
+  const titleId = useId();
+  const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function onRemove() {
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  function dismiss() {
+    if (pending) return;
+    setOpen(false);
+    setError(null);
+  }
+
+  async function onConfirm() {
     if (pending || disabled) return;
     setPending(true);
     setError(null);
 
     const client = createSupabaseBrowserClient();
-    // Antes del DELETE: ON DELETE SET NULL deja la cola sin alert_id.
-    const queueIdsResult = await listOwnQueueIdsForAlert(client, {
-      userId: alert.user_id,
-      alertId: alert.id,
-    });
-    if (queueIdsResult.error) {
-      setPending(false);
-      setError(queueIdsResult.error.message);
-      return;
-    }
-
-    const snapshot = {
-      userId: alert.user_id,
-      name: alert.name,
-      criteria: parseCriteria(alert.criteria),
-      kind: asFavoriteKind(alert.kind),
-      frequency: (alert.frequency === "semanal"
-        ? "semanal"
-        : "diaria") as DigestFrequency,
-      wasActive: alert.is_active,
-      queueIds: queueIdsResult.data,
-    };
-
     const { error: deleteError } = await deleteOwnAlert(client, {
       alertId: alert.id,
     });
@@ -89,32 +74,7 @@ export function RemoveAlertButton({
       setError(deleteError.message);
       return;
     }
-
-    showUndo("Has eliminado la alerta.", async () => {
-      const c = createSupabaseBrowserClient();
-      const { data } = await createOwnAlert(c, {
-        userId: snapshot.userId,
-        name: snapshot.name,
-        criteria: snapshot.criteria,
-        kind: snapshot.kind,
-        frequency: snapshot.frequency,
-      });
-      if (!data) {
-        router.refresh();
-        return;
-      }
-      if (!snapshot.wasActive) {
-        await updateOwnAlert(c, { alertId: data.id, isActive: false });
-      }
-      if (snapshot.queueIds.length > 0) {
-        await reassignOwnAlertQueueItems(c, {
-          userId: snapshot.userId,
-          alertId: data.id,
-          queueIds: snapshot.queueIds,
-        });
-      }
-      router.refresh();
-    });
+    setOpen(false);
     router.refresh();
   }
 
@@ -123,22 +83,80 @@ export function RemoveAlertButton({
       <button
         type="button"
         disabled={pending || disabled}
-        onClick={onRemove}
+        onClick={() => {
+          setError(null);
+          setOpen(true);
+        }}
         aria-label="Eliminar alerta"
         title="Eliminar"
         className="inline-flex size-8 items-center justify-center rounded-md text-foreground/75 transition-colors hover:bg-destructive/10 hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50"
       >
-        {pending ? (
-          <span className="text-xs">…</span>
-        ) : (
-          <TrashIcon className="size-[1.15rem]" />
-        )}
+        <TrashIcon className="size-[1.15rem]" />
       </button>
-      {error ? (
-        <p className="text-xs text-destructive" role="alert">
-          {error}
-        </p>
-      ) : null}
+
+      {mounted && open
+        ? createPortal(
+            <div
+              className="fixed inset-0 z-[210] flex items-center justify-center bg-black/50 p-3 sm:p-6"
+              role="presentation"
+            >
+              <div
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby={titleId}
+                className="w-full max-w-md rounded-xl border border-border bg-surface p-5 shadow-xl"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <h2
+                    id={titleId}
+                    className="text-base font-semibold text-foreground"
+                  >
+                    ¿Eliminar esta alerta?
+                  </h2>
+                  <button
+                    type="button"
+                    onClick={dismiss}
+                    disabled={pending}
+                    className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-destructive bg-surface text-destructive transition-colors hover:bg-destructive/10 hover:text-destructive disabled:opacity-60"
+                    aria-label="Cerrar"
+                  >
+                    <span aria-hidden className="text-xl leading-none">
+                      ×
+                    </span>
+                  </button>
+                </div>
+                <p className="mt-3 text-sm text-muted-foreground">
+                  Se eliminarán las licitaciones relacionadas con esta alerta.
+                  Es irreversible.
+                </p>
+                {error ? (
+                  <p className="mt-3 text-xs text-destructive" role="alert">
+                    {error}
+                  </p>
+                ) : null}
+                <div className="mt-5 flex flex-wrap items-center justify-end gap-2">
+                  <Button
+                    type="button"
+                    disabled={pending}
+                    onClick={() => void onConfirm()}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    {pending ? "Eliminando…" : "Aceptar"}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={pending}
+                    onClick={dismiss}
+                  >
+                    Cancelar
+                  </Button>
+                </div>
+              </div>
+            </div>,
+            document.body,
+          )
+        : null}
     </div>
   );
 }
