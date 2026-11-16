@@ -127,6 +127,7 @@ export function RemoveAlertButton({
                 </div>
                 <p className="mt-3 text-sm text-muted-foreground">
                   Se eliminarán las licitaciones relacionadas con esta alerta.
+                  <br />
                   Es irreversible.
                 </p>
                 {error ? (
