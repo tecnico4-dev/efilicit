@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { AnchoredPortal } from "@/components/ui/anchored-portal";
 import { useUndoToast } from "@/components/undo-toast";
 import { cn } from "@/lib/cn";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
@@ -39,10 +39,10 @@ function PaperPlaneIcon({ className }: { className?: string }) {
   );
 }
 
-type MenuView = "root" | "people" | "common-notes";
+type Destination = "common" | "people";
 
 /**
- * Avión: menú Común | Personas (multi-select).
+ * Avión → modal centrado «Enviar licitación» (Común | Personas).
  * Kind heredado del favorito personal.
  */
 export function ShareFavoriteButton({
@@ -60,9 +60,9 @@ export function ShareFavoriteButton({
 }) {
   const router = useRouter();
   const { showStatus } = useUndoToast();
-  const anchorRef = useRef<HTMLButtonElement>(null);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [view, setView] = useState<MenuView>("root");
+  const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const [destination, setDestination] = useState<Destination>("common");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notes, setNotes] = useState("");
@@ -73,124 +73,50 @@ export function ShareFavoriteButton({
   const kindLabel = favoriteKindLongLabel(kind);
   const alreadyInCommon = alreadySharedOwner != null;
 
+  useEffect(() => setMounted(true), []);
+
   useEffect(() => {
-    if (!menuOpen) {
-      setView("root");
-      setNotes("");
-      setError(null);
-      setSelected(new Set());
+    if (!open) return;
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape" && !pending) setOpen(false);
     }
-  }, [menuOpen]);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, pending]);
 
-  async function openMenu() {
-    if (pending) return;
-    setMenuOpen(true);
-    setView("root");
-  }
-
-  async function onPickCommon() {
-    if (pending) return;
-    if (alreadySharedOwner) {
-      setMenuOpen(false);
-      showStatus(sharedFavoriteAlreadyMessage(userId, alreadySharedOwner));
-      return;
-    }
-    setPending(true);
-    const client = createSupabaseBrowserClient();
-    const existing = await getSharedFavoriteOwner(client, tenderId);
-    setPending(false);
-    if (existing.error) {
-      showStatus(existing.error.message);
-      setMenuOpen(false);
-      return;
-    }
-    if (existing.data) {
-      showStatus(sharedFavoriteAlreadyMessage(userId, existing.data));
-      setMenuOpen(false);
-      router.refresh();
-      return;
-    }
-    setView("common-notes");
-  }
-
-  async function onPickPeople() {
-    if (pending) return;
-    setView("people");
+  useEffect(() => {
+    if (!open || destination !== "people") return;
+    let cancelled = false;
     setMembersLoading(true);
     setError(null);
     const client = createSupabaseBrowserClient();
-    const result = await listEficenMembersForShare(client, userId);
-    setMembersLoading(false);
-    if (result.error) {
-      setError(result.error.message);
-      return;
-    }
-    setMembers(result.data);
-  }
+    void listEficenMembersForShare(client, userId).then((result) => {
+      if (cancelled) return;
+      setMembersLoading(false);
+      if (result.error) {
+        setError(result.error.message);
+        setMembers([]);
+        return;
+      }
+      setMembers(result.data);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [open, destination, userId]);
 
-  async function confirmCommon() {
+  async function onPlaneClick() {
     if (pending) return;
-    setPending(true);
+    setDestination("common");
+    setNotes("");
     setError(null);
-    const client = createSupabaseBrowserClient();
-    const result = await addSharedFavorite(client, {
-      userId,
-      tenderId,
-      kind,
-      notes,
-    });
-    setPending(false);
-    if (result.ok) {
-      setMenuOpen(false);
-      showStatus(`Añadida a Común (${kindLabel}).`);
-      router.refresh();
-      return;
-    }
-    if (result.alreadyExists) {
-      setMenuOpen(false);
-      showStatus(sharedFavoriteAlreadyMessage(userId, result.owner));
-      router.refresh();
-      return;
-    }
-    setError(result.error.message);
+    setSelected(new Set());
+    setOpen(true);
   }
 
-  async function confirmPeople() {
-    if (pending || selected.size === 0) return;
-    setPending(true);
-    setError(null);
-    const client = createSupabaseBrowserClient();
-    const toUserIds = [...selected];
-    const result = await addFavoriteShares(client, {
-      fromUserId: userId,
-      tenderId,
-      toUserIds,
-      kind,
-      notes,
-    });
-    setPending(false);
-    if (!result.ok) {
-      setError(result.error.message);
-      return;
-    }
-    setMenuOpen(false);
-    const parts: string[] = [];
-    if (result.inserted > 0) {
-      parts.push(
-        result.inserted === 1
-          ? "Compartida con 1 persona"
-          : `Compartida con ${result.inserted} personas`,
-      );
-    }
-    if (result.already.length > 0) {
-      const names = result.already.map((id) => {
-        const m = members.find((x) => x.userId === id);
-        return favoriteShareAlreadyMessage(m?.displayName ?? null);
-      });
-      parts.push(...names);
-    }
-    showStatus(parts.join(" · ") || "Sin cambios.");
-    router.refresh();
+  function dismiss() {
+    if (pending) return;
+    setOpen(false);
   }
 
   function toggleMember(userIdTo: string) {
@@ -202,16 +128,105 @@ export function ShareFavoriteButton({
     });
   }
 
+  async function onConfirm() {
+    if (pending) return;
+
+    if (destination === "common") {
+      if (alreadySharedOwner) {
+        setOpen(false);
+        showStatus(sharedFavoriteAlreadyMessage(userId, alreadySharedOwner));
+        return;
+      }
+      setPending(true);
+      setError(null);
+      const client = createSupabaseBrowserClient();
+      const existing = await getSharedFavoriteOwner(client, tenderId);
+      if (existing.error) {
+        setPending(false);
+        setError(existing.error.message);
+        return;
+      }
+      if (existing.data) {
+        setPending(false);
+        setOpen(false);
+        showStatus(sharedFavoriteAlreadyMessage(userId, existing.data));
+        router.refresh();
+        return;
+      }
+      const result = await addSharedFavorite(client, {
+        userId,
+        tenderId,
+        kind,
+        notes,
+      });
+      setPending(false);
+      if (result.ok) {
+        setOpen(false);
+        showStatus(`Añadida a Común (${kindLabel}).`);
+        router.refresh();
+        return;
+      }
+      if (result.alreadyExists) {
+        setOpen(false);
+        showStatus(sharedFavoriteAlreadyMessage(userId, result.owner));
+        router.refresh();
+        return;
+      }
+      setError(result.error.message);
+      return;
+    }
+
+    if (selected.size === 0) {
+      setError("Selecciona al menos una persona.");
+      return;
+    }
+    setPending(true);
+    setError(null);
+    const client = createSupabaseBrowserClient();
+    const result = await addFavoriteShares(client, {
+      fromUserId: userId,
+      tenderId,
+      toUserIds: [...selected],
+      kind,
+      notes,
+    });
+    setPending(false);
+    if (!result.ok) {
+      setError(result.error.message);
+      return;
+    }
+    setOpen(false);
+    const parts: string[] = [];
+    if (result.inserted > 0) {
+      parts.push(
+        result.inserted === 1
+          ? "Compartida con 1 persona"
+          : `Compartida con ${result.inserted} personas`,
+      );
+    }
+    if (result.already.length > 0) {
+      parts.push(
+        ...result.already.map((id) => {
+          const m = members.find((x) => x.userId === id);
+          return favoriteShareAlreadyMessage(m?.displayName ?? null);
+        }),
+      );
+    }
+    showStatus(parts.join(" · ") || "Sin cambios.");
+    router.refresh();
+  }
+
+  const confirmDisabled =
+    pending || (destination === "people" && selected.size === 0);
+
   return (
     <>
       <button
-        ref={anchorRef}
         type="button"
         disabled={pending}
-        onClick={() => void openMenu()}
-        aria-label="Compartir licitación"
-        aria-expanded={menuOpen}
-        title="Compartir"
+        onClick={() => void onPlaneClick()}
+        aria-label="Enviar licitación"
+        title="Enviar licitación"
         className={cn(
           "inline-flex size-8 shrink-0 items-center justify-center rounded-md transition-colors",
           alreadyInCommon
@@ -223,172 +238,168 @@ export function ShareFavoriteButton({
         <PaperPlaneIcon className="size-4" />
       </button>
 
-      <AnchoredPortal
-        open={menuOpen}
-        anchorRef={anchorRef}
-        onDismiss={() => !pending && setMenuOpen(false)}
-        matchAnchorWidth={false}
-        minWidth={240}
-        maxWidth={320}
-        maxHeight={view === "people" ? 360 : null}
-        overflowY={view === "people" ? "auto" : "visible"}
-        className="rounded-lg border border-border bg-background p-1 shadow-lg"
-      >
-        {view === "root" ? (
-          <div className="flex flex-col p-0.5" role="menu">
-            <button
-              type="button"
-              role="menuitem"
-              disabled={pending}
-              onClick={() => void onPickCommon()}
-              className="rounded-md px-3 py-2 text-left text-sm hover:bg-muted"
+      {mounted && open
+        ? createPortal(
+            <div
+              className="fixed inset-0 z-[210] flex items-center justify-center bg-black/50 p-4"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="share-favorite-title"
+              onClick={dismiss}
             >
-              Común
-              {alreadyInCommon ? (
-                <span className="mt-0.5 block text-xs text-muted-foreground">
-                  Ya está en la carpeta
-                </span>
-              ) : null}
-            </button>
-            <button
-              type="button"
-              role="menuitem"
-              disabled={pending}
-              onClick={() => void onPickPeople()}
-              className="rounded-md px-3 py-2 text-left text-sm hover:bg-muted"
-            >
-              Personas
-            </button>
-          </div>
-        ) : null}
-
-        {view === "common-notes" ? (
-          <div className="flex w-[280px] flex-col gap-2 p-3">
-            <p className="text-sm font-medium">Añadir a Común</p>
-            <p className="line-clamp-2 text-xs text-muted-foreground">
-              {tenderTitle}
-            </p>
-            <p className="text-xs">
-              Calificada como <span className="font-semibold">{kindLabel}</span>
-            </p>
-            <label className="flex flex-col gap-1 text-xs text-muted-foreground">
-              Nota (opcional)
-              <textarea
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                maxLength={SHARED_FAVORITE_NOTES_MAX}
-                rows={2}
-                disabled={pending}
-                className="resize-y rounded-md border border-border bg-background px-2 py-1.5 text-sm text-foreground"
-              />
-            </label>
-            {error ? (
-              <p className="text-xs text-destructive" role="alert">
-                {error}
-              </p>
-            ) : null}
-            <div className="flex justify-end gap-1.5">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                disabled={pending}
-                onClick={() => setView("root")}
+              <div
+                className="w-full max-w-md rounded-2xl border border-border bg-background p-5 shadow-xl"
+                onClick={(e) => e.stopPropagation()}
               >
-                Atrás
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                disabled={pending}
-                onClick={() => void confirmCommon()}
-              >
-                {pending ? "…" : "Añadir"}
-              </Button>
-            </div>
-          </div>
-        ) : null}
+                <h2
+                  id="share-favorite-title"
+                  className="text-lg font-semibold text-foreground"
+                >
+                  Enviar licitación
+                </h2>
+                <p className="mt-2 line-clamp-3 text-sm italic text-muted-foreground">
+                  {tenderTitle}
+                </p>
 
-        {view === "people" ? (
-          <div className="flex w-[280px] flex-col gap-2 p-3">
-            <p className="text-sm font-medium">Compartir con personas</p>
-            <p className="text-xs text-muted-foreground">
-              Calificada como <span className="font-semibold">{kindLabel}</span>
-            </p>
-            {membersLoading ? (
-              <p className="text-xs text-muted-foreground">Cargando…</p>
-            ) : members.length === 0 ? (
-              <p className="text-xs text-muted-foreground">
-                No hay miembros con cuenta enlazada. Crea filas en{" "}
-                <code className="text-[11px]">eficen_members</code>.
-              </p>
-            ) : (
-              <ul className="max-h-40 space-y-1 overflow-y-auto">
-                {members.map((m) => {
-                  const checked = selected.has(m.userId);
-                  return (
-                    <li key={m.id}>
-                      <label className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-muted">
-                        <input
-                          type="checkbox"
-                          checked={checked}
-                          onChange={() => toggleMember(m.userId)}
-                          disabled={pending}
-                          className="size-3.5"
-                        />
-                        <span className="min-w-0 flex-1 truncate">
-                          {m.displayName}
-                          {m.roleTitle ? (
-                            <span className="text-muted-foreground">
-                              {" "}
-                              · {m.roleTitle}
-                            </span>
-                          ) : null}
+                <p className="mt-4 text-sm text-foreground">
+                  Calificada como{" "}
+                  <span className="font-semibold">{kindLabel}</span>
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Así se enviará.
+                </p>
+
+                <fieldset className="mt-4 space-y-2">
+                  <legend className="text-xs text-muted-foreground">
+                    Destino
+                  </legend>
+                  <label className="flex cursor-pointer items-center gap-2 text-sm">
+                    <input
+                      type="radio"
+                      name="share-destination"
+                      checked={destination === "common"}
+                      disabled={pending}
+                      onChange={() => {
+                        setDestination("common");
+                        setError(null);
+                      }}
+                    />
+                    <span>
+                      Común
+                      {alreadyInCommon ? (
+                        <span className="text-muted-foreground">
+                          {" "}
+                          (ya está)
                         </span>
-                      </label>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-            <label className="flex flex-col gap-1 text-xs text-muted-foreground">
-              Nota (opcional)
-              <textarea
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                maxLength={SHARED_FAVORITE_NOTES_MAX}
-                rows={2}
-                disabled={pending}
-                className="resize-y rounded-md border border-border bg-background px-2 py-1.5 text-sm text-foreground"
-              />
-            </label>
-            {error ? (
-              <p className="text-xs text-destructive" role="alert">
-                {error}
-              </p>
-            ) : null}
-            <div className="flex justify-end gap-1.5">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                disabled={pending}
-                onClick={() => setView("root")}
-              >
-                Atrás
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                disabled={pending || selected.size === 0}
-                onClick={() => void confirmPeople()}
-              >
-                {pending ? "…" : "Enviar"}
-              </Button>
-            </div>
-          </div>
-        ) : null}
-      </AnchoredPortal>
+                      ) : null}
+                    </span>
+                  </label>
+                  <label className="flex cursor-pointer items-center gap-2 text-sm">
+                    <input
+                      type="radio"
+                      name="share-destination"
+                      checked={destination === "people"}
+                      disabled={pending}
+                      onChange={() => {
+                        setDestination("people");
+                        setError(null);
+                      }}
+                    />
+                    Personas
+                  </label>
+                </fieldset>
+
+                {destination === "people" ? (
+                  <div className="mt-3">
+                    {membersLoading ? (
+                      <p className="text-xs text-muted-foreground">Cargando…</p>
+                    ) : members.length === 0 ? (
+                      <p className="text-xs text-muted-foreground">
+                        No hay miembros con cuenta enlazada. Crea filas en{" "}
+                        <code className="text-[11px]">eficen_members</code>.
+                      </p>
+                    ) : (
+                      <ul className="max-h-40 space-y-1 overflow-y-auto rounded-md border border-border p-2">
+                        {members.map((m) => {
+                          const checked = selected.has(m.userId);
+                          return (
+                            <li key={m.id}>
+                              <label className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-muted">
+                                <input
+                                  type="checkbox"
+                                  checked={checked}
+                                  onChange={() => toggleMember(m.userId)}
+                                  disabled={pending}
+                                  className="size-3.5"
+                                />
+                                <span className="min-w-0 flex-1 truncate">
+                                  {m.displayName}
+                                  {m.roleTitle ? (
+                                    <span className="text-muted-foreground">
+                                      {" "}
+                                      · {m.roleTitle}
+                                    </span>
+                                  ) : null}
+                                </span>
+                              </label>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    )}
+                  </div>
+                ) : null}
+
+                <label className="mt-4 flex flex-col gap-1.5 text-xs text-muted-foreground">
+                  Nota (opcional)
+                  <textarea
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    maxLength={SHARED_FAVORITE_NOTES_MAX}
+                    rows={3}
+                    disabled={pending}
+                    placeholder="Motivo o comentario…"
+                    className="resize-y rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  />
+                  <span className="tabular-nums text-[11px]">
+                    {notes.length}/{SHARED_FAVORITE_NOTES_MAX}
+                  </span>
+                </label>
+
+                {error ? (
+                  <p className="mt-2 text-sm text-destructive" role="alert">
+                    {error}
+                  </p>
+                ) : null}
+
+                <div className="mt-5 flex justify-end gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={pending}
+                    onClick={dismiss}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    disabled={confirmDisabled}
+                    onClick={() => void onConfirm()}
+                  >
+                    {pending
+                      ? "Enviando…"
+                      : destination === "common"
+                        ? "Añadir"
+                        : "Enviar"}
+                  </Button>
+                </div>
+              </div>
+            </div>,
+            document.body,
+          )
+        : null}
     </>
   );
 }
