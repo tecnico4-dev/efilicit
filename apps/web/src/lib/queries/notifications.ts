@@ -1,9 +1,11 @@
 /**
- * Avisos in-app: cambios de estado en licitaciones favoritas.
- * Fuente: tender_events ∩ favorites; estado UI en notification_favorites
- * (read_at / trashed_at / deleted).
+ * Avisos in-app: cambios de estado en licitaciones seguidas.
+ * Fuente: tender_events ∩ (favorites propias ∪ shared_favorites);
+ * estado UI en notification_favorites (read_at / trashed_at / deleted).
  *
- * Elegibilidad: `tender_events.created_at` > `favorites.created_at`.
+ * Elegibilidad: `tender_events.created_at` > watermark
+ * (`favorites.created_at` y/o `shared_favorites.created_at`; si ambas, LEAST).
+ * Una fila UI por (user_id, event_id): propio+Común no duplica.
  * Papelera UI 30 días; luego `deleted=true` (lazy al listar).
  */
 import type { Database } from "@efilicit/types";
@@ -28,7 +30,7 @@ export type FavoriteStatusNotification = {
   trashedAt: string | null;
 };
 
-type FavRow = {
+type WatchedTenderRow = {
   tender_id: string;
   created_at: string;
   tenders: { id: string; title: string } | null;
@@ -90,7 +92,41 @@ export function formatNotificationTrashExpiry(trashedAt: string): string {
 }
 
 /**
- * Lista cambios de estado en favoritos detectados tras marcar como favorito.
+ * Watermark por licitación: propias del usuario ∪ Común del equipo.
+ * Si está en ambos, `LEAST(created_at)` (una sola entrada; sin duplicar avisos).
+ */
+export function mergeStatusWatchmarks(
+  personal: ReadonlyArray<{ tender_id: string; created_at: string }>,
+  shared: ReadonlyArray<{ tender_id: string; created_at: string }>,
+): Map<string, string> {
+  const out = new Map<string, string>();
+  for (const row of personal) {
+    const prev = out.get(row.tender_id);
+    if (!prev || row.created_at < prev) out.set(row.tender_id, row.created_at);
+  }
+  for (const row of shared) {
+    const prev = out.get(row.tender_id);
+    if (!prev || row.created_at < prev) out.set(row.tender_id, row.created_at);
+  }
+  return out;
+}
+
+function titlesFromWatched(
+  personal: ReadonlyArray<WatchedTenderRow>,
+  shared: ReadonlyArray<WatchedTenderRow>,
+): Map<string, string> {
+  const titles = new Map<string, string>();
+  for (const row of [...shared, ...personal]) {
+    const title = row.tenders?.title?.trim() || "Licitación";
+    // Personal pisa Común si ambos aportan título.
+    titles.set(row.tender_id, title);
+  }
+  return titles;
+}
+
+/**
+ * Lista cambios de estado tras empezar a seguir la licitación
+ * (favorito propio y/o carpeta Común). Una entrada por event_id.
  * Incluye avisos en papelera (filtrar por pestaña en UI). Omite `deleted`.
  */
 export async function listFavoriteStatusNotifications(
@@ -102,25 +138,30 @@ export async function listFavoriteStatusNotifications(
 ): Promise<{ data: FavoriteStatusNotification[]; error: Error | null }> {
   const limit = input.limit ?? DEFAULT_LIMIT;
 
-  const { data: favs, error: favError } = await client
-    .from("favorites")
-    .select("tender_id, created_at, tenders ( id, title )")
-    .eq("user_id", input.userId);
+  const [favResult, sharedResult] = await Promise.all([
+    client
+      .from("favorites")
+      .select("tender_id, created_at, tenders ( id, title )")
+      .eq("user_id", input.userId),
+    client
+      .from("shared_favorites")
+      .select("tender_id, created_at, tenders ( id, title )"),
+  ]);
 
-  if (favError) return { data: [], error: new Error(favError.message) };
-  const favorites = (favs as FavRow[] | null) ?? [];
-  if (favorites.length === 0) return { data: [], error: null };
+  if (favResult.error) {
+    return { data: [], error: new Error(favResult.error.message) };
+  }
+  if (sharedResult.error) {
+    return { data: [], error: new Error(sharedResult.error.message) };
+  }
 
-  const favCreated = new Map(
-    favorites.map((f) => [f.tender_id, f.created_at] as const),
-  );
-  const titles = new Map(
-    favorites.map((f) => [
-      f.tender_id,
-      f.tenders?.title?.trim() || "Licitación",
-    ]),
-  );
-  const tenderIds = favorites.map((f) => f.tender_id);
+  const favorites = (favResult.data as WatchedTenderRow[] | null) ?? [];
+  const shared = (sharedResult.data as WatchedTenderRow[] | null) ?? [];
+  const favCreated = mergeStatusWatchmarks(favorites, shared);
+  if (favCreated.size === 0) return { data: [], error: null };
+
+  const titles = titlesFromWatched(favorites, shared);
+  const tenderIds = [...favCreated.keys()];
 
   const { data: events, error: evError } = await client
     .from("tender_events")

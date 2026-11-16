@@ -7,6 +7,7 @@ import {
   listFavoriteStatusNotifications,
   markOwnNotificationRead,
   markOwnNotificationUnread,
+  mergeStatusWatchmarks,
   statusChangeNotifications,
   trashOwnNotification,
 } from "./notifications";
@@ -36,6 +37,26 @@ describe("notification trash window helpers", () => {
     expect(
       formatNotificationTrashExpiry("2026-10-01T12:00:00.000Z"),
     ).toContain("muy pronto");
+  });
+});
+
+describe("mergeStatusWatchmarks", () => {
+  it("une propios y Común con LEAST y sin duplicar tender_id", () => {
+    const map = mergeStatusWatchmarks(
+      [
+        { tender_id: "t1", created_at: "2026-11-05T00:00:00Z" },
+        { tender_id: "t2", created_at: "2026-11-01T00:00:00Z" },
+      ],
+      [
+        { tender_id: "t1", created_at: "2026-11-01T00:00:00Z" },
+        { tender_id: "t3", created_at: "2026-11-03T00:00:00Z" },
+      ],
+    );
+    expect([...map.entries()].sort()).toEqual([
+      ["t1", "2026-11-01T00:00:00Z"],
+      ["t2", "2026-11-01T00:00:00Z"],
+      ["t3", "2026-11-03T00:00:00Z"],
+    ]);
   });
 });
 
@@ -83,6 +104,73 @@ describe("statusChangeNotifications", () => {
   });
 });
 
+const statusChangeEvents = [
+  {
+    id: "e0",
+    tender_id: "t1",
+    event_type: "ingerida",
+    event_status: "publicada",
+    occurred_at: "2026-10-01T00:00:00Z",
+    created_at: "2026-10-01T00:00:00Z",
+    source_code: "placsp",
+  },
+  {
+    id: "e2",
+    tender_id: "t1",
+    event_type: "actualizada",
+    event_status: "adjudicada",
+    occurred_at: "2026-11-05T00:00:00Z",
+    created_at: "2026-11-05T00:00:00Z",
+    source_code: "placsp",
+  },
+];
+
+function fakeStatusListClient(input: {
+  favorites?: unknown[];
+  shared?: unknown[];
+  events?: unknown[];
+  notificationSelects?: Array<{ data: unknown }>;
+}) {
+  return createFakeSupabaseClient({
+    tables: {
+      favorites: {
+        byMethod: {
+          select: { data: input.favorites ?? [] },
+        },
+      },
+      shared_favorites: {
+        byMethod: {
+          select: { data: input.shared ?? [] },
+        },
+      },
+      tender_events: {
+        byMethod: {
+          select: { data: input.events ?? statusChangeEvents },
+        },
+      },
+      notification_favorites: {
+        byMethod: {
+          select: input.notificationSelects ?? [
+            { data: [{ event_id: "e2" }] },
+            {
+              data: [
+                {
+                  event_id: "e2",
+                  read_at: null,
+                  trashed_at: null,
+                  deleted: false,
+                },
+              ],
+            },
+          ],
+          update: { data: null },
+          upsert: { data: null },
+        },
+      },
+    },
+  });
+}
+
 describe("listFavoriteStatusNotifications (fake supabase)", () => {
   beforeEach(() => {
     vi.setSystemTime(new Date("2026-11-12T12:00:00.000Z"));
@@ -92,70 +180,15 @@ describe("listFavoriteStatusNotifications (fake supabase)", () => {
     vi.useRealTimers();
   });
 
-  it("lista cambios y omite deleted", async () => {
-    const client = createFakeSupabaseClient({
-      tables: {
-        favorites: {
-          byMethod: {
-            select: {
-              data: [
-                {
-                  tender_id: "t1",
-                  created_at: "2026-11-01T00:00:00Z",
-                  tenders: { id: "t1", title: "Obra X" },
-                },
-              ],
-            },
-          },
+  it("lista cambios de favorito propio", async () => {
+    const client = fakeStatusListClient({
+      favorites: [
+        {
+          tender_id: "t1",
+          created_at: "2026-11-01T00:00:00Z",
+          tenders: { id: "t1", title: "Obra X" },
         },
-        tender_events: {
-          byMethod: {
-            select: {
-              data: [
-                {
-                  id: "e0",
-                  tender_id: "t1",
-                  event_type: "ingerida",
-                  event_status: "publicada",
-                  occurred_at: "2026-10-01T00:00:00Z",
-                  created_at: "2026-10-01T00:00:00Z",
-                  source_code: "placsp",
-                },
-                {
-                  id: "e2",
-                  tender_id: "t1",
-                  event_type: "actualizada",
-                  event_status: "adjudicada",
-                  occurred_at: "2026-11-05T00:00:00Z",
-                  created_at: "2026-11-05T00:00:00Z",
-                  source_code: "placsp",
-                },
-              ],
-            },
-          },
-        },
-        notification_favorites: {
-          byMethod: {
-            select: [
-              // ensureFavoriteNotificationRows: existing
-              { data: [{ event_id: "e2" }] },
-              // listFavoriteStatesByEventId
-              {
-                data: [
-                  {
-                    event_id: "e2",
-                    read_at: null,
-                    trashed_at: null,
-                    deleted: false,
-                  },
-                ],
-              },
-            ],
-            update: { data: null },
-            upsert: { data: null },
-          },
-        },
-      },
+      ],
     });
 
     const { data, error } = await listFavoriteStatusNotifications(
@@ -166,6 +199,68 @@ describe("listFavoriteStatusNotifications (fake supabase)", () => {
     expect(data).toHaveLength(1);
     expect(data[0]?.newStatus).toBe("adjudicada");
     expect(data[0]?.unread).toBe(true);
+  });
+
+  it("lista cambios solo presentes en Común", async () => {
+    const client = fakeStatusListClient({
+      shared: [
+        {
+          tender_id: "t1",
+          created_at: "2026-11-01T00:00:00Z",
+          tenders: { id: "t1", title: "Obra común" },
+        },
+      ],
+    });
+
+    const { data, error } = await listFavoriteStatusNotifications(
+      client as never,
+      { userId: "u1" },
+    );
+    expect(error).toBeNull();
+    expect(data).toHaveLength(1);
+    expect(data[0]?.eventId).toBe("e2");
+    expect(data[0]?.title).toBe("Obra común");
+  });
+
+  it("propio + Común misma licitación → un solo aviso", async () => {
+    const client = fakeStatusListClient({
+      favorites: [
+        {
+          tender_id: "t1",
+          created_at: "2026-11-04T00:00:00Z",
+          tenders: { id: "t1", title: "Obra propia" },
+        },
+      ],
+      shared: [
+        {
+          tender_id: "t1",
+          created_at: "2026-11-01T00:00:00Z",
+          tenders: { id: "t1", title: "Obra común" },
+        },
+      ],
+    });
+
+    const { data, error } = await listFavoriteStatusNotifications(
+      client as never,
+      { userId: "u1" },
+    );
+    expect(error).toBeNull();
+    expect(data).toHaveLength(1);
+    expect(data[0]?.eventId).toBe("e2");
+    // Título preferido del favorito personal cuando hay ambos.
+    expect(data[0]?.title).toBe("Obra propia");
+    expect(client.callsFor("tender_events")).toHaveLength(1);
+  });
+
+  it("sin propios ni Común → lista vacía", async () => {
+    const client = fakeStatusListClient({});
+    const { data, error } = await listFavoriteStatusNotifications(
+      client as never,
+      { userId: "u1" },
+    );
+    expect(error).toBeNull();
+    expect(data).toEqual([]);
+    expect(client.callsFor("tender_events")).toHaveLength(0);
   });
 });
 
