@@ -4,7 +4,6 @@ import {
   getSupabaseServerClient,
 } from "@/lib/auth/session";
 import {
-  getOwnAlertInterestKindForTender,
   markOwnCommonNotificationRead,
   markOwnCommonRemovedNotificationRead,
   markOwnNotificationRead,
@@ -35,7 +34,6 @@ export async function GET(request: NextRequest) {
   const supabase = await getSupabaseServerClient();
   const { data: profile } = await getSessionProfile();
 
-  let interest: string | null = null;
   if (profile?.id) {
     if (source === "common") {
       await markOwnCommonNotificationRead(supabase, {
@@ -48,29 +46,24 @@ export async function GET(request: NextRequest) {
         tenderId,
       });
     } else {
+      // Cambio de estado (favoritos/Común): marcar leído; sin valoración en ficha.
       await markOwnNotificationRead(supabase, {
         userId: profile.id,
         eventId,
       });
-      const kindResult = await getOwnAlertInterestKindForTender(supabase, {
-        userId: profile.id,
-        tenderId,
-      });
-      if (!kindResult.error) interest = kindResult.data;
     }
   }
 
   const target = new URL(`/tenders/${tenderId}`, request.url);
   // Alta Común → volver a Común, sin valoración.
   // Retirada Común → sin «volver» ni valoración.
-  // Digest/fav-estado → valoración.
+  // Cambio de estado → sin valoración (valoración solo digest/alertas).
   const from =
     source === "common"
       ? "favorites-common"
       : source === "common-removed"
         ? "common-removed"
-        : "email";
+        : "favorite-status";
   target.searchParams.set("from", from);
-  if (interest) target.searchParams.set("interest", interest);
   return NextResponse.redirect(target);
 }
