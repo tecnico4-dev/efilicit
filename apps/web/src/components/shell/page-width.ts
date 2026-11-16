@@ -23,5 +23,12 @@ export const PAGE_MAIN_WIDE_CLASS =
 export const PAGE_MAIN_MEDIUM_CLASS =
   "mx-auto flex w-full max-w-[90rem] flex-1 flex-col px-4 py-8 sm:px-6 sm:py-10";
 
+/**
+ * Favoritos: un poco más ancho que el estándar (max-w-7xl ≈ 80rem),
+ * sin llegar al full-bleed.
+ */
+export const PAGE_MAIN_FAVORITES_CLASS =
+  "mx-auto flex w-full max-w-7xl flex-1 flex-col px-4 py-8 sm:px-6 sm:py-10 lg:px-8";
+
 /** Separador bajo el H1 de página (mismo patrón que Alertas / AlertsPanel). */
 export const PAGE_TITLE_RULE = "mt-8 border-t border-border pt-8";

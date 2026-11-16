@@ -60,7 +60,7 @@ Comprobación SQL directa: ver plan Semana 5 / checklist Paso 3.
 
 ## Notificaciones in-app
 
-- `listFavoriteStatusNotifications` → (`favorites` ∪ `shared_favorites`) ∩ cambios de estado (`tender_events`) + `notification_favorites` (buzón `/notifications`; 1 aviso por event)
+- `listFavoriteStatusNotifications` → (`favorites` ∪ `favorites_common`) ∩ cambios de estado (`tender_events`) + `notification_favorites` (buzón `/notifications`; 1 aviso por event)
 - `listOwnDigestInboxNotifications` → digests email enviados (`notification_emails`; 1 aviso = 1 correo)
 - `listRecentFavoriteStatusNotifications` → preview home «Últimos cambios» (solo favoritos-estado)
 - `countUnreadNotifications` / `hasUnreadNotifications` → home + badge del nav (favoritos + digests)

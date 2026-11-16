@@ -99,6 +99,7 @@ def build_candidates_sql(tables: set[str]) -> str:
       ) then 'favorites_common'"""
         )
     elif "shared_favorites" in tables:
+        # Remoto aún no migrado a favorites_common (ADR 032).
         whens.append(
             """
       when exists (

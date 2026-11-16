@@ -37,7 +37,7 @@ El espacio de oferta acordado (matriz requisito→evidencia, sobres, go/no-go, K
    - `offer_sources` + `offer_source_links` — trazabilidad de fuentes.
 6. **Biblioteca de empresa**
    - `company_documents` (tipo, emisión, caducidad, url/`storage_path`).
-   - `company_people`, `company_references`, `company_financials`.
+   - `company_people` (retirada en [032](032-eficen-members-favorites-shared.md) → `eficen_members`), `company_references`, `company_financials`.
 7. Etapas: `interes` | `analisis` | `preparacion` | `presentada` | `en_evaluacion` | `requerimiento` | `adjudicada` | `no_adjudicada` | `descartada` | `subcontrata` | `desierta`.
 8. RLS: `is_app_user()` (mismo tenant compartido que 023).
 9. Backfill one-shot: `bid_cases` → `offer_cases` (mismo `id`); checklist → `offer_requirements`.

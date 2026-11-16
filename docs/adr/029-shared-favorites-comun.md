@@ -6,7 +6,7 @@
 
 **Reemplaza:** Ninguno
 
-**Reemplazado por:** Ninguno
+**Reemplazado por:** Ninguno (tabla renombrada a `favorites_common` y modelo ampliado en [032](032-eficen-members-favorites-shared.md); este ADR conserva el contrato de Común)
 
 ---
 

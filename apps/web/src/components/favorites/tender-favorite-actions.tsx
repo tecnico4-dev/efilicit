@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ShareToCommonButton } from "@/app/favorites/share-to-common-button";
+import { ShareFavoriteButton } from "@/app/favorites/share-favorite-button";
 import {
   type FavoriteKind,
   type SharedFavoriteOwnerInfo,
@@ -9,7 +9,7 @@ import {
 import { FavoriteHeartButton } from "./favorite-heart-button";
 
 /**
- * Ficha: corazón + avión a Común (solo si está en favoritos).
+ * Ficha: corazón + avión (Común | Personas) si está en favoritos.
  */
 export function TenderFavoriteActions({
   userId,
@@ -44,7 +44,7 @@ export function TenderFavoriteActions({
         }}
       />
       {favorited && kind ? (
-        <ShareToCommonButton
+        <ShareFavoriteButton
           userId={userId}
           tenderId={tenderId}
           tenderTitle={tenderTitle}

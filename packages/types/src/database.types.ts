@@ -216,6 +216,44 @@ export type Database = {
           },
         ]
       }
+      eficen_members: {
+        Row: {
+          active: boolean
+          created_at: string
+          display_name: string
+          id: string
+          role_title: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          display_name: string
+          id?: string
+          role_title?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          display_name?: string
+          id?: string
+          role_title?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "eficen_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       favorites: {
         Row: {
           created_at: string
@@ -255,7 +293,7 @@ export type Database = {
           },
         ]
       }
-      shared_favorites: {
+      favorites_common: {
         Row: {
           added_by: string
           added_by_display_name: string | null
@@ -282,17 +320,69 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "shared_favorites_added_by_fkey"
+            foreignKeyName: "favorites_common_added_by_fkey"
             columns: ["added_by"]
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "shared_favorites_tender_id_fkey"
+            foreignKeyName: "favorites_common_tender_id_fkey"
             columns: ["tender_id"]
             isOneToOne: true
             referencedRelation: "tenders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      favorites_shared: {
+        Row: {
+          created_at: string
+          from_user_id: string
+          id: string
+          kind: string
+          notes: string | null
+          tender_id: string
+          to_user_id: string
+        }
+        Insert: {
+          created_at?: string
+          from_user_id: string
+          id?: string
+          kind: string
+          notes?: string | null
+          tender_id: string
+          to_user_id: string
+        }
+        Update: {
+          created_at?: string
+          from_user_id?: string
+          id?: string
+          kind?: string
+          notes?: string | null
+          tender_id?: string
+          to_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "favorites_shared_from_user_id_fkey"
+            columns: ["from_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "favorites_shared_tender_id_fkey"
+            columns: ["tender_id"]
+            isOneToOne: false
+            referencedRelation: "tenders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "favorites_shared_to_user_id_fkey"
+            columns: ["to_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]
@@ -702,62 +792,6 @@ export type Database = {
           },
         ]
       }
-      company_people: {
-        Row: {
-          certifications: string | null
-          created_at: string
-          created_by: string | null
-          cv_updated_on: string | null
-          cv_url: string | null
-          degrees: string | null
-          full_name: string
-          id: string
-          notes: string | null
-          relevant_projects: string | null
-          role_title: string | null
-          updated_at: string
-          years_experience: number | null
-        }
-        Insert: {
-          certifications?: string | null
-          created_at?: string
-          created_by?: string | null
-          cv_updated_on?: string | null
-          cv_url?: string | null
-          degrees?: string | null
-          full_name: string
-          id?: string
-          notes?: string | null
-          relevant_projects?: string | null
-          role_title?: string | null
-          updated_at?: string
-          years_experience?: number | null
-        }
-        Update: {
-          certifications?: string | null
-          created_at?: string
-          created_by?: string | null
-          cv_updated_on?: string | null
-          cv_url?: string | null
-          degrees?: string | null
-          full_name?: string
-          id?: string
-          notes?: string | null
-          relevant_projects?: string | null
-          role_title?: string | null
-          updated_at?: string
-          years_experience?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "company_people_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       company_references: {
         Row: {
           amount: number | null
@@ -1031,7 +1065,7 @@ export type Database = {
             foreignKeyName: "offer_assigned_people_person_id_fkey"
             columns: ["person_id"]
             isOneToOne: false
-            referencedRelation: "company_people"
+            referencedRelation: "eficen_members"
             referencedColumns: ["id"]
           },
         ]
@@ -1328,7 +1362,7 @@ export type Database = {
             foreignKeyName: "notification_common_tender_id_fkey"
             columns: ["tender_id"]
             isOneToOne: false
-            referencedRelation: "shared_favorites"
+            referencedRelation: "favorites_common"
             referencedColumns: ["tender_id"]
           },
           {

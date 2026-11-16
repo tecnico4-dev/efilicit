@@ -1,6 +1,6 @@
 /**
  * Avisos in-app al añadir a Común.
- * Fuente: notification_common; autor/kind/fecha vía join a shared_favorites.
+ * Fuente: notification_common; autor/kind/fecha vía join a favorites_common.
  * Papelera 30 días o eliminar definitivo → DELETE de la fila.
  */
 import type { Database } from "@efilicit/types";
@@ -13,7 +13,7 @@ export type CommonInboxNotification = {
   title: string;
   addedByDisplayName: string | null;
   kind: FavoriteKind;
-  /** Cuándo se añadió a Común (`shared_favorites.created_at`). */
+  /** Cuándo se añadió a Común (`favorites_common.created_at`). */
   sharedAt: string;
   unread: boolean;
   trashedAt: string | null;
@@ -23,7 +23,7 @@ type ListRow = {
   tender_id: string;
   read_at: string | null;
   trashed_at: string | null;
-  shared_favorites: {
+  favorites_common: {
     created_at: string;
     added_by_display_name: string | null;
     kind: string;
@@ -32,7 +32,7 @@ type ListRow = {
 };
 
 function mapRow(row: ListRow): CommonInboxNotification | null {
-  const shared = row.shared_favorites;
+  const shared = row.favorites_common;
   if (!shared) return null;
   const kind = asFavoriteKind(shared.kind) ?? "propia";
   const title = shared.tenders?.title?.trim() || "Licitación";
@@ -60,7 +60,7 @@ export async function listOwnCommonInboxNotifications(
       tender_id,
       read_at,
       trashed_at,
-      shared_favorites (
+      favorites_common (
         created_at,
         added_by_display_name,
         kind,

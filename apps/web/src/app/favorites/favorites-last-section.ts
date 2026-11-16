@@ -2,10 +2,11 @@
 
 export const FAVORITES_LAST_SECTION_KEY = "efilicit.favorites.lastSection";
 
-export type FavoritesSection = "tenders" | "common" | "searches";
+export type FavoritesSection = "tenders" | "common" | "shared" | "searches";
 
 export function favoritesSectionHref(section: FavoritesSection): string {
   if (section === "common") return "/favorites/common";
+  if (section === "shared") return "/favorites/shared";
   if (section === "searches") return "/favorites/searches";
   return "/favorites/tenders";
 }
@@ -16,6 +17,12 @@ export function favoritesSectionFromPath(pathname: string): FavoritesSection | n
     pathname.startsWith("/favorites/common/")
   ) {
     return "common";
+  }
+  if (
+    pathname === "/favorites/shared" ||
+    pathname.startsWith("/favorites/shared/")
+  ) {
+    return "shared";
   }
   if (
     pathname === "/favorites/searches" ||
@@ -36,7 +43,12 @@ export function readFavoritesLastSection(): FavoritesSection {
   if (typeof window === "undefined") return "tenders";
   try {
     const raw = window.localStorage.getItem(FAVORITES_LAST_SECTION_KEY);
-    if (raw === "common" || raw === "searches" || raw === "tenders") {
+    if (
+      raw === "common" ||
+      raw === "shared" ||
+      raw === "searches" ||
+      raw === "tenders"
+    ) {
       return raw;
     }
   } catch {

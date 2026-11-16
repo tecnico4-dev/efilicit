@@ -16,7 +16,7 @@ import {
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { formatTenderStatus } from "@/lib/tender-labels";
 import { formatMoney } from "./favorites-shared";
-import { ShareToCommonButton } from "./share-to-common-button";
+import { ShareFavoriteButton } from "./share-favorite-button";
 
 /**
  * Lista de favoritos propios: corazón (quitar + Revertir) a la izquierda del avión.
@@ -132,7 +132,7 @@ export function FavoriteTenderList({
                   }}
                 />
                 {showShare ? (
-                  <ShareToCommonButton
+                  <ShareFavoriteButton
                     userId={shareUserId}
                     tenderId={tender.id}
                     tenderTitle={tender.title}

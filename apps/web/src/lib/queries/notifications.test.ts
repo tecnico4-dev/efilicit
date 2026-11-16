@@ -150,7 +150,7 @@ function fakeStatusListClient(input: {
           select: { data: input.favorites ?? [] },
         },
       },
-      shared_favorites: {
+      favorites_common: {
         byMethod: {
           select: { data: input.shared ?? [] },
         },

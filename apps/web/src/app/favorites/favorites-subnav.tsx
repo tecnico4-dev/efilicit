@@ -32,6 +32,12 @@ const ITEMS: {
     icon: <CommonIcon />,
   },
   {
+    section: "shared",
+    href: "/favorites/shared",
+    label: "Licitaciones compartidas",
+    icon: <PeerShareIcon />,
+  },
+  {
     section: "searches",
     href: "/favorites/searches",
     label: "Búsquedas guardadas",
@@ -91,6 +97,27 @@ function CommonIcon() {
   );
 }
 
+function PeerShareIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="size-4"
+      aria-hidden
+    >
+      <circle cx="8" cy="8" r="2.5" />
+      <circle cx="16" cy="8" r="2.5" />
+      <circle cx="12" cy="16.5" r="2.5" />
+      <path d="M9.8 9.5 11 14.2" />
+      <path d="M14.2 9.5 13 14.2" />
+    </svg>
+  );
+}
+
 function SearchesIcon() {
   return (
     <svg
@@ -116,6 +143,7 @@ export function FavoritesSubnav() {
   const [counts, setCounts] = useState<Counts>({
     tenders: null,
     common: null,
+    shared: null,
     searches: null,
   });
 
@@ -131,16 +159,20 @@ export function FavoritesSubnav() {
     void Promise.all([
       client.from("favorites").select("id", { count: "exact", head: true }),
       client
-        .from("shared_favorites")
+        .from("favorites_common")
         .select("tender_id", { count: "exact", head: true }),
+      client
+        .from("favorites_shared")
+        .select("id", { count: "exact", head: true }),
       client
         .from("saved_searches")
         .select("id", { count: "exact", head: true }),
-    ]).then(([tenders, common, searches]) => {
+    ]).then(([tenders, common, shared, searches]) => {
       if (cancelled) return;
       setCounts({
         tenders: tenders.count ?? 0,
         common: common.count ?? 0,
+        shared: shared.count ?? 0,
         searches: searches.count ?? 0,
       });
     });

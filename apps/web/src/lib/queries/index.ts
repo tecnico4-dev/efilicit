@@ -63,6 +63,11 @@ export {
   type FavoriteKind,
 } from "./favorite-kind";
 export {
+  getEficenMemberDisplayNameByUserId,
+  listEficenMembersForShare,
+  type EficenMemberForShare,
+} from "./eficen-members";
+export {
   addOwnFavorite,
   getOwnFavoriteKind,
   isOwnFavorite,
@@ -87,6 +92,15 @@ export {
   type SharedFavoriteOwnerInfo,
   type SharedFavoriteWithTender,
 } from "./shared-favorites";
+export {
+  addFavoriteShares,
+  favoriteShareAlreadyMessage,
+  listOwnFavoriteShares,
+  removeFavoriteShare,
+  type AddFavoriteSharesResult,
+  type FavoriteShareDirection,
+  type FavoriteShareRow,
+} from "./favorites-shared";
 export {
   countUnreadFavoriteStatusNotifications,
   countUnreadNotifications,

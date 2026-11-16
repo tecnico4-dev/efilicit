@@ -1,4 +1,4 @@
-import { PAGE_MAIN_CLASS } from "@/components/shell/page-width";
+import { PAGE_MAIN_FAVORITES_CLASS } from "@/components/shell/page-width";
 import { EmptyState, ErrorState } from "@/components/ui/state-message";
 import {
   getSessionProfile,
@@ -20,7 +20,7 @@ export default async function SavedSearchesPage() {
   const profile = await getSessionProfile();
   if (!profile.data) {
     return (
-      <main className={PAGE_MAIN_CLASS}>
+      <main className={PAGE_MAIN_FAVORITES_CLASS}>
         <ErrorState>
           No hay perfil en public.users:{" "}
           {profile.error?.message ?? "desconocido"}
@@ -41,7 +41,7 @@ export default async function SavedSearchesPage() {
   );
 
   return (
-    <main className={PAGE_MAIN_CLASS}>
+    <main className={PAGE_MAIN_FAVORITES_CLASS}>
       {error ? (
         <ErrorState>{error.message}</ErrorState>
       ) : searches.length === 0 ? (

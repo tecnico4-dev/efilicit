@@ -18,8 +18,10 @@ describe("favorites section helpers", () => {
   it("href y path", () => {
     expect(favoritesSectionHref("tenders")).toBe("/favorites/tenders");
     expect(favoritesSectionHref("common")).toBe("/favorites/common");
+    expect(favoritesSectionHref("shared")).toBe("/favorites/shared");
     expect(favoritesSectionHref("searches")).toBe("/favorites/searches");
     expect(favoritesSectionFromPath("/favorites/common")).toBe("common");
+    expect(favoritesSectionFromPath("/favorites/shared")).toBe("shared");
     expect(favoritesSectionFromPath("/favorites/searches/x")).toBe("searches");
     expect(favoritesSectionFromPath("/favorites/tenders")).toBe("tenders");
     expect(favoritesSectionFromPath("/home")).toBeNull();
@@ -27,11 +29,11 @@ describe("favorites section helpers", () => {
 
   it("lee y escribe última sección en localStorage", () => {
     expect(readFavoritesLastSection()).toBe("tenders");
-    writeFavoritesLastSection("common");
+    writeFavoritesLastSection("shared");
     expect(window.localStorage.getItem(FAVORITES_LAST_SECTION_KEY)).toBe(
-      "common",
+      "shared",
     );
-    expect(readFavoritesLastSection()).toBe("common");
+    expect(readFavoritesLastSection()).toBe("shared");
     window.localStorage.setItem(FAVORITES_LAST_SECTION_KEY, "basura");
     expect(readFavoritesLastSection()).toBe("tenders");
   });

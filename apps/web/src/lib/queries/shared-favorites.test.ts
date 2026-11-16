@@ -33,7 +33,7 @@ describe("listSharedFavoriteOwners / ids", () => {
   it("mapea owners e ids", async () => {
     const client = createFakeSupabaseClient({
       tables: {
-        shared_favorites: {
+        favorites_common: {
           byMethod: {
             select: {
               data: [

@@ -1,10 +1,10 @@
 /**
  * Avisos in-app: cambios de estado en licitaciones seguidas.
- * Fuente: tender_events ∩ (favorites propias ∪ shared_favorites);
+ * Fuente: tender_events ∩ (favorites propias ∪ favorites_common);
  * estado UI en notification_favorites (read_at / trashed_at / deleted).
  *
  * Elegibilidad: `tender_events.created_at` > watermark
- * (`favorites.created_at` y/o `shared_favorites.created_at`; si ambas, LEAST).
+ * (`favorites.created_at` y/o `favorites_common.created_at`; si ambas, LEAST).
  * Una fila UI por (user_id, event_id): propio+Común no duplica.
  * Papelera UI 30 días; luego `deleted=true` (lazy al listar).
  */
@@ -163,7 +163,7 @@ export async function listFavoriteStatusNotifications(
       .select("tender_id, created_at, tenders ( id, title )")
       .eq("user_id", input.userId),
     client
-      .from("shared_favorites")
+      .from("favorites_common")
       .select("tender_id, created_at, tenders ( id, title )"),
   ]);
 

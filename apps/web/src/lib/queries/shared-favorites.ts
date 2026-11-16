@@ -21,7 +21,7 @@ export {
   favoriteKindLongLabel as sharedFavoriteKindLongLabel,
 };
 
-type SharedFavoriteRow = Database["public"]["Tables"]["shared_favorites"]["Row"];
+type SharedFavoriteRow = Database["public"]["Tables"]["favorites_common"]["Row"];
 
 export type SharedFavoriteWithTender = SharedFavoriteRow & {
   kind: FavoriteKind;
@@ -55,7 +55,7 @@ export async function listSharedFavoriteOwners(
   if (tenderIds.length === 0) return { data: new Map(), error: null };
 
   const { data, error } = await client
-    .from("shared_favorites")
+    .from("favorites_common")
     .select("tender_id, added_by, added_by_display_name")
     .in("tender_id", tenderIds);
 
@@ -101,7 +101,7 @@ export async function getSharedFavoriteOwner(
   error: Error | null;
 }> {
   const { data, error } = await client
-    .from("shared_favorites")
+    .from("favorites_common")
     .select("added_by, added_by_display_name")
     .eq("tender_id", tenderId)
     .maybeSingle();
@@ -174,7 +174,7 @@ export async function listSharedFavorites(
   client: SupabaseClient<Database>,
 ): Promise<{ data: SharedFavoriteWithTender[]; error: Error | null }> {
   const { data, error } = await client
-    .from("shared_favorites")
+    .from("favorites_common")
     .select(
       `
       tender_id,
@@ -211,6 +211,14 @@ async function ownDisplayName(
   client: SupabaseClient<Database>,
   userId: string,
 ): Promise<string | null> {
+  const { data: member } = await client
+    .from("eficen_members")
+    .select("display_name")
+    .eq("user_id", userId)
+    .maybeSingle();
+  const fromMember = member?.display_name?.trim();
+  if (fromMember) return fromMember;
+
   const { data, error } = await client
     .from("users")
     .select("display_name")
@@ -257,7 +265,7 @@ export async function addSharedFavorite(
 
   const displayName = await ownDisplayName(client, input.userId);
 
-  const { error } = await client.from("shared_favorites").insert({
+  const { error } = await client.from("favorites_common").insert({
     tender_id: input.tenderId,
     added_by: input.userId,
     added_by_display_name: displayName,
@@ -288,7 +296,7 @@ export async function removeSharedFavorite(
   tenderId: string,
 ): Promise<{ error: Error | null }> {
   const { error } = await client
-    .from("shared_favorites")
+    .from("favorites_common")
     .delete()
     .eq("tender_id", tenderId);
 

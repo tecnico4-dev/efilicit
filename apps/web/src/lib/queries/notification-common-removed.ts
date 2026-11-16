@@ -1,6 +1,6 @@
 /**
  * Avisos in-app cuando otro quita tu licitación de Común.
- * Fuente: notification_common_removed (sobrevive al DELETE de shared_favorites).
+ * Fuente: notification_common_removed (sobrevive al DELETE de favorites_common).
  */
 import type { Database } from "@efilicit/types";
 import type { SupabaseClient } from "@supabase/supabase-js";
