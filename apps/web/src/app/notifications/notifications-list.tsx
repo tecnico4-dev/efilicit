@@ -18,6 +18,14 @@ import {
   permanentlyDeleteOwnCommonRemovedNotification,
   permanentlyDeleteOwnDigestInboxNotification,
   permanentlyDeleteOwnFavoriteNotification,
+  restoreOwnCommonNotificationFromTrash,
+  restoreOwnCommonRemovedNotificationFromTrash,
+  restoreOwnDigestInboxFromTrash,
+  restoreOwnNotificationFromTrash,
+  trashOwnCommonNotification,
+  trashOwnCommonRemovedNotification,
+  trashOwnDigestInboxNotification,
+  trashOwnNotification,
   type CommonInboxNotification,
   type CommonRemovedInboxNotification,
   type DigestInboxNotification,
@@ -144,12 +152,15 @@ export function NotificationsList({
   userId: string;
 }) {
   const router = useRouter();
-  const { showPendingConfirm, showStatus } = useUndoToast();
+  const { showPendingConfirm, showStatus, showUndo } = useUndoToast();
   const [view, setView] = useState<NotificationsView>(initialView);
   const [openDigest, setOpenDigest] =
     useState<DigestInboxNotification | null>(null);
   /** Ids ocultos en UI tras «eliminar definitivo» (pendiente de confirmación). */
   const [pendingPurgeKeys, setPendingPurgeKeys] = useState<string[]>([]);
+  /** Ocultos tras «Vaciar listado» (papelera) hasta refresh / Revertir. */
+  const [pendingTrashKeys, setPendingTrashKeys] = useState<string[]>([]);
+  const [emptyListPending, setEmptyListPending] = useState(false);
   /** Claves forzadas a «no leída» tras el menú contextual (antes del refresh). */
   const [forcedUnreadKeys, setForcedUnreadKeys] = useState<string[]>([]);
   const [ctxMenu, setCtxMenu] = useState<
@@ -178,6 +189,7 @@ export function NotificationsList({
 
   const active = items.filter((n) => {
     if (pendingPurgeKeys.includes(itemKey(n))) return false;
+    if (pendingTrashKeys.includes(itemKey(n))) return false;
     return itemTrashedAt(n) == null;
   });
   const inTrashWindow = items.filter((n) => {
@@ -252,6 +264,98 @@ export function NotificationsList({
     router.refresh();
   }
 
+  async function trashOne(
+    client: ReturnType<typeof createSupabaseBrowserClient>,
+    item: InboxItem,
+  ): Promise<{ error: Error | null }> {
+    if (item.kind === "digest") {
+      return trashOwnDigestInboxNotification(client, {
+        userId,
+        digestId: item.data.id,
+      });
+    }
+    if (item.kind === "common") {
+      return trashOwnCommonNotification(client, {
+        userId,
+        tenderId: item.data.tenderId,
+      });
+    }
+    if (item.kind === "common_removed") {
+      return trashOwnCommonRemovedNotification(client, {
+        userId,
+        tenderId: item.data.tenderId,
+      });
+    }
+    return trashOwnNotification(client, {
+      userId,
+      eventId: item.data.eventId,
+    });
+  }
+
+  async function restoreOne(
+    client: ReturnType<typeof createSupabaseBrowserClient>,
+    item: InboxItem,
+  ): Promise<{ error: Error | null }> {
+    if (item.kind === "digest") {
+      return restoreOwnDigestInboxFromTrash(client, {
+        userId,
+        digestId: item.data.id,
+      });
+    }
+    if (item.kind === "common") {
+      return restoreOwnCommonNotificationFromTrash(client, {
+        userId,
+        tenderId: item.data.tenderId,
+      });
+    }
+    if (item.kind === "common_removed") {
+      return restoreOwnCommonRemovedNotificationFromTrash(client, {
+        userId,
+        tenderId: item.data.tenderId,
+      });
+    }
+    return restoreOwnNotificationFromTrash(client, {
+      userId,
+      eventId: item.data.eventId,
+    });
+  }
+
+  async function onEmptyList() {
+    if (view === "trash" || emptyListPending || visible.length === 0) return;
+    const toTrash = [...visible];
+    const keys = toTrash.map(itemKey);
+    setEmptyListPending(true);
+    setPendingTrashKeys((prev) => {
+      const next = new Set(prev);
+      for (const key of keys) next.add(key);
+      return [...next];
+    });
+
+    const client = createSupabaseBrowserClient();
+    const errors: string[] = [];
+    for (const item of toTrash) {
+      const { error } = await trashOne(client, item);
+      if (error) errors.push(error.message);
+    }
+    setEmptyListPending(false);
+
+    if (errors.length > 0) {
+      setPendingTrashKeys((prev) => prev.filter((k) => !keys.includes(k)));
+      showStatus(`No se pudo vaciar el listado: ${errors[0]}`);
+      return;
+    }
+
+    showUndo("Listado movido a la papelera.", async () => {
+      const c = createSupabaseBrowserClient();
+      for (const item of toTrash) {
+        await restoreOne(c, item);
+      }
+      setPendingTrashKeys((prev) => prev.filter((k) => !keys.includes(k)));
+      router.refresh();
+    });
+    router.refresh();
+  }
+
   function onEmptyTrash() {
     if (inTrashWindow.length < 2) return;
 
@@ -315,6 +419,18 @@ export function NotificationsList({
           trashCount={inTrashWindow.length}
           onViewChange={onViewChange}
         />
+        {(view === "all" || view === "unread") && visible.length > 0 ? (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={emptyListPending}
+            className={`mb-px ${destructiveOutlineBtn}`}
+            onClick={() => void onEmptyList()}
+          >
+            Vaciar listado
+          </Button>
+        ) : null}
         {view === "trash" && inTrashWindow.length >= 2 ? (
           <Button
             type="button"
