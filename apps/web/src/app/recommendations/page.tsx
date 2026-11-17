@@ -63,18 +63,16 @@ export default async function RecommendationsPage() {
 
   return (
     <main className={PAGE_MAIN_FAVORITES_CLASS}>
-      <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-1">
-        <h1 className="text-3xl font-semibold tracking-tight text-foreground">
-          Recomendaciones para ti
-        </h1>
-        {data.computedAt ? (
-          <p className="shrink-0 text-xs text-muted-foreground">
-            Actualizado el {formatDateTimeMadrid(data.computedAt)}
-          </p>
-        ) : null}
-      </div>
+      <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+        Recomendaciones para ti
+      </h1>
+      {data.computedAt ? (
+        <p className="mt-6 text-right text-xs text-muted-foreground">
+          Actualizado el {formatDateTimeMadrid(data.computedAt)}
+        </p>
+      ) : null}
 
-      <div className={PAGE_TITLE_RULE}>
+      <div className={data.computedAt ? "mt-2 border-t border-border pt-8" : PAGE_TITLE_RULE}>
         {error ? (
           <ErrorState>
             No se pudieron cargar recomendaciones: {error.message}
