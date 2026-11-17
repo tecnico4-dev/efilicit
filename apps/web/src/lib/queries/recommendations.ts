@@ -67,7 +67,7 @@ export async function listOwnRecommendations(
   const { data: rows, error } = await client
     .from("tender_recommendations")
     .select(
-      "tender_id, profile_kind, score, reason, computed_at, tenders ( title, status, procedure_type, contract_type, deadline_at, publication_date, estimated_value, currency, cpv_codes )",
+      "tender_id, profile_kind, score, reason, computed_at, tenders ( title, status, procedure_type, contract_type, deadline_at, publication_date, estimated_value, currency, tender_cpvs ( cpv_code ) )",
     )
     .eq("user_id", input.userId)
     .order("score", { ascending: false });
@@ -107,7 +107,7 @@ export async function listOwnRecommendations(
           publication_date: string | null;
           estimated_value: number | null;
           currency: string | null;
-          cpv_codes: string[] | null;
+          tender_cpvs?: { cpv_code: string }[] | null;
         }
       | null;
 
@@ -125,7 +125,7 @@ export async function listOwnRecommendations(
       publicationDate: tender?.publication_date ?? null,
       estimatedValue: tender?.estimated_value ?? null,
       currency: tender?.currency || "EUR",
-      cpvCodes: tender?.cpv_codes ?? [],
+      cpvCodes: [...(tender?.tender_cpvs ?? []).map((r) => r.cpv_code)].sort(),
     };
 
     if (!computedAt || row.computed_at > computedAt) {
