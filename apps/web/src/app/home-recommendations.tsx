@@ -181,7 +181,7 @@ export function HomeRecommendations({
         <div className="flex flex-wrap items-end justify-between gap-2">
           <div>
             <h2 className="text-xl font-semibold tracking-tight text-foreground">
-              Recomendadas para ti
+              Para ti
             </h2>
             <p className="mt-1 text-sm text-muted-foreground">
               Según tus valoraciones y favoritos, con un empujón del perfil

@@ -63,6 +63,29 @@ function NavAlertIcon() {
   );
 }
 
+/** Regalo sencillo para «Para ti». */
+function NavGiftIcon() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={NAV_ICON_CLASS}
+      aria-hidden
+    >
+      <rect x="4" y="10" width="16" height="10.5" rx="1.4" />
+      <path d="M3.5 7.8h17v3.2h-17z" />
+      <path d="M12 7.8v12.7" />
+      <path d="M12 7.8c-1.7-2.2-4.2-1.2-4.2.5 0 1.1 1.1 1.8 4.2 3.2" />
+      <path d="M12 7.8c1.7-2.2 4.2-1.2 4.2.5 0 1.1-1.1 1.8-4.2 3.2" />
+    </svg>
+  );
+}
+
 /** Cabecera solo para sesión autenticada (ADR 016: anónimo sin nav). */
 export function AppHeader({
   isAuthenticated,
@@ -119,7 +142,8 @@ export function AppHeader({
               href="/recommendations"
               className={navClass(pathname.startsWith("/recommendations"))}
             >
-              Recomendadas
+              <NavGiftIcon />
+              Para ti
             </Link>
           </nav>
 
