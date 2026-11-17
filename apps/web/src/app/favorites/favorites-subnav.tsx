@@ -86,6 +86,8 @@ function CommonIcon() {
     >
       <path d="M6 3.5h8.2L18.5 7.8V20a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 4.5 20V5A1.5 1.5 0 0 1 6 3.5z" />
       <path d="M14.2 3.5V7.8h4.3" />
+      <path d="M8 12h8" />
+      <path d="M8 16h5.5" />
       <circle cx="17.8" cy="17.8" r="4.2" fill="var(--surface)" />
       <circle cx="17.8" cy="17.8" r="4.2" />
       <circle cx="16.1" cy="17.8" r="0.85" fill="currentColor" stroke="none" />
