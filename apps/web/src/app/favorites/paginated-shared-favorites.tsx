@@ -15,10 +15,12 @@ export function PaginatedSharedFavorites({
   items,
   currentUserId,
   showKindBubble = true,
+  flushTopLeft = true,
 }: {
   items: SharedFavoriteWithTender[];
   currentUserId: string;
   showKindBubble?: boolean;
+  flushTopLeft?: boolean;
 }) {
   const total = items.length;
   const showPager = total > SHARED_FAVORITES_PAGE_SIZE;
@@ -43,8 +45,9 @@ export function PaginatedSharedFavorites({
     setPage(1);
   }
 
-  const panelClass =
-    "rounded-lg rounded-tl-none border border-border";
+  const panelClass = flushTopLeft
+    ? "rounded-lg rounded-tl-none border border-border"
+    : "rounded-lg border border-border";
 
   if (!showPager) {
     return (

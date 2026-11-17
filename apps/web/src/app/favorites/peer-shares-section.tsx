@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { CriteriaFilterOptionsProp } from "@/components/criteria/criteria-filters";
 import type { FavoriteShareRow } from "@/lib/queries";
 import type { SearchCriteria } from "@efilicit/types";
+import { cn } from "@/lib/cn";
 import { FavoriteKindTabs } from "./favorite-kind-tabs";
 import { tenderMatchesFavoriteFilters } from "./favorites-list-filter";
 import { PaginatedPeerShares } from "./paginated-peer-shares";
@@ -12,17 +13,27 @@ import {
   type ShareBandeja,
 } from "./share-direction-rail";
 
-function emptyKindPanel() {
+function emptyPanel(flushTopLeft: boolean) {
   return (
-    <p className="rounded-lg rounded-tl-none border border-border px-4 py-8 text-center text-sm text-muted-foreground">
+    <p
+      className={cn(
+        "border border-border px-4 py-8 text-center text-sm text-muted-foreground rounded-lg",
+        flushTopLeft && "rounded-tl-none",
+      )}
+    >
       Ninguna aún.
     </p>
   );
 }
 
-function emptyFilterPanel() {
+function emptyFilterPanel(flushTopLeft: boolean) {
   return (
-    <p className="rounded-lg rounded-tl-none border border-border px-4 py-8 text-center text-sm text-muted-foreground">
+    <p
+      className={cn(
+        "border border-border px-4 py-8 text-center text-sm text-muted-foreground rounded-lg",
+        flushTopLeft && "rounded-tl-none",
+      )}
+    >
       Ninguna coincide con los filtros.
     </p>
   );
@@ -87,6 +98,10 @@ export function PeerSharesSection({
   const showDirectionBubble =
     !showBandejaRail || effectiveBandeja === "todas";
 
+  /** Pestañas kind según el listado de la bandeja actual. */
+  const showKindTabs = propias.length > 0 && subcontratas.length > 0;
+  const flushTopLeft = showKindTabs;
+
   return (
     <div className="relative">
       {showBandejaRail ? (
@@ -123,33 +138,36 @@ export function PeerSharesSection({
         subcontratasCount={subcontratas.length}
         todas={
           filtered.length === 0 ? (
-            emptyFilterPanel()
+            emptyFilterPanel(flushTopLeft)
           ) : (
             <PaginatedPeerShares
               items={filtered}
               showDirectionBubble={showDirectionBubble}
+              flushTopLeft={flushTopLeft}
             />
           )
         }
         propias={
           propias.length === 0 ? (
-            emptyKindPanel()
+            emptyPanel(flushTopLeft)
           ) : (
             <PaginatedPeerShares
               items={propias}
               showKindBubble={false}
               showDirectionBubble={showDirectionBubble}
+              flushTopLeft={flushTopLeft}
             />
           )
         }
         subcontratas={
           subcontratas.length === 0 ? (
-            emptyKindPanel()
+            emptyPanel(flushTopLeft)
           ) : (
             <PaginatedPeerShares
               items={subcontratas}
               showKindBubble={false}
               showDirectionBubble={showDirectionBubble}
+              flushTopLeft={flushTopLeft}
             />
           )
         }

@@ -25,12 +25,15 @@ export function PaginatedFavoriteTenders({
   shareUserId,
   sharedOwners,
   showKindBubble = true,
+  /** False si no hay pestañas kind: redondea también la esquina superior izquierda. */
+  flushTopLeft = true,
 }: {
   favorites: FavoriteWithTender[];
   from?: "favorites" | "favorites-tenders";
   shareUserId?: string;
   sharedOwners?: Readonly<Record<string, SharedFavoriteOwnerInfo>>;
   showKindBubble?: boolean;
+  flushTopLeft?: boolean;
 }) {
   const total = favorites.length;
   const showPager = total > FAVORITES_PAGE_SIZE;
@@ -57,8 +60,9 @@ export function PaginatedFavoriteTenders({
     setPage(1);
   }
 
-  const panelClass =
-    "rounded-lg rounded-tl-none border border-border";
+  const panelClass = flushTopLeft
+    ? "rounded-lg rounded-tl-none border border-border"
+    : "rounded-lg border border-border";
 
   if (!showPager) {
     return (

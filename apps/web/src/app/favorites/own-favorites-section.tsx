@@ -10,18 +10,29 @@ import type { SearchCriteria } from "@efilicit/types";
 import { FavoriteKindTabs } from "./favorite-kind-tabs";
 import { PaginatedFavoriteTenders } from "./paginated-favorite-tenders";
 import { tenderMatchesFavoriteFilters } from "./favorites-list-filter";
+import { cn } from "@/lib/cn";
 
-function emptyKindPanel() {
+function emptyPanel(flushTopLeft: boolean) {
   return (
-    <p className="rounded-lg rounded-tl-none border border-border px-4 py-8 text-center text-sm text-muted-foreground">
+    <p
+      className={cn(
+        "border border-border px-4 py-8 text-center text-sm text-muted-foreground rounded-lg",
+        flushTopLeft && "rounded-tl-none",
+      )}
+    >
       Ninguna aún.
     </p>
   );
 }
 
-function emptyFilterPanel() {
+function emptyFilterPanel(flushTopLeft: boolean) {
   return (
-    <p className="rounded-lg rounded-tl-none border border-border px-4 py-8 text-center text-sm text-muted-foreground">
+    <p
+      className={cn(
+        "border border-border px-4 py-8 text-center text-sm text-muted-foreground rounded-lg",
+        flushTopLeft && "rounded-tl-none",
+      )}
+    >
       Ninguna coincide con los filtros.
     </p>
   );
@@ -57,6 +68,9 @@ export function OwnFavoritesSection({
     [filtered],
   );
 
+  const showKindTabs = propias.length > 0 && subcontratas.length > 0;
+  const flushTopLeft = showKindTabs;
+
   return (
     <FavoriteKindTabs
       ariaLabel="Tipo de favorito"
@@ -68,19 +82,20 @@ export function OwnFavoritesSection({
       subcontratasCount={subcontratas.length}
       todas={
         filtered.length === 0 ? (
-          emptyFilterPanel()
+          emptyFilterPanel(flushTopLeft)
         ) : (
           <PaginatedFavoriteTenders
             favorites={filtered}
             from="favorites-tenders"
             shareUserId={userId}
             sharedOwners={sharedOwners}
+            flushTopLeft={flushTopLeft}
           />
         )
       }
       propias={
         propias.length === 0 ? (
-          emptyKindPanel()
+          emptyPanel(flushTopLeft)
         ) : (
           <PaginatedFavoriteTenders
             favorites={propias}
@@ -88,12 +103,13 @@ export function OwnFavoritesSection({
             shareUserId={userId}
             sharedOwners={sharedOwners}
             showKindBubble={false}
+            flushTopLeft={flushTopLeft}
           />
         )
       }
       subcontratas={
         subcontratas.length === 0 ? (
-          emptyKindPanel()
+          emptyPanel(flushTopLeft)
         ) : (
           <PaginatedFavoriteTenders
             favorites={subcontratas}
@@ -101,6 +117,7 @@ export function OwnFavoritesSection({
             shareUserId={userId}
             sharedOwners={sharedOwners}
             showKindBubble={false}
+            flushTopLeft={flushTopLeft}
           />
         )
       }

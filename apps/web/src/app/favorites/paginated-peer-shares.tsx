@@ -15,10 +15,12 @@ export function PaginatedPeerShares({
   items,
   showKindBubble = true,
   showDirectionBubble = true,
+  flushTopLeft = true,
 }: {
   items: FavoriteShareRow[];
   showKindBubble?: boolean;
   showDirectionBubble?: boolean;
+  flushTopLeft?: boolean;
 }) {
   const total = items.length;
   const showPager = total > PEER_SHARES_PAGE_SIZE;
@@ -43,7 +45,9 @@ export function PaginatedPeerShares({
     setPage(1);
   }
 
-  const panelClass = "rounded-lg rounded-tl-none border border-border";
+  const panelClass = flushTopLeft
+    ? "rounded-lg rounded-tl-none border border-border"
+    : "rounded-lg border border-border";
 
   if (!showPager) {
     return (

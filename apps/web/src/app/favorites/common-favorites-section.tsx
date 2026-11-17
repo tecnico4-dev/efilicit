@@ -4,21 +4,32 @@ import { useMemo, useState } from "react";
 import type { CriteriaFilterOptionsProp } from "@/components/criteria/criteria-filters";
 import type { SharedFavoriteWithTender } from "@/lib/queries";
 import type { SearchCriteria } from "@efilicit/types";
+import { cn } from "@/lib/cn";
 import { FavoriteKindTabs } from "./favorite-kind-tabs";
 import { PaginatedSharedFavorites } from "./paginated-shared-favorites";
 import { tenderMatchesFavoriteFilters } from "./favorites-list-filter";
 
-function emptyKindPanel() {
+function emptyPanel(flushTopLeft: boolean) {
   return (
-    <p className="rounded-lg rounded-tl-none border border-border px-4 py-8 text-center text-sm text-muted-foreground">
+    <p
+      className={cn(
+        "border border-border px-4 py-8 text-center text-sm text-muted-foreground rounded-lg",
+        flushTopLeft && "rounded-tl-none",
+      )}
+    >
       Ninguna aún.
     </p>
   );
 }
 
-function emptyFilterPanel() {
+function emptyFilterPanel(flushTopLeft: boolean) {
   return (
-    <p className="rounded-lg rounded-tl-none border border-border px-4 py-8 text-center text-sm text-muted-foreground">
+    <p
+      className={cn(
+        "border border-border px-4 py-8 text-center text-sm text-muted-foreground rounded-lg",
+        flushTopLeft && "rounded-tl-none",
+      )}
+    >
       Ninguna coincide con los filtros.
     </p>
   );
@@ -50,6 +61,9 @@ export function CommonFavoritesSection({
     [filtered],
   );
 
+  const showKindTabs = propias.length > 0 && subcontratas.length > 0;
+  const flushTopLeft = showKindTabs;
+
   return (
     <FavoriteKindTabs
       ariaLabel="Tipo en Común"
@@ -61,33 +75,36 @@ export function CommonFavoritesSection({
       subcontratasCount={subcontratas.length}
       todas={
         filtered.length === 0 ? (
-          emptyFilterPanel()
+          emptyFilterPanel(flushTopLeft)
         ) : (
           <PaginatedSharedFavorites
             items={filtered}
             currentUserId={currentUserId}
+            flushTopLeft={flushTopLeft}
           />
         )
       }
       propias={
         propias.length === 0 ? (
-          emptyKindPanel()
+          emptyPanel(flushTopLeft)
         ) : (
           <PaginatedSharedFavorites
             items={propias}
             currentUserId={currentUserId}
             showKindBubble={false}
+            flushTopLeft={flushTopLeft}
           />
         )
       }
       subcontratas={
         subcontratas.length === 0 ? (
-          emptyKindPanel()
+          emptyPanel(flushTopLeft)
         ) : (
           <PaginatedSharedFavorites
             items={subcontratas}
             currentUserId={currentUserId}
             showKindBubble={false}
+            flushTopLeft={flushTopLeft}
           />
         )
       }
