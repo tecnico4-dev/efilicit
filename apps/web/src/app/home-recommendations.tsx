@@ -154,23 +154,22 @@ export function HomeRecommendations({
             </Link>
           ) : null}
         </div>
-      ) : (
-        <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
-          <p className="text-sm text-muted-foreground">
-            Según tus valoraciones y favoritos. Solo si encajan de verdad.
-          </p>
-          {compact ? (
-            <Link
-              href="/recommendations"
-              className="text-sm font-medium text-primary hover:underline"
-            >
-              Ver todas
-            </Link>
-          ) : null}
+      ) : compact ? (
+        <div className="mb-1 flex justify-end">
+          <Link
+            href="/recommendations"
+            className="text-sm font-medium text-primary hover:underline"
+          >
+            Ver todas
+          </Link>
         </div>
-      )}
+      ) : null}
 
-      <div className={showHeading ? "mt-4 grid gap-6 md:grid-cols-2" : "mt-3 grid gap-6 md:grid-cols-2"}>
+      <div
+        className={
+          showHeading ? "mt-4 grid gap-6 md:grid-cols-2" : "grid gap-6 md:grid-cols-2"
+        }
+      >
         <ProfileColumn
           kind="propia"
           label="Para Eficen"
