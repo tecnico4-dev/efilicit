@@ -41,7 +41,7 @@ function reasonLabel(reason: Json): string {
 
 /**
  * ¿Queda alguna recomendación visible (no valorada ni en favoritos)?
- * Para el nav «Para ti»: barato (sin join a tenders).
+ * Para el nav «Recomendaciones»: barato (sin join a tenders).
  */
 export async function hasOwnVisibleRecommendations(
   client: SupabaseClient<Database>,

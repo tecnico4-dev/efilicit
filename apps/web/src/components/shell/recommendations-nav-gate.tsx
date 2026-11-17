@@ -3,7 +3,7 @@ import { hasOwnVisibleRecommendations } from "@/lib/queries";
 import { RecommendationsNavLink } from "./recommendations-nav-link";
 
 /**
- * Solo pinta «Para ti» si hay recomendaciones visibles
+ * Solo pinta «Recomendaciones» si hay visibles
  * (mismo criterio que el listado: no valoradas ni en favoritos).
  */
 export async function RecommendationsNavGate({

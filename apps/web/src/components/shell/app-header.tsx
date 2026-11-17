@@ -78,7 +78,7 @@ export function AppHeader({
   digestFrequency: DigestFrequency;
   /** Slot RSC (p. ej. Suspense + badge); no bloquear el layout con la query. */
   notifications: ReactNode;
-  /** Slot RSC: «Para ti» solo si hay recomendaciones visibles. */
+  /** Slot RSC: «Recomendaciones» solo si hay recomendaciones visibles. */
   recommendationsNav: ReactNode;
 }) {
   const pathname = usePathname() || "/";
@@ -111,6 +111,7 @@ export function AppHeader({
               Búsqueda
             </Link>
             <FavoritesNavItem active={inFavorites} />
+            {recommendationsNav}
             <Link
               href="/alerts"
               className={navClass(pathname.startsWith("/alerts"))}
@@ -118,7 +119,6 @@ export function AppHeader({
               <NavAlertIcon />
               Alertas
             </Link>
-            {recommendationsNav}
           </nav>
 
           <div className="flex items-center gap-2">

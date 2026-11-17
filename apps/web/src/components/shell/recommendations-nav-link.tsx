@@ -67,7 +67,7 @@ function NavBulbIcon() {
   );
 }
 
-/** Enlace «Para ti» (activo según pathname). */
+/** Enlace «Recomendaciones» (activo según pathname). */
 export function RecommendationsNavLink() {
   const pathname = usePathname() || "/";
   const active = pathname.startsWith("/recommendations");
@@ -88,7 +88,7 @@ export function RecommendationsNavLink() {
         <NavRadarIcon />
         <NavBulbIcon />
       </span>
-      Para ti
+      Recomendaciones
     </Link>
   );
 }
