@@ -1,6 +1,6 @@
 # Fase 0 — checklist de cierre (docs/02-setup-entorno §14)
 
-Estado tras Pasos 0–9 (Paso 7 remoto hecho; protection `main` aplazada a propósito).
+Estado tras Pasos 0–9 (Paso 7 remoto hecho; protection `main` reactivada 2026-11-17 con repo público).
 
 Plan de ejecución: [semana00-plan.md](semana00-plan.md).
 
@@ -24,6 +24,6 @@ Plan de ejecución: [semana00-plan.md](semana00-plan.md).
 | `pnpm dev` + consulta local | OK | `apps/web` + `.env.local` (no versionado) |
 | CLI ingestion `--help` | OK | |
 | Secretos fuera de Git | OK | `.env.local` gitignored |
-| Branch protection `main` | N/A por ahora | [ADR 001](../adr/001-proteccion-main-aplazada.md); `.github/README.md` |
+| Branch protection `main` | OK | Classic rule activa (PR + checks CI); [ADR 001](../adr/001-proteccion-main-aplazada.md); `.github/README.md` |
 
 Cuando este checklist se cumpla, Semana 0 de setup está lista para empezar **Semana 1** (modelo canónico + infraestructura de ingesta).

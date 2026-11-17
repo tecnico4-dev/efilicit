@@ -107,34 +107,19 @@ Script: [`scripts/purge_tenders.py`](../scripts/purge_tenders.py) · ADR: [031](
 | `ALERT_FROM_EMAIL` | Remitente Resend |
 | `EFILICIT_APP_URL` (variable) | Base de la web en enlaces del digest (ficha, buzón, cuenta) |
 
-## Protección de `main` — decisión del proyecto
+## Protección de `main`
 
-**No se aplica** branch protection / ruleset sobre `main`, **al menos por ahora**. Decisión formal: [ADR 001](../docs/adr/001-proteccion-main-aplazada.md).
+**Activa** (repo público + GitHub Free). Historia del aplazamiento y reactivación: [ADR 001](../docs/adr/001-proteccion-main-aplazada.md).
 
-### Motivo
+### Rule classic (Settings → Branches → `main`)
 
-GitHub exige una cuenta de organización con plan de pago (**Team** o superior) para proteger ramas en un repositorio **privado**. EfiLicit es todavía un proyecto **pequeño y de prueba**: no se va a invertir en esa cuenta de pago solo para ese bloqueo.
+1. **Require a pull request before merging** — no push directo de commits nuevos a `main`; hay que mergear desde otra rama vía PR.
+2. **Require status checks to pass before merging** + **Require branches to be up to date before merging**:
+   - `Web lint / typecheck / build`
+   - `Ingestion CLI + pytest`
+3. **Allow force pushes** y **Allow deletions** desmarcados.
 
-### Qué sí queda en vigor
-
-- El **CI** de Actions sigue activo y debe consultarse tras cambios relevantes.
-- Disciplina manual recomendada: evitar force push y no borrar `main`.
-- Push directo a `main` permitido durante esta fase.
-
-Si en el futuro el proyecto crece o se dispone de plan Team / otro modelo de cuenta, se podrá reactivar la protección formal. Hasta entonces, **este requisito del setup se considera no aplicable** (aplazado a propósito).
-
-<details>
-<summary>Referencia (no usar por ahora): cómo se aplicaría la protection si el plan de GitHub lo permitiera</summary>
-
-Usar **Add classic branch protection rule**:
-
-1. Repo → **Settings** → **Branches** → **Add classic branch protection rule**
-2. Pattern: `main`
-3. Require status checks: `Web lint / typecheck / build`, `Ingestion CLI smoke`
-4. Allow force pushes **desmarcado**; Allow deletions **desmarcado**
-5. No exigir PR reviews mientras se quiera push directo en setup
-
-</details>
+El CI (`.github/workflows/ci.yml`) sigue siendo la comprobación automática; los nombres de check deben coincidir con los `name:` de los jobs del workflow.
 
 ## Environments / Secrets
 

@@ -39,7 +39,7 @@ No son bugs olvidados ni el trabajo de la siguiente semana del roadmap. Son huec
 - ~~Cron de producción — ingestas / alertas.~~ **Hecho** Semana 6 Paso 10 (schedules on; [ADR 005](../adr/005-ingesta-actions-manual-first-cron-off.md) enmienda).
 - **Environments / secrets de deploy.** Preview/production, Vercel, tokens — cablear cuando haya despliegue real (ver `.github/README.md`).
 - **CI ingestion sin Postgres en Actions (intencional).** Tests DB en skip en CI; integración local con `supabase start` ([ADR 004](../adr/004-ci-ingestion-sin-postgres.md)).
-- **Protección de `main` en GitHub.** Branch protection aplazada en repo Free privado; CI + disciplina manual ([ADR 001](../adr/001-proteccion-main-aplazada.md)).
+- ~~**Protección de `main` en GitHub.**~~ **Hecho** (2026-11-17): repo público + rule classic (PR + status checks); [ADR 001](../adr/001-proteccion-main-aplazada.md).
 - **Verificación live `placsp_menores`.** Conector + workflow existen; falta un bloque de pruebas live acotado al estilo de `docs/pruebas.md` (otras fuentes ya tienen Parte).
 
 ---
@@ -94,7 +94,7 @@ Detalle por CCAA: [cobertura-ccaa.md](../sources/cobertura-ccaa.md). Checklist a
 
 | ADR | Tema | Lectura en backlog |
 |-----|------|--------------------|
-| 001 | Protección `main` | Ops / gobernanza aplazada |
+| 001 | Protección `main` | Cerrado — protection activa (repo público) |
 | 003 | Acceso canónico / `errors` reservada | `public.errors` diferido |
 | 004 | CI sin Postgres | Intencional MVP |
 | 005 | Cron off ingestas/alertas | Ops: activar con OK |
