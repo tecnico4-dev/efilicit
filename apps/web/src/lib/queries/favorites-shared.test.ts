@@ -5,6 +5,7 @@ import {
   favoriteShareAlreadyMessage,
   listOwnFavoriteShares,
   removeFavoriteShare,
+  restoreFavoriteShare,
 } from "./favorites-shared";
 
 describe("favoriteShareAlreadyMessage", () => {
@@ -89,6 +90,21 @@ describe("removeFavoriteShare", () => {
     expect(error).toBeNull();
     expect(client.rpcCalls).toEqual([
       { name: "hide_favorite_share", args: { p_share_id: "share-1" } },
+    ]);
+  });
+});
+
+describe("restoreFavoriteShare", () => {
+  it("llama unhide_favorite_share", async () => {
+    const client = createFakeSupabaseClient({
+      rpc: {
+        unhide_favorite_share: { data: null, error: null },
+      },
+    });
+    const { error } = await restoreFavoriteShare(client as never, "share-1");
+    expect(error).toBeNull();
+    expect(client.rpcCalls).toEqual([
+      { name: "unhide_favorite_share", args: { p_share_id: "share-1" } },
     ]);
   });
 });

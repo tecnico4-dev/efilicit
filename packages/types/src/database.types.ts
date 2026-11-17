@@ -2220,6 +2220,12 @@ export type Database = {
         }
         Returns: undefined
       }
+      unhide_favorite_share: {
+        Args: {
+          p_share_id: string
+        }
+        Returns: undefined
+      }
       reactivate_favorite_share: {
         Args: {
           p_tender_id: string

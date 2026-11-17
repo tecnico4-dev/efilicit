@@ -124,6 +124,18 @@ export async function removeFavoriteShare(
   return { error: null };
 }
 
+/** Revierte hide del caller (toast Revertir). */
+export async function restoreFavoriteShare(
+  client: SupabaseClient<Database>,
+  shareId: string,
+): Promise<{ error: Error | null }> {
+  const { error } = await client.rpc("unhide_favorite_share", {
+    p_share_id: shareId,
+  });
+  if (error) return { error: new Error(error.message) };
+  return { error: null };
+}
+
 type ListDbRow = {
   id: string;
   tender_id: string;

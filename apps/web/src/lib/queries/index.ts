@@ -97,6 +97,7 @@ export {
   favoriteShareAlreadyMessage,
   listOwnFavoriteShares,
   removeFavoriteShare,
+  restoreFavoriteShare,
   type AddFavoriteSharesResult,
   type FavoriteShareDirection,
   type FavoriteShareRow,
