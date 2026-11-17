@@ -17,9 +17,13 @@ export type RecommendationItem = {
   computedAt: string;
   title: string;
   status: string | null;
+  procedureType: string | null;
+  contractType: string | null;
   deadlineAt: string | null;
+  publicationDate: string | null;
   estimatedValue: number | null;
   currency: string;
+  cpvCodes: string[];
 };
 
 function asProfileKind(raw: string): RecommendationProfileKind | null {
@@ -63,7 +67,7 @@ export async function listOwnRecommendations(
   const { data: rows, error } = await client
     .from("tender_recommendations")
     .select(
-      "tender_id, profile_kind, score, reason, computed_at, tenders ( title, status, deadline_at, estimated_value, currency )",
+      "tender_id, profile_kind, score, reason, computed_at, tenders ( title, status, procedure_type, contract_type, deadline_at, publication_date, estimated_value, currency, cpv_codes )",
     )
     .eq("user_id", input.userId)
     .order("score", { ascending: false });
@@ -97,9 +101,13 @@ export async function listOwnRecommendations(
       | {
           title: string | null;
           status: string | null;
+          procedure_type: string | null;
+          contract_type: string | null;
           deadline_at: string | null;
+          publication_date: string | null;
           estimated_value: number | null;
           currency: string | null;
+          cpv_codes: string[] | null;
         }
       | null;
 
@@ -111,9 +119,13 @@ export async function listOwnRecommendations(
       computedAt: row.computed_at,
       title: tender?.title?.trim() || "Sin título",
       status: tender?.status ?? null,
+      procedureType: tender?.procedure_type ?? null,
+      contractType: tender?.contract_type ?? null,
       deadlineAt: tender?.deadline_at ?? null,
+      publicationDate: tender?.publication_date ?? null,
       estimatedValue: tender?.estimated_value ?? null,
       currency: tender?.currency || "EUR",
+      cpvCodes: tender?.cpv_codes ?? [],
     };
 
     if (!computedAt || row.computed_at > computedAt) {

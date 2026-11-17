@@ -80,31 +80,33 @@ export function RecommendationList({
               >
                 {item.title}
               </Link>
-              {showKindBubble ? (
-                <div className="mt-1.5">
+              <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1.5">
+                {showKindBubble ? (
                   <FavoriteKindBubble kind={item.profileKind} />
-                </div>
-              ) : null}
-              <dl className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
-                <div>
-                  <dt className="inline">Plazo: </dt>
-                  <dd className="inline">
-                    {item.deadlineAt
-                      ? formatDateTimeMadrid(item.deadlineAt)
-                      : "—"}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="inline">Estado: </dt>
-                  <dd className="inline">{formatTenderStatus(item.status)}</dd>
-                </div>
-                <div>
-                  <dt className="inline">Importe: </dt>
-                  <dd className="inline">
-                    {formatMoney(item.estimatedValue, item.currency)}
-                  </dd>
-                </div>
-              </dl>
+                ) : null}
+                <dl className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
+                  <div>
+                    <dt className="inline">Plazo: </dt>
+                    <dd className="inline">
+                      {item.deadlineAt
+                        ? formatDateTimeMadrid(item.deadlineAt)
+                        : "—"}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="inline">Estado: </dt>
+                    <dd className="inline">
+                      {formatTenderStatus(item.status)}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="inline">Importe: </dt>
+                    <dd className="inline">
+                      {formatMoney(item.estimatedValue, item.currency)}
+                    </dd>
+                  </div>
+                </dl>
+              </div>
             </div>
             <button
               type="button"

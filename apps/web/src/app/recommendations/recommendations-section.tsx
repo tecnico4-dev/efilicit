@@ -1,11 +1,15 @@
 "use client";
 
-import { useMemo } from "react";
-import { formatDateTimeMadrid } from "@/lib/datetime";
+import { useMemo, useState } from "react";
+import type { CriteriaFilterOptionsProp } from "@/components/criteria/criteria-filters";
 import type { RecommendationItem } from "@/lib/queries";
+import type { SearchCriteria } from "@efilicit/types";
 import { cn } from "@/lib/cn";
+import { FavoriteKindTabs } from "../favorites/favorite-kind-tabs";
+import {
+  tenderMatchesFavoriteFilters,
+} from "../favorites/favorites-list-filter";
 import { PaginatedRecommendations } from "./paginated-recommendations";
-import { RecommendationKindTabs } from "./recommendation-kind-tabs";
 
 function emptyPanel(flushTopLeft: boolean) {
   return (
@@ -20,31 +24,80 @@ function emptyPanel(flushTopLeft: boolean) {
   );
 }
 
-/** Página /recommendations: pestañas Todas/Eficen/Sub + paginación. */
+function emptyFilterPanel(flushTopLeft: boolean) {
+  return (
+    <p
+      className={cn(
+        "rounded-lg border border-border px-4 py-8 text-center text-sm text-muted-foreground",
+        flushTopLeft && "rounded-tl-none",
+      )}
+    >
+      Ninguna coincide con los filtros.
+    </p>
+  );
+}
+
+function recommendationAsTenderSlice(item: RecommendationItem) {
+  return {
+    title: item.title,
+    status: item.status,
+    procedure_type: item.procedureType,
+    contract_type: item.contractType,
+    estimated_value: item.estimatedValue,
+    cpv_codes: item.cpvCodes,
+    publication_date: item.publicationDate,
+    deadline_at: item.deadlineAt,
+  };
+}
+
+/** Página /recommendations: pestañas Todas/Eficen/Sub + filtrar + paginación. */
 export function RecommendationsSection({
   userId,
   propia,
   subcontrata,
-  computedAt,
+  filterOptions,
+  hasComputedAt,
 }: {
   userId: string;
   propia: RecommendationItem[];
   subcontrata: RecommendationItem[];
-  computedAt: string | null;
+  filterOptions: CriteriaFilterOptionsProp;
+  hasComputedAt: boolean;
 }) {
-  const todas = useMemo(
+  const [criteria, setCriteria] = useState<SearchCriteria | null>(null);
+
+  const todasRaw = useMemo(
     () =>
       [...propia, ...subcontrata].sort((a, b) => b.score - a.score),
     [propia, subcontrata],
   );
 
-  const showKindTabs = propia.length > 0 && subcontrata.length > 0;
+  const filtered = useMemo(
+    () =>
+      todasRaw.filter((item) =>
+        tenderMatchesFavoriteFilters(
+          recommendationAsTenderSlice(item),
+          criteria,
+        ),
+      ),
+    [todasRaw, criteria],
+  );
+  const propias = useMemo(
+    () => filtered.filter((i) => i.profileKind === "propia"),
+    [filtered],
+  );
+  const subcontratas = useMemo(
+    () => filtered.filter((i) => i.profileKind === "subcontrata"),
+    [filtered],
+  );
+
+  const showKindTabs = propias.length > 0 && subcontratas.length > 0;
   const flushTopLeft = showKindTabs;
 
-  if (todas.length === 0) {
+  if (todasRaw.length === 0) {
     return (
-      <p className="mt-6 text-sm text-muted-foreground">
-        {computedAt
+      <p className="text-sm text-muted-foreground">
+        {hasComputedAt
           ? "Ninguna recomendación por encima del umbral ahora."
           : "Aún no hay cálculo de recomendaciones."}
       </p>
@@ -52,51 +105,50 @@ export function RecommendationsSection({
   }
 
   return (
-    <div className="mt-6">
-      <RecommendationKindTabs
-        ariaLabel="Perfil de recomendación"
-        todasCount={todas.length}
-        propiasCount={propia.length}
-        subcontratasCount={subcontrata.length}
-        todas={
+    <FavoriteKindTabs
+      ariaLabel="Perfil de recomendación"
+      filterOptions={filterOptions}
+      appliedCriteria={criteria}
+      onApplyFilters={setCriteria}
+      todasCount={filtered.length}
+      propiasCount={propias.length}
+      subcontratasCount={subcontratas.length}
+      todas={
+        filtered.length === 0 ? (
+          emptyFilterPanel(flushTopLeft)
+        ) : (
           <PaginatedRecommendations
-            items={todas}
+            items={filtered}
             userId={userId}
             showKindBubble
             flushTopLeft={flushTopLeft}
           />
-        }
-        propias={
-          propia.length === 0 ? (
-            emptyPanel(flushTopLeft)
-          ) : (
-            <PaginatedRecommendations
-              items={propia}
-              userId={userId}
-              showKindBubble={false}
-              flushTopLeft={flushTopLeft}
-            />
-          )
-        }
-        subcontratas={
-          subcontrata.length === 0 ? (
-            emptyPanel(flushTopLeft)
-          ) : (
-            <PaginatedRecommendations
-              items={subcontrata}
-              userId={userId}
-              showKindBubble={false}
-              flushTopLeft={flushTopLeft}
-            />
-          )
-        }
-      />
-
-      {computedAt ? (
-        <p className="mt-3 text-xs text-muted-foreground">
-          Actualizado el {formatDateTimeMadrid(computedAt)}
-        </p>
-      ) : null}
-    </div>
+        )
+      }
+      propias={
+        propias.length === 0 ? (
+          emptyPanel(flushTopLeft)
+        ) : (
+          <PaginatedRecommendations
+            items={propias}
+            userId={userId}
+            showKindBubble={false}
+            flushTopLeft={flushTopLeft}
+          />
+        )
+      }
+      subcontratas={
+        subcontratas.length === 0 ? (
+          emptyPanel(flushTopLeft)
+        ) : (
+          <PaginatedRecommendations
+            items={subcontratas}
+            userId={userId}
+            showKindBubble={false}
+            flushTopLeft={flushTopLeft}
+          />
+        )
+      }
+    />
   );
 }
