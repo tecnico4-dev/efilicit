@@ -103,7 +103,13 @@ export function FavoriteKindTabs({
 
   return (
     <section>
-      <div className="flex flex-wrap items-end justify-between gap-x-3 gap-y-2 border-b border-border">
+      <div
+        className={cn(
+          "flex flex-wrap items-end justify-between gap-x-3 gap-y-2",
+          // Con pestañas: línea que une al panel. Sin pestañas: no hay línea fantasma sobre el redondeo.
+          showTabs && "border-b border-border",
+        )}
+      >
         {showTabs ? (
           <div
             className="flex min-w-0 flex-wrap items-end gap-1"
@@ -139,7 +145,10 @@ export function FavoriteKindTabs({
         />
       </div>
 
-      <div className="-mt-px" role={showTabs ? "tabpanel" : undefined}>
+      <div
+        className={showTabs ? "-mt-px" : "mt-2"}
+        role={showTabs ? "tabpanel" : undefined}
+      >
         {showTabs
           ? tab === "todas"
             ? todas
