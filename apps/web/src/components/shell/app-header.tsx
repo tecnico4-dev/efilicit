@@ -63,7 +63,7 @@ function NavAlertIcon() {
   );
 }
 
-/** Regalo sencillo para «Para ti». */
+/** Regalo mínimo para «Para ti» (caja + cinta, sin lazo cargado). */
 function NavGiftIcon() {
   return (
     <svg
@@ -77,11 +77,11 @@ function NavGiftIcon() {
       className={NAV_ICON_CLASS}
       aria-hidden
     >
-      <rect x="4" y="10" width="16" height="10.5" rx="1.4" />
-      <path d="M3.5 7.8h17v3.2h-17z" />
-      <path d="M12 7.8v12.7" />
-      <path d="M12 7.8c-1.7-2.2-4.2-1.2-4.2.5 0 1.1 1.1 1.8 4.2 3.2" />
-      <path d="M12 7.8c1.7-2.2 4.2-1.2 4.2.5 0 1.1-1.1 1.8-4.2 3.2" />
+      <rect x="4.25" y="9.5" width="15.5" height="10.75" rx="1.5" />
+      <path d="M4.25 13.25h15.5" />
+      <path d="M12 9.5v10.75" />
+      <path d="M8.2 6.4c.9-1.4 2.5-1.6 3.8-.4l0 3.5" />
+      <path d="M15.8 6.4c-.9-1.4-2.5-1.6-3.8-.4" />
     </svg>
   );
 }
