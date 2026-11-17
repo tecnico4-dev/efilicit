@@ -82,15 +82,18 @@ export async function AlertsBody() {
 
   return (
     <>
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      {/* Altura del bloque = solo el H1 (como Notificaciones); el CTA no empuja la raya. */}
+      <div className="relative">
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">
           Alertas
         </h1>
-        <AlertsPanel
-          userId={profileResult.data.id}
-          digestFrequency={digestFrequency}
-          filterOptions={filterOptions}
-        />
+        <div className="absolute right-0 top-1/2 z-10 -translate-y-1/2">
+          <AlertsPanel
+            userId={profileResult.data.id}
+            digestFrequency={digestFrequency}
+            filterOptions={filterOptions}
+          />
+        </div>
       </div>
 
       <div className={PAGE_TITLE_RULE}>

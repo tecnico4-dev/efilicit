@@ -63,16 +63,19 @@ export default async function RecommendationsPage() {
 
   return (
     <main className={PAGE_MAIN_FAVORITES_CLASS}>
-      <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-        Recomendaciones para ti
-      </h1>
-      {data.computedAt ? (
-        <p className="mt-6 text-right text-xs text-muted-foreground">
-          Actualizado el {formatDateTimeMadrid(data.computedAt)}
-        </p>
-      ) : null}
+      {/* Misma geometría H1 + PAGE_TITLE_RULE que Notificaciones; «Actualizado» flota en el hueco. */}
+      <div className="relative">
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+          Recomendaciones para ti
+        </h1>
+        {data.computedAt ? (
+          <p className="pointer-events-none absolute right-0 top-full mt-5 text-xs text-muted-foreground">
+            Actualizado el {formatDateTimeMadrid(data.computedAt)}
+          </p>
+        ) : null}
+      </div>
 
-      <div className={data.computedAt ? "mt-2 border-t border-border pt-8" : PAGE_TITLE_RULE}>
+      <div className={PAGE_TITLE_RULE}>
         {error ? (
           <ErrorState>
             No se pudieron cargar recomendaciones: {error.message}
