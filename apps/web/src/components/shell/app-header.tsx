@@ -63,8 +63,8 @@ function NavAlertIcon() {
   );
 }
 
-/** Regalo mínimo para «Para ti» (caja + cinta, sin lazo cargado). */
-function NavGiftIcon() {
+/** Comparativa temporal: destellos / radar / bombilla (elegir uno). */
+function NavSparklesIcon() {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -77,11 +77,50 @@ function NavGiftIcon() {
       className={NAV_ICON_CLASS}
       aria-hidden
     >
-      <rect x="4.25" y="9.5" width="15.5" height="10.75" rx="1.5" />
-      <path d="M4.25 13.25h15.5" />
-      <path d="M12 9.5v10.75" />
-      <path d="M8.2 6.4c.9-1.4 2.5-1.6 3.8-.4l0 3.5" />
-      <path d="M15.8 6.4c-.9-1.4-2.5-1.6-3.8-.4" />
+      <path d="M10.2 3.8 11.5 8l4.2 1.3-4.2 1.3-1.3 4.2-1.3-4.2L4.7 9.3 8.9 8z" />
+      <path d="m17.2 13.2.7 2.2 2.2.7-2.2.7-.7 2.2-.7-2.2-2.2-.7 2.2-.7z" />
+      <path d="M6.2 15.8v2.2M5.1 16.9h2.2" />
+    </svg>
+  );
+}
+
+function NavRadarIcon() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={NAV_ICON_CLASS}
+      aria-hidden
+    >
+      <circle cx="12" cy="12" r="8.5" />
+      <circle cx="12" cy="12" r="4.6" />
+      <circle cx="12" cy="12" r="1.15" fill="currentColor" stroke="none" />
+      <path d="M12 12 17.2 7.4" />
+    </svg>
+  );
+}
+
+function NavBulbIcon() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={NAV_ICON_CLASS}
+      aria-hidden
+    >
+      <path d="M9.2 17.6h5.6" />
+      <path d="M10 20h4" />
+      <path d="M8.4 14.2c-1.5-1.2-2.4-3-2.4-5 0-3.4 2.7-6.2 6-6.2s6 2.8 6 6.2c0 2-0.9 3.8-2.4 5l-.6.5v1.3H9l-.6-.5z" />
     </svg>
   );
 }
@@ -141,8 +180,13 @@ export function AppHeader({
             <Link
               href="/recommendations"
               className={navClass(pathname.startsWith("/recommendations"))}
+              title="Comparativa iconos: destellos · radar · bombilla"
             >
-              <NavGiftIcon />
+              <span className="inline-flex items-center gap-1" aria-hidden>
+                <NavSparklesIcon />
+                <NavRadarIcon />
+                <NavBulbIcon />
+              </span>
               Para ti
             </Link>
           </nav>
