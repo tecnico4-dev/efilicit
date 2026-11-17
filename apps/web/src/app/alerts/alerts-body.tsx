@@ -1,4 +1,4 @@
-import { EmptyState, ErrorState } from "@/components/ui/state-message";
+import { ErrorState } from "@/components/ui/state-message";
 import {
   PAGE_TITLE_RULE,
 } from "@/components/shell/page-width";
@@ -104,9 +104,9 @@ export async function AlertsBody() {
             alertsResult.error ? (
               <ErrorState>{alertsResult.error.message}</ErrorState>
             ) : alertsResult.data.length === 0 ? (
-              <EmptyState>
+              <p className="border-t border-border px-4 py-8 text-center text-sm text-muted-foreground sm:px-5">
                 Aún no tienes alertas. Usa «Crear alerta» para añadir una.
-              </EmptyState>
+              </p>
             ) : (
               <PaginatedAlertsList
                 alerts={alertsResult.data}
