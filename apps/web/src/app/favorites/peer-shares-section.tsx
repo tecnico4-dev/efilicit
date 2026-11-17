@@ -1,12 +1,16 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import type { CriteriaFilterOptionsProp } from "@/components/criteria/criteria-filters";
 import type { FavoriteShareRow } from "@/lib/queries";
 import type { SearchCriteria } from "@efilicit/types";
 import { FavoriteKindTabs } from "./favorite-kind-tabs";
 import { tenderMatchesFavoriteFilters } from "./favorites-list-filter";
 import { PaginatedPeerShares } from "./paginated-peer-shares";
+import {
+  ShareDirectionRail,
+  type ShareBandeja,
+} from "./share-direction-rail";
 
 function emptyKindPanel() {
   return (
@@ -24,7 +28,7 @@ function emptyFilterPanel() {
   );
 }
 
-/** Licitaciones compartidas: Filtrar + pestañas Todas / Eficen / Subcontrata. */
+/** Licitaciones compartidas: bandeja + Filtrar + pestañas kind. */
 export function PeerSharesSection({
   items,
   filterOptions,
@@ -33,12 +37,28 @@ export function PeerSharesSection({
   filterOptions: CriteriaFilterOptionsProp;
 }) {
   const [criteria, setCriteria] = useState<SearchCriteria | null>(null);
+  const [bandeja, setBandeja] = useState<ShareBandeja>("todas");
 
-  const filtered = useMemo(
+  const byCriteria = useMemo(
     () =>
       items.filter((i) => tenderMatchesFavoriteFilters(i.tender, criteria)),
     [items, criteria],
   );
+
+  const bandejaCounts = useMemo(
+    () => ({
+      todas: byCriteria.length,
+      received: byCriteria.filter((i) => i.direction === "received").length,
+      sent: byCriteria.filter((i) => i.direction === "sent").length,
+    }),
+    [byCriteria],
+  );
+
+  const filtered = useMemo(() => {
+    if (bandeja === "todas") return byCriteria;
+    return byCriteria.filter((i) => i.direction === bandeja);
+  }, [byCriteria, bandeja]);
+
   const propias = useMemo(
     () => filtered.filter((i) => i.kind === "propia"),
     [filtered],
@@ -48,12 +68,26 @@ export function PeerSharesSection({
     [filtered],
   );
 
+  function wrapPanel(panel: ReactNode) {
+    return (
+      <div className="flex flex-col gap-3 md:flex-row md:items-start">
+        <ShareDirectionRail
+          value={bandeja}
+          onChange={setBandeja}
+          counts={bandejaCounts}
+        />
+        <div className="min-w-0 flex-1">{panel}</div>
+      </div>
+    );
+  }
+
   return (
     <FavoriteKindTabs
       ariaLabel="Tipo en Licitaciones compartidas"
       filterOptions={filterOptions}
       appliedCriteria={criteria}
       onApplyFilters={setCriteria}
+      panelWrapper={wrapPanel}
       todasCount={filtered.length}
       propiasCount={propias.length}
       subcontratasCount={subcontratas.length}

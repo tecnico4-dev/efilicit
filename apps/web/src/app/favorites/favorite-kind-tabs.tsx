@@ -47,6 +47,8 @@ export function FavoriteKindTabs({
   filterOptions,
   appliedCriteria,
   onApplyFilters,
+  /** Envuelve el panel activo (p. ej. rail de bandeja a la izquierda). */
+  panelWrapper,
 }: {
   ariaLabel: string;
   todas: ReactNode;
@@ -58,6 +60,7 @@ export function FavoriteKindTabs({
   filterOptions: CriteriaFilterOptionsProp;
   appliedCriteria: SearchCriteria | null;
   onApplyFilters: (criteria: SearchCriteria | null) => void;
+  panelWrapper?: (panel: ReactNode) => ReactNode;
 }) {
   const [tab, setTab] = useState<FavoriteKindTab>("todas");
   const [filterOpen, setFilterOpen] = useState(false);
@@ -140,13 +143,16 @@ export function FavoriteKindTabs({
       </div>
 
       <div className="-mt-px" role={showTabs ? "tabpanel" : undefined}>
-        {showTabs
-          ? tab === "todas"
-            ? todas
-            : tab === "propia"
-              ? propias
-              : subcontratas
-          : todas}
+        {(() => {
+          const panel = showTabs
+            ? tab === "todas"
+              ? todas
+              : tab === "propia"
+                ? propias
+                : subcontratas
+            : todas;
+          return panelWrapper ? panelWrapper(panel) : panel;
+        })()}
       </div>
 
       {mounted && filterOpen
