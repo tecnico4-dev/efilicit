@@ -538,9 +538,7 @@ export function HomeDashboard({
                                 {tender.title}
                               </p>
                               <p className="mt-0.5 text-xs text-muted-foreground">
-                                De {who}
-                                {" · "}
-                                {formatWhen(row.createdAt)}
+                                De {who} ({formatWhen(row.createdAt)})
                               </p>
                             </Link>
                           </li>
