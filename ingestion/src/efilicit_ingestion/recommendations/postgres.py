@@ -82,8 +82,38 @@ def list_user_ids(conn: Any) -> list[str]:
         return [r[0] for r in cur.fetchall()]
 
 
+def _public_table_exists(cur: Any, table_name: str) -> bool:
+    cur.execute(
+        """
+        select 1
+        from information_schema.tables
+        where table_schema = 'public' and table_name = %s
+        """,
+        (table_name,),
+    )
+    return cur.fetchone() is not None
+
+
+def _fetch_optional_rows(
+    cur: Any,
+    *,
+    table_name: str,
+    sql: str,
+    params: tuple[Any, ...] = (),
+) -> list[tuple[Any, ...]]:
+    """Si la tabla no existe (p. ej. offer_cases aún no en remoto), devolver []."""
+    if not _public_table_exists(cur, table_name):
+        return []
+    cur.execute(sql, params)
+    return list(cur.fetchall())
+
+
 def load_user_seed_inputs(conn: Any, user_id: str) -> dict[str, Any]:
-    """Ratings, favoritos, común, peer shares y offer_cases enriquecidos."""
+    """Ratings, favoritos, común, peer shares y offer_cases enriquecidos.
+
+    Fuentes opcionales (común / compartidas / mis licitaciones): si la tabla no
+    existe o no hay filas, se omiten como semillas (listas vacías).
+    """
     with conn.cursor() as cur:
         cur.execute(
             """
@@ -105,32 +135,34 @@ def load_user_seed_inputs(conn: Any, user_id: str) -> dict[str, Any]:
         )
         fav_rows = cur.fetchall()
 
-        cur.execute(
-            """
+        common_rows = _fetch_optional_rows(
+            cur,
+            table_name="favorites_common",
+            sql="""
             select tender_id::text, kind
             from public.favorites_common
-            """
+            """,
         )
-        common_rows = cur.fetchall()
 
-        cur.execute(
-            """
+        peer_rows = _fetch_optional_rows(
+            cur,
+            table_name="favorites_shared",
+            sql="""
             select tender_id::text, kind
             from public.favorites_shared
             where from_user_id = %s::uuid or to_user_id = %s::uuid
             """,
-            (user_id, user_id),
+            params=(user_id, user_id),
         )
-        peer_rows = cur.fetchall()
 
-        cur.execute(
-            """
+        offer_rows = _fetch_optional_rows(
+            cur,
+            table_name="offer_cases",
+            sql="""
             select tender_id::text, stage
             from public.offer_cases
-            """
+            """,
         )
-        offer_rows = cur.fetchall()
-
     all_ids = sorted(
         {
             *[r[0] for r in rating_rows],

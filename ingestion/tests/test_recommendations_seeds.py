@@ -132,6 +132,20 @@ def test_common_and_offer_lower_weight() -> None:
     assert [s.tender_id for s in pos_s] == ["o3"]
 
 
+def test_empty_optional_sources_produce_no_seeds() -> None:
+    """Sin común/compartidas/histórico no se inventan semillas de esas fuentes."""
+    pos, neg = build_seeds_for_profile(
+        "propia",
+        ratings=[],
+        own_favorites=[],
+        common_favorites=[],
+        peer_shares=[],
+        offer_cases=[],
+    )
+    assert pos == []
+    assert neg == []
+
+
 def test_count_personal_seeds() -> None:
     ratings = [RatingRow("t1", 5, "propia")]
     common = [FavoriteRow("c1", "propia")]
