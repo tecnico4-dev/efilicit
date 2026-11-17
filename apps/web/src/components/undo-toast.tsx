@@ -11,7 +11,7 @@ import {
 } from "react";
 import { cn } from "@/lib/cn";
 
-const TOAST_MS = 7000;
+const TOAST_MS = 5000;
 const TOAST_WARNING_MS = 9000;
 
 type ToastTone = "default" | "warning";

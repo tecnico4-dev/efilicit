@@ -107,13 +107,12 @@ export function FavoriteKindTabs({
         className={cn(
           // Misma altura con/sin pestañas para que el listado no salte al cambiar de página.
           "flex min-h-10 flex-wrap items-end justify-between gap-x-3 gap-y-2",
-          // Con pestañas: línea que une al panel (esquinas superiores del panel a 0).
-          showTabs && "border-b border-border",
         )}
       >
         {showTabs ? (
           <div
-            className="flex min-w-0 flex-wrap items-end gap-1"
+            // border-b solo bajo las pestañas: no atraviesa el redondeo superior derecho del panel.
+            className="flex min-w-0 flex-wrap items-end gap-1 border-b border-border"
             role="tablist"
             aria-label={ariaLabel}
           >
