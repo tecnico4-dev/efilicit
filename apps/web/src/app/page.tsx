@@ -7,6 +7,7 @@ import { ErrorState } from "@/components/ui/state-message";
 import {
   countUnreadNotifications,
   listOwnAlerts,
+  listOwnFavoriteShares,
   listOwnFavorites,
   listOwnRecommendations,
   listOwnSavedSearches,
@@ -54,6 +55,7 @@ export default async function Home() {
     unreadResult,
     recentResult,
     recommendationsResult,
+    peerSharesResult,
   ] = await Promise.all([
     listOwnAlerts(supabase),
     listOwnFavorites(supabase),
@@ -65,7 +67,12 @@ export default async function Home() {
       limit: 3,
     }),
     listOwnRecommendations(supabase, { userId, limitPerKind: 5 }),
+    listOwnFavoriteShares(supabase, userId),
   ]);
+
+  const receivedShares = peerSharesResult.data.filter(
+    (s) => s.direction === "received",
+  );
 
   const loadErrors = [
     alertsResult.error?.message,
@@ -75,6 +82,7 @@ export default async function Home() {
     unreadResult.error?.message,
     recentResult.error?.message,
     recommendationsResult.error?.message,
+    peerSharesResult.error?.message,
   ].filter((m): m is string => Boolean(m));
 
   return (
@@ -84,6 +92,7 @@ export default async function Home() {
       alerts={alertsResult.data}
       favorites={favoritesResult.data}
       sharedFavorites={sharedResult.data}
+      receivedShares={receivedShares}
       searches={searchesResult.data}
       digestFrequency={digestFrequency}
       unreadCount={unreadResult.data}

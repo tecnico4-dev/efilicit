@@ -11,6 +11,7 @@ import {
 import { formatTenderStatus } from "@/lib/tender-labels";
 import type {
   DigestFrequency,
+  FavoriteShareRow,
   FavoriteStatusNotification,
   FavoriteWithTender,
   RecommendationItem,
@@ -19,6 +20,8 @@ import type {
 import type { Database } from "@efilicit/types";
 import { HomeFeedCarousel } from "./home-feed-carousel";
 import { HomeRecommendations } from "./home-recommendations";
+
+const HOME_SHARED_PREVIEW = 5;
 
 type AlertRow = Database["public"]["Tables"]["alerts"]["Row"];
 type SavedSearchRow = Database["public"]["Tables"]["saved_searches"]["Row"];
@@ -142,6 +145,7 @@ export function HomeDashboard({
   alerts,
   favorites,
   sharedFavorites,
+  receivedShares,
   searches,
   digestFrequency,
   unreadCount,
@@ -154,6 +158,7 @@ export function HomeDashboard({
   alerts: AlertRow[];
   favorites: FavoriteWithTender[];
   sharedFavorites: SharedFavoriteWithTender[];
+  receivedShares: FavoriteShareRow[];
   searches: SavedSearchRow[];
   digestFrequency: DigestFrequency;
   unreadCount: number;
@@ -174,6 +179,13 @@ export function HomeDashboard({
     sharedFavorites.length === 0 &&
     searches.length === 0;
   const attention = attentionFavorites(favorites);
+  const recentCommon = [...sharedFavorites]
+    .sort(
+      (a, b) =>
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+    )
+    .slice(0, HOME_SHARED_PREVIEW);
+  const recentReceived = receivedShares.slice(0, HOME_SHARED_PREVIEW);
 
   const metrics = [
     {
@@ -421,6 +433,121 @@ export function HomeDashboard({
                           </Link>
                         </li>
                       ))}
+                    </ul>
+                  )}
+                </section>
+              </div>
+            ),
+          },
+          {
+            id: "shared",
+            label: "Últimas compartidas",
+            content: (
+              <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-2 lg:gap-6">
+                <section className="min-w-0">
+                  <div className="flex flex-wrap items-baseline justify-between gap-2">
+                    <h2 className="text-xl font-semibold tracking-tight text-foreground">
+                      Carpeta Común
+                    </h2>
+                    <Link
+                      href="/favorites/common"
+                      className="text-sm font-medium text-link hover:underline"
+                    >
+                      Ver todas
+                    </Link>
+                  </div>
+                  {recentCommon.length === 0 ? (
+                    <p className="mt-4 text-sm text-muted-foreground">
+                      Aún no hay licitaciones en la Carpeta Común.
+                    </p>
+                  ) : (
+                    <ul className="mt-4 divide-y divide-border border-y border-border">
+                      {recentCommon.map((row) => {
+                        const tender = row.tenders;
+                        if (!tender) {
+                          return (
+                            <li
+                              key={row.tender_id}
+                              className="py-3 text-sm text-muted-foreground"
+                            >
+                              Licitación no disponible
+                            </li>
+                          );
+                        }
+                        const who =
+                          row.added_by_display_name?.trim() || "Un compañero";
+                        return (
+                          <li key={row.tender_id}>
+                            <Link
+                              href={`/tenders/${tender.id}?from=home`}
+                              className="block py-3 transition-colors hover:bg-muted/40"
+                            >
+                              <p className="truncate text-sm font-medium text-foreground">
+                                {tender.title}
+                              </p>
+                              <p className="mt-0.5 text-xs text-muted-foreground">
+                                Añadida por {who}
+                                {" · "}
+                                {formatWhen(row.created_at)}
+                              </p>
+                            </Link>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                </section>
+
+                <section className="min-w-0">
+                  <div className="flex flex-wrap items-baseline justify-between gap-2">
+                    <h2 className="text-xl font-semibold tracking-tight text-foreground">
+                      Compartidas contigo
+                    </h2>
+                    <Link
+                      href="/favorites/shared"
+                      className="text-sm font-medium text-link hover:underline"
+                    >
+                      Ver todas
+                    </Link>
+                  </div>
+                  {recentReceived.length === 0 ? (
+                    <p className="mt-4 text-sm text-muted-foreground">
+                      Aún no te han compartido ninguna.
+                    </p>
+                  ) : (
+                    <ul className="mt-4 divide-y divide-border border-y border-border">
+                      {recentReceived.map((row) => {
+                        const tender = row.tender;
+                        if (!tender) {
+                          return (
+                            <li
+                              key={row.id}
+                              className="py-3 text-sm text-muted-foreground"
+                            >
+                              Licitación no disponible
+                            </li>
+                          );
+                        }
+                        const who =
+                          row.counterpartDisplayName?.trim() || "Un compañero";
+                        return (
+                          <li key={row.id}>
+                            <Link
+                              href={`/tenders/${tender.id}?from=home`}
+                              className="block py-3 transition-colors hover:bg-muted/40"
+                            >
+                              <p className="truncate text-sm font-medium text-foreground">
+                                {tender.title}
+                              </p>
+                              <p className="mt-0.5 text-xs text-muted-foreground">
+                                De {who}
+                                {" · "}
+                                {formatWhen(row.createdAt)}
+                              </p>
+                            </Link>
+                          </li>
+                        );
+                      })}
                     </ul>
                   )}
                 </section>
