@@ -330,6 +330,21 @@ class InMemoryCanonicalRepository:
         return auth_id
 
 
+def _authority_cache_key(authority: dict[str, Any]) -> str | None:
+    """Clave estable de organismo dentro de una corrida (NIF o platform_id).
+
+    Sin señal estable → ``None`` (no cachear: cada fila puede ser distinta).
+    """
+    tax_id = authority.get("tax_id")
+    tax_id_country = authority.get("tax_id_country") or "ES"
+    platform_id = authority.get("platform_id")
+    if tax_id:
+        return f"tax:{tax_id_country}:{tax_id}"
+    if platform_id:
+        return f"plat:{tax_id_country}:{platform_id}"
+    return None
+
+
 class PostgresCanonicalRepository:
     """Escribe tablas canónicas MVP con una conexión confiable (p. ej. service_role).
 
@@ -339,6 +354,9 @@ class PostgresCanonicalRepository:
 
     def __init__(self, conn: psycopg.Connection) -> None:
         self._conn = conn
+        # Memo por corrida: evita repetir INSERT…ON CONFLICT del mismo organismo
+        # (presión de locks en placsp_menores / solape con otros ingest).
+        self._authority_ids: dict[str, str] = {}
 
     def find_match_candidates(
         self,
@@ -614,6 +632,12 @@ class PostgresCanonicalRepository:
         return str(row[0])
 
     def _upsert_authority(self, authority: dict[str, Any]) -> str | None:
+        cache_key = _authority_cache_key(authority)
+        if cache_key is not None:
+            cached = self._authority_ids.get(cache_key)
+            if cached is not None:
+                return cached
+
         name = (authority.get("name") or "Unknown authority").strip()
         tax_id = authority.get("tax_id")
         tax_id_country = authority.get("tax_id_country") or "ES"
@@ -650,7 +674,10 @@ class PostgresCanonicalRepository:
                 ),
             ).fetchone()
             assert row is not None
-            return str(row[0])
+            auth_id = str(row[0])
+            if cache_key is not None:
+                self._authority_ids[cache_key] = auth_id
+            return auth_id
 
         if platform_id:
             row = self._conn.execute(
@@ -678,7 +705,10 @@ class PostgresCanonicalRepository:
                 ),
             ).fetchone()
             assert row is not None
-            return str(row[0])
+            auth_id = str(row[0])
+            if cache_key is not None:
+                self._authority_ids[cache_key] = auth_id
+            return auth_id
 
         row = self._conn.execute(
             """

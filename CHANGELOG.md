@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Ingesta canónica: caché en memoria de `contracting_authorities` por corrida (NIF / `platform_id`) para no repetir el mismo `INSERT…ON CONFLICT` (menos locks en `placsp_menores`).
 - Ingesta PLACSP: commit Postgres por cada `.atom` del ZIP; rutas RAW content-addressed sin carpeta de día (`raw/{source}/entries|rows/{sha}…`) — [ADR 033](docs/adr/033-placsp-commit-por-pagina-raw-sin-fecha.md).
 - Buzón · cambios de estado: sin «· fuente»; línea «Carpeta: Favoritos propios/comunes» (enlace; oculta si está en ambos); abrir ficha sin valoración (`from=favorite-status`). Elegibilidad = propios ∪ Común; watermark `LEAST`; un aviso por `(user, event)`. RPCs badge/home alineados (migración local).
 - Alertas: borrar es irreversible (modal Aceptar/Cancelar/×; sin toast Revertir). `notification_queue.alert_id` pasa a `ON DELETE CASCADE` (local).
