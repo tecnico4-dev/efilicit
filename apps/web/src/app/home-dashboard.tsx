@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
+import { FavoriteKindBubble } from "@/components/favorites/favorite-kind-bubble";
 import { PAGE_MAIN_MEDIUM_CLASS } from "@/components/shell/page-width";
 import { ErrorState } from "@/components/ui/state-message";
 import { formatDateTimeMadrid } from "@/lib/datetime";
@@ -485,9 +486,12 @@ export function HomeDashboard({
                               <p className="truncate text-sm font-medium text-foreground">
                                 {tender.title}
                               </p>
-                              <p className="mt-0.5 text-xs text-muted-foreground">
-                                Añadida por {who} ({formatWhen(row.created_at)})
-                              </p>
+                              <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+                                <FavoriteKindBubble kind={row.kind} />
+                                <p className="text-xs text-muted-foreground">
+                                  Añadida por {who} ({formatWhen(row.created_at)})
+                                </p>
+                              </div>
                             </Link>
                           </li>
                         );
@@ -537,9 +541,12 @@ export function HomeDashboard({
                               <p className="truncate text-sm font-medium text-foreground">
                                 {tender.title}
                               </p>
-                              <p className="mt-0.5 text-xs text-muted-foreground">
-                                De {who} ({formatWhen(row.createdAt)})
-                              </p>
+                              <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+                                <FavoriteKindBubble kind={row.kind} />
+                                <p className="text-xs text-muted-foreground">
+                                  De {who} ({formatWhen(row.createdAt)})
+                                </p>
+                              </div>
                             </Link>
                           </li>
                         );
