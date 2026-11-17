@@ -4,6 +4,7 @@ import {
   addFavoriteShares,
   favoriteShareAlreadyMessage,
   listOwnFavoriteShares,
+  removeFavoriteShare,
 } from "./favorites-shared";
 
 describe("favoriteShareAlreadyMessage", () => {
@@ -38,7 +39,7 @@ describe("addFavoriteShares", () => {
     expect(self.ok).toBe(false);
   });
 
-  it("inserta N filas y acumula unique 23505", async () => {
+  it("inserta N filas y acumula unique 23505 (already / reactivated)", async () => {
     const client = createFakeSupabaseClient({
       tables: {
         favorites_shared: {
@@ -46,10 +47,16 @@ describe("addFavoriteShares", () => {
             insert: [
               { data: null, error: null },
               { data: null, error: { message: "dup", code: "23505" } },
-              { data: null, error: null },
+              { data: null, error: { message: "dup", code: "23505" } },
             ],
           },
         },
+      },
+      rpc: {
+        reactivate_favorite_share: [
+          { data: "already", error: null },
+          { data: "reactivated", error: null },
+        ],
       },
     });
 
@@ -67,6 +74,22 @@ describe("addFavoriteShares", () => {
       already: ["u3"],
     });
     expect(client.callsFor("favorites_shared")).toHaveLength(3);
+    expect(client.rpcCalls).toHaveLength(2);
+  });
+});
+
+describe("removeFavoriteShare", () => {
+  it("llama hide_favorite_share", async () => {
+    const client = createFakeSupabaseClient({
+      rpc: {
+        hide_favorite_share: { data: null, error: null },
+      },
+    });
+    const { error } = await removeFavoriteShare(client as never, "share-1");
+    expect(error).toBeNull();
+    expect(client.rpcCalls).toEqual([
+      { name: "hide_favorite_share", args: { p_share_id: "share-1" } },
+    ]);
   });
 });
 

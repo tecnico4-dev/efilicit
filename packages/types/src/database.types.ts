@@ -339,6 +339,8 @@ export type Database = {
         Row: {
           created_at: string
           from_user_id: string
+          hidden_by_from_at: string | null
+          hidden_by_to_at: string | null
           id: string
           kind: string
           notes: string | null
@@ -348,6 +350,8 @@ export type Database = {
         Insert: {
           created_at?: string
           from_user_id: string
+          hidden_by_from_at?: string | null
+          hidden_by_to_at?: string | null
           id?: string
           kind: string
           notes?: string | null
@@ -357,6 +361,8 @@ export type Database = {
         Update: {
           created_at?: string
           from_user_id?: string
+          hidden_by_from_at?: string | null
+          hidden_by_to_at?: string | null
           id?: string
           kind?: string
           notes?: string | null
@@ -2207,6 +2213,21 @@ export type Database = {
           p_user_id: string
         }
         Returns: boolean
+      }
+      hide_favorite_share: {
+        Args: {
+          p_share_id: string
+        }
+        Returns: undefined
+      }
+      reactivate_favorite_share: {
+        Args: {
+          p_tender_id: string
+          p_to_user_id: string
+          p_kind: string
+          p_notes?: string | null
+        }
+        Returns: string
       }
       record_recent_search: {
         Args: {

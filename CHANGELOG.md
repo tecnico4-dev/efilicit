@@ -15,6 +15,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Alertas: borrar es irreversible (modal Aceptar/Cancelar/×; sin toast Revertir). `notification_queue.alert_id` pasa a `ON DELETE CASCADE` (local).
 - Alertas cola: el job escribe `tender_id` tipado y hace `ON CONFLICT (alert_id, tender_id)`; la web usa la columna como fuente de verdad (interés/Relacionadas; fallback `payload` solo legado).
 
+### Changed
+
+- Favoritos peer (`favorites_shared`): quitar es por lado (`hidden_by_from_at` / `hidden_by_to_at` + RPC `hide_favorite_share`); el otro sigue viendo el share hasta que quite; si ambos ocultan se borra la fila. Reenvío reactiva si estaba oculto. Solo local — [ADR 032](docs/adr/032-eficen-members-favorites-shared.md).
+
 ### Added
 
 - Recomendaciones (ADR 034): job `run-recommendations` (dry-run/write), tabla `tender_recommendations`, home + `/recommendations` (Eficen | Subcontrata, umbral sin top-N fijo, boost perfil empresa, semillas comunes/peer/offer_cases). Solo local/Studio.

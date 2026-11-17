@@ -7,7 +7,7 @@ import { useUndoToast } from "@/components/undo-toast";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { removeFavoriteShare } from "@/lib/queries";
 
-/** Quitar una fila de favorites_shared (emisor o destinatario). */
+/** Quitar de mi bandeja (hide por lado; el otro sigue viéndola hasta que quite). */
 export function RemoveFavoriteShareButton({ shareId }: { shareId: string }) {
   const router = useRouter();
   const { showStatus } = useUndoToast();
@@ -23,7 +23,7 @@ export function RemoveFavoriteShareButton({ shareId }: { shareId: string }) {
       showStatus(error.message);
       return;
     }
-    showStatus("Compartición eliminada.");
+    showStatus("Quitada de tu lista.");
     router.refresh();
   }
 

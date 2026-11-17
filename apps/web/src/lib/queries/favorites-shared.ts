@@ -85,7 +85,24 @@ export async function addFavoriteShares(
       continue;
     }
     if (error.code === "23505") {
-      already.push(toUserId);
+      // Fila existente: reactivar solo si algún lado estaba oculto.
+      const { data: status, error: reactivateError } = await client.rpc(
+        "reactivate_favorite_share",
+        {
+          p_tender_id: input.tenderId,
+          p_to_user_id: toUserId,
+          p_kind: input.kind,
+          p_notes: notes,
+        },
+      );
+      if (reactivateError) {
+        return { ok: false, error: new Error(reactivateError.message) };
+      }
+      if (status === "reactivated") {
+        inserted += 1;
+      } else {
+        already.push(toUserId);
+      }
       continue;
     }
     return { ok: false, error: new Error(error.message) };
@@ -94,14 +111,14 @@ export async function addFavoriteShares(
   return { ok: true, inserted, already };
 }
 
+/** Oculta el share para el caller; si ambos lados ocultos, borra la fila. */
 export async function removeFavoriteShare(
   client: SupabaseClient<Database>,
   shareId: string,
 ): Promise<{ error: Error | null }> {
-  const { error } = await client
-    .from("favorites_shared")
-    .delete()
-    .eq("id", shareId);
+  const { error } = await client.rpc("hide_favorite_share", {
+    p_share_id: shareId,
+  });
   if (error) return { error: new Error(error.message) };
   return { error: null };
 }

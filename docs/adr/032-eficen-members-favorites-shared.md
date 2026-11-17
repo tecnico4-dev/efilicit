@@ -25,10 +25,12 @@ Además: compartir una licitación favorita a **personas concretas** (no solo a 
 2. **Drop `company_people`** tras retargetar FKs (sin UI ni datos de producto).
 3. **Rename** `shared_favorites` → **`favorites_common`** (mismo contrato; triggers/FK de `notification_common` siguen al PK `tender_id`). Al insertar, `added_by_display_name` preferirá el nombre del miembro enlazado si existe.
 4. **`favorites_shared`** (peer share):
-   - Columnas: `id`, `tender_id`, `from_user_id`, `to_user_id`, `kind`, `notes`, `created_at`.
+   - Columnas: `id`, `tender_id`, `from_user_id`, `to_user_id`, `kind`, `notes`, `created_at`, `hidden_by_from_at`, `hidden_by_to_at`.
    - **N filas** (una por destinatario). `UNIQUE (tender_id, from_user_id, to_user_id)`. `CHECK (from <> to)`.
-   - RLS: SELECT/DELETE si soy `from` o `to`; INSERT solo como `from` + `is_app_user()`; `to_user_id` debe ser `eficen_members.user_id` activo (no subquery a `users`: RLS own-only impediría enviar a peers).
-   - UI: avión → Común | Personas (multi-select); ruta `/favorites/shared` (enviadas + recibidas). Sin avisos in-app peer en este ADR.
+   - **Quitar por lado:** `hide_favorite_share(id)` pone el timestamp del caller; si ambos lados ocultos → `DELETE` de la fila. SELECT RLS solo filas con el lado propio visible (A puede quitar sin que B pierda el share).
+   - Reenvío tras hide: `reactivate_favorite_share` limpia hides si la fila sigue existiendo; si ambos visibles → «ya enviado».
+   - RLS: SELECT si soy `from`/`to` y mi `hidden_by_*` es null; DELETE si soy party (cleanup); INSERT solo como `from` + `is_app_user()`; `to_user_id` debe ser `eficen_members.user_id` activo (no subquery a `users`: RLS own-only impediría enviar a peers).
+   - UI: avión → Común | Personas (multi-select); ruta `/favorites/shared` (enviadas + recibidas). Sin avisos in-app peer ni papelera en este ADR.
 5. **`users` sigue own-only.** Nombres de compañeros vía `eficen_members` (o copia denormalizada ya existente en Común).
 
 ### Alternativas descartadas
