@@ -301,7 +301,7 @@ export function HomeDashboard({
         </section>
       ) : null}
 
-      <section className="home-anim home-anim-delay-7 mt-10">
+      <section className="home-anim home-anim-delay-7 mt-10 rounded-xl border border-border/80 bg-surface/50 p-5 sm:p-6">
         <HomeRecommendations
           userId={userId}
           propia={recommendations.propia}
@@ -313,7 +313,7 @@ export function HomeDashboard({
 
       {!isEmptyHome ? (
         <div className="mt-10 grid grid-cols-1 items-start gap-8 lg:grid-cols-2 lg:gap-6">
-          <section className="home-anim home-anim-delay-8 min-w-0">
+          <section className="home-anim home-anim-delay-8 min-w-0 rounded-xl border border-border/80 bg-surface/50 p-5 sm:p-6">
             <div className="flex flex-wrap items-baseline justify-between gap-2">
               <h2 className="text-xl font-semibold tracking-tight text-foreground">
                 Última oportunidad
@@ -368,7 +368,7 @@ export function HomeDashboard({
             )}
           </section>
 
-          <section className="home-anim home-anim-delay-8 min-w-0">
+          <section className="home-anim home-anim-delay-8 min-w-0 rounded-xl border border-border/80 bg-surface/50 p-5 sm:p-6">
             <div className="flex flex-wrap items-baseline justify-between gap-2">
               <h2 className="text-xl font-semibold tracking-tight text-foreground">
                 Cambios en tus favoritos
