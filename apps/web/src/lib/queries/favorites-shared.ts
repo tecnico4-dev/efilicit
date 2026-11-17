@@ -1,6 +1,7 @@
 /**
  * Favoritos compartidos peer-to-peer (ADR 032).
  * N filas; UNIQUE (tender_id, from_user_id, to_user_id).
+ * Quitar = hide por lado; DELETE solo si ambos ocultos.
  */
 import type { Database } from "@efilicit/types";
 import type { SupabaseClient } from "@supabase/supabase-js";
