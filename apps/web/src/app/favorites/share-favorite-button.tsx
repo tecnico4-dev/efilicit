@@ -100,7 +100,8 @@ export function ShareFavoriteButton({
 
   async function onPlaneClick() {
     if (pending) return;
-    setDestination("common");
+    // Si ya está en Común: mismo modal, pero destinatarios premarcados.
+    setDestination(alreadyInCommon ? "people" : "common");
     setSendKind(kind);
     setNotes("");
     setError(null);
@@ -295,13 +296,21 @@ export function ShareFavoriteButton({
                     Destino
                   </legend>
                   <div className="mt-2 flex flex-wrap items-center gap-x-6 gap-y-2">
-                    <label className="inline-flex cursor-pointer items-center gap-2 text-sm">
+                    <label
+                      className={cn(
+                        "inline-flex items-center gap-2 text-sm",
+                        alreadyInCommon
+                          ? "cursor-default text-muted-foreground/55"
+                          : "cursor-pointer text-foreground",
+                      )}
+                    >
                       <input
                         type="radio"
                         name="share-destination"
                         checked={destination === "common"}
-                        disabled={pending}
+                        disabled={pending || alreadyInCommon}
                         onChange={() => {
+                          if (alreadyInCommon) return;
                           setDestination("common");
                           setError(null);
                         }}
@@ -309,14 +318,14 @@ export function ShareFavoriteButton({
                       <span>
                         Carpeta común
                         {alreadyInCommon ? (
-                          <span className="text-muted-foreground">
+                          <span className="text-muted-foreground/55">
                             {" "}
                             (ya está)
                           </span>
                         ) : null}
                       </span>
                     </label>
-                    <label className="inline-flex cursor-pointer items-center gap-2 text-sm">
+                    <label className="inline-flex cursor-pointer items-center gap-2 text-sm text-foreground">
                       <input
                         type="radio"
                         name="share-destination"
