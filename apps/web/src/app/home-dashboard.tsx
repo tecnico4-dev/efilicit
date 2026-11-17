@@ -19,7 +19,10 @@ import type {
   SharedFavoriteWithTender,
 } from "@/lib/queries";
 import type { Database } from "@efilicit/types";
-import { HomeFeedCarousel } from "./home-feed-carousel";
+import {
+  HomeFeedCarousel,
+  type HomeFeedSlide,
+} from "./home-feed-carousel";
 import { HomeRecommendations } from "./home-recommendations";
 
 const HOME_SHARED_PREVIEW = 5;
@@ -315,9 +318,16 @@ export function HomeDashboard({
         </section>
       ) : null}
 
-      <HomeFeedCarousel
-        slides={[
-          {
+      {(() => {
+        const hasRecommendations =
+          recommendations.propia.length > 0 ||
+          recommendations.subcontrata.length > 0;
+        const hasFavoritesSlide = favorites.length > 0;
+        const hasStatusChanges = recentNotifications.length > 0;
+        const slides: HomeFeedSlide[] = [];
+
+        if (hasRecommendations) {
+          slides.push({
             id: "recommendations",
             label: "Recomendadas para ti",
             content: (
@@ -330,35 +340,36 @@ export function HomeDashboard({
                 showHeading={false}
               />
             ),
-          },
-          {
+          });
+        }
+
+        if (hasFavoritesSlide) {
+          slides.push({
             id: "favorites",
             label: "Tus favoritos",
             content: (
-              <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-2 lg:gap-6">
+              <div
+                className={
+                  hasStatusChanges
+                    ? "grid grid-cols-1 items-start gap-8 lg:grid-cols-2 lg:gap-6"
+                    : "grid grid-cols-1 items-start"
+                }
+              >
                 <section className="min-w-0">
                   <div className="flex flex-wrap items-baseline justify-between gap-2">
                     <h2 className="text-xl font-semibold tracking-tight text-foreground">
                       Última oportunidad
                     </h2>
-                    {favorites.length > 0 ? (
-                      <Link
-                        href="/favorites/tenders"
-                        className="text-sm font-medium text-link hover:underline"
-                      >
-                        Ver favoritos
-                      </Link>
-                    ) : null}
+                    <Link
+                      href="/favorites/tenders"
+                      className="text-sm font-medium text-link hover:underline"
+                    >
+                      Ver favoritos
+                    </Link>
                   </div>
                   {attention.length === 0 ? (
                     <p className="mt-4 text-sm text-muted-foreground">
-                      Aún no tienes favoritos.{" "}
-                      <Link
-                        href="/search"
-                        className="font-medium text-link hover:underline"
-                      >
-                        Buscar
-                      </Link>
+                      Ninguna con plazo próximo o reciente.
                     </p>
                   ) : (
                     <ul className="mt-4 divide-y divide-border border-y border-border">
@@ -394,23 +405,19 @@ export function HomeDashboard({
                   )}
                 </section>
 
-                <section className="min-w-0">
-                  <div className="flex flex-wrap items-baseline justify-between gap-2">
-                    <h2 className="text-xl font-semibold tracking-tight text-foreground">
-                      Cambios de estado
-                    </h2>
-                    <Link
-                      href="/notifications"
-                      className="text-sm font-medium text-link hover:underline"
-                    >
-                      Ver todas
-                    </Link>
-                  </div>
-                  {recentNotifications.length === 0 ? (
-                    <p className="mt-4 text-sm text-muted-foreground">
-                      Sin cambios recientes.
-                    </p>
-                  ) : (
+                {hasStatusChanges ? (
+                  <section className="min-w-0">
+                    <div className="flex flex-wrap items-baseline justify-between gap-2">
+                      <h2 className="text-xl font-semibold tracking-tight text-foreground">
+                        Cambios de estado
+                      </h2>
+                      <Link
+                        href="/notifications"
+                        className="text-sm font-medium text-link hover:underline"
+                      >
+                        Ver todas
+                      </Link>
+                    </div>
                     <ul className="mt-4 divide-y divide-border border-y border-border">
                       {recentNotifications.map((n) => (
                         <li key={n.eventId}>
@@ -435,15 +442,17 @@ export function HomeDashboard({
                         </li>
                       ))}
                     </ul>
-                  )}
-                </section>
+                  </section>
+                ) : null}
               </div>
             ),
-          },
-          {
-            id: "shared",
-            label: "Últimas compartidas",
-            content: (
+          });
+        }
+
+        slides.push({
+          id: "shared",
+          label: "Últimas compartidas",
+          content: (
               <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-2 lg:gap-6">
                 <section className="min-w-0">
                   <div className="flex flex-wrap items-baseline justify-between gap-2">
@@ -556,9 +565,10 @@ export function HomeDashboard({
                 </section>
               </div>
             ),
-          },
-        ]}
-      />
+          });
+
+        return <HomeFeedCarousel slides={slides} />;
+      })()}
     </main>
   );
 }

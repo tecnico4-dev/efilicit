@@ -142,8 +142,38 @@ export function HomeRecommendations({
   compact?: boolean;
   showHeading?: boolean;
 }) {
-  const hasAny = propia.length > 0 || subcontrata.length > 0;
+  const hasPropia = propia.length > 0;
+  const hasSub = subcontrata.length > 0;
+  const hasAny = hasPropia || hasSub;
   const showEmptyHint = !computedAt;
+  /** Home/carrusel: solo columnas con ítems. Página dedicada: ambas si hace falta el vacío. */
+  const columns =
+    !showHeading && compact
+      ? ([
+          hasPropia
+            ? ({ kind: "propia" as const, label: "Para Eficen", items: propia })
+            : null,
+          hasSub
+            ? ({
+                kind: "subcontrata" as const,
+                label: "Para Subcontrata",
+                items: subcontrata,
+              })
+            : null,
+        ].filter(Boolean) as Array<{
+          kind: RecommendationProfileKind;
+          label: string;
+          items: RecommendationItem[];
+        }>)
+      : [
+          { kind: "propia" as const, label: "Para Eficen", items: propia },
+          {
+            kind: "subcontrata" as const,
+            label: "Para Subcontrata",
+            items: subcontrata,
+          },
+        ];
+  const dual = columns.length > 1;
 
   return (
     <div>
@@ -178,40 +208,50 @@ export function HomeRecommendations({
         </div>
       ) : null}
 
-      <div
-        className={
-          showHeading ? "mt-4 grid gap-6 md:grid-cols-2" : "grid gap-6 md:grid-cols-2"
-        }
-      >
-        <ProfileColumn
-          kind="propia"
-          label="Para Eficen"
-          items={propia}
-          userId={userId}
-          showEmptyHint={showEmptyHint}
-        />
-        <ProfileColumn
-          kind="subcontrata"
-          label="Para Subcontrata"
-          items={subcontrata}
-          userId={userId}
-          showEmptyHint={showEmptyHint}
-        />
-      </div>
+      {!hasAny && !showHeading ? null : (
+        <div
+          className={
+            showHeading
+              ? dual
+                ? "mt-4 grid gap-6 md:grid-cols-2"
+                : "mt-4 grid gap-6"
+              : dual
+                ? "grid gap-6 md:grid-cols-2"
+                : "grid gap-6"
+          }
+        >
+          {columns.map((col) => (
+            <ProfileColumn
+              key={col.kind}
+              kind={col.kind}
+              label={col.label}
+              items={col.items}
+              userId={userId}
+              showEmptyHint={showEmptyHint}
+            />
+          ))}
+        </div>
+      )}
 
-      {computedAt ? (
+      {showHeading ? (
+        computedAt ? (
+          <p className="mt-3 text-xs text-muted-foreground">
+            Actualizado el {formatDateTimeMadrid(computedAt)}
+            {!hasAny ? " · ninguna superó el umbral" : null}
+          </p>
+        ) : (
+          <p className="mt-3 text-xs text-muted-foreground">
+            Aún no hay cálculo. En local:{" "}
+            <code className="rounded bg-muted px-1">
+              run-recommendations --write
+            </code>
+          </p>
+        )
+      ) : computedAt ? (
         <p className="mt-3 text-xs text-muted-foreground">
           Actualizado el {formatDateTimeMadrid(computedAt)}
-          {!hasAny ? " · ninguna superó el umbral" : null}
         </p>
-      ) : (
-        <p className="mt-3 text-xs text-muted-foreground">
-          Aún no hay cálculo. En local:{" "}
-          <code className="rounded bg-muted px-1">
-            run-recommendations --write
-          </code>
-        </p>
-      )}
+      ) : null}
     </div>
   );
 }
