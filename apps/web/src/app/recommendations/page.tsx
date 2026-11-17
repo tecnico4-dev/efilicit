@@ -69,7 +69,7 @@ export default async function RecommendationsPage() {
           Recomendaciones para ti
         </h1>
         {data.computedAt ? (
-          <p className="pointer-events-none absolute right-0 top-full mt-5 text-xs text-muted-foreground">
+          <p className="pointer-events-none absolute right-0 top-[calc(100%+2rem-0.5rem)] -translate-y-full text-xs text-muted-foreground">
             Actualizado el {formatDateTimeMadrid(data.computedAt)}
           </p>
         ) : null}
