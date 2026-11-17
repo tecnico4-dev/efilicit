@@ -412,7 +412,7 @@ export function HomeDashboard({
             )}
           </section>
         </div>
-      )}
+      ) : null}
     </main>
   );
 }
