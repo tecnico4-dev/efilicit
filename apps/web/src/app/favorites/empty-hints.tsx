@@ -44,16 +44,5 @@ export function EmptySharedFavoritesHint() {
 
 /** Vacío de compartidas peer. */
 export function EmptyPeerSharesHint() {
-  return (
-    <>
-      Aún no hay licitaciones compartidas contigo ni enviadas por ti. Desde{" "}
-      <Link
-        href="/favorites/tenders"
-        className="font-medium text-link hover:underline"
-      >
-        Licitaciones favoritas
-      </Link>{" "}
-      pulsa el avión → Personas.
-    </>
-  );
+  return <>Aún no tienes licitaciones compartidas.</>;
 }
