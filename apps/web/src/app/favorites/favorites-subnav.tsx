@@ -97,6 +97,7 @@ function CommonIcon() {
   );
 }
 
+/** Share clásico: un nodo → dos (más legible a 16px). */
 function PeerShareIcon() {
   return (
     <svg
@@ -109,11 +110,11 @@ function PeerShareIcon() {
       className="size-4"
       aria-hidden
     >
-      <circle cx="8" cy="8" r="2.5" />
-      <circle cx="16" cy="8" r="2.5" />
-      <circle cx="12" cy="16.5" r="2.5" />
-      <path d="M9.8 9.5 11 14.2" />
-      <path d="M14.2 9.5 13 14.2" />
+      <circle cx="18" cy="5" r="2.5" />
+      <circle cx="6" cy="12" r="2.5" />
+      <circle cx="18" cy="19" r="2.5" />
+      <path d="M8.3 10.9 15.7 6.1" />
+      <path d="M8.3 13.1 15.7 17.9" />
     </svg>
   );
 }
