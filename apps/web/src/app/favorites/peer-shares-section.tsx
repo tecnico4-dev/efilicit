@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { CriteriaFilterOptionsProp } from "@/components/criteria/criteria-filters";
 import type { FavoriteShareRow } from "@/lib/queries";
 import type { SearchCriteria } from "@efilicit/types";
@@ -29,8 +29,8 @@ function emptyFilterPanel() {
 }
 
 /**
- * Licitaciones compartidas: listado al mismo ancho/sitio que Común (max-w-7xl);
- * rail de bandeja a la izquierda, fuera de ese ancho, con hueco.
+ * Licitaciones compartidas: listado al mismo ancho/sitio que Común;
+ * rail de bandeja solo si hay enviadas y recibidas.
  */
 export function PeerSharesSection({
   items,
@@ -57,10 +57,22 @@ export function PeerSharesSection({
     [byCriteria],
   );
 
+  /** Como pestañas kind: solo si hay ambos sentidos. */
+  const showBandejaRail =
+    bandejaCounts.sent > 0 && bandejaCounts.received > 0;
+
+  useEffect(() => {
+    if (!showBandejaRail && bandeja !== "todas") {
+      setBandeja("todas");
+    }
+  }, [showBandejaRail, bandeja]);
+
+  const effectiveBandeja: ShareBandeja = showBandejaRail ? bandeja : "todas";
+
   const filtered = useMemo(() => {
-    if (bandeja === "todas") return byCriteria;
-    return byCriteria.filter((i) => i.direction === bandeja);
-  }, [byCriteria, bandeja]);
+    if (effectiveBandeja === "todas") return byCriteria;
+    return byCriteria.filter((i) => i.direction === effectiveBandeja);
+  }, [byCriteria, effectiveBandeja]);
 
   const propias = useMemo(
     () => filtered.filter((i) => i.kind === "propia"),
@@ -71,29 +83,35 @@ export function PeerSharesSection({
     [filtered],
   );
 
-  return (
-    // Mismo ancho de contenido que Común / favoritos propios (padding del main).
-    // El rail se posiciona a la izquierda, fuera, con el mismo hueco (mr-3).
-    <div className="relative">
-      <div className="pointer-events-none absolute inset-y-0 right-full z-10 mr-3 hidden w-[8.5rem] md:block">
-        <div className="pointer-events-auto sticky top-24 pt-11">
-          <ShareDirectionRail
-            variant="desktop"
-            value={bandeja}
-            onChange={setBandeja}
-            counts={bandejaCounts}
-          />
-        </div>
-      </div>
+  /** Circulito Enviada/Recibida: en Todas o si no hay rail. */
+  const showDirectionBubble =
+    !showBandejaRail || effectiveBandeja === "todas";
 
-      <div className="mb-3 md:hidden">
-        <ShareDirectionRail
-          variant="mobile"
-          value={bandeja}
-          onChange={setBandeja}
-          counts={bandejaCounts}
-        />
-      </div>
+  return (
+    <div className="relative">
+      {showBandejaRail ? (
+        <>
+          <div className="pointer-events-none absolute inset-y-0 right-full z-10 mr-3 hidden w-[8.5rem] md:block">
+            <div className="pointer-events-auto sticky top-24 pt-11">
+              <ShareDirectionRail
+                variant="desktop"
+                value={bandeja}
+                onChange={setBandeja}
+                counts={bandejaCounts}
+              />
+            </div>
+          </div>
+
+          <div className="mb-3 md:hidden">
+            <ShareDirectionRail
+              variant="mobile"
+              value={bandeja}
+              onChange={setBandeja}
+              counts={bandejaCounts}
+            />
+          </div>
+        </>
+      ) : null}
 
       <FavoriteKindTabs
         ariaLabel="Tipo en Licitaciones compartidas"
@@ -107,14 +125,21 @@ export function PeerSharesSection({
           filtered.length === 0 ? (
             emptyFilterPanel()
           ) : (
-            <PaginatedPeerShares items={filtered} />
+            <PaginatedPeerShares
+              items={filtered}
+              showDirectionBubble={showDirectionBubble}
+            />
           )
         }
         propias={
           propias.length === 0 ? (
             emptyKindPanel()
           ) : (
-            <PaginatedPeerShares items={propias} showKindBubble={false} />
+            <PaginatedPeerShares
+              items={propias}
+              showKindBubble={false}
+              showDirectionBubble={showDirectionBubble}
+            />
           )
         }
         subcontratas={
@@ -124,6 +149,7 @@ export function PeerSharesSection({
             <PaginatedPeerShares
               items={subcontratas}
               showKindBubble={false}
+              showDirectionBubble={showDirectionBubble}
             />
           )
         }

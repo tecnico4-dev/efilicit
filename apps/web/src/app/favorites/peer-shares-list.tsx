@@ -25,12 +25,15 @@ export function PeerSharesList({
   bordered = true,
   noteWide = false,
   showKindBubble = true,
+  showDirectionBubble = true,
 }: {
   items: FavoriteShareRow[];
   bordered?: boolean;
   noteWide?: boolean;
   /** False en pestaña Eficen/Subcontrata (todas son del mismo kind). */
   showKindBubble?: boolean;
+  /** False en bandeja Enviadas/Recibidas (todas son del mismo sentido). */
+  showDirectionBubble?: boolean;
 }) {
   return (
     <ul
@@ -67,7 +70,9 @@ export function PeerSharesList({
               <div className="mt-1.5 flex flex-col gap-2 sm:flex-row sm:items-start sm:gap-3">
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                    <ShareDirectionBubble direction={row.direction} />
+                    {showDirectionBubble ? (
+                      <ShareDirectionBubble direction={row.direction} />
+                    ) : null}
                     {showKindBubble ? (
                       <FavoriteKindBubble kind={row.kind} />
                     ) : null}

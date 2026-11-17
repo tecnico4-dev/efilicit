@@ -14,9 +14,11 @@ export const PEER_SHARES_PAGE_SIZE = DEFAULT_PAGE_SIZE;
 export function PaginatedPeerShares({
   items,
   showKindBubble = true,
+  showDirectionBubble = true,
 }: {
   items: FavoriteShareRow[];
   showKindBubble?: boolean;
+  showDirectionBubble?: boolean;
 }) {
   const total = items.length;
   const showPager = total > PEER_SHARES_PAGE_SIZE;
@@ -51,6 +53,7 @@ export function PaginatedPeerShares({
           bordered={false}
           noteWide
           showKindBubble={showKindBubble}
+          showDirectionBubble={showDirectionBubble}
         />
       </div>
     );
@@ -70,6 +73,7 @@ export function PaginatedPeerShares({
           bordered={false}
           noteWide
           showKindBubble={showKindBubble}
+          showDirectionBubble={showDirectionBubble}
         />
       </div>
       <div className="shrink-0 border-t border-border bg-background px-4 py-3">
