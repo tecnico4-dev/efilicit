@@ -164,6 +164,7 @@ export {
   type TenderScore,
 } from "./tender-ratings";
 export {
+  hasOwnVisibleRecommendations,
   listOwnRecommendations,
   type RecommendationItem,
   type RecommendationProfileKind,

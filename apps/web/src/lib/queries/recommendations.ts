@@ -40,6 +40,42 @@ function reasonLabel(reason: Json): string {
 }
 
 /**
+ * ¿Queda alguna recomendación visible (no valorada ni en favoritos)?
+ * Para el nav «Para ti»: barato (sin join a tenders).
+ */
+export async function hasOwnVisibleRecommendations(
+  client: SupabaseClient<Database>,
+  input: { userId: string },
+): Promise<{ data: boolean; error: Error | null }> {
+  const { data: rows, error } = await client
+    .from("tender_recommendations")
+    .select("tender_id")
+    .eq("user_id", input.userId);
+
+  if (error) return { data: false, error: new Error(error.message) };
+  if (!rows?.length) return { data: false, error: null };
+
+  const { data: ratings } = await client
+    .from("tender_ratings")
+    .select("tender_id")
+    .eq("user_id", input.userId);
+  const { data: favs } = await client
+    .from("favorites")
+    .select("tender_id")
+    .eq("user_id", input.userId);
+
+  const hide = new Set<string>([
+    ...(ratings ?? []).map((r) => r.tender_id),
+    ...(favs ?? []).map((f) => f.tender_id),
+  ]);
+
+  return {
+    data: rows.some((r) => !hide.has(r.tender_id)),
+    error: null,
+  };
+}
+
+/**
  * Lista recomendaciones del usuario, agrupadas por perfil.
  * `limitPerKind` acota la home; omitir/null = todas las que pasaron el umbral.
  * Descarta tenders que el usuario haya valorado o guardado tras el cálculo.

@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { createFakeSupabaseClient } from "@/test/fake-supabase";
-import { listOwnRecommendations } from "./recommendations";
+import {
+  hasOwnVisibleRecommendations,
+  listOwnRecommendations,
+} from "./recommendations";
 
 describe("listOwnRecommendations", () => {
   it("agrupa por perfil, aplica limit y oculta valoradas/favoritas", async () => {
@@ -82,5 +85,62 @@ describe("listOwnRecommendations", () => {
       "Recomendada según tu interés",
     );
     expect(data.computedAt).toBe("2026-11-17T10:00:00Z");
+  });
+
+  it("hasOwnVisibleRecommendations ignora valoradas/favoritas", async () => {
+    const client = createFakeSupabaseClient({
+      tables: {
+        tender_recommendations: {
+          byMethod: {
+            select: {
+              data: [{ tender_id: "t1" }, { tender_id: "t2" }],
+            },
+          },
+        },
+        tender_ratings: {
+          byMethod: {
+            select: { data: [{ tender_id: "t1" }] },
+          },
+        },
+        favorites: {
+          byMethod: {
+            select: { data: [{ tender_id: "t2" }] },
+          },
+        },
+      },
+    });
+
+    const hidden = await hasOwnVisibleRecommendations(client as never, {
+      userId: "u1",
+    });
+    expect(hidden.error).toBeNull();
+    expect(hidden.data).toBe(false);
+
+    const withVisible = createFakeSupabaseClient({
+      tables: {
+        tender_recommendations: {
+          byMethod: {
+            select: {
+              data: [{ tender_id: "t1" }, { tender_id: "t3" }],
+            },
+          },
+        },
+        tender_ratings: {
+          byMethod: {
+            select: { data: [{ tender_id: "t1" }] },
+          },
+        },
+        favorites: {
+          byMethod: {
+            select: { data: [] },
+          },
+        },
+      },
+    });
+    const visible = await hasOwnVisibleRecommendations(withVisible as never, {
+      userId: "u1",
+    });
+    expect(visible.error).toBeNull();
+    expect(visible.data).toBe(true);
   });
 });

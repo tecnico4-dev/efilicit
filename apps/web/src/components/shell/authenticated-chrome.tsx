@@ -6,6 +6,7 @@ import type { DigestFrequency } from "@/lib/queries";
 import { Suspense } from "react";
 import { AppHeader } from "./app-header";
 import { NotificationsButton } from "./notifications-button";
+import { RecommendationsNavGate } from "./recommendations-nav-gate";
 import { UnreadNotificationsButton } from "./unread-notifications-button";
 
 function displayNameFrom(
@@ -47,6 +48,12 @@ export async function AuthenticatedChrome() {
     <NotificationsButton hasUnread={false} />
   );
 
+  const recommendationsNav = userId ? (
+    <Suspense fallback={null}>
+      <RecommendationsNavGate userId={userId} />
+    </Suspense>
+  ) : null;
+
   return (
     <AppHeader
       isAuthenticated
@@ -54,6 +61,7 @@ export async function AuthenticatedChrome() {
       userId={userId}
       digestFrequency={digestFrequency}
       notifications={notifications}
+      recommendationsNav={recommendationsNav}
     />
   );
 }
