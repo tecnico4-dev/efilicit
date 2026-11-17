@@ -118,6 +118,8 @@ export function HomeRecommendations({
   subcontrata,
   computedAt,
   compact = false,
+  /** Si false, el título lo pone el carrusel del home. */
+  showHeading = true,
 }: {
   userId: string;
   propia: RecommendationItem[];
@@ -125,33 +127,50 @@ export function HomeRecommendations({
   computedAt: string | null;
   /** Home: mensajes de vacío más cortos si nunca hubo cálculo. */
   compact?: boolean;
+  showHeading?: boolean;
 }) {
   const hasAny = propia.length > 0 || subcontrata.length > 0;
   const showEmptyHint = !computedAt;
 
   return (
     <div>
-      <div className="flex flex-wrap items-end justify-between gap-2">
-        <div>
-          <h2 className="text-xl font-semibold tracking-tight text-foreground">
-            Recomendadas para ti
-          </h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Según tus valoraciones y favoritos, con un empujón del perfil Eficen.
-            Solo aparecen si encajan de verdad.
-          </p>
+      {showHeading ? (
+        <div className="flex flex-wrap items-end justify-between gap-2">
+          <div>
+            <h2 className="text-xl font-semibold tracking-tight text-foreground">
+              Recomendadas para ti
+            </h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Según tus valoraciones y favoritos, con un empujón del perfil
+              Eficen. Solo aparecen si encajan de verdad.
+            </p>
+          </div>
+          {compact ? (
+            <Link
+              href="/recommendations"
+              className="text-sm font-medium text-primary hover:underline"
+            >
+              Ver todas
+            </Link>
+          ) : null}
         </div>
-        {compact ? (
-          <Link
-            href="/recommendations"
-            className="text-sm font-medium text-primary hover:underline"
-          >
-            Ver todas
-          </Link>
-        ) : null}
-      </div>
+      ) : (
+        <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
+          <p className="text-sm text-muted-foreground">
+            Según tus valoraciones y favoritos. Solo si encajan de verdad.
+          </p>
+          {compact ? (
+            <Link
+              href="/recommendations"
+              className="text-sm font-medium text-primary hover:underline"
+            >
+              Ver todas
+            </Link>
+          ) : null}
+        </div>
+      )}
 
-      <div className="mt-4 grid gap-6 md:grid-cols-2">
+      <div className={showHeading ? "mt-4 grid gap-6 md:grid-cols-2" : "mt-3 grid gap-6 md:grid-cols-2"}>
         <ProfileColumn
           kind="propia"
           label="Para Eficen"
