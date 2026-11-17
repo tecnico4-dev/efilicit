@@ -21,7 +21,7 @@ export function NotificationsFolderTabs({
 }) {
   return (
     <div
-      className="flex flex-wrap items-end gap-1 px-1"
+      className="flex flex-wrap items-end gap-1"
       role="tablist"
       aria-label="Filtro"
     >
