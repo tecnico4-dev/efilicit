@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Recomendaciones (ADR 034): job `run-recommendations` (dry-run/write), tabla `tender_recommendations`, home + `/recommendations` (Eficen | Subcontrata, umbral sin top-N fijo, boost perfil empresa, semillas comunes/peer/offer_cases). Solo local/Studio.
 - Directorio Eficen (`eficen_members`) + favoritos peer (`favorites_shared`, N filas / unique por par+tender) y pestaña Licitaciones compartidas; Común renombrado a `favorites_common`; Mis licitaciones usa el directorio en lugar de `company_people` — [ADR 032](docs/adr/032-eficen-members-favorites-shared.md). Solo local hasta migración remota pedida.
 - `favorites_shared` INSERT RLS: `to_user_id` se valida contra `eficen_members` activos (no contra `users`, cuyo SELECT own-only bloqueaba enviar a compañeros). Solo local.
 - Retención canónica: workflow manual `cleanup-tenders` + `scripts/purge_tenders.py` (dry-run/apply; plazo ≥ N meses; fuente opcional; escudos offer/favoritos/común/ratings/alerta viva/abiertas; poda `notification_emails`) — [ADR 031](docs/adr/031-retencion-purge-tenders.md). Tests unitarios en `ingestion/tests/test_purge_tenders.py`.

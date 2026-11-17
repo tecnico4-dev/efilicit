@@ -429,6 +429,48 @@ export type Database = {
           },
         ]
       }
+      tender_recommendations: {
+        Row: {
+          computed_at: string
+          profile_kind: string
+          reason: Json
+          score: number
+          tender_id: string
+          user_id: string
+        }
+        Insert: {
+          computed_at?: string
+          profile_kind: string
+          reason?: Json
+          score: number
+          tender_id: string
+          user_id: string
+        }
+        Update: {
+          computed_at?: string
+          profile_kind?: string
+          reason?: Json
+          score?: number
+          tender_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tender_recommendations_tender_id_fkey"
+            columns: ["tender_id"]
+            isOneToOne: false
+            referencedRelation: "tenders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tender_recommendations_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       offer_cases: {
         Row: {
           created_at: string

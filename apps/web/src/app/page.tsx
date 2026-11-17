@@ -8,6 +8,7 @@ import {
   countUnreadNotifications,
   listOwnAlerts,
   listOwnFavorites,
+  listOwnRecommendations,
   listOwnSavedSearches,
   listRecentFavoriteStatusNotifications,
   listSharedFavorites,
@@ -52,6 +53,7 @@ export default async function Home() {
     searchesResult,
     unreadResult,
     recentResult,
+    recommendationsResult,
   ] = await Promise.all([
     listOwnAlerts(supabase),
     listOwnFavorites(supabase),
@@ -62,6 +64,7 @@ export default async function Home() {
       userId,
       limit: 3,
     }),
+    listOwnRecommendations(supabase, { userId, limitPerKind: 5 }),
   ]);
 
   const loadErrors = [
@@ -71,11 +74,13 @@ export default async function Home() {
     searchesResult.error?.message,
     unreadResult.error?.message,
     recentResult.error?.message,
+    recommendationsResult.error?.message,
   ].filter((m): m is string => Boolean(m));
 
   return (
     <HomeDashboard
       displayName={profile.data.display_name?.trim() || ""}
+      userId={userId}
       alerts={alertsResult.data}
       favorites={favoritesResult.data}
       sharedFavorites={sharedResult.data}
@@ -83,6 +88,7 @@ export default async function Home() {
       digestFrequency={digestFrequency}
       unreadCount={unreadResult.data}
       recentNotifications={recentResult.data}
+      recommendations={recommendationsResult.data}
       loadError={
         loadErrors.length
           ? `No se pudo cargar parte del inicio: ${loadErrors.join(" · ")}`

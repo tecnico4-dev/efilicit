@@ -163,6 +163,11 @@ export {
   type TenderScore,
 } from "./tender-ratings";
 export {
+  listOwnRecommendations,
+  type RecommendationItem,
+  type RecommendationProfileKind,
+} from "./recommendations";
+export {
   deleteOwnRecentSearch,
   listOwnRecentSearches,
   recordOwnRecentSearch,

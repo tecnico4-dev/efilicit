@@ -13,9 +13,11 @@ import type {
   DigestFrequency,
   FavoriteStatusNotification,
   FavoriteWithTender,
+  RecommendationItem,
   SharedFavoriteWithTender,
 } from "@/lib/queries";
 import type { Database } from "@efilicit/types";
+import { HomeRecommendations } from "./home-recommendations";
 
 type AlertRow = Database["public"]["Tables"]["alerts"]["Row"];
 type SavedSearchRow = Database["public"]["Tables"]["saved_searches"]["Row"];
@@ -135,6 +137,7 @@ function formatWhen(iso: string): string {
 
 export function HomeDashboard({
   displayName,
+  userId,
   alerts,
   favorites,
   sharedFavorites,
@@ -142,9 +145,11 @@ export function HomeDashboard({
   digestFrequency,
   unreadCount,
   recentNotifications,
+  recommendations,
   loadError = null,
 }: {
   displayName: string;
+  userId: string;
   alerts: AlertRow[];
   favorites: FavoriteWithTender[];
   sharedFavorites: SharedFavoriteWithTender[];
@@ -152,6 +157,11 @@ export function HomeDashboard({
   digestFrequency: DigestFrequency;
   unreadCount: number;
   recentNotifications: FavoriteStatusNotification[];
+  recommendations: {
+    propia: RecommendationItem[];
+    subcontrata: RecommendationItem[];
+    computedAt: string | null;
+  };
   loadError?: string | null;
 }) {
   const activeAlerts = alerts.filter((a) => a.is_active);
@@ -289,9 +299,21 @@ export function HomeDashboard({
             </Link>
           </div>
         </section>
-      ) : (
+      ) : null}
+
+      <section className="home-anim home-anim-delay-7 mt-10">
+        <HomeRecommendations
+          userId={userId}
+          propia={recommendations.propia}
+          subcontrata={recommendations.subcontrata}
+          computedAt={recommendations.computedAt}
+          compact
+        />
+      </section>
+
+      {!isEmptyHome ? (
         <div className="mt-10 grid grid-cols-1 items-start gap-8 lg:grid-cols-2 lg:gap-6">
-          <section className="home-anim home-anim-delay-7 min-w-0">
+          <section className="home-anim home-anim-delay-8 min-w-0">
             <div className="flex flex-wrap items-baseline justify-between gap-2">
               <h2 className="text-xl font-semibold tracking-tight text-foreground">
                 Última oportunidad

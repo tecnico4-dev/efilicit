@@ -115,6 +115,12 @@ export function AppHeader({
               <NavAlertIcon />
               Alertas
             </Link>
+            <Link
+              href="/recommendations"
+              className={navClass(pathname.startsWith("/recommendations"))}
+            >
+              Recomendadas
+            </Link>
           </nav>
 
           <div className="flex items-center gap-2">

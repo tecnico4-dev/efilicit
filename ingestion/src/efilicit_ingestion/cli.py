@@ -18,6 +18,10 @@ from efilicit_ingestion.run_alerts import AlertsRunConfig, format_result as form
 from efilicit_ingestion.run_catalunya import CatalunyaRunConfig, run_catalunya
 from efilicit_ingestion.run_euskadi import EuskadiRunConfig, run_euskadi
 from efilicit_ingestion.run_placsp import PlacspRunConfig, format_result, run_placsp
+from efilicit_ingestion.run_recommendations import (
+    RecommendationsRunConfig,
+    run_recommendations,
+)
 
 _SYNDICATIONS: dict[str, PlacspSyndication] = {
     PLACSP.source_code: PLACSP,
@@ -226,6 +230,31 @@ def build_parser() -> argparse.ArgumentParser:
         ),
     )
 
+    recommendations = sub.add_parser(
+        "run-recommendations",
+        help=(
+            "Recomendaciones batch (ADR 034): ratings + favoritos + perfil Eficen. "
+            "Por defecto dry-run (fixtures, sin DB)."
+        ),
+    )
+    recommendations.set_defaults(dry_run=True)
+    recommendations.add_argument(
+        "--dry-run",
+        action="store_true",
+        dest="dry_run",
+        help="Fixtures en memoria (default seguro).",
+    )
+    recommendations.add_argument(
+        "--write",
+        action="store_false",
+        dest="dry_run",
+        help="Postgres real (EFILICIT_DATABASE_URL).",
+    )
+    recommendations.add_argument(
+        "--user-id",
+        help="Solo recalcular este users.id (UUID).",
+    )
+
     health = sub.add_parser(
         "source-health",
         help=(
@@ -263,6 +292,8 @@ def main(argv: list[str] | None = None) -> int:
         return _cmd_run_euskadi(args)
     if args.command == "run-alerts":
         return _cmd_run_alerts(args)
+    if args.command == "run-recommendations":
+        return _cmd_run_recommendations(args)
     if args.command == "source-health":
         return _cmd_source_health(args)
 
@@ -436,6 +467,25 @@ def _cmd_run_alerts(args: argparse.Namespace) -> int:
     print(format_alerts_result(result))
     if result.drain.digests_failed and not result.dry_run:
         return 1
+    return 0
+
+
+def _cmd_run_recommendations(args: argparse.Namespace) -> int:
+    config = RecommendationsRunConfig(
+        dry_run=bool(args.dry_run),
+        user_id=getattr(args, "user_id", None) or None,
+    )
+    try:
+        result = run_recommendations(config)
+    except Exception as exc:  # noqa: BLE001
+        _print_cli_error(exc)
+        return 1
+
+    mode = "dry-run" if result.dry_run else "write"
+    print(
+        f"recommendations {mode}: users={result.users} written={result.written} "
+        f"by_profile={result.by_profile} cold_skip={result.skipped_cold}"
+    )
     return 0
 
 
