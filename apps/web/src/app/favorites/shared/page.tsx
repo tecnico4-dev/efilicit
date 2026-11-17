@@ -1,8 +1,5 @@
 import type { CriteriaFilterOptionsProp } from "@/components/criteria/criteria-filters";
-import {
-  PAGE_MAIN_FAVORITES_CLASS,
-  PAGE_MAIN_WIDE_CLASS,
-} from "@/components/shell/page-width";
+import { PAGE_MAIN_FAVORITES_CLASS } from "@/components/shell/page-width";
 import { EmptyState, ErrorState } from "@/components/ui/state-message";
 import {
   getSessionProfile,
@@ -47,19 +44,14 @@ export default async function PeerSharedFavoritesPage() {
         ccaaCodesWithTenders: [...filterListed.data.ccaaCodesWithTenders],
       };
 
-  // Ancho completo para que el rail quepa a la izquierda del max-w-7xl del listado.
   return (
-    <main className={PAGE_MAIN_WIDE_CLASS}>
+    <main className={`${PAGE_MAIN_FAVORITES_CLASS} overflow-visible`}>
       {error ? (
-        <div className={PAGE_MAIN_FAVORITES_CLASS}>
-          <ErrorState>{error.message}</ErrorState>
-        </div>
+        <ErrorState>{error.message}</ErrorState>
       ) : items.length === 0 ? (
-        <div className={PAGE_MAIN_FAVORITES_CLASS}>
-          <EmptyState>
-            <EmptyPeerSharesHint />
-          </EmptyState>
-        </div>
+        <EmptyState>
+          <EmptyPeerSharesHint />
+        </EmptyState>
       ) : (
         <PeerSharesSection items={items} filterOptions={filterOptions} />
       )}

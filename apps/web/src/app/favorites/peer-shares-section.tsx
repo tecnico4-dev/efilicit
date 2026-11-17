@@ -72,8 +72,9 @@ export function PeerSharesSection({
   );
 
   return (
-    <div className="relative mx-auto w-full max-w-7xl">
-      {/* Rail fuera del ancho del listado (más a la izquierda), sin unirse al panel. */}
+    // Mismo ancho de contenido que Común / favoritos propios (padding del main).
+    // El rail se posiciona a la izquierda, fuera, con el mismo hueco (mr-3).
+    <div className="relative">
       <div className="pointer-events-none absolute inset-y-0 right-full z-10 mr-3 hidden w-[8.5rem] md:block">
         <div className="pointer-events-auto sticky top-24 pt-11">
           <ShareDirectionRail
