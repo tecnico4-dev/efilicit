@@ -15,21 +15,24 @@ const BANDEJA_OPTIONS: {
 ];
 
 /**
- * Desktop: rail vertical redondeado (hueco respecto al listado).
- * Móvil: desplegable «Bandeja: …».
+ * Desktop: rail vertical redondeado, independiente del listado.
+ * Móvil: desplegable «Bandeja».
  */
 export function ShareDirectionRail({
   value,
   onChange,
   counts,
+  variant,
 }: {
   value: ShareBandeja;
   onChange: (next: ShareBandeja) => void;
   counts: Record<ShareBandeja, number>;
+  /** `mobile` = select; `desktop` = rail vertical. */
+  variant: "mobile" | "desktop";
 }) {
-  return (
-    <>
-      <label className="mb-3 flex flex-col gap-1 text-xs text-muted-foreground md:hidden">
+  if (variant === "mobile") {
+    return (
+      <label className="flex flex-col gap-1 text-xs text-muted-foreground">
         Bandeja
         <select
           value={value}
@@ -44,40 +47,44 @@ export function ShareDirectionRail({
           ))}
         </select>
       </label>
+    );
+  }
 
-      <nav
-        aria-label="Bandeja de compartidas"
-        className="hidden w-[7.25rem] shrink-0 flex-col overflow-hidden rounded-lg border border-border bg-background md:flex"
-      >
-        {BANDEJA_OPTIONS.map((opt, i) => {
-          const active = value === opt.id;
-          return (
-            <button
-              key={opt.id}
-              type="button"
-              aria-current={active ? "page" : undefined}
-              onClick={() => onChange(opt.id)}
+  return (
+    <nav
+      aria-label="Bandeja de compartidas"
+      className="flex w-[8.5rem] shrink-0 flex-col overflow-hidden rounded-lg border border-border bg-background shadow-sm"
+    >
+      {BANDEJA_OPTIONS.map((opt, i) => {
+        const active = value === opt.id;
+        return (
+          <button
+            key={opt.id}
+            type="button"
+            aria-current={active ? "page" : undefined}
+            onClick={() => onChange(opt.id)}
+            className={cn(
+              "inline-flex w-full items-center gap-1.5 px-2.5 py-2 text-left text-sm transition-colors",
+              i > 0 && "border-t border-border",
+              active
+                ? "bg-primary/15 font-semibold text-primary-dark"
+                : "font-medium text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+            )}
+          >
+            <span className="min-w-0 flex-1 truncate">{opt.label}</span>
+            <span
               className={cn(
-                "flex w-full flex-col items-start gap-0.5 px-2.5 py-2.5 text-left text-sm transition-colors",
-                i > 0 && "border-t border-border",
+                "min-w-5 shrink-0 rounded-full px-1.5 py-0.5 text-center text-[11px] font-semibold tabular-nums",
                 active
-                  ? "bg-primary/15 font-semibold text-primary-dark"
-                  : "font-medium text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+                  ? "bg-primary/20 text-primary-dark"
+                  : "bg-muted text-muted-foreground",
               )}
             >
-              <span>{opt.label}</span>
-              <span
-                className={cn(
-                  "text-[11px] font-semibold tabular-nums",
-                  active ? "text-primary-dark/80" : "text-muted-foreground",
-                )}
-              >
-                {counts[opt.id]}
-              </span>
-            </button>
-          );
-        })}
-      </nav>
-    </>
+              {counts[opt.id]}
+            </span>
+          </button>
+        );
+      })}
+    </nav>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type ReactNode } from "react";
+import { useMemo, useState } from "react";
 import type { CriteriaFilterOptionsProp } from "@/components/criteria/criteria-filters";
 import type { FavoriteShareRow } from "@/lib/queries";
 import type { SearchCriteria } from "@efilicit/types";
@@ -28,7 +28,10 @@ function emptyFilterPanel() {
   );
 }
 
-/** Licitaciones compartidas: bandeja + Filtrar + pestañas kind. */
+/**
+ * Licitaciones compartidas: listado al mismo ancho/sitio que Común (max-w-7xl);
+ * rail de bandeja a la izquierda, fuera de ese ancho, con hueco.
+ */
 export function PeerSharesSection({
   items,
   filterOptions,
@@ -68,50 +71,59 @@ export function PeerSharesSection({
     [filtered],
   );
 
-  function wrapPanel(panel: ReactNode) {
-    return (
-      <div className="flex flex-col gap-3 md:flex-row md:items-start">
+  return (
+    <div className="relative mx-auto w-full max-w-7xl">
+      {/* Rail fuera del ancho del listado (más a la izquierda), sin unirse al panel. */}
+      <div className="pointer-events-none absolute inset-y-0 right-full z-10 mr-3 hidden w-[8.5rem] md:block">
+        <div className="pointer-events-auto sticky top-24 pt-11">
+          <ShareDirectionRail
+            variant="desktop"
+            value={bandeja}
+            onChange={setBandeja}
+            counts={bandejaCounts}
+          />
+        </div>
+      </div>
+
+      <div className="mb-3 md:hidden">
         <ShareDirectionRail
+          variant="mobile"
           value={bandeja}
           onChange={setBandeja}
           counts={bandejaCounts}
         />
-        <div className="min-w-0 flex-1">{panel}</div>
       </div>
-    );
-  }
 
-  return (
-    <FavoriteKindTabs
-      ariaLabel="Tipo en Licitaciones compartidas"
-      filterOptions={filterOptions}
-      appliedCriteria={criteria}
-      onApplyFilters={setCriteria}
-      panelWrapper={wrapPanel}
-      todasCount={filtered.length}
-      propiasCount={propias.length}
-      subcontratasCount={subcontratas.length}
-      todas={
-        filtered.length === 0 ? (
-          emptyFilterPanel()
-        ) : (
-          <PaginatedPeerShares items={filtered} />
-        )
-      }
-      propias={
-        propias.length === 0 ? (
-          emptyKindPanel()
-        ) : (
-          <PaginatedPeerShares items={propias} />
-        )
-      }
-      subcontratas={
-        subcontratas.length === 0 ? (
-          emptyKindPanel()
-        ) : (
-          <PaginatedPeerShares items={subcontratas} />
-        )
-      }
-    />
+      <FavoriteKindTabs
+        ariaLabel="Tipo en Licitaciones compartidas"
+        filterOptions={filterOptions}
+        appliedCriteria={criteria}
+        onApplyFilters={setCriteria}
+        todasCount={filtered.length}
+        propiasCount={propias.length}
+        subcontratasCount={subcontratas.length}
+        todas={
+          filtered.length === 0 ? (
+            emptyFilterPanel()
+          ) : (
+            <PaginatedPeerShares items={filtered} />
+          )
+        }
+        propias={
+          propias.length === 0 ? (
+            emptyKindPanel()
+          ) : (
+            <PaginatedPeerShares items={propias} />
+          )
+        }
+        subcontratas={
+          subcontratas.length === 0 ? (
+            emptyKindPanel()
+          ) : (
+            <PaginatedPeerShares items={subcontratas} />
+          )
+        }
+      />
+    </div>
   );
 }
