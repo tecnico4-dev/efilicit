@@ -60,8 +60,9 @@ export function PaginatedFavoriteTenders({
     setPage(1);
   }
 
+  // Con pestañas: sin redondeo superior (evita línea fantasma izq/der bajo el border-b).
   const panelClass = flushTopLeft
-    ? "rounded-lg rounded-tl-none border border-border"
+    ? "rounded-lg rounded-t-none border border-border"
     : "rounded-lg border border-border";
 
   if (!showPager) {

@@ -105,8 +105,9 @@ export function FavoriteKindTabs({
     <section>
       <div
         className={cn(
-          "flex flex-wrap items-end justify-between gap-x-3 gap-y-2",
-          // Con pestañas: línea que une al panel. Sin pestañas: no hay línea fantasma sobre el redondeo.
+          // Misma altura con/sin pestañas para que el listado no salte al cambiar de página.
+          "flex min-h-10 flex-wrap items-end justify-between gap-x-3 gap-y-2",
+          // Con pestañas: línea que une al panel (esquinas superiores del panel a 0).
           showTabs && "border-b border-border",
         )}
       >
@@ -136,7 +137,7 @@ export function FavoriteKindTabs({
             />
           </div>
         ) : (
-          <div className="min-h-9 min-w-0 flex-1" aria-hidden />
+          <div className="min-w-0 flex-1" aria-hidden />
         )}
 
         <FiltersButton
@@ -146,7 +147,7 @@ export function FavoriteKindTabs({
       </div>
 
       <div
-        className={showTabs ? "-mt-px" : "mt-2"}
+        className="-mt-px"
         role={showTabs ? "tabpanel" : undefined}
       >
         {showTabs

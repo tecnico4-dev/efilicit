@@ -17,7 +17,7 @@ function emptyPanel(flushTopLeft: boolean) {
     <p
       className={cn(
         "border border-border px-4 py-8 text-center text-sm text-muted-foreground rounded-lg",
-        flushTopLeft && "rounded-tl-none",
+        flushTopLeft && "rounded-t-none",
       )}
     >
       Ninguna aún.
@@ -30,7 +30,7 @@ function emptyFilterPanel(flushTopLeft: boolean) {
     <p
       className={cn(
         "border border-border px-4 py-8 text-center text-sm text-muted-foreground rounded-lg",
-        flushTopLeft && "rounded-tl-none",
+        flushTopLeft && "rounded-t-none",
       )}
     >
       Ninguna coincide con los filtros.

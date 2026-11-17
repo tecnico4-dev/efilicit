@@ -46,7 +46,7 @@ export function PaginatedSharedFavorites({
   }
 
   const panelClass = flushTopLeft
-    ? "rounded-lg rounded-tl-none border border-border"
+    ? "rounded-lg rounded-t-none border border-border"
     : "rounded-lg border border-border";
 
   if (!showPager) {
