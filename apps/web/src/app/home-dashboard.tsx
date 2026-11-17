@@ -226,7 +226,7 @@ export function HomeDashboard({
           ? "Notificación sin leer"
           : "Notificaciones sin leer",
       value: unreadCount,
-      href: "/notifications",
+      href: "/notifications?view=unread",
       delay: "home-anim-delay-5",
       emphasize: unreadCount > 0,
       icon: <NotificationsMetricIcon />,
