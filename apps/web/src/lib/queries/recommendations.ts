@@ -16,6 +16,7 @@ export type RecommendationItem = {
   reasonLabel: string;
   computedAt: string;
   title: string;
+  status: string | null;
   deadlineAt: string | null;
   estimatedValue: number | null;
   currency: string;
@@ -62,7 +63,7 @@ export async function listOwnRecommendations(
   const { data: rows, error } = await client
     .from("tender_recommendations")
     .select(
-      "tender_id, profile_kind, score, reason, computed_at, tenders ( title, deadline_at, estimated_value, currency )",
+      "tender_id, profile_kind, score, reason, computed_at, tenders ( title, status, deadline_at, estimated_value, currency )",
     )
     .eq("user_id", input.userId)
     .order("score", { ascending: false });
@@ -95,6 +96,7 @@ export async function listOwnRecommendations(
     const tender = row.tenders as
       | {
           title: string | null;
+          status: string | null;
           deadline_at: string | null;
           estimated_value: number | null;
           currency: string | null;
@@ -108,6 +110,7 @@ export async function listOwnRecommendations(
       reasonLabel: reasonLabel(row.reason),
       computedAt: row.computed_at,
       title: tender?.title?.trim() || "Sin título",
+      status: tender?.status ?? null,
       deadlineAt: tender?.deadline_at ?? null,
       estimatedValue: tender?.estimated_value ?? null,
       currency: tender?.currency || "EUR",

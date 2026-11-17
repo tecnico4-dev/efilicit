@@ -12,6 +12,7 @@ import {
   type RecommendationProfileKind,
 } from "@/lib/queries";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { formatTenderStatus } from "@/lib/tender-labels";
 import { formatMoney } from "./favorites/favorites-shared";
 
 function emptyCopy(kind: RecommendationProfileKind): string {
@@ -94,16 +95,28 @@ function ProfileColumn({
                   No me interesa
                 </button>
               </div>
-              <p className="mt-1 text-xs text-muted-foreground">
-                {item.reasonLabel}
-              </p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                {item.deadlineAt
-                  ? `Plazo ${formatDateTimeMadrid(item.deadlineAt)}`
-                  : "Sin plazo"}
-                {" · "}
-                {formatMoney(item.estimatedValue, item.currency)}
-              </p>
+              <dl className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                <div>
+                  <dt className="inline">Plazo: </dt>
+                  <dd className="inline">
+                    {item.deadlineAt
+                      ? formatDateTimeMadrid(item.deadlineAt)
+                      : "—"}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="inline">Estado: </dt>
+                  <dd className="inline">
+                    {formatTenderStatus(item.status)}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="inline">Importe: </dt>
+                  <dd className="inline">
+                    {formatMoney(item.estimatedValue, item.currency)}
+                  </dd>
+                </div>
+              </dl>
             </li>
           ))}
         </ul>

@@ -18,6 +18,7 @@ describe("listOwnRecommendations", () => {
                   computed_at: "2026-11-17T10:00:00Z",
                   tenders: {
                     title: "Alumbrado",
+                    status: "published",
                     deadline_at: "2026-12-01T12:00:00Z",
                     estimated_value: 10000,
                     currency: "EUR",
@@ -31,6 +32,7 @@ describe("listOwnRecommendations", () => {
                   computed_at: "2026-11-17T10:00:00Z",
                   tenders: {
                     title: "Oculta",
+                    status: null,
                     deadline_at: null,
                     estimated_value: null,
                     currency: "EUR",
@@ -44,6 +46,7 @@ describe("listOwnRecommendations", () => {
                   computed_at: "2026-11-17T09:00:00Z",
                   tenders: {
                     title: "Obra",
+                    status: "awarded",
                     deadline_at: null,
                     estimated_value: null,
                     currency: "EUR",
@@ -73,6 +76,7 @@ describe("listOwnRecommendations", () => {
     expect(error).toBeNull();
     expect(data.propia.map((r) => r.tenderId)).toEqual(["t1"]);
     expect(data.propia[0]?.reasonLabel).toBe("CPV 71314000");
+    expect(data.propia[0]?.status).toBe("published");
     expect(data.subcontrata).toHaveLength(1);
     expect(data.subcontrata[0]?.reasonLabel).toBe(
       "Recomendada según tu interés",
