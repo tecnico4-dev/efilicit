@@ -87,6 +87,7 @@ export function OwnFavoritesSection({
             from="favorites-tenders"
             shareUserId={userId}
             sharedOwners={sharedOwners}
+            showKindBubble={false}
           />
         )
       }
@@ -99,6 +100,7 @@ export function OwnFavoritesSection({
             from="favorites-tenders"
             shareUserId={userId}
             sharedOwners={sharedOwners}
+            showKindBubble={false}
           />
         )
       }

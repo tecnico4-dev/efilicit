@@ -114,14 +114,17 @@ export function PeerSharesSection({
           propias.length === 0 ? (
             emptyKindPanel()
           ) : (
-            <PaginatedPeerShares items={propias} />
+            <PaginatedPeerShares items={propias} showKindBubble={false} />
           )
         }
         subcontratas={
           subcontratas.length === 0 ? (
             emptyKindPanel()
           ) : (
-            <PaginatedPeerShares items={subcontratas} />
+            <PaginatedPeerShares
+              items={subcontratas}
+              showKindBubble={false}
+            />
           )
         }
       />

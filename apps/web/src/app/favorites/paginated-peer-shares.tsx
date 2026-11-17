@@ -11,7 +11,13 @@ import {
 
 export const PEER_SHARES_PAGE_SIZE = DEFAULT_PAGE_SIZE;
 
-export function PaginatedPeerShares({ items }: { items: FavoriteShareRow[] }) {
+export function PaginatedPeerShares({
+  items,
+  showKindBubble = true,
+}: {
+  items: FavoriteShareRow[];
+  showKindBubble?: boolean;
+}) {
   const total = items.length;
   const showPager = total > PEER_SHARES_PAGE_SIZE;
 
@@ -40,7 +46,12 @@ export function PaginatedPeerShares({ items }: { items: FavoriteShareRow[] }) {
   if (!showPager) {
     return (
       <div className={`${panelClass} px-4`}>
-        <PeerSharesList items={pageItems} bordered={false} noteWide />
+        <PeerSharesList
+          items={pageItems}
+          bordered={false}
+          noteWide
+          showKindBubble={showKindBubble}
+        />
       </div>
     );
   }
@@ -54,7 +65,12 @@ export function PaginatedPeerShares({ items }: { items: FavoriteShareRow[] }) {
         key={`${page}-${pageSize}`}
         className="min-h-0 flex-1 overflow-y-auto px-4"
       >
-        <PeerSharesList items={pageItems} bordered={false} noteWide />
+        <PeerSharesList
+          items={pageItems}
+          bordered={false}
+          noteWide
+          showKindBubble={showKindBubble}
+        />
       </div>
       <div className="shrink-0 border-t border-border bg-background px-4 py-3">
         <ListPager

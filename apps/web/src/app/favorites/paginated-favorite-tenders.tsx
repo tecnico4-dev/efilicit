@@ -24,11 +24,13 @@ export function PaginatedFavoriteTenders({
   from = "favorites-tenders",
   shareUserId,
   sharedOwners,
+  showKindBubble = true,
 }: {
   favorites: FavoriteWithTender[];
   from?: "favorites" | "favorites-tenders";
   shareUserId?: string;
   sharedOwners?: Readonly<Record<string, SharedFavoriteOwnerInfo>>;
+  showKindBubble?: boolean;
 }) {
   const total = favorites.length;
   const showPager = total > FAVORITES_PAGE_SIZE;
@@ -67,6 +69,7 @@ export function PaginatedFavoriteTenders({
           bordered={false}
           shareUserId={shareUserId}
           sharedOwners={sharedOwners}
+          showKindBubble={showKindBubble}
         />
       </div>
     );
@@ -87,6 +90,7 @@ export function PaginatedFavoriteTenders({
           bordered={false}
           shareUserId={shareUserId}
           sharedOwners={sharedOwners}
+          showKindBubble={showKindBubble}
         />
       </div>
       <div className="shrink-0 border-t border-border bg-background px-4 py-3">

@@ -76,6 +76,7 @@ export function CommonFavoritesSection({
           <PaginatedSharedFavorites
             items={propias}
             currentUserId={currentUserId}
+            showKindBubble={false}
           />
         )
       }
@@ -86,6 +87,7 @@ export function CommonFavoritesSection({
           <PaginatedSharedFavorites
             items={subcontratas}
             currentUserId={currentUserId}
+            showKindBubble={false}
           />
         )
       }

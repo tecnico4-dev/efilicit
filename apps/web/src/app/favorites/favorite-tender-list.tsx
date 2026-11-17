@@ -27,6 +27,7 @@ export function FavoriteTenderList({
   bordered = true,
   shareUserId,
   sharedOwners,
+  showKindBubble = true,
 }: {
   favorites: FavoriteWithTender[];
   from?: "favorites" | "favorites-tenders";
@@ -34,6 +35,8 @@ export function FavoriteTenderList({
   /** Usuario: corazón siempre; avión a Común si hay listado ampliado. */
   shareUserId?: string;
   sharedOwners?: Readonly<Record<string, SharedFavoriteOwnerInfo>>;
+  /** False en pestaña Eficen/Subcontrata (todas son del mismo kind). */
+  showKindBubble?: boolean;
 }) {
   const router = useRouter();
   const { showUndo } = useUndoToast();
@@ -97,7 +100,9 @@ export function FavoriteTenderList({
                 >
                   {tender.title}
                 </Link>
-                <FavoriteKindBubble kind={fav.kind} />
+                {showKindBubble ? (
+                  <FavoriteKindBubble kind={fav.kind} />
+                ) : null}
               </div>
               <dl className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
                 <div>

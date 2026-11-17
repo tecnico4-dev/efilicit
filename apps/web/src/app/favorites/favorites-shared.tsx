@@ -99,6 +99,7 @@ export function SharedFavoriteList({
   showRemove = false,
   noteWide = false,
   currentUserId,
+  showKindBubble = true,
 }: {
   items: SharedFavoriteWithTender[];
   from?: "favorites" | "favorites-common";
@@ -108,6 +109,8 @@ export function SharedFavoriteList({
   noteWide?: boolean;
   /** Necesario con `showRemove` (aviso si quitas la de otro). */
   currentUserId?: string;
+  /** False en pestaña Eficen/Subcontrata (todas son del mismo kind). */
+  showKindBubble?: boolean;
 }) {
   return (
     <ul
@@ -143,7 +146,9 @@ export function SharedFavoriteList({
               <div className="mt-1.5 flex flex-col gap-2 sm:flex-row sm:items-start sm:gap-3">
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                    <FavoriteKindBubble kind={item.kind} />
+                    {showKindBubble ? (
+                      <FavoriteKindBubble kind={item.kind} />
+                    ) : null}
                     <p className="text-xs text-muted-foreground">
                       Añadida por {who} ({formatSharedWhen(item.created_at)})
                     </p>
