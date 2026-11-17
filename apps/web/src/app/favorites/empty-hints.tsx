@@ -1,45 +1,16 @@
-import Link from "next/link";
-
-/** Vacío de licitaciones favoritas: «búsqueda» enlaza a /search. */
+/** Vacío de licitaciones favoritas. */
 export function EmptyFavoritesTendersHint() {
-  return (
-    <>
-      Aún no tienes licitaciones en favoritos. Ábrelas desde la{" "}
-      <Link href="/search" className="font-medium text-link hover:underline">
-        búsqueda
-      </Link>{" "}
-      y pulsa «Guardar en favoritos».
-    </>
-  );
+  return <>Aún no tienes licitaciones en favoritos.</>;
 }
 
-/** Vacío de búsquedas guardadas: «búsqueda» enlaza a /search. */
+/** Vacío de búsquedas guardadas. */
 export function EmptySavedSearchesHint() {
-  return (
-    <>
-      Ninguna aún. Puedes guardar criterios desde la{" "}
-      <Link href="/search" className="font-medium text-link hover:underline">
-        búsqueda
-      </Link>
-      .
-    </>
-  );
+  return <>Aún no tienes ninguna búsqueda guardada.</>;
 }
 
-/** Vacío de Común: se añaden desde el listado ampliado de favoritos. */
+/** Vacío de Común. */
 export function EmptySharedFavoritesHint() {
-  return (
-    <>
-      Aún no hay licitaciones en Común. Ábrelas desde{" "}
-      <Link
-        href="/favorites/tenders"
-        className="font-medium text-link hover:underline"
-      >
-        Licitaciones favoritas
-      </Link>{" "}
-      y pulsa el avión → Común.
-    </>
-  );
+  return <>Aún no hay licitaciones en la Carpeta Común.</>;
 }
 
 /** Vacío de compartidas peer. */
