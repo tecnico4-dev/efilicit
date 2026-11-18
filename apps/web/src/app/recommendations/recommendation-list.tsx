@@ -231,7 +231,7 @@ export function RecommendationList({
                   type="button"
                   disabled={pendingId === item.tenderId}
                   onClick={() => void onNotInterested(item)}
-                  className="text-xs text-destructive hover:underline disabled:opacity-50"
+                  className="text-xs text-muted-foreground transition-colors hover:text-destructive hover:underline disabled:opacity-50"
                 >
                   No me interesa
                 </button>
