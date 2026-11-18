@@ -10,11 +10,7 @@ import {
 import { formatCountdown } from "@/lib/bid-countdown";
 import { formatDateMadrid } from "@/lib/datetime";
 import { CaseStageBadge } from "@/components/mis-licitaciones/case-stage-badge";
-import {
-  DEFAULT_PAGE_SIZE,
-  ListPager,
-  type PageSize,
-} from "@/app/favorites/list-pager";
+import { ListPager } from "@/app/favorites/list-pager";
 import { cn } from "@/lib/cn";
 
 type Scope = "active" | "historic";
@@ -172,6 +168,9 @@ function CaseListRow({
 
 export type PipelineViewMode = "lista" | "kanban";
 
+/** Lista: máximo 10 por página, sin scroll interno (solo pager abajo). */
+const LIST_PAGE_SIZE = 10;
+
 export function PipelineBoard({
   scope,
   cases,
@@ -181,19 +180,18 @@ export function PipelineBoard({
   cases: OfferCaseListItem[];
   view: PipelineViewMode;
 }) {
-  const [pageSize, setPageSize] = useState<PageSize>(DEFAULT_PAGE_SIZE);
   const [page, setPage] = useState(1);
   const columns = scope === "historic" ? HISTORIC_KANBAN : ACTIVE_KANBAN;
 
   const total = cases.length;
-  const showPager = total > DEFAULT_PAGE_SIZE;
-  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const showPager = total > LIST_PAGE_SIZE;
+  const totalPages = Math.max(1, Math.ceil(total / LIST_PAGE_SIZE));
 
   const pageItems = useMemo(() => {
     const safe = Math.min(Math.max(page, 1), totalPages);
-    const start = (safe - 1) * pageSize;
-    return cases.slice(start, start + pageSize);
-  }, [cases, page, pageSize, totalPages]);
+    const start = (safe - 1) * LIST_PAGE_SIZE;
+    return cases.slice(start, start + LIST_PAGE_SIZE);
+  }, [cases, page, totalPages]);
 
   useEffect(() => {
     setPage(1);
@@ -202,11 +200,6 @@ export function PipelineBoard({
   useEffect(() => {
     if (page > totalPages) setPage(totalPages);
   }, [page, totalPages]);
-
-  function onPageSizeChange(next: number) {
-    setPageSize(next as PageSize);
-    setPage(1);
-  }
 
   const byStage = useMemo(() => {
     const map = new Map<string, OfferCaseListItem[]>();
@@ -221,44 +214,40 @@ export function PipelineBoard({
     return map;
   }, [cases, columns]);
 
-  const listShell = cn(
-    "overflow-hidden rounded-xl rounded-tl-none border border-border bg-surface",
-  );
+  const listShell =
+    "rounded-xl rounded-tl-none border border-border bg-surface";
 
   return (
     <div>
       {view === "lista" ? (
-        showPager ? (
-          <div className={listShell}>
-            <ul
-              key={`${scope}-${page}-${pageSize}`}
-              className="divide-y divide-border"
-            >
-              {pageItems.map((item) => (
-                <CaseListRow key={item.id} item={item} scope={scope} />
-              ))}
-            </ul>
-            <div className="border-t border-border bg-background px-4 py-3 sm:px-5">
-              <ListPager
-                page={page}
-                totalPages={totalPages}
-                pageSize={pageSize}
-                showing={pageItems.length}
-                total={total}
-                itemLabel="licitaciones"
-                ariaPageSizeLabel="Licitaciones por página"
-                onPageChange={setPage}
-                onPageSizeChange={onPageSizeChange}
-              />
-            </div>
-          </div>
-        ) : (
-          <ul className={cn(listShell, "divide-y divide-border")}>
+        <div className={listShell}>
+          <ul
+            key={`${scope}-${page}`}
+            className="divide-y divide-border"
+          >
             {pageItems.map((item) => (
               <CaseListRow key={item.id} item={item} scope={scope} />
             ))}
           </ul>
-        )
+          {showPager ? (
+            <div className="border-t border-border bg-background px-4 py-3 sm:px-5">
+              <ListPager
+                page={page}
+                totalPages={totalPages}
+                pageSize={LIST_PAGE_SIZE}
+                showing={pageItems.length}
+                total={total}
+                itemLabel="licitaciones"
+                ariaPageSizeLabel="Licitaciones por página"
+                pageSizeOptions={[LIST_PAGE_SIZE]}
+                onPageChange={setPage}
+                onPageSizeChange={() => {
+                  /* fijo a 10 */
+                }}
+              />
+            </div>
+          ) : null}
+        </div>
       ) : (
         <div className="grid gap-3 overflow-x-auto pb-2 md:grid-cols-3 lg:grid-cols-4">
           {columns.map((col) => {

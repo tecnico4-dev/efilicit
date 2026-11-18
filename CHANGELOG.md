@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Mis licitaciones · lista: fijo 10 por página, sin scroll interno; solo paginación al pie.
 - Mis licitaciones · listado: mismo ancho que Recomendaciones; pestañas Activas/Histórico; Lista|Kanban + Filtrar (botón sin modal aún).
 - Mis licitaciones · ficha de expediente: ancho completo (`PAGE_MAIN_WIDE_CLASS`), sin `max-w-6xl`.
 - `eficen_members`: sin `created_at`/`updated_at`; añade `avatar_url` nullable (UI: iniciales si vacío). Local + remoto — enmienda [ADR 032](docs/adr/032-eficen-members-favorites-shared.md).
