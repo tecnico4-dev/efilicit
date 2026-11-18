@@ -28,9 +28,11 @@ export const OWNER_NONE_KEY = "__none__";
 
 export function countActiveMisLicitacionesFilters(
   f: MisLicitacionesFilters,
+  scope: "active" | "historic" = "historic",
 ): number {
   let n = 0;
-  if (f.year != null) n += 1;
+  // El año solo aplica en Histórico; se conserva en estado al ir a Activas.
+  if (scope === "historic" && f.year != null) n += 1;
   if (f.stages.length > 0) n += 1;
   if (f.amountMin != null) n += 1;
   if (f.amountMax != null) n += 1;

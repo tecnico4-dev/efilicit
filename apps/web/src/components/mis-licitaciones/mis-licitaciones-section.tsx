@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import type { OfferCaseListItem } from "@/lib/queries";
 import { cn } from "@/lib/cn";
 import {
@@ -47,20 +47,12 @@ export function MisLicitacionesSection({
     year: year ?? null,
   }));
 
-  useEffect(() => {
-    setFilters((prev) => ({
-      ...prev,
-      year: scope === "historic" ? (year ?? prev.year) : null,
-      stages: [],
-    }));
-  }, [scope, year]);
-
   const ownerOptions = useMemo(() => ownerOptionsFromCases(cases), [cases]);
   const filtered = useMemo(
     () => applyMisLicitacionesFilters(cases, scope, filters),
     [cases, scope, filters],
   );
-  const activeFilterCount = countActiveMisLicitacionesFilters(filters);
+  const activeFilterCount = countActiveMisLicitacionesFilters(filters, scope);
 
   return (
     <section>
