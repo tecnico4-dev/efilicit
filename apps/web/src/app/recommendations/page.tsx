@@ -13,10 +13,8 @@ import {
   listOwnRecommendations,
   listSearchFilterOptions,
 } from "@/lib/queries";
-import {
-  parseRecommendationsTab,
-  RecommendationsSection,
-} from "./recommendations-section";
+import { RecommendationsSection } from "./recommendations-section";
+import { parseRecommendationsTab } from "./recommendations-tab";
 
 export const dynamic = "force-dynamic";
 

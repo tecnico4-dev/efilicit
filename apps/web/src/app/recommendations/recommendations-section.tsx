@@ -6,14 +6,17 @@ import type { CriteriaFilterOptionsProp } from "@/components/criteria/criteria-f
 import type { RecommendationItem } from "@/lib/queries";
 import type { SearchCriteria } from "@efilicit/types";
 import { cn } from "@/lib/cn";
-import {
-  FavoriteKindTabs,
-  type FavoriteKindTab,
-} from "../favorites/favorite-kind-tabs";
+import { FavoriteKindTabs } from "../favorites/favorite-kind-tabs";
 import {
   tenderMatchesFavoriteFilters,
 } from "../favorites/favorites-list-filter";
 import { PaginatedRecommendations } from "./paginated-recommendations";
+import {
+  parseRecommendationsTab,
+  type RecommendationsTab,
+} from "./recommendations-tab";
+
+export { parseRecommendationsTab, type RecommendationsTab };
 
 function emptyPanel(flushTopLeft: boolean) {
   return (
@@ -54,13 +57,6 @@ function recommendationAsTenderSlice(item: RecommendationItem) {
   };
 }
 
-export function parseRecommendationsTab(
-  raw: string | null | undefined,
-): FavoriteKindTab {
-  if (raw === "propia" || raw === "subcontrata") return raw;
-  return "todas";
-}
-
 /** Página /recommendations: pestañas Todas/Eficen/Sub + filtrar + paginación. */
 export function RecommendationsSection({
   userId,
@@ -75,11 +71,11 @@ export function RecommendationsSection({
   subcontrata: RecommendationItem[];
   filterOptions: CriteriaFilterOptionsProp;
   hasComputedAt: boolean;
-  initialTab?: FavoriteKindTab;
+  initialTab?: RecommendationsTab;
 }) {
   const router = useRouter();
   const pathname = usePathname() || "/recommendations";
-  const [tab, setTab] = useState<FavoriteKindTab>(initialTab);
+  const [tab, setTab] = useState<RecommendationsTab>(initialTab);
   const [criteria, setCriteria] = useState<SearchCriteria | null>(null);
 
   const todasRaw = useMemo(
@@ -109,9 +105,9 @@ export function RecommendationsSection({
 
   const showKindTabs = propias.length > 0 && subcontratas.length > 0;
   const flushTopLeft = showKindTabs;
-  const activeTab: FavoriteKindTab = showKindTabs ? tab : "todas";
+  const activeTab: RecommendationsTab = showKindTabs ? tab : "todas";
 
-  function onTabChange(next: FavoriteKindTab) {
+  function onTabChange(next: RecommendationsTab) {
     setTab(next);
     const href =
       next === "propia" || next === "subcontrata"
