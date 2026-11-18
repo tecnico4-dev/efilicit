@@ -11,12 +11,15 @@ from decimal import Decimal
 
 from efilicit_ingestion.pipeline.postgres import connect
 from efilicit_ingestion.recommendations.models import CandidateTender, Recommendation
+from efilicit_ingestion.recommendations.dedupe import (
+    dedupe_recommendations_by_tender,
+)
 from efilicit_ingestion.recommendations.postgres import (
     PROFILES,
     list_user_ids,
     load_candidates,
     load_user_seed_inputs,
-    replace_recommendations,
+    replace_user_recommendations,
     seed_cpv_prefixes,
 )
 from efilicit_ingestion.recommendations.score import rank_candidates
@@ -178,10 +181,12 @@ def run_recommendations(
     if cfg.dry_run:
         inputs = _fixture_inputs()
         ranked = _run_for_user_inputs(inputs, _fixture_candidates())
+        merged = dedupe_recommendations_by_tender(ranked)
         result.users = 1
-        for profile, rows in ranked.items():
-            result.by_profile[profile] = len(rows)
-            result.written += len(rows)
+        result.written = len(merged)
+        for rec in merged:
+            key = rec.profile_kind or "tie"
+            result.by_profile[key] = result.by_profile.get(key, 0) + 1
         return result
 
     with connect() as conn:
@@ -190,7 +195,7 @@ def run_recommendations(
         )
         for uid in user_ids:
             inputs = load_user_seed_inputs(conn, uid)
-            user_written = 0
+            by_profile: dict[str, list] = {}
             for profile in PROFILES:
                 pos, neg = build_seeds_for_profile(
                     profile,
@@ -208,20 +213,20 @@ def run_recommendations(
                     seed_cpv_prefixes=prefs,
                     seed_titles=titles,
                 )
-                ranked = rank_candidates(
+                by_profile[profile] = rank_candidates(
                     candidates,
                     profile=profile,
                     positive_seeds=pos,
                     negative_seeds=neg,
                 )
-                n = replace_recommendations(
-                    conn, user_id=uid, profile=profile, rows=ranked
-                )
-                result.by_profile[profile] = (
-                    result.by_profile.get(profile, 0) + n
-                )
-                user_written += n
-            if user_written == 0 and count_personal_seeds(
+            merged = dedupe_recommendations_by_tender(by_profile)
+            n = replace_user_recommendations(
+                conn, user_id=uid, rows=merged
+            )
+            for rec in merged:
+                key = rec.profile_kind or "tie"
+                result.by_profile[key] = result.by_profile.get(key, 0) + 1
+            if n == 0 and count_personal_seeds(
                 build_seeds_for_profile(
                     "propia",
                     ratings=inputs["ratings"],
@@ -232,7 +237,7 @@ def run_recommendations(
                 )[0]
             ) < 3:
                 result.skipped_cold += 1
-            result.written += user_written
+            result.written += n
             result.users += 1
         conn.commit()
     return result
