@@ -26,47 +26,6 @@ function NavSparklesIcon() {
   );
 }
 
-function NavRadarIcon() {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.75"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={NAV_ICON_CLASS}
-      aria-hidden
-    >
-      <circle cx="12" cy="12" r="8.5" />
-      <circle cx="12" cy="12" r="4.6" />
-      <circle cx="12" cy="12" r="1.15" fill="currentColor" stroke="none" />
-      <path d="M12 12 17.2 7.4" />
-    </svg>
-  );
-}
-
-function NavBulbIcon() {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.75"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={NAV_ICON_CLASS}
-      aria-hidden
-    >
-      <path d="M9.2 17.6h5.6" />
-      <path d="M10 20h4" />
-      <path d="M8.4 14.2c-1.5-1.2-2.4-3-2.4-5 0-3.4 2.7-6.2 6-6.2s6 2.8 6 6.2c0 2-0.9 3.8-2.4 5l-.6.5v1.3H9l-.6-.5z" />
-    </svg>
-  );
-}
-
 /** Enlace «Recomendaciones» (activo según pathname). */
 export function RecommendationsNavLink() {
   const pathname = usePathname() || "/";
@@ -81,13 +40,8 @@ export function RecommendationsNavLink() {
           ? "bg-primary text-primary-foreground shadow-sm"
           : "text-foreground hover:bg-muted",
       )}
-      title="Comparativa iconos: destellos · radar · bombilla"
     >
-      <span className="inline-flex items-center gap-1" aria-hidden>
-        <NavSparklesIcon />
-        <NavRadarIcon />
-        <NavBulbIcon />
-      </span>
+      <NavSparklesIcon />
       Recomendaciones
     </Link>
   );
