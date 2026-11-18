@@ -392,33 +392,41 @@ export default async function TenderDetailPage({
     favoriteUserId = null;
   }
 
+  const showDetailRating = Boolean(showRating && favoriteUserId);
+
   return (
     <main className={PAGE_MAIN_CLASS}>
-      {back ? (
-        <p className="text-sm">
-          <Link
-            href={back.href}
-            className="font-medium text-link hover:underline"
-          >
-            {back.label}
-          </Link>
-        </p>
-      ) : null}
-
-      {showRating && favoriteUserId ? (
-        <div className={`w-full ${back ? "mt-4" : ""}`}>
-          <TenderDetailRating
-            userId={favoriteUserId}
-            tenderId={tender.id}
-            initialRating={initialRating}
-            defaultInterestKind={defaultInterestKind}
-          />
+      {back || showDetailRating ? (
+        <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-start gap-x-3">
+          <div className="justify-self-start">
+            {back ? (
+              <p className="text-sm">
+                <Link
+                  href={back.href}
+                  className="font-medium text-link hover:underline"
+                >
+                  {back.label}
+                </Link>
+              </p>
+            ) : null}
+          </div>
+          <div className="justify-self-center">
+            {showDetailRating ? (
+              <TenderDetailRating
+                userId={favoriteUserId!}
+                tenderId={tender.id}
+                initialRating={initialRating}
+                defaultInterestKind={defaultInterestKind}
+              />
+            ) : null}
+          </div>
+          <div aria-hidden />
         </div>
       ) : null}
 
       <div
         className={`flex flex-wrap items-start justify-between gap-3 ${
-          back || (showRating && favoriteUserId) ? "mt-4" : ""
+          back || showDetailRating ? "mt-4" : ""
         }`}
       >
         <h1 className="min-w-0 flex-1 text-2xl font-semibold tracking-tight text-foreground">
