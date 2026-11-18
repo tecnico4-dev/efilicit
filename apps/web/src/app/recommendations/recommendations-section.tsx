@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import type { CriteriaFilterOptionsProp } from "@/components/criteria/criteria-filters";
 import type { RecommendationItem } from "@/lib/queries";
 import type { SearchCriteria } from "@efilicit/types";
@@ -12,11 +12,12 @@ import {
 } from "../favorites/favorites-list-filter";
 import { PaginatedRecommendations } from "./paginated-recommendations";
 import { RecommendationsKanban } from "./recommendations-kanban";
-import { type RecommendationsTab } from "./recommendations-tab";
 import {
-  RecommendationsViewToggle,
+  recommendationsHref,
+  type RecommendationsTab,
   type RecommendationsViewMode,
-} from "./recommendations-view-toggle";
+} from "./recommendations-tab";
+import { RecommendationsViewToggle } from "./recommendations-view-toggle";
 
 function emptyPanel(flushTopLeft: boolean) {
   return (
@@ -66,6 +67,7 @@ export function RecommendationsSection({
   filterOptions,
   hasComputedAt,
   initialTab = "todas",
+  initialView = "lista",
 }: {
   userId: string;
   propia: RecommendationItem[];
@@ -74,12 +76,12 @@ export function RecommendationsSection({
   filterOptions: CriteriaFilterOptionsProp;
   hasComputedAt: boolean;
   initialTab?: RecommendationsTab;
+  initialView?: RecommendationsViewMode;
 }) {
   const router = useRouter();
-  const pathname = usePathname() || "/recommendations";
   const [tab, setTab] = useState<RecommendationsTab>(initialTab);
   const [criteria, setCriteria] = useState<SearchCriteria | null>(null);
-  const [view, setView] = useState<RecommendationsViewMode>("lista");
+  const [view, setView] = useState<RecommendationsViewMode>(initialView);
 
   const todasRaw = useMemo(
     () =>
@@ -118,13 +120,31 @@ export function RecommendationsSection({
   const flushTopLeft = showKindTabs;
   const activeTab: RecommendationsTab = showKindTabs ? tab : "todas";
 
+  function replaceListUrl(next: {
+    tab?: RecommendationsTab;
+    view?: RecommendationsViewMode;
+  }) {
+    router.replace(
+      recommendationsHref({
+        tab: next.tab ?? tab,
+        view: next.view ?? view,
+      }),
+      { scroll: false },
+    );
+  }
+
   function onTabChange(next: RecommendationsTab) {
     setTab(next);
-    const href =
-      next === "propia" || next === "subcontrata"
-        ? `${pathname}?tab=${next}`
-        : pathname;
-    router.replace(href, { scroll: false });
+    replaceListUrl({ tab: next, view: "lista" });
+  }
+
+  function onViewChange(next: RecommendationsViewMode) {
+    setView(next);
+    if (next === "kanban") {
+      replaceListUrl({ view: "kanban", tab: "todas" });
+      return;
+    }
+    replaceListUrl({ view: "lista", tab });
   }
 
   if (todasRaw.length === 0) {
@@ -160,7 +180,7 @@ export function RecommendationsSection({
       onTabChange={onTabChange}
       hideTabs={isKanban}
       trailingStart={
-        <RecommendationsViewToggle view={view} onChange={setView} />
+        <RecommendationsViewToggle view={view} onChange={onViewChange} />
       }
       todasCount={filtered.length}
       propiasCount={propias.length}

@@ -12,7 +12,7 @@ function KanbanCard({ item }: { item: RecommendationItem }) {
   const interestQs = item.profileKind
     ? `&interest=${item.profileKind}`
     : "";
-  const href = `/tenders/${item.tenderId}?from=recommendations&tab=todas${interestQs}`;
+  const href = `/tenders/${item.tenderId}?from=recommendations&view=kanban&tab=todas${interestQs}`;
 
   return (
     <li className="rounded-md border border-border bg-background px-3 py-2.5 shadow-sm">

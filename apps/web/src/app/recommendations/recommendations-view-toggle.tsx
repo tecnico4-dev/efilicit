@@ -1,8 +1,9 @@
 "use client";
 
 import { cn } from "@/lib/cn";
+import type { RecommendationsViewMode } from "./recommendations-tab";
 
-export type RecommendationsViewMode = "lista" | "kanban";
+export type { RecommendationsViewMode };
 
 /** Segmento Lista | Kanban (mismo patrón que Mis licitaciones). */
 export function RecommendationsViewToggle({

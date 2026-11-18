@@ -15,7 +15,10 @@ import {
 } from "@/lib/queries";
 import { RecommendationsInfoButton } from "./recommendations-info-button";
 import { RecommendationsSection } from "./recommendations-section";
-import { parseRecommendationsTab } from "./recommendations-tab";
+import {
+  parseRecommendationsTab,
+  parseRecommendationsView,
+} from "./recommendations-tab";
 
 export const dynamic = "force-dynamic";
 
@@ -26,8 +29,12 @@ export default async function RecommendationsPage({
 }) {
   const params = await searchParams;
   const tabRaw = params.tab;
+  const viewRaw = params.view;
   const initialTab = parseRecommendationsTab(
     Array.isArray(tabRaw) ? tabRaw[0] : tabRaw,
+  );
+  const initialView = parseRecommendationsView(
+    Array.isArray(viewRaw) ? viewRaw[0] : viewRaw,
   );
   let supabase;
   try {
@@ -99,6 +106,7 @@ export default async function RecommendationsPage({
           </ErrorState>
         ) : (
           <RecommendationsSection
+            key={`${initialView}-${initialTab}`}
             userId={userId}
             propia={data.propia}
             subcontrata={data.subcontrata}
@@ -106,6 +114,7 @@ export default async function RecommendationsPage({
             filterOptions={filterOptions}
             hasComputedAt={Boolean(data.computedAt)}
             initialTab={initialTab}
+            initialView={initialView}
           />
         )}
       </div>

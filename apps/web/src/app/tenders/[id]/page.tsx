@@ -110,12 +110,16 @@ function backLinkFromParams(
   }
   if (from === "recommendations") {
     const tab = first(params.tab).trim();
-    const href =
-      tab === "propia" || tab === "subcontrata"
-        ? `/recommendations?tab=${tab}`
-        : "/recommendations";
+    const view = first(params.view).trim();
+    const qs = new URLSearchParams();
+    if (view === "kanban") {
+      qs.set("view", "kanban");
+    } else if (tab === "propia" || tab === "subcontrata") {
+      qs.set("tab", tab);
+    }
+    const q = qs.toString();
     return {
-      href,
+      href: q ? `/recommendations?${q}` : "/recommendations",
       label: "← Volver a mis recomendaciones",
     };
   }
