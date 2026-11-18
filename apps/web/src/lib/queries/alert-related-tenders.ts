@@ -83,7 +83,8 @@ export function resolveQueueTenderId(row: {
 }): string | null {
   const fromCol = row.tender_id?.trim();
   if (fromCol) return fromCol;
-  return tenderIdFromPayload(row.payload ?? null);
+  if (row.payload == null) return null;
+  return tenderIdFromPayload(row.payload);
 }
 
 function titleFromPayload(payload: Json): string | null {

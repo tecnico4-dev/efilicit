@@ -93,7 +93,7 @@ export async function addFavoriteShares(
           p_tender_id: input.tenderId,
           p_to_user_id: toUserId,
           p_kind: input.kind,
-          p_notes: notes,
+          p_notes: notes ?? undefined,
         },
       );
       if (reactivateError) {
