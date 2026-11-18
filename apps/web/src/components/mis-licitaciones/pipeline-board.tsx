@@ -170,14 +170,17 @@ function CaseListRow({
   );
 }
 
+export type PipelineViewMode = "lista" | "kanban";
+
 export function PipelineBoard({
   scope,
   cases,
+  view,
 }: {
   scope: Scope;
   cases: OfferCaseListItem[];
+  view: PipelineViewMode;
 }) {
-  const [view, setView] = useState<"lista" | "kanban">("lista");
   const [pageSize, setPageSize] = useState<PageSize>(DEFAULT_PAGE_SIZE);
   const [page, setPage] = useState(1);
   const columns = scope === "historic" ? HISTORIC_KANBAN : ACTIVE_KANBAN;
@@ -218,38 +221,15 @@ export function PipelineBoard({
     return map;
   }, [cases, columns]);
 
-  return (
-    <div className="mt-6">
-      <div className="mb-4 inline-flex overflow-hidden rounded-md border border-border bg-background">
-        <button
-          type="button"
-          onClick={() => setView("lista")}
-          className={cn(
-            "px-3 py-1.5 text-sm font-medium transition-colors",
-            view === "lista"
-              ? "bg-primary text-primary-foreground"
-              : "text-muted-foreground hover:bg-muted hover:text-foreground",
-          )}
-        >
-          Lista
-        </button>
-        <button
-          type="button"
-          onClick={() => setView("kanban")}
-          className={cn(
-            "px-3 py-1.5 text-sm font-medium transition-colors",
-            view === "kanban"
-              ? "bg-primary text-primary-foreground"
-              : "text-muted-foreground hover:bg-muted hover:text-foreground",
-          )}
-        >
-          Kanban
-        </button>
-      </div>
+  const listShell = cn(
+    "overflow-hidden rounded-xl rounded-tl-none border border-border bg-surface",
+  );
 
+  return (
+    <div>
       {view === "lista" ? (
         showPager ? (
-          <div className="overflow-hidden rounded-xl border border-border bg-surface">
+          <div className={listShell}>
             <ul
               key={`${scope}-${page}-${pageSize}`}
               className="divide-y divide-border"
@@ -273,7 +253,7 @@ export function PipelineBoard({
             </div>
           </div>
         ) : (
-          <ul className="divide-y divide-border rounded-xl border border-border bg-surface">
+          <ul className={cn(listShell, "divide-y divide-border")}>
             {pageItems.map((item) => (
               <CaseListRow key={item.id} item={item} scope={scope} />
             ))}
