@@ -4,10 +4,13 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { FavoriteKindBubble } from "@/components/favorites/favorite-kind-bubble";
+import { FavoriteHeartButton } from "@/components/favorites/favorite-heart-button";
+import { ShareFavoriteButton } from "@/app/favorites/share-favorite-button";
 import { useUndoToast } from "@/components/undo-toast";
 import { formatDateTimeMadrid } from "@/lib/datetime";
 import {
   upsertOwnTenderRating,
+  type FavoriteKind,
   type RecommendationItem,
   type RecommendationProfileKind,
 } from "@/lib/queries";
@@ -34,6 +37,10 @@ export function RecommendationList({
   const { showStatus } = useUndoToast();
   const [hidden, setHidden] = useState<string[]>([]);
   const [pendingId, setPendingId] = useState<string | null>(null);
+  /** Kind del corazón si el usuario guarda favorito (para el avión). */
+  const [shareKindById, setShareKindById] = useState<
+    Record<string, FavoriteKind>
+  >({});
 
   const visible = items.filter((i) => !hidden.includes(i.tenderId));
 
@@ -77,54 +84,98 @@ export function RecommendationList({
         const interestQs = item.profileKind
           ? `&interest=${item.profileKind}`
           : "";
+        const detailHref = `/tenders/${item.tenderId}?from=recommendations&tab=${listTab}${interestQs}`;
+        const shareKind =
+          shareKindById[item.tenderId] ?? item.profileKind ?? null;
+
         return (
-        <li key={item.tenderId} className="py-4">
-          <div className="flex items-start justify-between gap-2">
-            <div className="min-w-0 flex-1">
-              <Link
-                href={`/tenders/${item.tenderId}?from=recommendations&tab=${listTab}${interestQs}`}
-                className="text-base font-medium text-foreground hover:text-link hover:underline"
-              >
-                {item.title}
-              </Link>
-              <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1.5">
-                {showKindBubble && item.profileKind ? (
-                  <FavoriteKindBubble kind={item.profileKind} />
-                ) : null}
-                <dl className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
-                  <div>
-                    <dt className="inline">Plazo: </dt>
-                    <dd className="inline">
-                      {item.deadlineAt
-                        ? formatDateTimeMadrid(item.deadlineAt)
-                        : "—"}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="inline">Estado: </dt>
-                    <dd className="inline">
-                      {formatTenderStatus(item.status)}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="inline">Importe: </dt>
-                    <dd className="inline">
-                      {formatMoney(item.estimatedValue, item.currency)}
-                    </dd>
-                  </div>
-                </dl>
+          <li key={item.tenderId} className="py-4">
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0 flex-1">
+                <Link
+                  href={detailHref}
+                  className="text-base font-medium text-foreground hover:text-link hover:underline"
+                >
+                  {item.title}
+                </Link>
+                <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1.5">
+                  {showKindBubble && item.profileKind ? (
+                    <FavoriteKindBubble kind={item.profileKind} />
+                  ) : null}
+                  <dl className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
+                    <div>
+                      <dt className="inline">Plazo: </dt>
+                      <dd className="inline">
+                        {item.deadlineAt
+                          ? formatDateTimeMadrid(item.deadlineAt)
+                          : "—"}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="inline">Estado: </dt>
+                      <dd className="inline">
+                        {formatTenderStatus(item.status)}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="inline">Importe: </dt>
+                      <dd className="inline">
+                        {formatMoney(item.estimatedValue, item.currency)}
+                      </dd>
+                    </div>
+                  </dl>
+                </div>
+              </div>
+
+              <div className="flex w-[6.5rem] shrink-0 flex-col items-center gap-1">
+                <div className="flex items-center justify-center gap-0.5">
+                  <FavoriteHeartButton
+                    userId={userId}
+                    tenderId={item.tenderId}
+                    tenderTitle={item.title}
+                    initiallyFavorited={false}
+                    onFavoritedChange={(id, favorited, kind) => {
+                      if (favorited && kind) {
+                        setShareKindById((prev) => ({ ...prev, [id]: kind }));
+                        setHidden((h) =>
+                          h.includes(id) ? h : [...h, id],
+                        );
+                        router.refresh();
+                      } else {
+                        setShareKindById((prev) => {
+                          const next = { ...prev };
+                          delete next[id];
+                          return next;
+                        });
+                      }
+                    }}
+                  />
+                  {shareKind ? (
+                    <ShareFavoriteButton
+                      userId={userId}
+                      tenderId={item.tenderId}
+                      tenderTitle={item.title}
+                      kind={shareKind}
+                    />
+                  ) : null}
+                </div>
+                <Link
+                  href={detailHref}
+                  className="text-xs font-medium text-primary hover:underline"
+                >
+                  Valorar
+                </Link>
+                <button
+                  type="button"
+                  disabled={pendingId === item.tenderId}
+                  onClick={() => void onNotInterested(item)}
+                  className="text-xs text-muted-foreground hover:text-destructive disabled:opacity-50"
+                >
+                  No me interesa
+                </button>
               </div>
             </div>
-            <button
-              type="button"
-              disabled={pendingId === item.tenderId}
-              onClick={() => void onNotInterested(item)}
-              className="shrink-0 text-xs text-muted-foreground hover:text-destructive disabled:opacity-50"
-            >
-              No me interesa
-            </button>
-          </div>
-        </li>
+          </li>
         );
       })}
     </ul>
