@@ -24,6 +24,42 @@ export const EMPTY_MIS_LICITACIONES_FILTERS: MisLicitacionesFilters = {
   ownerKey: "",
 };
 
+/** Persiste al cambiar Activas ↔ Histórico (navegación remonta el cliente). */
+export const MIS_LICITACIONES_FILTERS_STORAGE_KEY =
+  "efilicit:mis-licitaciones-filters";
+
+/** `null` si aún no hay nada guardado en la sesión. */
+export function loadMisLicitacionesFilters(): MisLicitacionesFilters | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = sessionStorage.getItem(MIS_LICITACIONES_FILTERS_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<MisLicitacionesFilters>;
+    return {
+      year: typeof parsed.year === "number" ? parsed.year : null,
+      stages: Array.isArray(parsed.stages)
+        ? (parsed.stages.filter(
+            (s) => typeof s === "string",
+          ) as MisLicitacionesFilters["stages"])
+        : [],
+      amountMin: typeof parsed.amountMin === "number" ? parsed.amountMin : null,
+      amountMax: typeof parsed.amountMax === "number" ? parsed.amountMax : null,
+      ownerKey: typeof parsed.ownerKey === "string" ? parsed.ownerKey : "",
+    };
+  } catch {
+    return null;
+  }
+}
+
+export function saveMisLicitacionesFilters(f: MisLicitacionesFilters): void {
+  if (typeof window === "undefined") return;
+  try {
+    sessionStorage.setItem(MIS_LICITACIONES_FILTERS_STORAGE_KEY, JSON.stringify(f));
+  } catch {
+    /* ignore quota / private mode */
+  }
+}
+
 export const OWNER_NONE_KEY = "__none__";
 
 export function countActiveMisLicitacionesFilters(
