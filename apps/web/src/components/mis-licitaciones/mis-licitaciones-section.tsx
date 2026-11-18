@@ -29,9 +29,10 @@ export function MisLicitacionesSection({
 
   return (
     <section>
-      <div className="flex min-h-10 flex-wrap items-end justify-between gap-x-3 gap-y-2">
+      {/* Una sola fila: pestañas a la izquierda, Lista|Kanban a la derecha (sin wrap). */}
+      <div className="flex min-h-10 items-end gap-3 border-b border-border">
         <div
-          className="flex min-w-0 flex-wrap items-end gap-1 border-b border-border"
+          className="flex min-w-0 flex-1 items-end gap-1"
           role="tablist"
           aria-label="Ámbito de Mis licitaciones"
         >
@@ -47,9 +48,9 @@ export function MisLicitacionesSection({
           />
         </div>
 
-        <div className="mb-px flex shrink-0 flex-wrap items-center justify-end gap-3">
+        <div className="mb-px flex shrink-0 items-center gap-3">
           {scope === "historic" && years.length > 0 ? (
-            <div className="flex flex-wrap gap-1.5">
+            <div className="hidden max-w-[14rem] flex-wrap justify-end gap-1.5 sm:flex">
               <YearChip href="/mis-licitaciones?tab=historic" active={!year}>
                 Todos
               </YearChip>
