@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- `eficen_members`: sin `created_at`/`updated_at`; añade `avatar_url` nullable (UI: iniciales si vacío). Local + remoto — enmienda [ADR 032](docs/adr/032-eficen-members-favorites-shared.md).
 - Schema: se elimina `users.notifications_read_at` (watermark legacy del buzón; lectura por aviso en `notification_favorites`). Migración local.
 - Recomendaciones: una fila por `(user, tender)` (gana el kind de mayor score; empate → `profile_kind` null, solo en Todas). Migración local `20261118120000`.
 - `/recommendations`: título y barra como el resto; «Actualizado el…» arriba a la derecha; Plazo/Estado/Importe en la misma línea que el circulito; Filtrar (Criteria v1) como en favoritos.

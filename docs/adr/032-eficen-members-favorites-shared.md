@@ -19,9 +19,14 @@ Además: compartir una licitación favorita a **personas concretas** (no solo a 
 ## Decisión
 
 1. **`eficen_members`** (directorio Eficen):
-   - `id`, `display_name` NOT NULL, `role_title` nullable, `user_id` nullable **UNIQUE** → `users(id)` ON DELETE SET NULL, `active` boolean default true, timestamps.
+   - `id`, `display_name` NOT NULL, `role_title` nullable, `user_id` nullable **UNIQUE** → `users(id)` ON DELETE SET NULL, `active` boolean default true, `avatar_url` nullable (UI: iniciales si null).
    - RLS: `SELECT` para `is_app_user()`. Sin policies de escritura authenticated (alta/enlace por admin BD / `service_role`).
    - Mis licitaciones (`offer_assigned_people.person_id`, `offer_requirement_evidence.person_id`) apunta aquí.
+
+### Enmienda 2026-11-18
+
+- Se eliminan `created_at` / `updated_at` (y su trigger): sin uso de producto.
+- Se añade `avatar_url` nullable para iconos futuros; default visual = iniciales.
 2. **Drop `company_people`** tras retargetar FKs (sin UI ni datos de producto).
 3. **Rename** `shared_favorites` → **`favorites_common`** (mismo contrato; triggers/FK de `notification_common` siguen al PK `tender_id`). Al insertar, `added_by_display_name` preferirá el nombre del miembro enlazado si existe.
 4. **`favorites_shared`** (peer share):
