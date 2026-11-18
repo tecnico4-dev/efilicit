@@ -1,0 +1,92 @@
+import {
+  ACTIVE_OFFER_STAGES,
+  HISTORIC_OFFER_STAGES,
+  offerCaseHistoryYear,
+  type OfferCaseListItem,
+  type OfferStage,
+} from "@/lib/queries";
+
+export type MisLicitacionesFilters = {
+  /** Solo aplica en Histórico; null = todos. */
+  year: number | null;
+  stages: OfferStage[];
+  amountMin: number | null;
+  amountMax: number | null;
+  /** `""` = sin filtrar; `"__none__"` = sin responsable; otro = owner_name exacto. */
+  ownerKey: string;
+};
+
+export const EMPTY_MIS_LICITACIONES_FILTERS: MisLicitacionesFilters = {
+  year: null,
+  stages: [],
+  amountMin: null,
+  amountMax: null,
+  ownerKey: "",
+};
+
+export const OWNER_NONE_KEY = "__none__";
+
+export function countActiveMisLicitacionesFilters(
+  f: MisLicitacionesFilters,
+): number {
+  let n = 0;
+  if (f.year != null) n += 1;
+  if (f.stages.length > 0) n += 1;
+  if (f.amountMin != null) n += 1;
+  if (f.amountMax != null) n += 1;
+  if (f.ownerKey) n += 1;
+  return n;
+}
+
+export function stagesForScope(scope: "active" | "historic"): OfferStage[] {
+  return scope === "historic"
+    ? [...HISTORIC_OFFER_STAGES]
+    : [...ACTIVE_OFFER_STAGES];
+}
+
+export function ownerOptionsFromCases(
+  cases: OfferCaseListItem[],
+): { value: string; label: string }[] {
+  const names = new Set<string>();
+  let hasNone = false;
+  for (const c of cases) {
+    const name = c.owner_name?.trim();
+    if (!name) hasNone = true;
+    else names.add(name);
+  }
+  const opts = [...names]
+    .sort((a, b) => a.localeCompare(b, "es"))
+    .map((name) => ({ value: name, label: name }));
+  if (hasNone) {
+    opts.unshift({ value: OWNER_NONE_KEY, label: "Sin asignar" });
+  }
+  return opts;
+}
+
+export function applyMisLicitacionesFilters(
+  cases: OfferCaseListItem[],
+  scope: "active" | "historic",
+  f: MisLicitacionesFilters,
+): OfferCaseListItem[] {
+  return cases.filter((c) => {
+    if (scope === "historic" && f.year != null) {
+      if (offerCaseHistoryYear(c) !== f.year) return false;
+    }
+    if (f.stages.length > 0) {
+      if (!(f.stages as string[]).includes(c.stage)) return false;
+    }
+    const amount = c.tenders?.estimated_value ?? null;
+    if (f.amountMin != null) {
+      if (amount == null || amount < f.amountMin) return false;
+    }
+    if (f.amountMax != null) {
+      if (amount == null || amount > f.amountMax) return false;
+    }
+    if (f.ownerKey === OWNER_NONE_KEY) {
+      if (c.owner_name?.trim()) return false;
+    } else if (f.ownerKey) {
+      if ((c.owner_name?.trim() ?? "") !== f.ownerKey) return false;
+    }
+    return true;
+  });
+}

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import type { OfferCaseListItem } from "@/lib/queries";
 import { cn } from "@/lib/cn";
 import {
@@ -9,6 +9,17 @@ import {
   type PipelineViewMode,
 } from "@/components/mis-licitaciones/pipeline-board";
 import { RecommendationsViewToggle } from "@/app/recommendations/recommendations-view-toggle";
+import {
+  applyMisLicitacionesFilters,
+  countActiveMisLicitacionesFilters,
+  EMPTY_MIS_LICITACIONES_FILTERS,
+  ownerOptionsFromCases,
+  type MisLicitacionesFilters,
+} from "@/components/mis-licitaciones/mis-licitaciones-filters";
+import {
+  MisLicitacionesFiltersButton,
+  MisLicitacionesFiltersModal,
+} from "@/components/mis-licitaciones/mis-licitaciones-filters-modal";
 
 type Scope = "active" | "historic";
 
@@ -30,6 +41,26 @@ export function MisLicitacionesSection({
   empty: ReactNode;
 }) {
   const [view, setView] = useState<PipelineViewMode>("lista");
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [filters, setFilters] = useState<MisLicitacionesFilters>(() => ({
+    ...EMPTY_MIS_LICITACIONES_FILTERS,
+    year: year ?? null,
+  }));
+
+  useEffect(() => {
+    setFilters((prev) => ({
+      ...prev,
+      year: scope === "historic" ? (year ?? prev.year) : null,
+      stages: [],
+    }));
+  }, [scope, year]);
+
+  const ownerOptions = useMemo(() => ownerOptionsFromCases(cases), [cases]);
+  const filtered = useMemo(
+    () => applyMisLicitacionesFilters(cases, scope, filters),
+    [cases, scope, filters],
+  );
+  const activeFilterCount = countActiveMisLicitacionesFilters(filters);
 
   return (
     <section>
@@ -69,17 +100,52 @@ export function MisLicitacionesSection({
             </div>
           ) : null}
           <RecommendationsViewToggle view={view} onChange={setView} />
-          <FiltersButton />
+          <MisLicitacionesFiltersButton
+            activeCount={activeFilterCount}
+            onClick={() => setFilterOpen(true)}
+          />
         </div>
       </div>
 
       <div className="-mt-px">
-        {cases.length === 0 ? (
-          empty
+        {filtered.length === 0 ? (
+          cases.length === 0 ? (
+            empty
+          ) : (
+            <div className="rounded-xl rounded-tl-none border border-dashed border-border bg-surface/60 px-6 py-10 text-center">
+              <p className="text-sm font-medium text-foreground">
+                Ningún expediente coincide con los filtros
+              </p>
+              <button
+                type="button"
+                className="mt-3 text-sm font-medium text-link hover:underline"
+                onClick={() => setFilters(EMPTY_MIS_LICITACIONES_FILTERS)}
+              >
+                Limpiar filtros
+              </button>
+            </div>
+          )
         ) : (
-          <PipelineBoard scope={scope} cases={cases} view={view} />
+          <PipelineBoard scope={scope} cases={filtered} view={view} />
         )}
       </div>
+
+      <MisLicitacionesFiltersModal
+        open={filterOpen}
+        scope={scope}
+        years={years}
+        ownerOptions={ownerOptions}
+        applied={filters}
+        onClose={() => setFilterOpen(false)}
+        onApply={(next) => {
+          setFilters(next);
+          setFilterOpen(false);
+        }}
+        onClear={() => {
+          setFilters(EMPTY_MIS_LICITACIONES_FILTERS);
+          setFilterOpen(false);
+        }}
+      />
     </section>
   );
 }
@@ -107,48 +173,6 @@ function ScopeTab({
     >
       {label}
     </Link>
-  );
-}
-
-/** Mismo look que Favoritos/Recomendaciones; sin modal todavía. */
-function FiltersButton() {
-  return (
-    <button
-      type="button"
-      className={cn(
-        "inline-flex shrink-0 items-center gap-2 px-1 py-2",
-        "text-base font-medium text-primary-dark",
-        "transition-colors hover:text-primary",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-      )}
-      aria-label="Filtrar"
-    >
-      <FiltersIcon />
-      Filtrar
-    </button>
-  );
-}
-
-function FiltersIcon() {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.75"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className="size-5 shrink-0"
-      aria-hidden
-    >
-      <path d="M4 7h16" />
-      <circle cx="8" cy="7" r="2.25" fill="var(--surface)" />
-      <path d="M4 12h16" />
-      <circle cx="16" cy="12" r="2.25" fill="var(--surface)" />
-      <path d="M4 17h16" />
-      <circle cx="12" cy="17" r="2.25" fill="var(--surface)" />
-    </svg>
   );
 }
 
