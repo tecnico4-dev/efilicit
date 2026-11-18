@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { FavoriteKindBubble } from "@/components/favorites/favorite-kind-bubble";
 import { FavoriteHeartButton } from "@/components/favorites/favorite-heart-button";
+import { TenderStarRating } from "@/components/tenders/tender-star-rating";
 import { ShareFavoriteButton } from "@/app/favorites/share-favorite-button";
 import { useUndoToast } from "@/components/undo-toast";
 import { formatDateTimeMadrid } from "@/lib/datetime";
@@ -13,6 +14,7 @@ import {
   type FavoriteKind,
   type RecommendationItem,
   type RecommendationProfileKind,
+  type TenderRating,
 } from "@/lib/queries";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { formatTenderStatus } from "@/lib/tender-labels";
@@ -37,6 +39,7 @@ export function RecommendationList({
   const { showStatus } = useUndoToast();
   const [hidden, setHidden] = useState<string[]>([]);
   const [pendingId, setPendingId] = useState<string | null>(null);
+  const [ratingOpenId, setRatingOpenId] = useState<string | null>(null);
   /** Kind del corazón si el usuario guarda favorito (para el avión). */
   const [shareKindById, setShareKindById] = useState<
     Record<string, FavoriteKind>
@@ -44,23 +47,60 @@ export function RecommendationList({
 
   const visible = items.filter((i) => !hidden.includes(i.tenderId));
 
+  async function persistRating(
+    tenderId: string,
+    next: TenderRating | null,
+    interestFallback: RecommendationProfileKind | null,
+  ) {
+    const client = createSupabaseBrowserClient();
+    if (next == null) {
+      return { error: null as Error | null };
+    }
+    return upsertOwnTenderRating(client, {
+      userId,
+      tenderId,
+      score: next.score,
+      interestKind: next.interestKind ?? interestFallback,
+    });
+  }
+
   async function onNotInterested(item: RecommendationItem) {
     if (pendingId) return;
     setPendingId(item.tenderId);
     setHidden((h) => [...h, item.tenderId]);
-    const client = createSupabaseBrowserClient();
-    const { error } = await upsertOwnTenderRating(client, {
-      userId,
-      tenderId: item.tenderId,
-      score: 1,
-      interestKind: item.profileKind,
-    });
+    const { error } = await persistRating(
+      item.tenderId,
+      { score: 1, interestKind: item.profileKind },
+      item.profileKind,
+    );
     setPendingId(null);
     if (error) {
       setHidden((h) => h.filter((id) => id !== item.tenderId));
       showStatus(`No se pudo guardar: ${error.message}`);
       return;
     }
+    setRatingOpenId(null);
+    router.refresh();
+  }
+
+  async function onRate(
+    item: RecommendationItem,
+    next: TenderRating | null,
+  ) {
+    if (next == null) return;
+    setPendingId(item.tenderId);
+    const { error } = await persistRating(
+      item.tenderId,
+      next,
+      item.profileKind,
+    );
+    setPendingId(null);
+    if (error) {
+      showStatus(`No se pudo guardar: ${error.message}`);
+      return;
+    }
+    setHidden((h) => (h.includes(item.tenderId) ? h : [...h, item.tenderId]));
+    setRatingOpenId(null);
     router.refresh();
   }
 
@@ -87,6 +127,7 @@ export function RecommendationList({
         const detailHref = `/tenders/${item.tenderId}?from=recommendations&tab=${listTab}${interestQs}`;
         const shareKind =
           shareKindById[item.tenderId] ?? item.profileKind ?? null;
+        const ratingOpen = ratingOpenId === item.tenderId;
 
         return (
           <li key={item.tenderId} className="py-4">
@@ -127,7 +168,7 @@ export function RecommendationList({
                 </div>
               </div>
 
-              <div className="flex w-[6.5rem] shrink-0 flex-col items-center gap-1">
+              <div className="flex shrink-0 flex-col items-center gap-1.5">
                 <div className="flex items-center justify-center gap-0.5">
                   <FavoriteHeartButton
                     userId={userId}
@@ -159,17 +200,38 @@ export function RecommendationList({
                     />
                   ) : null}
                 </div>
-                <Link
-                  href={detailHref}
-                  className="text-xs font-medium text-primary hover:underline"
-                >
-                  Valorar
-                </Link>
+
+                {ratingOpen ? (
+                  <div className="flex flex-col items-center">
+                    <TenderStarRating
+                      rating={null}
+                      defaultInterestKind={item.profileKind}
+                      disabled={pendingId === item.tenderId}
+                      onChange={(next) => void onRate(item, next)}
+                    />
+                    <button
+                      type="button"
+                      className="mt-1 text-[11px] text-muted-foreground hover:underline"
+                      onClick={() => setRatingOpenId(null)}
+                    >
+                      Cerrar
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    className="text-xs font-medium text-primary hover:underline"
+                    onClick={() => setRatingOpenId(item.tenderId)}
+                  >
+                    Valorar
+                  </button>
+                )}
+
                 <button
                   type="button"
                   disabled={pendingId === item.tenderId}
                   onClick={() => void onNotInterested(item)}
-                  className="text-xs text-muted-foreground hover:text-destructive disabled:opacity-50"
+                  className="text-xs text-destructive hover:underline disabled:opacity-50"
                 >
                   No me interesa
                 </button>
