@@ -438,7 +438,7 @@ export type Database = {
       tender_recommendations: {
         Row: {
           computed_at: string
-          profile_kind: string
+          profile_kind: string | null
           reason: Json
           score: number
           tender_id: string
@@ -446,7 +446,7 @@ export type Database = {
         }
         Insert: {
           computed_at?: string
-          profile_kind: string
+          profile_kind?: string | null
           reason?: Json
           score: number
           tender_id: string
@@ -454,7 +454,7 @@ export type Database = {
         }
         Update: {
           computed_at?: string
-          profile_kind?: string
+          profile_kind?: string | null
           reason?: Json
           score?: number
           tender_id?: string

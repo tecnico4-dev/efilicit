@@ -363,21 +363,21 @@ def _simple_sim(a: str, b: str) -> float:
     return inter / max(len(ta | tb), 1)
 
 
-def replace_recommendations(
+def replace_user_recommendations(
     conn: Any,
     *,
     user_id: str,
-    profile: ProfileKind,
     rows: list[Recommendation],
 ) -> int:
+    """Sustituye todas las recomendaciones del usuario (1 fila por tender)."""
     now = datetime.now(timezone.utc)
     with conn.cursor() as cur:
         cur.execute(
             """
             delete from public.tender_recommendations
-            where user_id = %s::uuid and profile_kind = %s
+            where user_id = %s::uuid
             """,
-            (user_id, profile),
+            (user_id,),
         )
         for rec in rows:
             cur.execute(
@@ -388,7 +388,7 @@ def replace_recommendations(
                 """,
                 (
                     user_id,
-                    profile,
+                    rec.profile_kind,
                     rec.tender_id,
                     rec.score,
                     json.dumps(rec.reason, ensure_ascii=False),

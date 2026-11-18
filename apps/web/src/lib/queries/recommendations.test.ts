@@ -84,7 +84,47 @@ describe("listOwnRecommendations", () => {
     expect(data.subcontrata[0]?.reasonLabel).toBe(
       "Recomendada según tu interés",
     );
+    expect(data.sinPerfil).toEqual([]);
     expect(data.computedAt).toBe("2026-11-17T10:00:00Z");
+  });
+
+  it("agrupa profile_kind null en sinPerfil", async () => {
+    const client = createFakeSupabaseClient({
+      tables: {
+        tender_recommendations: {
+          byMethod: {
+            select: {
+              data: [
+                {
+                  tender_id: "t9",
+                  profile_kind: null,
+                  score: 0.85,
+                  reason: { tie_profiles: true },
+                  computed_at: "2026-11-18T10:00:00Z",
+                  tenders: {
+                    title: "Empate",
+                    status: null,
+                    deadline_at: null,
+                    estimated_value: null,
+                    currency: "EUR",
+                  },
+                },
+              ],
+            },
+          },
+        },
+        tender_ratings: { byMethod: { select: { data: [] } } },
+        favorites: { byMethod: { select: { data: [] } } },
+      },
+    });
+    const { data, error } = await listOwnRecommendations(client as never, {
+      userId: "u1",
+    });
+    expect(error).toBeNull();
+    expect(data.propia).toEqual([]);
+    expect(data.subcontrata).toEqual([]);
+    expect(data.sinPerfil.map((r) => r.tenderId)).toEqual(["t9"]);
+    expect(data.sinPerfil[0]?.profileKind).toBeNull();
   });
 
   it("hasOwnVisibleRecommendations ignora valoradas/favoritas", async () => {

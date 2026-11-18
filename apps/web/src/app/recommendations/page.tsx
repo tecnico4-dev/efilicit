@@ -95,6 +95,7 @@ export default async function RecommendationsPage({
             userId={userId}
             propia={data.propia}
             subcontrata={data.subcontrata}
+            sinPerfil={data.sinPerfil}
             filterOptions={filterOptions}
             hasComputedAt={Boolean(data.computedAt)}
             initialTab={initialTab}

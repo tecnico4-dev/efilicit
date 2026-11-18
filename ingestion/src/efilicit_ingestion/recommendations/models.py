@@ -45,6 +45,7 @@ class CandidateTender:
 @dataclass(frozen=True, slots=True)
 class Recommendation:
     tender_id: str
-    profile_kind: ProfileKind
+    # None = empate de score entre propia y subcontrata (solo lista Todas).
+    profile_kind: ProfileKind | None
     score: float
     reason: dict[str, Any] = field(default_factory=dict)

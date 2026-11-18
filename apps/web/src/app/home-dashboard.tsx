@@ -170,6 +170,7 @@ export function HomeDashboard({
   recommendations: {
     propia: RecommendationItem[];
     subcontrata: RecommendationItem[];
+    sinPerfil: RecommendationItem[];
     computedAt: string | null;
   };
   loadError?: string | null;
@@ -321,7 +322,8 @@ export function HomeDashboard({
       {(() => {
         const hasRecommendations =
           recommendations.propia.length > 0 ||
-          recommendations.subcontrata.length > 0;
+          recommendations.subcontrata.length > 0 ||
+          recommendations.sinPerfil.length > 0;
         const hasFavoritesSlide = favorites.length > 0;
         const hasStatusChanges = recentNotifications.length > 0;
         const slides: HomeFeedSlide[] = [];
@@ -335,6 +337,7 @@ export function HomeDashboard({
                 userId={userId}
                 propia={recommendations.propia}
                 subcontrata={recommendations.subcontrata}
+                sinPerfil={recommendations.sinPerfil}
                 computedAt={recommendations.computedAt}
                 compact
                 showHeading={false}

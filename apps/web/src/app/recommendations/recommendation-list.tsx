@@ -73,18 +73,22 @@ export function RecommendationList({
           : "divide-y divide-border"
       }
     >
-      {visible.map((item) => (
-        <li key={`${item.profileKind}-${item.tenderId}`} className="py-4">
+      {visible.map((item) => {
+        const interestQs = item.profileKind
+          ? `&interest=${item.profileKind}`
+          : "";
+        return (
+        <li key={item.tenderId} className="py-4">
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0 flex-1">
               <Link
-                href={`/tenders/${item.tenderId}?from=recommendations&tab=${listTab}&interest=${item.profileKind}`}
+                href={`/tenders/${item.tenderId}?from=recommendations&tab=${listTab}${interestQs}`}
                 className="text-base font-medium text-foreground hover:text-link hover:underline"
               >
                 {item.title}
               </Link>
               <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1.5">
-                {showKindBubble ? (
+                {showKindBubble && item.profileKind ? (
                   <FavoriteKindBubble kind={item.profileKind} />
                 ) : null}
                 <dl className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
@@ -121,7 +125,8 @@ export function RecommendationList({
             </button>
           </div>
         </li>
-      ))}
+        );
+      })}
     </ul>
   );
 }

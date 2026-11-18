@@ -29,7 +29,7 @@ function ProfileColumn({
   userId,
   showEmptyHint,
 }: {
-  kind: RecommendationProfileKind;
+  kind: RecommendationProfileKind | null;
   label: string;
   items: RecommendationItem[];
   userId: string;
@@ -66,11 +66,13 @@ function ProfileColumn({
     <section className="min-w-0">
       <div className="mb-3 flex items-center gap-2">
         <h3 className="text-base font-semibold text-foreground">{label}</h3>
-        <FavoriteKindBubble kind={kind} />
+        {kind ? <FavoriteKindBubble kind={kind} /> : null}
       </div>
       {visible.length === 0 ? (
         <p className="text-sm text-muted-foreground">
-          {showEmptyHint ? emptyCopy(kind) : "Ninguna por encima del umbral ahora."}
+          {showEmptyHint && kind
+            ? emptyCopy(kind)
+            : "Ninguna por encima del umbral ahora."}
         </p>
       ) : (
         <ul className="space-y-2">
@@ -81,7 +83,11 @@ function ProfileColumn({
             >
               <div className="flex items-start justify-between gap-2">
                 <Link
-                  href={`/tenders/${item.tenderId}?from=recommendations&tab=todas&interest=${kind}`}
+                  href={
+                    kind
+                      ? `/tenders/${item.tenderId}?from=recommendations&tab=todas&interest=${kind}`
+                      : `/tenders/${item.tenderId}?from=recommendations&tab=todas`
+                  }
                   className="min-w-0 text-sm font-medium text-foreground hover:text-primary"
                 >
                   {item.title}
@@ -129,6 +135,7 @@ export function HomeRecommendations({
   userId,
   propia,
   subcontrata,
+  sinPerfil = [],
   computedAt,
   compact = false,
   /** Si false, el título lo pone el carrusel del home. */
@@ -137,6 +144,7 @@ export function HomeRecommendations({
   userId: string;
   propia: RecommendationItem[];
   subcontrata: RecommendationItem[];
+  sinPerfil?: RecommendationItem[];
   computedAt: string | null;
   /** Home: mensajes de vacío más cortos si nunca hubo cálculo. */
   compact?: boolean;
@@ -144,10 +152,16 @@ export function HomeRecommendations({
 }) {
   const hasPropia = propia.length > 0;
   const hasSub = subcontrata.length > 0;
-  const hasAny = hasPropia || hasSub;
+  const hasSin = sinPerfil.length > 0;
+  const hasAny = hasPropia || hasSub || hasSin;
   const showEmptyHint = !computedAt;
+  type Col = {
+    kind: RecommendationProfileKind | null;
+    label: string;
+    items: RecommendationItem[];
+  };
   /** Home/carrusel: solo columnas con ítems. Página dedicada: ambas si hace falta el vacío. */
-  const columns =
+  const columns: Col[] =
     !showHeading && compact
       ? ([
           hasPropia
@@ -160,11 +174,10 @@ export function HomeRecommendations({
                 items: subcontrata,
               })
             : null,
-        ].filter(Boolean) as Array<{
-          kind: RecommendationProfileKind;
-          label: string;
-          items: RecommendationItem[];
-        }>)
+          hasSin
+            ? ({ kind: null, label: "Otros encajes", items: sinPerfil })
+            : null,
+        ].filter(Boolean) as Col[])
       : [
           { kind: "propia" as const, label: "Para Eficen", items: propia },
           {
@@ -172,6 +185,9 @@ export function HomeRecommendations({
             label: "Para Subcontrata",
             items: subcontrata,
           },
+          ...(hasSin
+            ? [{ kind: null, label: "Otros encajes", items: sinPerfil }]
+            : []),
         ];
   const dual = columns.length > 1;
 
@@ -222,7 +238,7 @@ export function HomeRecommendations({
         >
           {columns.map((col) => (
             <ProfileColumn
-              key={col.kind}
+              key={col.kind ?? "sin-perfil"}
               kind={col.kind}
               label={col.label}
               items={col.items}

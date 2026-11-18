@@ -57,6 +57,7 @@ export function RecommendationsSection({
   userId,
   propia,
   subcontrata,
+  sinPerfil,
   filterOptions,
   hasComputedAt,
   initialTab = "todas",
@@ -64,6 +65,7 @@ export function RecommendationsSection({
   userId: string;
   propia: RecommendationItem[];
   subcontrata: RecommendationItem[];
+  sinPerfil: RecommendationItem[];
   filterOptions: CriteriaFilterOptionsProp;
   hasComputedAt: boolean;
   initialTab?: RecommendationsTab;
@@ -75,8 +77,10 @@ export function RecommendationsSection({
 
   const todasRaw = useMemo(
     () =>
-      [...propia, ...subcontrata].sort((a, b) => b.score - a.score),
-    [propia, subcontrata],
+      [...propia, ...subcontrata, ...sinPerfil].sort(
+        (a, b) => b.score - a.score,
+      ),
+    [propia, subcontrata, sinPerfil],
   );
 
   const filtered = useMemo(

@@ -11,7 +11,8 @@ export type RecommendationProfileKind = TenderInterestKind;
 
 export type RecommendationItem = {
   tenderId: string;
-  profileKind: RecommendationProfileKind;
+  /** null = empate entre perfiles (solo lista Todas). */
+  profileKind: RecommendationProfileKind | null;
   score: number;
   reasonLabel: string;
   computedAt: string;
@@ -26,7 +27,9 @@ export type RecommendationItem = {
   cpvCodes: string[];
 };
 
-function asProfileKind(raw: string): RecommendationProfileKind | null {
+function asProfileKind(
+  raw: string | null | undefined,
+): RecommendationProfileKind | null {
   if (raw === "propia" || raw === "subcontrata") return raw;
   return null;
 }
@@ -79,6 +82,7 @@ export async function hasOwnVisibleRecommendations(
  * Lista recomendaciones del usuario, agrupadas por perfil.
  * `limitPerKind` acota la home; omitir/null = todas las que pasaron el umbral.
  * Descarta tenders que el usuario haya valorado o guardado tras el cálculo.
+ * `sinPerfil`: empate Eficen/Sub (solo visibles en Todas).
  */
 export async function listOwnRecommendations(
   client: SupabaseClient<Database>,
@@ -90,6 +94,7 @@ export async function listOwnRecommendations(
   data: {
     propia: RecommendationItem[];
     subcontrata: RecommendationItem[];
+    sinPerfil: RecommendationItem[];
     computedAt: string | null;
   };
   error: Error | null;
@@ -97,6 +102,7 @@ export async function listOwnRecommendations(
   const empty = {
     propia: [] as RecommendationItem[],
     subcontrata: [] as RecommendationItem[],
+    sinPerfil: [] as RecommendationItem[],
     computedAt: null as string | null,
   };
 
@@ -126,12 +132,12 @@ export async function listOwnRecommendations(
 
   const propia: RecommendationItem[] = [];
   const subcontrata: RecommendationItem[] = [];
+  const sinPerfil: RecommendationItem[] = [];
   let computedAt: string | null = null;
 
   for (const row of rows ?? []) {
-    const kind = asProfileKind(row.profile_kind);
-    if (!kind) continue;
     if (hide.has(row.tender_id)) continue;
+    const kind = asProfileKind(row.profile_kind);
 
     const tender = row.tenders as
       | {
@@ -169,7 +175,8 @@ export async function listOwnRecommendations(
     }
 
     if (kind === "propia") propia.push(item);
-    else subcontrata.push(item);
+    else if (kind === "subcontrata") subcontrata.push(item);
+    else sinPerfil.push(item);
   }
 
   const limit = input.limitPerKind;
@@ -177,6 +184,7 @@ export async function listOwnRecommendations(
     data: {
       propia: limit != null ? propia.slice(0, limit) : propia,
       subcontrata: limit != null ? subcontrata.slice(0, limit) : subcontrata,
+      sinPerfil: limit != null ? sinPerfil.slice(0, limit) : sinPerfil,
       computedAt,
     },
     error: null,

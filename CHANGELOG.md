@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Recomendaciones: una fila por `(user, tender)` (gana el kind de mayor score; empate → `profile_kind` null, solo en Todas). Migración local `20261118120000`.
 - `/recommendations`: título y barra como el resto; «Actualizado el…» arriba a la derecha; Plazo/Estado/Importe en la misma línea que el circulito; Filtrar (Criteria v1) como en favoritos.
 - Nav «Recomendaciones» (antes «Para ti»): tras Favoritos y antes de Alertas; solo visible si hay alguna recomendación pendiente.
 - Gobernanza: branch protection de `main` **activa** (repo público; PR obligatorio + checks CI; sin force push/borrado). [ADR 001](docs/adr/001-proteccion-main-aplazada.md) enmendado (sin ADR nuevo); ver `.github/README.md`.
