@@ -14,7 +14,7 @@ import {
 import { formatCountdown } from "@/lib/bid-countdown";
 import { formatDateMadrid, formatDateTimeMadrid } from "@/lib/datetime";
 import { formatTenderStatus } from "@/lib/tender-labels";
-import { PAGE_MAIN_CLASS } from "@/components/shell/page-width";
+import { PAGE_MAIN_WIDE_CLASS } from "@/components/shell/page-width";
 import { ErrorState } from "@/components/ui/state-message";
 import { CaseStageBadge } from "@/components/mis-licitaciones/case-stage-badge";
 import { DetailTabs } from "@/components/mis-licitaciones/detail-tabs";
@@ -65,7 +65,7 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
   const profile = await getSessionProfile();
   if (!profile.data) {
     return (
-      <main className={PAGE_MAIN_CLASS}>
+      <main className={PAGE_MAIN_WIDE_CLASS}>
         <ErrorState>
           No hay perfil en public.users:{" "}
           {profile.error?.message ?? "desconocido"}
@@ -78,7 +78,7 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
 
   if (error) {
     return (
-      <main className={PAGE_MAIN_CLASS}>
+      <main className={PAGE_MAIN_WIDE_CLASS}>
         <ErrorState>{error.message}</ErrorState>
       </main>
     );
@@ -151,7 +151,7 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
       : offerCase.stage;
 
   return (
-    <main className={PAGE_MAIN_CLASS}>
+    <main className={PAGE_MAIN_WIDE_CLASS}>
       <Link
         href={historic ? "/mis-licitaciones?tab=historic" : "/mis-licitaciones"}
         className="mb-4 inline-flex text-sm font-medium text-link hover:underline"
