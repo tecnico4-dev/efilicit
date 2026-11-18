@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { FavoriteKindBubble } from "@/components/favorites/favorite-kind-bubble";
 import { favoriteKindLongLabel, type RecommendationItem } from "@/lib/queries";
@@ -7,6 +8,9 @@ import { formatDateTimeMadrid } from "@/lib/datetime";
 import { formatTenderStatus } from "@/lib/tender-labels";
 import { cn } from "@/lib/cn";
 import { formatMoney } from "../favorites/favorites-shared";
+
+/** Tarjetas visibles al abrir cada columna; cada «Mostrar más» suma otras tantas. */
+const KANBAN_PAGE_SIZE = 10;
 
 function KanbanCard({ item }: { item: RecommendationItem }) {
   const interestQs = item.profileKind
@@ -53,8 +57,12 @@ function KanbanColumn({
   kind: "propia" | "subcontrata" | null;
   items: RecommendationItem[];
 }) {
+  const [visibleCount, setVisibleCount] = useState(KANBAN_PAGE_SIZE);
+  const visible = items.slice(0, visibleCount);
+  const hasMore = visibleCount < items.length;
+
   return (
-    <section className="flex min-h-[20rem] min-w-0 flex-col overflow-hidden rounded-lg border border-border bg-muted/30">
+    <section className="flex max-h-[min(70dvh,40rem)] min-h-[20rem] min-w-0 flex-col overflow-hidden rounded-lg border border-border bg-muted/30">
       <header className="flex shrink-0 items-center gap-2 rounded-t-lg border-b border-border bg-surface/80 px-3 py-2.5">
         <h3 className="text-sm font-semibold text-foreground">{title}</h3>
         {kind ? <FavoriteKindBubble kind={kind} /> : null}
@@ -67,10 +75,23 @@ function KanbanColumn({
           Ninguna en esta columna.
         </p>
       ) : (
-        <ul className="flex flex-1 flex-col gap-2 overflow-y-auto p-2">
-          {items.map((item) => (
+        <ul className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto p-2">
+          {visible.map((item) => (
             <KanbanCard key={item.tenderId} item={item} />
           ))}
+          {hasMore ? (
+            <li className="shrink-0 list-none py-1 text-center">
+              <button
+                type="button"
+                onClick={() =>
+                  setVisibleCount((n) => n + KANBAN_PAGE_SIZE)
+                }
+                className="text-xs font-medium text-muted-foreground transition-colors hover:text-primary hover:underline"
+              >
+                Mostrar más…
+              </button>
+            </li>
+          ) : null}
         </ul>
       )}
     </section>
