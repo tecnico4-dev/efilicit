@@ -13,6 +13,7 @@ import {
   listOwnRecommendations,
   listSearchFilterOptions,
 } from "@/lib/queries";
+import { RecommendationsInfoButton } from "./recommendations-info-button";
 import { RecommendationsSection } from "./recommendations-section";
 import { parseRecommendationsTab } from "./recommendations-tab";
 
@@ -75,9 +76,12 @@ export default async function RecommendationsPage({
     <main className={PAGE_MAIN_FAVORITES_CLASS}>
       {/* Misma geometría H1 + PAGE_TITLE_RULE que Notificaciones; «Actualizado» flota en el hueco. */}
       <div className="relative">
-        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-          Recomendaciones para ti
-        </h1>
+        <div className="flex flex-wrap items-center gap-2">
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+            Recomendaciones para ti
+          </h1>
+          <RecommendationsInfoButton className="translate-y-px" />
+        </div>
         {data.computedAt ? (
           <p className="pointer-events-none absolute right-0 top-[calc(100%+2rem-0.5rem)] -translate-y-full text-xs text-muted-foreground">
             Actualizado el {formatDateTimeMadrid(data.computedAt)}
