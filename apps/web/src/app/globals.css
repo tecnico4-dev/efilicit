@@ -215,17 +215,6 @@ body::-webkit-scrollbar {
   animation: fav-kind-nudge 380ms ease-in-out;
 }
 
-.home-dashboard {
-  background:
-    radial-gradient(
-      140% 110% at 50% -15%,
-      color-mix(in srgb, var(--primary-light) 55%, transparent),
-      color-mix(in srgb, var(--primary-light) 18%, transparent) 42%,
-      transparent 78%
-    ),
-    var(--background);
-}
-
 .home-anim {
   animation: home-fade-up 420ms ease-out both;
 }

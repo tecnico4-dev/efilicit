@@ -244,7 +244,7 @@ export function HomeDashboard({
   ];
 
   return (
-    <main className={`${PAGE_MAIN_MEDIUM_CLASS} home-dashboard`}>
+    <main className={PAGE_MAIN_MEDIUM_CLASS}>
       <p className="home-anim text-center text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
         Efi<span className="text-primary-dark">Licit</span>
       </p>
