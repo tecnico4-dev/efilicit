@@ -8,7 +8,7 @@ import {
   listOfferCases,
 } from "@/lib/queries";
 import {
-  PAGE_MAIN_CLASS,
+  PAGE_MAIN_FAVORITES_CLASS,
   PAGE_TITLE_RULE,
 } from "@/components/shell/page-width";
 import { ErrorState } from "@/components/ui/state-message";
@@ -35,7 +35,7 @@ export default async function MisLicitacionesPage({ searchParams }: PageProps) {
   const profile = await getSessionProfile();
   if (!profile.data) {
     return (
-      <main className={PAGE_MAIN_CLASS}>
+      <main className={PAGE_MAIN_FAVORITES_CLASS}>
         <ErrorState>
           No hay perfil en public.users:{" "}
           {profile.error?.message ?? "desconocido"}
@@ -79,7 +79,7 @@ export default async function MisLicitacionesPage({ searchParams }: PageProps) {
   );
 
   return (
-    <main className={PAGE_MAIN_CLASS}>
+    <main className={PAGE_MAIN_FAVORITES_CLASS}>
       <h1 className="text-2xl font-semibold tracking-tight text-foreground">
         Mis licitaciones
       </h1>

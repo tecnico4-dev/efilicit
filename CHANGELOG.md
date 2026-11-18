@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Mis licitaciones · listado: Activas/Histórico como pestañas; Lista|Kanban a la derecha en la misma fila (patrón Recomendaciones).
+- Mis licitaciones · listado: mismo ancho que Recomendaciones; pestañas Activas/Histórico; Lista|Kanban + Filtrar (botón sin modal aún).
 - Mis licitaciones · ficha de expediente: ancho completo (`PAGE_MAIN_WIDE_CLASS`), sin `max-w-6xl`.
 - `eficen_members`: sin `created_at`/`updated_at`; añade `avatar_url` nullable (UI: iniciales si vacío). Local + remoto — enmienda [ADR 032](docs/adr/032-eficen-members-favorites-shared.md).
 - Schema: se elimina `users.notifications_read_at` (watermark legacy del buzón; lectura por aviso en `notification_favorites`). Migración local.

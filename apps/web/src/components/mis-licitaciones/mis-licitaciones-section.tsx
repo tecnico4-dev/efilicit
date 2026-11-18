@@ -8,10 +8,14 @@ import {
   PipelineBoard,
   type PipelineViewMode,
 } from "@/components/mis-licitaciones/pipeline-board";
+import { RecommendationsViewToggle } from "@/app/recommendations/recommendations-view-toggle";
 
 type Scope = "active" | "historic";
 
-/** Pestañas Activas/Histórico + Lista|Kanban (patrón Recomendaciones / FavoriteKindTabs). */
+/**
+ * Misma geometría que Recomendaciones / FavoriteKindTabs:
+ * pestañas a la izquierda; Lista|Kanban + Filtrar a la derecha.
+ */
 export function MisLicitacionesSection({
   scope,
   cases,
@@ -29,10 +33,9 @@ export function MisLicitacionesSection({
 
   return (
     <section>
-      {/* Una sola fila: pestañas a la izquierda, Lista|Kanban a la derecha (sin wrap). */}
-      <div className="flex min-h-10 items-end gap-3 border-b border-border">
+      <div className="flex min-h-10 flex-wrap items-end justify-between gap-x-3 gap-y-2">
         <div
-          className="flex min-w-0 flex-1 items-end gap-1"
+          className="flex min-w-0 flex-wrap items-end gap-1 border-b border-border"
           role="tablist"
           aria-label="Ámbito de Mis licitaciones"
         >
@@ -50,7 +53,7 @@ export function MisLicitacionesSection({
 
         <div className="mb-px flex shrink-0 items-center gap-3">
           {scope === "historic" && years.length > 0 ? (
-            <div className="hidden max-w-[14rem] flex-wrap justify-end gap-1.5 sm:flex">
+            <div className="hidden flex-wrap gap-1.5 sm:flex">
               <YearChip href="/mis-licitaciones?tab=historic" active={!year}>
                 Todos
               </YearChip>
@@ -65,12 +68,15 @@ export function MisLicitacionesSection({
               ))}
             </div>
           ) : null}
-          <ViewToggle view={view} onChange={setView} />
+          <RecommendationsViewToggle view={view} onChange={setView} />
+          <FiltersButton />
         </div>
       </div>
 
       <div className="-mt-px">
-        {cases.length === 0 ? empty : (
+        {cases.length === 0 ? (
+          empty
+        ) : (
           <PipelineBoard scope={scope} cases={cases} view={view} />
         )}
       </div>
@@ -104,44 +110,45 @@ function ScopeTab({
   );
 }
 
-function ViewToggle({
-  view,
-  onChange,
-}: {
-  view: PipelineViewMode;
-  onChange: (next: PipelineViewMode) => void;
-}) {
+/** Mismo look que Favoritos/Recomendaciones; sin modal todavía. */
+function FiltersButton() {
   return (
-    <div
-      className="inline-flex overflow-hidden rounded-md border border-border bg-background"
-      role="group"
-      aria-label="Vista del listado"
+    <button
+      type="button"
+      className={cn(
+        "inline-flex shrink-0 items-center gap-2 px-1 py-2",
+        "text-base font-medium text-primary-dark",
+        "transition-colors hover:text-primary",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+      )}
+      aria-label="Filtrar"
     >
-      <button
-        type="button"
-        onClick={() => onChange("lista")}
-        className={cn(
-          "px-3 py-1.5 text-sm font-medium transition-colors",
-          view === "lista"
-            ? "bg-primary text-primary-foreground"
-            : "text-muted-foreground hover:bg-muted hover:text-foreground",
-        )}
-      >
-        Lista
-      </button>
-      <button
-        type="button"
-        onClick={() => onChange("kanban")}
-        className={cn(
-          "px-3 py-1.5 text-sm font-medium transition-colors",
-          view === "kanban"
-            ? "bg-primary text-primary-foreground"
-            : "text-muted-foreground hover:bg-muted hover:text-foreground",
-        )}
-      >
-        Kanban
-      </button>
-    </div>
+      <FiltersIcon />
+      Filtrar
+    </button>
+  );
+}
+
+function FiltersIcon() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="size-5 shrink-0"
+      aria-hidden
+    >
+      <path d="M4 7h16" />
+      <circle cx="8" cy="7" r="2.25" fill="var(--surface)" />
+      <path d="M4 12h16" />
+      <circle cx="16" cy="12" r="2.25" fill="var(--surface)" />
+      <path d="M4 17h16" />
+      <circle cx="12" cy="17" r="2.25" fill="var(--surface)" />
+    </svg>
   );
 }
 
