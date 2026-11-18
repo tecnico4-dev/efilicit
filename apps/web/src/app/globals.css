@@ -218,9 +218,10 @@ body::-webkit-scrollbar {
 .home-dashboard {
   background:
     radial-gradient(
-      120% 80% at 50% -10%,
+      140% 110% at 50% -15%,
       color-mix(in srgb, var(--primary-light) 55%, transparent),
-      transparent 55%
+      color-mix(in srgb, var(--primary-light) 18%, transparent) 42%,
+      transparent 78%
     ),
     var(--background);
 }
