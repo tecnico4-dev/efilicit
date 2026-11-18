@@ -24,37 +24,72 @@ export const EMPTY_MIS_LICITACIONES_FILTERS: MisLicitacionesFilters = {
   ownerKey: "",
 };
 
-/** Persiste al cambiar Activas ↔ Histórico (navegación remonta el cliente). */
+/**
+ * Filtros por pestaña (Activas e Histórico independientes).
+ * Persisten al ir y volver; no se traspasan entre pestañas.
+ */
 export const MIS_LICITACIONES_FILTERS_STORAGE_KEY =
-  "efilicit:mis-licitaciones-filters";
+  "efilicit:mis-licitaciones-filters-by-scope";
 
-/** `null` si aún no hay nada guardado en la sesión. */
-export function loadMisLicitacionesFilters(): MisLicitacionesFilters | null {
-  if (typeof window === "undefined") return null;
+type FiltersByScope = {
+  active: MisLicitacionesFilters;
+  historic: MisLicitacionesFilters;
+};
+
+function parseFiltersBlob(
+  raw: Partial<MisLicitacionesFilters> | null | undefined,
+): MisLicitacionesFilters {
+  if (!raw || typeof raw !== "object") return EMPTY_MIS_LICITACIONES_FILTERS;
+  return {
+    year: typeof raw.year === "number" ? raw.year : null,
+    stages: Array.isArray(raw.stages)
+      ? (raw.stages.filter(
+          (s) => typeof s === "string",
+        ) as MisLicitacionesFilters["stages"])
+      : [],
+    amountMin: typeof raw.amountMin === "number" ? raw.amountMin : null,
+    amountMax: typeof raw.amountMax === "number" ? raw.amountMax : null,
+    ownerKey: typeof raw.ownerKey === "string" ? raw.ownerKey : "",
+  };
+}
+
+function readFiltersByScope(): FiltersByScope {
+  const empty: FiltersByScope = {
+    active: EMPTY_MIS_LICITACIONES_FILTERS,
+    historic: EMPTY_MIS_LICITACIONES_FILTERS,
+  };
+  if (typeof window === "undefined") return empty;
   try {
     const raw = sessionStorage.getItem(MIS_LICITACIONES_FILTERS_STORAGE_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as Partial<MisLicitacionesFilters>;
+    if (!raw) return empty;
+    const parsed = JSON.parse(raw) as Partial<FiltersByScope>;
     return {
-      year: typeof parsed.year === "number" ? parsed.year : null,
-      stages: Array.isArray(parsed.stages)
-        ? (parsed.stages.filter(
-            (s) => typeof s === "string",
-          ) as MisLicitacionesFilters["stages"])
-        : [],
-      amountMin: typeof parsed.amountMin === "number" ? parsed.amountMin : null,
-      amountMax: typeof parsed.amountMax === "number" ? parsed.amountMax : null,
-      ownerKey: typeof parsed.ownerKey === "string" ? parsed.ownerKey : "",
+      active: parseFiltersBlob(parsed.active),
+      historic: parseFiltersBlob(parsed.historic),
     };
   } catch {
-    return null;
+    return empty;
   }
 }
 
-export function saveMisLicitacionesFilters(f: MisLicitacionesFilters): void {
+export function loadMisLicitacionesFiltersForScope(
+  scope: "active" | "historic",
+): MisLicitacionesFilters {
+  return readFiltersByScope()[scope];
+}
+
+export function saveMisLicitacionesFiltersForScope(
+  scope: "active" | "historic",
+  f: MisLicitacionesFilters,
+): void {
   if (typeof window === "undefined") return;
   try {
-    sessionStorage.setItem(MIS_LICITACIONES_FILTERS_STORAGE_KEY, JSON.stringify(f));
+    const all = readFiltersByScope();
+    all[scope] = f;
+    sessionStorage.setItem(
+      MIS_LICITACIONES_FILTERS_STORAGE_KEY,
+      JSON.stringify(all),
+    );
   } catch {
     /* ignore quota / private mode */
   }
@@ -67,7 +102,6 @@ export function countActiveMisLicitacionesFilters(
   scope: "active" | "historic" = "historic",
 ): number {
   let n = 0;
-  // El año solo aplica en Histórico; se conserva en estado al ir a Activas.
   if (scope === "historic" && f.year != null) n += 1;
   if (f.stages.length > 0) n += 1;
   if (f.amountMin != null) n += 1;

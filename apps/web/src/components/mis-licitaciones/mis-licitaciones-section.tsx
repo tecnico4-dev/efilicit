@@ -13,9 +13,9 @@ import {
   applyMisLicitacionesFilters,
   countActiveMisLicitacionesFilters,
   EMPTY_MIS_LICITACIONES_FILTERS,
-  loadMisLicitacionesFilters,
+  loadMisLicitacionesFiltersForScope,
   ownerOptionsFromCases,
-  saveMisLicitacionesFilters,
+  saveMisLicitacionesFiltersForScope,
   type MisLicitacionesFilters,
 } from "@/components/mis-licitaciones/mis-licitaciones-filters";
 import {
@@ -45,17 +45,18 @@ export function MisLicitacionesSection({
   const [view, setView] = useState<PipelineViewMode>("lista");
   const [filterOpen, setFilterOpen] = useState(false);
   const [filters, setFilters] = useState<MisLicitacionesFilters>(() => {
-    const stored = loadMisLicitacionesFilters();
-    if (stored) return stored;
-    return {
-      ...EMPTY_MIS_LICITACIONES_FILTERS,
-      year: year ?? null,
-    };
+    const stored = loadMisLicitacionesFiltersForScope(scope);
+    const emptyStored =
+      countActiveMisLicitacionesFilters(stored, scope) === 0;
+    if (scope === "historic" && emptyStored && year != null) {
+      return { ...EMPTY_MIS_LICITACIONES_FILTERS, year };
+    }
+    return stored;
   });
 
   useEffect(() => {
-    saveMisLicitacionesFilters(filters);
-  }, [filters]);
+    saveMisLicitacionesFiltersForScope(scope, filters);
+  }, [scope, filters]);
 
   const ownerOptions = useMemo(() => ownerOptionsFromCases(cases), [cases]);
   const filtered = useMemo(
