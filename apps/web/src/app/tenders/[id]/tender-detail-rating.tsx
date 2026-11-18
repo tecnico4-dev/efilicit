@@ -30,8 +30,8 @@ function persistRating(
 }
 
 /**
- * Puntuación en ficha (from=notifications|alerts|email) + aviso al salir
- * si aún no hay nota.
+ * Puntuación en ficha (from=notifications|alerts|email|recommendations)
+ * + aviso al salir si aún no hay nota.
  */
 export function TenderDetailRating({
   userId,

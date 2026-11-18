@@ -9,7 +9,9 @@ import {
 import { FavoriteHeartButton } from "./favorite-heart-button";
 
 /**
- * Ficha: corazón + avión (Común | Personas) si está en favoritos.
+ * Ficha: corazón + avión (Común | Personas).
+ * El avión usa el kind del favorito o, si aún no hay, `shareKindHint`
+ * (p. ej. interés de la recomendación/alerta).
  */
 export function TenderFavoriteActions({
   userId,
@@ -18,6 +20,7 @@ export function TenderFavoriteActions({
   initiallyFavorited,
   initialKind,
   initialSharedOwner,
+  shareKindHint = null,
 }: {
   userId: string;
   tenderId: string;
@@ -25,10 +28,13 @@ export function TenderFavoriteActions({
   initiallyFavorited: boolean;
   initialKind: FavoriteKind | null;
   initialSharedOwner: SharedFavoriteOwnerInfo | null;
+  /** Kind por defecto para compartir si aún no es favorito. */
+  shareKindHint?: FavoriteKind | null;
 }) {
   const [favorited, setFavorited] = useState(initiallyFavorited);
   const [kind, setKind] = useState<FavoriteKind | null>(initialKind);
   const [sharedOwner, setSharedOwner] = useState(initialSharedOwner);
+  const shareKind = kind ?? shareKindHint;
 
   return (
     <div className="flex flex-wrap items-center gap-1">
@@ -43,12 +49,12 @@ export function TenderFavoriteActions({
           if (!next) setSharedOwner(null);
         }}
       />
-      {favorited && kind ? (
+      {shareKind ? (
         <ShareFavoriteButton
           userId={userId}
           tenderId={tenderId}
           tenderTitle={tenderTitle}
-          kind={kind}
+          kind={shareKind}
           alreadySharedOwner={sharedOwner}
         />
       ) : null}

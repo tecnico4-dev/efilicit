@@ -51,12 +51,17 @@ function allParam(value: string | string[] | undefined): string[] {
   return raw.map((v) => v.trim()).filter(Boolean);
 }
 
-/** Orígenes donde se muestra valoración 1–5 (y sin «volver a búsqueda»). */
+/** Orígenes donde se muestra valoración 1–5 (+ modal al salir si no hay nota). */
 function showRatingFromParams(
   params: Record<string, string | string[] | undefined>,
 ): boolean {
   const from = first(params.from);
-  return from === "notifications" || from === "alerts" || from === "email";
+  return (
+    from === "notifications" ||
+    from === "alerts" ||
+    from === "email" ||
+    from === "recommendations"
+  );
 }
 
 function backLinkFromParams(
@@ -432,6 +437,7 @@ export default async function TenderDetailPage({
               initiallyFavorited={initiallyFavorited}
               initialKind={favoriteKind}
               initialSharedOwner={sharedOwner}
+              shareKindHint={defaultInterestKind}
             />
           </div>
         ) : null}
