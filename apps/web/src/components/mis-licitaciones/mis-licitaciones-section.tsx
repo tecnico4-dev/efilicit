@@ -44,20 +44,28 @@ export function MisLicitacionesSection({
 }) {
   const [view, setView] = useState<PipelineViewMode>("lista");
   const [filterOpen, setFilterOpen] = useState(false);
-  const [filters, setFilters] = useState<MisLicitacionesFilters>(() => {
+  // Vacío en SSR + primer paint cliente (evita hydration mismatch con sessionStorage).
+  const [filters, setFilters] = useState<MisLicitacionesFilters>(
+    EMPTY_MIS_LICITACIONES_FILTERS,
+  );
+  const [filtersReady, setFiltersReady] = useState(false);
+
+  useEffect(() => {
     const stored = loadMisLicitacionesFiltersForScope(scope);
     const emptyStored =
       countActiveMisLicitacionesFilters(stored, scope) === 0;
     if (scope === "historic" && emptyStored && year != null) {
-      return { ...EMPTY_MIS_LICITACIONES_FILTERS, year };
+      setFilters({ ...EMPTY_MIS_LICITACIONES_FILTERS, year });
+    } else {
+      setFilters(stored);
     }
-    return stored;
-  });
+    setFiltersReady(true);
+  }, [scope, year]);
 
-  // Guardar al cambiar filtros; en unmount no escribir en la otra pestaña.
   useEffect(() => {
+    if (!filtersReady) return;
     saveMisLicitacionesFiltersForScope(scope, filters);
-  }, [filters, scope]);
+  }, [filters, scope, filtersReady]);
 
   function updateFilters(next: MisLicitacionesFilters) {
     setFilters(next);
