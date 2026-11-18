@@ -86,22 +86,6 @@ export function MisLicitacionesSection({
         </div>
 
         <div className="mb-px flex shrink-0 items-center gap-3">
-          {scope === "historic" && years.length > 0 ? (
-            <div className="hidden flex-wrap gap-1.5 sm:flex">
-              <YearChip href="/mis-licitaciones?tab=historic" active={!year}>
-                Todos
-              </YearChip>
-              {years.map((y) => (
-                <YearChip
-                  key={y}
-                  href={`/mis-licitaciones?tab=historic&year=${y}`}
-                  active={year === y}
-                >
-                  {y}
-                </YearChip>
-              ))}
-            </div>
-          ) : null}
           <RecommendationsViewToggle view={view} onChange={setView} />
           <MisLicitacionesFiltersButton
             activeCount={activeFilterCount}
@@ -175,30 +159,6 @@ function ScopeTab({
       )}
     >
       {label}
-    </Link>
-  );
-}
-
-function YearChip({
-  href,
-  active,
-  children,
-}: {
-  href: string;
-  active: boolean;
-  children: React.ReactNode;
-}) {
-  return (
-    <Link
-      href={href}
-      className={cn(
-        "rounded-full border px-2.5 py-0.5 text-xs font-medium",
-        active
-          ? "border-primary/40 bg-primary/10 text-link"
-          : "border-border text-muted-foreground hover:bg-muted",
-      )}
-    >
-      {children}
     </Link>
   );
 }
