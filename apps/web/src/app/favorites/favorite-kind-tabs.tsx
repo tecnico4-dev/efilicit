@@ -50,6 +50,8 @@ export function FavoriteKindTabs({
   onApplyFilters,
   tab: controlledTab,
   onTabChange,
+  trailingStart = null,
+  hideTabs = false,
 }: {
   ariaLabel: string;
   todas: ReactNode;
@@ -63,6 +65,10 @@ export function FavoriteKindTabs({
   onApplyFilters: (criteria: SearchCriteria | null) => void;
   tab?: FavoriteKindTab;
   onTabChange?: (tab: FavoriteKindTab) => void;
+  /** Controles a la izquierda de Filtrar (p. ej. Lista | Kanban). */
+  trailingStart?: ReactNode;
+  /** Oculta pestañas Todas/Eficen/Sub (p. ej. vista Kanban). */
+  hideTabs?: boolean;
 }) {
   const [internalTab, setInternalTab] = useState<FavoriteKindTab>(
     controlledTab ?? "todas",
@@ -76,7 +82,8 @@ export function FavoriteKindTabs({
   const [mounted, setMounted] = useState(false);
   const [formKey, setFormKey] = useState(0);
   const titleId = useId();
-  const showTabs = propiasCount > 0 && subcontratasCount > 0;
+  const showTabs =
+    !hideTabs && propiasCount > 0 && subcontratasCount > 0;
   const activeFilterCount = countActiveFavoriteFilters(appliedCriteria);
 
   useEffect(() => setMounted(true), []);
@@ -151,10 +158,13 @@ export function FavoriteKindTabs({
           <div className="min-w-0 flex-1" aria-hidden />
         )}
 
-        <FiltersButton
-          activeCount={activeFilterCount}
-          onClick={openFilters}
-        />
+        <div className="mb-px flex shrink-0 items-center gap-3">
+          {trailingStart}
+          <FiltersButton
+            activeCount={activeFilterCount}
+            onClick={openFilters}
+          />
+        </div>
       </div>
 
       <div
@@ -263,7 +273,7 @@ function FiltersButton({
       type="button"
       onClick={onClick}
       className={cn(
-        "mb-px inline-flex shrink-0 items-center gap-2 px-1 py-2",
+        "inline-flex shrink-0 items-center gap-2 px-1 py-2",
         "text-base font-medium text-primary-dark",
         "transition-colors hover:text-primary",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",

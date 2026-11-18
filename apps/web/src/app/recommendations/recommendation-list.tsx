@@ -168,7 +168,7 @@ export function RecommendationList({
                 </div>
               </div>
 
-              <div className="flex shrink-0 flex-col items-center gap-1.5">
+              <div className="flex shrink-0 flex-col items-center gap-0.5">
                 <div className="flex items-center justify-center gap-0.5">
                   <FavoriteHeartButton
                     userId={userId}
@@ -220,7 +220,7 @@ export function RecommendationList({
                 ) : (
                   <button
                     type="button"
-                    className="text-xs font-medium text-primary hover:underline"
+                    className="text-xs font-medium text-muted-foreground transition-colors hover:text-primary hover:underline"
                     onClick={() => setRatingOpenId(item.tenderId)}
                   >
                     Valorar

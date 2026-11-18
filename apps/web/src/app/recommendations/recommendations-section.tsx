@@ -11,7 +11,12 @@ import {
   tenderMatchesFavoriteFilters,
 } from "../favorites/favorites-list-filter";
 import { PaginatedRecommendations } from "./paginated-recommendations";
+import { RecommendationsKanban } from "./recommendations-kanban";
 import { type RecommendationsTab } from "./recommendations-tab";
+import {
+  RecommendationsViewToggle,
+  type RecommendationsViewMode,
+} from "./recommendations-view-toggle";
 
 function emptyPanel(flushTopLeft: boolean) {
   return (
@@ -52,7 +57,7 @@ function recommendationAsTenderSlice(item: RecommendationItem) {
   };
 }
 
-/** Página /recommendations: pestañas Todas/Eficen/Sub + filtrar + paginación. */
+/** Página /recommendations: pestañas Todas/Eficen/Sub + filtrar + Lista|Kanban. */
 export function RecommendationsSection({
   userId,
   propia,
@@ -74,6 +79,7 @@ export function RecommendationsSection({
   const pathname = usePathname() || "/recommendations";
   const [tab, setTab] = useState<RecommendationsTab>(initialTab);
   const [criteria, setCriteria] = useState<SearchCriteria | null>(null);
+  const [view, setView] = useState<RecommendationsViewMode>("lista");
 
   const todasRaw = useMemo(
     () =>
@@ -101,8 +107,14 @@ export function RecommendationsSection({
     () => filtered.filter((i) => i.profileKind === "subcontrata"),
     [filtered],
   );
+  const sinPerfilFiltered = useMemo(
+    () => filtered.filter((i) => i.profileKind == null),
+    [filtered],
+  );
 
-  const showKindTabs = propias.length > 0 && subcontratas.length > 0;
+  const isKanban = view === "kanban";
+  const showKindTabs =
+    !isKanban && propias.length > 0 && subcontratas.length > 0;
   const flushTopLeft = showKindTabs;
   const activeTab: RecommendationsTab = showKindTabs ? tab : "todas";
 
@@ -125,6 +137,19 @@ export function RecommendationsSection({
     );
   }
 
+  const listTodas =
+    filtered.length === 0 ? (
+      emptyFilterPanel(flushTopLeft)
+    ) : (
+      <PaginatedRecommendations
+        items={filtered}
+        userId={userId}
+        showKindBubble
+        flushTopLeft={flushTopLeft}
+        listTab="todas"
+      />
+    );
+
   return (
     <FavoriteKindTabs
       ariaLabel="Perfil de recomendación"
@@ -133,20 +158,26 @@ export function RecommendationsSection({
       onApplyFilters={setCriteria}
       tab={activeTab}
       onTabChange={onTabChange}
+      hideTabs={isKanban}
+      trailingStart={
+        <RecommendationsViewToggle view={view} onChange={setView} />
+      }
       todasCount={filtered.length}
       propiasCount={propias.length}
       subcontratasCount={subcontratas.length}
       todas={
-        filtered.length === 0 ? (
-          emptyFilterPanel(flushTopLeft)
+        isKanban ? (
+          filtered.length === 0 ? (
+            emptyFilterPanel(false)
+          ) : (
+            <RecommendationsKanban
+              propias={propias}
+              subcontratas={subcontratas}
+              sinPerfil={sinPerfilFiltered}
+            />
+          )
         ) : (
-          <PaginatedRecommendations
-            items={filtered}
-            userId={userId}
-            showKindBubble
-            flushTopLeft={flushTopLeft}
-            listTab="todas"
-          />
+          listTodas
         )
       }
       propias={
