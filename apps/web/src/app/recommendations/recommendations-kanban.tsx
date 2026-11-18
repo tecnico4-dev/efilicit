@@ -22,7 +22,7 @@ function KanbanCard({ item }: { item: RecommendationItem }) {
       >
         {item.title}
       </Link>
-      <dl className="mt-1.5 space-y-0.5 text-xs text-muted-foreground">
+      <dl className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
         <div>
           <dt className="inline">Plazo: </dt>
           <dd className="inline">
@@ -54,8 +54,8 @@ function KanbanColumn({
   items: RecommendationItem[];
 }) {
   return (
-    <section className="flex min-h-[20rem] min-w-0 flex-col rounded-lg border border-border bg-muted/30">
-      <header className="flex shrink-0 items-center gap-2 border-b border-border bg-surface/80 px-3 py-2.5">
+    <section className="flex min-h-[20rem] min-w-0 flex-col overflow-hidden rounded-lg border border-border bg-muted/30">
+      <header className="flex shrink-0 items-center gap-2 rounded-t-lg border-b border-border bg-surface/80 px-3 py-2.5">
         <h3 className="text-sm font-semibold text-foreground">{title}</h3>
         {kind ? <FavoriteKindBubble kind={kind} /> : null}
         <span className="ml-auto rounded-full bg-background px-2 py-0.5 text-[11px] font-semibold tabular-nums text-muted-foreground ring-1 ring-border">
