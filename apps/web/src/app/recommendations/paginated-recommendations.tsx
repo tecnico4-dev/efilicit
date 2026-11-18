@@ -17,11 +17,13 @@ export function PaginatedRecommendations({
   userId,
   showKindBubble = true,
   flushTopLeft = true,
+  listTab = "todas",
 }: {
   items: RecommendationItem[];
   userId: string;
   showKindBubble?: boolean;
   flushTopLeft?: boolean;
+  listTab?: "todas" | "propia" | "subcontrata";
 }) {
   const total = items.length;
   const showPager = total > PAGE_SIZE;
@@ -57,6 +59,7 @@ export function PaginatedRecommendations({
           items={pageItems}
           userId={userId}
           showKindBubble={showKindBubble}
+          listTab={listTab}
         />
       </div>
     );
@@ -75,6 +78,7 @@ export function PaginatedRecommendations({
           items={pageItems}
           userId={userId}
           showKindBubble={showKindBubble}
+          listTab={listTab}
         />
       </div>
       <div className="shrink-0 border-t border-border bg-background px-4 py-3">

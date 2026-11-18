@@ -13,11 +13,23 @@ import {
   listOwnRecommendations,
   listSearchFilterOptions,
 } from "@/lib/queries";
-import { RecommendationsSection } from "./recommendations-section";
+import {
+  parseRecommendationsTab,
+  RecommendationsSection,
+} from "./recommendations-section";
 
 export const dynamic = "force-dynamic";
 
-export default async function RecommendationsPage() {
+export default async function RecommendationsPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const params = await searchParams;
+  const tabRaw = params.tab;
+  const initialTab = parseRecommendationsTab(
+    Array.isArray(tabRaw) ? tabRaw[0] : tabRaw,
+  );
   let supabase;
   try {
     supabase = await getSupabaseServerClient();
@@ -87,6 +99,7 @@ export default async function RecommendationsPage() {
             subcontrata={data.subcontrata}
             filterOptions={filterOptions}
             hasComputedAt={Boolean(data.computedAt)}
+            initialTab={initialTab}
           />
         )}
       </div>

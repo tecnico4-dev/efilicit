@@ -1,11 +1,15 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import type { CriteriaFilterOptionsProp } from "@/components/criteria/criteria-filters";
 import type { RecommendationItem } from "@/lib/queries";
 import type { SearchCriteria } from "@efilicit/types";
 import { cn } from "@/lib/cn";
-import { FavoriteKindTabs } from "../favorites/favorite-kind-tabs";
+import {
+  FavoriteKindTabs,
+  type FavoriteKindTab,
+} from "../favorites/favorite-kind-tabs";
 import {
   tenderMatchesFavoriteFilters,
 } from "../favorites/favorites-list-filter";
@@ -50,6 +54,13 @@ function recommendationAsTenderSlice(item: RecommendationItem) {
   };
 }
 
+export function parseRecommendationsTab(
+  raw: string | null | undefined,
+): FavoriteKindTab {
+  if (raw === "propia" || raw === "subcontrata") return raw;
+  return "todas";
+}
+
 /** Página /recommendations: pestañas Todas/Eficen/Sub + filtrar + paginación. */
 export function RecommendationsSection({
   userId,
@@ -57,13 +68,18 @@ export function RecommendationsSection({
   subcontrata,
   filterOptions,
   hasComputedAt,
+  initialTab = "todas",
 }: {
   userId: string;
   propia: RecommendationItem[];
   subcontrata: RecommendationItem[];
   filterOptions: CriteriaFilterOptionsProp;
   hasComputedAt: boolean;
+  initialTab?: FavoriteKindTab;
 }) {
+  const router = useRouter();
+  const pathname = usePathname() || "/recommendations";
+  const [tab, setTab] = useState<FavoriteKindTab>(initialTab);
   const [criteria, setCriteria] = useState<SearchCriteria | null>(null);
 
   const todasRaw = useMemo(
@@ -93,6 +109,16 @@ export function RecommendationsSection({
 
   const showKindTabs = propias.length > 0 && subcontratas.length > 0;
   const flushTopLeft = showKindTabs;
+  const activeTab: FavoriteKindTab = showKindTabs ? tab : "todas";
+
+  function onTabChange(next: FavoriteKindTab) {
+    setTab(next);
+    const href =
+      next === "propia" || next === "subcontrata"
+        ? `${pathname}?tab=${next}`
+        : pathname;
+    router.replace(href, { scroll: false });
+  }
 
   if (todasRaw.length === 0) {
     return (
@@ -110,6 +136,8 @@ export function RecommendationsSection({
       filterOptions={filterOptions}
       appliedCriteria={criteria}
       onApplyFilters={setCriteria}
+      tab={activeTab}
+      onTabChange={onTabChange}
       todasCount={filtered.length}
       propiasCount={propias.length}
       subcontratasCount={subcontratas.length}
@@ -122,6 +150,7 @@ export function RecommendationsSection({
             userId={userId}
             showKindBubble
             flushTopLeft={flushTopLeft}
+            listTab="todas"
           />
         )
       }
@@ -134,6 +163,7 @@ export function RecommendationsSection({
             userId={userId}
             showKindBubble={false}
             flushTopLeft={flushTopLeft}
+            listTab="propia"
           />
         )
       }
@@ -146,6 +176,7 @@ export function RecommendationsSection({
             userId={userId}
             showKindBubble={false}
             flushTopLeft={flushTopLeft}
+            listTab="subcontrata"
           />
         )
       }

@@ -81,7 +81,7 @@ function ProfileColumn({
             >
               <div className="flex items-start justify-between gap-2">
                 <Link
-                  href={`/tenders/${item.tenderId}?from=recommendations&interest=${kind}`}
+                  href={`/tenders/${item.tenderId}?from=recommendations&tab=todas&interest=${kind}`}
                   className="min-w-0 text-sm font-medium text-foreground hover:text-primary"
                 >
                   {item.title}

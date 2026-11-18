@@ -21,7 +21,7 @@ import {
 import type { SearchCriteria } from "@efilicit/types";
 import { countActiveFavoriteFilters } from "./favorites-list-filter";
 
-type FavoriteKindTab = "todas" | FavoriteKind;
+export type FavoriteKindTab = "todas" | FavoriteKind;
 
 const FAVORITES_FILTER_FORM_ID = "favorites-filter-form";
 
@@ -35,6 +35,7 @@ function emptyFavoritesFilterInitial(): CriteriaFilterInitial {
 /**
  * Pestañas Todas | Eficen | Subcontrata (+ Filtrar a la derecha).
  * Pestañas solo si hay ítems en ambos kinds; Filtrar siempre con lista.
+ * `tab`/`onTabChange` opcionales para control externo (p. ej. URL).
  */
 export function FavoriteKindTabs({
   ariaLabel,
@@ -47,6 +48,8 @@ export function FavoriteKindTabs({
   filterOptions,
   appliedCriteria,
   onApplyFilters,
+  tab: controlledTab,
+  onTabChange,
 }: {
   ariaLabel: string;
   todas: ReactNode;
@@ -58,8 +61,17 @@ export function FavoriteKindTabs({
   filterOptions: CriteriaFilterOptionsProp;
   appliedCriteria: SearchCriteria | null;
   onApplyFilters: (criteria: SearchCriteria | null) => void;
+  tab?: FavoriteKindTab;
+  onTabChange?: (tab: FavoriteKindTab) => void;
 }) {
-  const [tab, setTab] = useState<FavoriteKindTab>("todas");
+  const [internalTab, setInternalTab] = useState<FavoriteKindTab>(
+    controlledTab ?? "todas",
+  );
+  const tab = controlledTab ?? internalTab;
+  function setTab(next: FavoriteKindTab) {
+    if (controlledTab === undefined) setInternalTab(next);
+    onTabChange?.(next);
+  }
   const [filterOpen, setFilterOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [formKey, setFormKey] = useState(0);

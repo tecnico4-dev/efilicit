@@ -103,6 +103,17 @@ function backLinkFromParams(
       label: "← Volver a Mis licitaciones",
     };
   }
+  if (from === "recommendations") {
+    const tab = first(params.tab).trim();
+    const href =
+      tab === "propia" || tab === "subcontrata"
+        ? `/recommendations?tab=${tab}`
+        : "/recommendations";
+    return {
+      href,
+      label: "← Volver a mis recomendaciones",
+    };
+  }
 
   if (from === "search") {
     const qs = new URLSearchParams();
