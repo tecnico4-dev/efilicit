@@ -54,9 +54,15 @@ export function MisLicitacionesSection({
     return stored;
   });
 
+  // Guardar al cambiar filtros; en unmount no escribir en la otra pestaña.
   useEffect(() => {
     saveMisLicitacionesFiltersForScope(scope, filters);
-  }, [scope, filters]);
+  }, [filters, scope]);
+
+  function updateFilters(next: MisLicitacionesFilters) {
+    setFilters(next);
+    saveMisLicitacionesFiltersForScope(scope, next);
+  }
 
   const ownerOptions = useMemo(() => ownerOptionsFromCases(cases), [cases]);
   const filtered = useMemo(
@@ -106,7 +112,7 @@ export function MisLicitacionesSection({
               <button
                 type="button"
                 className="mt-3 text-sm font-medium text-link hover:underline"
-                onClick={() => setFilters(EMPTY_MIS_LICITACIONES_FILTERS)}
+                onClick={() => updateFilters(EMPTY_MIS_LICITACIONES_FILTERS)}
               >
                 Limpiar filtros
               </button>
@@ -125,11 +131,11 @@ export function MisLicitacionesSection({
         applied={filters}
         onClose={() => setFilterOpen(false)}
         onApply={(next) => {
-          setFilters(next);
+          updateFilters(next);
           setFilterOpen(false);
         }}
         onClear={() => {
-          setFilters(EMPTY_MIS_LICITACIONES_FILTERS);
+          updateFilters(EMPTY_MIS_LICITACIONES_FILTERS);
           setFilterOpen(false);
         }}
       />

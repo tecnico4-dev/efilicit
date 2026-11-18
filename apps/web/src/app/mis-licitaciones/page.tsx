@@ -89,6 +89,7 @@ export default async function MisLicitacionesPage({ searchParams }: PageProps) {
           <ErrorState>{casesResult.error.message}</ErrorState>
         ) : (
           <MisLicitacionesSection
+            key={tab}
             scope={tab}
             cases={cases}
             years={years}
