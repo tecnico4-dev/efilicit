@@ -11,12 +11,7 @@ import {
   tenderMatchesFavoriteFilters,
 } from "../favorites/favorites-list-filter";
 import { PaginatedRecommendations } from "./paginated-recommendations";
-import {
-  parseRecommendationsTab,
-  type RecommendationsTab,
-} from "./recommendations-tab";
-
-export { parseRecommendationsTab, type RecommendationsTab };
+import { type RecommendationsTab } from "./recommendations-tab";
 
 function emptyPanel(flushTopLeft: boolean) {
   return (
