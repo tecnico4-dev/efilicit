@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Mis licitaciones · filtros: se borran al salir del área (otra pestaña de la app); listado ↔ expediente los conserva.
 - Mis licitaciones · filtros: modal (estilo Recomendaciones) con año (histórico), estado, importe y responsable; aplica en cliente.
 - Mis licitaciones · lista: fijo 10 por página, sin scroll interno; solo paginación al pie.
 - Mis licitaciones · listado: mismo ancho que Recomendaciones; pestañas Activas/Histórico; Lista|Kanban + Filtrar (botón sin modal aún).

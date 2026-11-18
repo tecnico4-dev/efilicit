@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { UndoToastProvider } from "@/components/undo-toast";
+import { MisLicitacionesFiltersSession } from "@/components/mis-licitaciones/mis-licitaciones-filters-session";
 import { AuthenticatedChrome } from "./authenticated-chrome";
 
 /**
@@ -25,6 +26,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           >
             <AuthenticatedChrome />
           </Suspense>
+          <MisLicitacionesFiltersSession />
           <div className="flex flex-1 flex-col">{children}</div>
         </div>
       </UndoToastProvider>

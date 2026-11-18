@@ -95,6 +95,24 @@ export function saveMisLicitacionesFiltersForScope(
   }
 }
 
+/** Al salir del área `/mis-licitaciones` (no al abrir un expediente). */
+export function clearMisLicitacionesFiltersStorage(): void {
+  if (typeof window === "undefined") return;
+  try {
+    sessionStorage.removeItem(MIS_LICITACIONES_FILTERS_STORAGE_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
+export function isMisLicitacionesPath(pathname: string | null): boolean {
+  if (!pathname) return false;
+  return (
+    pathname === "/mis-licitaciones" ||
+    pathname.startsWith("/mis-licitaciones/")
+  );
+}
+
 export const OWNER_NONE_KEY = "__none__";
 
 export function countActiveMisLicitacionesFilters(
