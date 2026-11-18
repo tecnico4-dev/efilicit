@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { cn } from "@/lib/cn";
 
 const RECOMMENDATIONS_INFO =
@@ -8,6 +9,7 @@ const RECOMMENDATIONS_INFO =
 
 /**
  * «i» tipográfica (mismo estilo que política de contraseña): tip al click.
+ * El tip va en portal (z alto) para no quedar bajo el listado.
  */
 export function RecommendationsInfoButton({
   className,
@@ -15,13 +17,48 @@ export function RecommendationsInfoButton({
   className?: string;
 }) {
   const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const [coords, setCoords] = useState<{ top: number; left: number } | null>(
+    null,
+  );
   const tipId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
+  const tipRef = useRef<HTMLParagraphElement>(null);
+
+  useEffect(() => setMounted(true), []);
+
+  useLayoutEffect(() => {
+    if (!open || !rootRef.current) {
+      setCoords(null);
+      return;
+    }
+    function place() {
+      const btn = rootRef.current?.querySelector("button");
+      if (!btn) return;
+      const r = btn.getBoundingClientRect();
+      const tipW = Math.min(22 * 16, window.innerWidth - 16);
+      let left = r.left;
+      if (left + tipW > window.innerWidth - 8) {
+        left = Math.max(8, window.innerWidth - tipW - 8);
+      }
+      setCoords({ top: r.bottom + 6, left });
+    }
+    place();
+    window.addEventListener("resize", place);
+    window.addEventListener("scroll", place, true);
+    return () => {
+      window.removeEventListener("resize", place);
+      window.removeEventListener("scroll", place, true);
+    };
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
     function onDoc(e: MouseEvent) {
-      if (!rootRef.current?.contains(e.target as Node)) setOpen(false);
+      const t = e.target as Node;
+      if (rootRef.current?.contains(t)) return;
+      if (tipRef.current?.contains(t)) return;
+      setOpen(false);
     }
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") setOpen(false);
@@ -46,15 +83,20 @@ export function RecommendationsInfoButton({
       >
         i
       </button>
-      {open ? (
-        <p
-          id={tipId}
-          role="status"
-          className="absolute left-0 top-full z-20 mt-1.5 w-[min(22rem,calc(100vw-2rem))] rounded-md border border-border bg-surface px-3 py-2 text-xs leading-relaxed text-foreground shadow-md sm:left-auto sm:right-0"
-        >
-          {RECOMMENDATIONS_INFO}
-        </p>
-      ) : null}
+      {mounted && open && coords
+        ? createPortal(
+            <p
+              ref={tipRef}
+              id={tipId}
+              role="status"
+              style={{ top: coords.top, left: coords.left }}
+              className="fixed z-[200] w-[min(22rem,calc(100vw-2rem))] rounded-md border border-border bg-surface px-3 py-2 text-xs leading-relaxed text-foreground shadow-md"
+            >
+              {RECOMMENDATIONS_INFO}
+            </p>,
+            document.body,
+          )
+        : null}
     </div>
   );
 }
