@@ -3,9 +3,7 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { cn } from "@/lib/cn";
-
-const RECOMMENDATIONS_INFO =
-  "Esta página muestra recomendaciones temporales según tus puntuaciones y favoritos. Cuando valores una licitación o la guardes en favoritos, dejará de aparecer aquí. El listado se recalcula de vez en cuando: una licitación también puede desaparecer aunque no la hayas valorado ni guardado.";
+import { formatDateTimeMadrid } from "@/lib/datetime";
 
 /**
  * «i» tipográfica (mismo estilo que política de contraseña): tip al click.
@@ -13,8 +11,10 @@ const RECOMMENDATIONS_INFO =
  */
 export function RecommendationsInfoButton({
   className,
+  computedAt = null,
 }: {
   className?: string;
+  computedAt?: string | null;
 }) {
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -23,7 +23,10 @@ export function RecommendationsInfoButton({
   );
   const tipId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
-  const tipRef = useRef<HTMLParagraphElement>(null);
+  const tipRef = useRef<HTMLDivElement>(null);
+  const lastComputed = computedAt
+    ? formatDateTimeMadrid(computedAt)
+    : "aún no hay cálculo";
 
   useEffect(() => setMounted(true), []);
 
@@ -85,15 +88,27 @@ export function RecommendationsInfoButton({
       </button>
       {mounted && open && coords
         ? createPortal(
-            <p
+            <div
               ref={tipRef}
               id={tipId}
               role="status"
               style={{ top: coords.top, left: coords.left }}
-              className="fixed z-[200] w-[min(22rem,calc(100vw-2rem))] rounded-md border border-border bg-surface px-3 py-2 text-xs leading-relaxed text-foreground shadow-md"
+              className="fixed z-[200] w-[min(22rem,calc(100vw-2rem))] space-y-2 rounded-md border border-border bg-surface px-3 py-2.5 text-xs leading-relaxed text-foreground shadow-md"
             >
-              {RECOMMENDATIONS_INFO}
-            </p>,
+              <p className="font-medium text-foreground">
+                Esta página muestra recomendaciones temporales según tus
+                puntuaciones y favoritos.
+              </p>
+              <p className="text-muted-foreground">
+                Cuando valores una licitación o la guardes en favoritos, dejará
+                de aparecer aquí.
+              </p>
+              <p className="text-muted-foreground">
+                El listado se recalcula automáticamente (Última vez:{" "}
+                {lastComputed}). Una licitación también puede desaparecer aunque
+                no la hayas valorado ni guardado si deja de encajar contigo.
+              </p>
+            </div>,
             document.body,
           )
         : null}

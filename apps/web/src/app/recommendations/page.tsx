@@ -80,7 +80,10 @@ export default async function RecommendationsPage({
           <h1 className="text-2xl font-semibold tracking-tight text-foreground">
             Recomendaciones para ti
           </h1>
-          <RecommendationsInfoButton className="translate-y-px" />
+          <RecommendationsInfoButton
+            className="translate-y-px"
+            computedAt={data.computedAt}
+          />
         </div>
         {data.computedAt ? (
           <p className="pointer-events-none absolute right-0 top-[calc(100%+2rem-0.5rem)] -translate-y-full text-xs text-muted-foreground">
