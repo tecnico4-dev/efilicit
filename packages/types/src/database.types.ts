@@ -535,27 +535,27 @@ isOneToOne: false
                   ]
                 },"offer_case_members": {
                   Row: {
-                    "created_at": string,"id": string,"member_role": string,"offer_case_id": string,"user_id": string
+                    "id": string,"member_id": string,"member_role": string,"offer_case_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "created_at"?: string,"id"?: string,"member_role"?: string,"offer_case_id": string,"user_id": string
+                    "id"?: string,"member_id": string,"member_role"?: string,"offer_case_id": string
                   }
                   Update: {
-                    "created_at"?: string,"id"?: string,"member_role"?: string,"offer_case_id"?: string,"user_id"?: string
+                    "id"?: string,"member_id"?: string,"member_role"?: string,"offer_case_id"?: string
                   }
                   Relationships: [
                     {
+      foreignKeyName: "offer_case_members_member_id_fkey"
+      columns: ["member_id"]
+isOneToOne: false
+      referencedRelation: "eficen_members"
+      referencedColumns: ["id"]
+    },{
       foreignKeyName: "offer_case_members_offer_case_id_fkey"
       columns: ["offer_case_id"]
 isOneToOne: false
       referencedRelation: "offer_cases"
-      referencedColumns: ["id"]
-    },{
-      foreignKeyName: "offer_case_members_user_id_fkey"
-      columns: ["user_id"]
-isOneToOne: false
-      referencedRelation: "users"
       referencedColumns: ["id"]
     }
                   ]

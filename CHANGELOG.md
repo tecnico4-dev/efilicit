@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- `offer_case_members`: `member_id` → `eficen_members`; se quitan `user_id` / `created_at`. Migración local.
 - `offer_cases`: responsable = `owner_member_id` → `eficen_members` (nullable); se quitan `owner_name` / `owner_user_id`. `created_by` se mantiene. Migración local — enmienda [ADR 032](docs/adr/032-eficen-members-favorites-shared.md).
 - Ingesta PLACSP: si el body descargado no tiene magic ``PK``, reintenta la descarga 3 veces (espera 60 s) antes de fallar el job (HTML/error intermitente de Hacienda).
 - Mis licitaciones · filtros: se borran al salir del área (otra pestaña de la app); listado ↔ expediente los conserva.
