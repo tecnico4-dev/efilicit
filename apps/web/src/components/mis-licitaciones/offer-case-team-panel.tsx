@@ -109,7 +109,10 @@ export function OfferCaseTeamPanel({
     const q = query.trim().toLocaleLowerCase("es");
     return list.filter((m) => {
       if (picker === "owner" && owner?.id === m.id) return false;
-      if (picker === "worker" && teamIds.has(m.id)) return false;
+      // El responsable no puede ir también como trabajador
+      if (picker === "worker" && (teamIds.has(m.id) || owner?.id === m.id)) {
+        return false;
+      }
       if (!q) return true;
       return (
         m.displayName.toLocaleLowerCase("es").includes(q) ||
@@ -127,11 +130,24 @@ export function OfferCaseTeamPanel({
       offerCaseId,
       ownerMemberId: memberId,
     });
-    setPending(false);
     if (result.error) {
+      setPending(false);
       setError(result.error.message);
       return;
     }
+    // Si ya estaba en trabajadores, sacar de la lista de equipo
+    if (memberId) {
+      const asWorker = team.find((row) => row.member_id === memberId);
+      if (asWorker) {
+        const removed = await removeOfferCaseMember(client, asWorker.id);
+        if (removed.error) {
+          setPending(false);
+          setError(removed.error.message);
+          return;
+        }
+      }
+    }
+    setPending(false);
     setPicker(null);
     setQuery("");
     router.refresh();
@@ -139,6 +155,10 @@ export function OfferCaseTeamPanel({
 
   async function onAddWorker(memberId: string) {
     if (pending) return;
+    if (owner?.id === memberId) {
+      setError("El responsable no se puede añadir también como trabajador");
+      return;
+    }
     setPending(true);
     setError(null);
     const client = createSupabaseBrowserClient();
