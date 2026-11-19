@@ -212,7 +212,7 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
           {tenderFull ? <TenderFichaModalButton tender={tenderFull} /> : null}
         </div>
 
-        <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-4 grid gap-3 pt-1 sm:grid-cols-2 lg:grid-cols-4">
           <Kpi
             label="Cumplimiento excl."
             value={
@@ -557,6 +557,31 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
   );
 }
 
+/** Contenedor estilo outlined: título “recortado” en el borde superior. */
+function OutlinedField({
+  label,
+  children,
+  className,
+}: {
+  label: string;
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <fieldset
+      className={cn(
+        "min-w-0 rounded-md border border-primary px-3 pb-2.5 pt-1",
+        className,
+      )}
+    >
+      <legend className="px-1 text-[0.7rem] font-medium leading-none text-primary">
+        {label}
+      </legend>
+      {children}
+    </fieldset>
+  );
+}
+
 function Kpi({
   label,
   value,
@@ -567,11 +592,8 @@ function Kpi({
   bar?: number | null;
 }) {
   return (
-    <div className="rounded-lg border border-border bg-muted/50 px-3 py-2.5">
-      <p className="text-[0.7rem] font-medium uppercase tracking-wide text-muted-foreground">
-        {label}
-      </p>
-      <p className="mt-1 text-base font-semibold text-foreground">{value}</p>
+    <OutlinedField label={label}>
+      <p className="text-base font-semibold text-foreground">{value}</p>
       {bar != null ? (
         <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-border">
           <div
@@ -580,7 +602,7 @@ function Kpi({
           />
         </div>
       ) : null}
-    </div>
+    </OutlinedField>
   );
 }
 
@@ -595,10 +617,12 @@ function PersonAvatar({
   name,
   avatarUrl,
   size,
+  className,
 }: {
   name: string;
   avatarUrl: string | null;
   size: "md" | "sm";
+  className?: string;
 }) {
   const dim = size === "md" ? "size-9 text-xs" : "size-7 text-[0.65rem]";
   if (avatarUrl) {
@@ -608,7 +632,11 @@ function PersonAvatar({
         src={avatarUrl}
         alt=""
         title={name}
-        className={cn(dim, "shrink-0 rounded-full object-cover")}
+        className={cn(
+          dim,
+          "shrink-0 rounded-full object-cover ring-2 ring-surface",
+          className,
+        )}
       />
     );
   }
@@ -617,7 +645,8 @@ function PersonAvatar({
       title={name}
       className={cn(
         dim,
-        "inline-flex shrink-0 items-center justify-center rounded-full bg-background font-semibold text-foreground ring-1 ring-border",
+        "inline-flex shrink-0 items-center justify-center rounded-full bg-muted font-semibold text-foreground ring-2 ring-surface",
+        className,
       )}
       aria-hidden
     >
@@ -640,11 +669,8 @@ function OwnerTeamKpi({
   const extra = crew.length - visible.length;
 
   return (
-    <div className="rounded-lg border border-border bg-muted/50 px-3 py-2.5">
-      <p className="text-[0.7rem] font-medium uppercase tracking-wide text-muted-foreground">
-        Responsable y equipo
-      </p>
-      <div className="mt-2 flex min-w-0 items-center gap-2.5">
+    <OutlinedField label="Responsable y equipo">
+      <div className="flex min-w-0 items-center gap-2.5">
         {owner && ownerName ? (
           <>
             <PersonAvatar
@@ -668,23 +694,29 @@ function OwnerTeamKpi({
         )}
       </div>
       {crew.length > 0 ? (
-        <div className="mt-2.5 flex items-center gap-1.5">
-          {visible.map((row) => (
+        <div className="mt-2.5 flex items-center">
+          {visible.map((row, index) => (
             <PersonAvatar
               key={row.id}
               name={row.member.display_name}
               avatarUrl={row.member.avatar_url}
               size="sm"
+              className={cn(index > 0 && "-ml-2")}
             />
           ))}
           {extra > 0 ? (
-            <span className="inline-flex size-7 items-center justify-center rounded-full bg-background text-[0.65rem] font-semibold text-muted-foreground ring-1 ring-border">
+            <span
+              className={cn(
+                "inline-flex size-7 items-center justify-center rounded-full bg-muted text-[0.65rem] font-semibold text-muted-foreground ring-2 ring-surface",
+                visible.length > 0 && "-ml-2",
+              )}
+            >
               +{extra}
             </span>
           ) : null}
         </div>
       ) : null}
-    </div>
+    </OutlinedField>
   );
 }
 
