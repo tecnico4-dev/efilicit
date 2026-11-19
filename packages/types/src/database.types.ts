@@ -495,6 +495,32 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"offer_case_intake": {
+                  Row: {
+                    "attempts": number,"finished_at": string | null,"id": string,"last_error": string | null,"offer_case_id": string,"requested_at": string,"requested_by": string | null,"started_at": string | null,"stats": NonNullable<Json>,"status": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "attempts"?: number,"finished_at"?: string | null,"id"?: string,"last_error"?: string | null,"offer_case_id": string,"requested_at"?: string,"requested_by"?: string | null,"started_at"?: string | null,"stats"?: NonNullable<Json>,"status"?: string
+                  }
+                  Update: {
+                    "attempts"?: number,"finished_at"?: string | null,"id"?: string,"last_error"?: string | null,"offer_case_id"?: string,"requested_at"?: string,"requested_by"?: string | null,"started_at"?: string | null,"stats"?: NonNullable<Json>,"status"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "offer_case_intake_offer_case_id_fkey"
+      columns: ["offer_case_id"]
+isOneToOne: false
+      referencedRelation: "offer_cases"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "offer_case_intake_requested_by_fkey"
+      columns: ["requested_by"]
+isOneToOne: false
+      referencedRelation: "users"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"offer_case_log": {
                   Row: {
                     "body": string,"created_at": string,"created_by": string | null,"event_type": string,"happened_on": string,"id": string,"offer_case_id": string,"related_deliverable_id": string | null,"related_requirement_id": string | null
@@ -561,14 +587,14 @@ isOneToOne: false
                   ]
                 },"offer_case_pliegos": {
                   Row: {
-                    "changed_after_case": boolean,"created_at": string,"created_by": string | null,"id": string,"notes": string | null,"offer_case_id": string,"pliego_type": string,"published_on": string | null,"title": string,"updated_at": string,"url": string | null,"version_label": string | null
+                    "byte_size": number | null,"changed_after_case": boolean,"checksum": string | null,"content_type": string | null,"created_at": string,"created_by": string | null,"fetch_error": string | null,"fetch_status": string | null,"fetched_at": string | null,"id": string,"notes": string | null,"offer_case_id": string,"pliego_type": string,"published_on": string | null,"source_hash": string | null,"source_key": string | null,"source_uri": string | null,"storage_path": string | null,"title": string,"updated_at": string,"url": string | null,"version_label": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "changed_after_case"?: boolean,"created_at"?: string,"created_by"?: string | null,"id"?: string,"notes"?: string | null,"offer_case_id": string,"pliego_type": string,"published_on"?: string | null,"title": string,"updated_at"?: string,"url"?: string | null,"version_label"?: string | null
+                    "byte_size"?: number | null,"changed_after_case"?: boolean,"checksum"?: string | null,"content_type"?: string | null,"created_at"?: string,"created_by"?: string | null,"fetch_error"?: string | null,"fetch_status"?: string | null,"fetched_at"?: string | null,"id"?: string,"notes"?: string | null,"offer_case_id": string,"pliego_type": string,"published_on"?: string | null,"source_hash"?: string | null,"source_key"?: string | null,"source_uri"?: string | null,"storage_path"?: string | null,"title": string,"updated_at"?: string,"url"?: string | null,"version_label"?: string | null
                   }
                   Update: {
-                    "changed_after_case"?: boolean,"created_at"?: string,"created_by"?: string | null,"id"?: string,"notes"?: string | null,"offer_case_id"?: string,"pliego_type"?: string,"published_on"?: string | null,"title"?: string,"updated_at"?: string,"url"?: string | null,"version_label"?: string | null
+                    "byte_size"?: number | null,"changed_after_case"?: boolean,"checksum"?: string | null,"content_type"?: string | null,"created_at"?: string,"created_by"?: string | null,"fetch_error"?: string | null,"fetch_status"?: string | null,"fetched_at"?: string | null,"id"?: string,"notes"?: string | null,"offer_case_id"?: string,"pliego_type"?: string,"published_on"?: string | null,"source_hash"?: string | null,"source_key"?: string | null,"source_uri"?: string | null,"storage_path"?: string | null,"title"?: string,"updated_at"?: string,"url"?: string | null,"version_label"?: string | null
                   }
                   Relationships: [
                     {
@@ -625,14 +651,14 @@ isOneToOne: true
                   ]
                 },"offer_deliverables": {
                   Row: {
-                    "created_at": string,"due_at": string | null,"envelope": string | null,"final_copy_url": string | null,"id": string,"notes": string | null,"offer_case_id": string,"owner_name": string | null,"owner_user_id": string | null,"page_limit": number | null,"parent_id": string | null,"points_max": number | null,"sort_order": number,"status": string,"title": string,"updated_at": string
+                    "created_at": string,"due_at": string | null,"envelope": string | null,"final_copy_url": string | null,"id": string,"notes": string | null,"offer_case_id": string,"owner_name": string | null,"owner_user_id": string | null,"page_limit": number | null,"parent_id": string | null,"points_max": number | null,"sort_order": number,"source_key": string | null,"status": string,"title": string,"updated_at": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "created_at"?: string,"due_at"?: string | null,"envelope"?: string | null,"final_copy_url"?: string | null,"id"?: string,"notes"?: string | null,"offer_case_id": string,"owner_name"?: string | null,"owner_user_id"?: string | null,"page_limit"?: number | null,"parent_id"?: string | null,"points_max"?: number | null,"sort_order"?: number,"status"?: string,"title": string,"updated_at"?: string
+                    "created_at"?: string,"due_at"?: string | null,"envelope"?: string | null,"final_copy_url"?: string | null,"id"?: string,"notes"?: string | null,"offer_case_id": string,"owner_name"?: string | null,"owner_user_id"?: string | null,"page_limit"?: number | null,"parent_id"?: string | null,"points_max"?: number | null,"sort_order"?: number,"source_key"?: string | null,"status"?: string,"title": string,"updated_at"?: string
                   }
                   Update: {
-                    "created_at"?: string,"due_at"?: string | null,"envelope"?: string | null,"final_copy_url"?: string | null,"id"?: string,"notes"?: string | null,"offer_case_id"?: string,"owner_name"?: string | null,"owner_user_id"?: string | null,"page_limit"?: number | null,"parent_id"?: string | null,"points_max"?: number | null,"sort_order"?: number,"status"?: string,"title"?: string,"updated_at"?: string
+                    "created_at"?: string,"due_at"?: string | null,"envelope"?: string | null,"final_copy_url"?: string | null,"id"?: string,"notes"?: string | null,"offer_case_id"?: string,"owner_name"?: string | null,"owner_user_id"?: string | null,"page_limit"?: number | null,"parent_id"?: string | null,"points_max"?: number | null,"sort_order"?: number,"source_key"?: string | null,"status"?: string,"title"?: string,"updated_at"?: string
                   }
                   Relationships: [
                     {
@@ -657,14 +683,14 @@ isOneToOne: false
                   ]
                 },"offer_milestones": {
                   Row: {
-                    "code": string | null,"completed_at": string | null,"created_at": string,"due_at": string | null,"id": string,"kind": string,"notes": string | null,"offer_case_id": string,"sort_order": number,"title": string,"updated_at": string
+                    "code": string | null,"completed_at": string | null,"created_at": string,"due_at": string | null,"id": string,"kind": string,"notes": string | null,"offer_case_id": string,"sort_order": number,"source_key": string | null,"title": string,"updated_at": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "code"?: string | null,"completed_at"?: string | null,"created_at"?: string,"due_at"?: string | null,"id"?: string,"kind": string,"notes"?: string | null,"offer_case_id": string,"sort_order"?: number,"title": string,"updated_at"?: string
+                    "code"?: string | null,"completed_at"?: string | null,"created_at"?: string,"due_at"?: string | null,"id"?: string,"kind": string,"notes"?: string | null,"offer_case_id": string,"sort_order"?: number,"source_key"?: string | null,"title": string,"updated_at"?: string
                   }
                   Update: {
-                    "code"?: string | null,"completed_at"?: string | null,"created_at"?: string,"due_at"?: string | null,"id"?: string,"kind"?: string,"notes"?: string | null,"offer_case_id"?: string,"sort_order"?: number,"title"?: string,"updated_at"?: string
+                    "code"?: string | null,"completed_at"?: string | null,"created_at"?: string,"due_at"?: string | null,"id"?: string,"kind"?: string,"notes"?: string | null,"offer_case_id"?: string,"sort_order"?: number,"source_key"?: string | null,"title"?: string,"updated_at"?: string
                   }
                   Relationships: [
                     {
@@ -759,14 +785,14 @@ isOneToOne: false
                   ]
                 },"offer_requirements": {
                   Row: {
-                    "category": string,"compliance_status": string,"created_at": string,"envelope": string | null,"id": string,"internal_due_at": string | null,"legacy_checklist_item_id": string | null,"literal_text": string | null,"offer_case_id": string,"our_value": string | null,"owner_name": string | null,"owner_user_id": string | null,"pliego_ref": string | null,"prep_status": string,"required_value": string | null,"requirement_type": string,"sort_order": number,"source_kind": string,"title": string,"updated_at": string,"validated_at": string | null,"validated_by": string | null
+                    "category": string,"compliance_status": string,"created_at": string,"envelope": string | null,"id": string,"internal_due_at": string | null,"legacy_checklist_item_id": string | null,"literal_text": string | null,"offer_case_id": string,"our_value": string | null,"owner_name": string | null,"owner_user_id": string | null,"pliego_id": string | null,"pliego_ref": string | null,"prep_status": string,"required_value": string | null,"requirement_type": string,"sort_order": number,"source_key": string | null,"source_kind": string,"title": string,"updated_at": string,"validated_at": string | null,"validated_by": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "category"?: string,"compliance_status"?: string,"created_at"?: string,"envelope"?: string | null,"id"?: string,"internal_due_at"?: string | null,"legacy_checklist_item_id"?: string | null,"literal_text"?: string | null,"offer_case_id": string,"our_value"?: string | null,"owner_name"?: string | null,"owner_user_id"?: string | null,"pliego_ref"?: string | null,"prep_status"?: string,"required_value"?: string | null,"requirement_type"?: string,"sort_order"?: number,"source_kind"?: string,"title": string,"updated_at"?: string,"validated_at"?: string | null,"validated_by"?: string | null
+                    "category"?: string,"compliance_status"?: string,"created_at"?: string,"envelope"?: string | null,"id"?: string,"internal_due_at"?: string | null,"legacy_checklist_item_id"?: string | null,"literal_text"?: string | null,"offer_case_id": string,"our_value"?: string | null,"owner_name"?: string | null,"owner_user_id"?: string | null,"pliego_id"?: string | null,"pliego_ref"?: string | null,"prep_status"?: string,"required_value"?: string | null,"requirement_type"?: string,"sort_order"?: number,"source_key"?: string | null,"source_kind"?: string,"title": string,"updated_at"?: string,"validated_at"?: string | null,"validated_by"?: string | null
                   }
                   Update: {
-                    "category"?: string,"compliance_status"?: string,"created_at"?: string,"envelope"?: string | null,"id"?: string,"internal_due_at"?: string | null,"legacy_checklist_item_id"?: string | null,"literal_text"?: string | null,"offer_case_id"?: string,"our_value"?: string | null,"owner_name"?: string | null,"owner_user_id"?: string | null,"pliego_ref"?: string | null,"prep_status"?: string,"required_value"?: string | null,"requirement_type"?: string,"sort_order"?: number,"source_kind"?: string,"title"?: string,"updated_at"?: string,"validated_at"?: string | null,"validated_by"?: string | null
+                    "category"?: string,"compliance_status"?: string,"created_at"?: string,"envelope"?: string | null,"id"?: string,"internal_due_at"?: string | null,"legacy_checklist_item_id"?: string | null,"literal_text"?: string | null,"offer_case_id"?: string,"our_value"?: string | null,"owner_name"?: string | null,"owner_user_id"?: string | null,"pliego_id"?: string | null,"pliego_ref"?: string | null,"prep_status"?: string,"required_value"?: string | null,"requirement_type"?: string,"sort_order"?: number,"source_key"?: string | null,"source_kind"?: string,"title"?: string,"updated_at"?: string,"validated_at"?: string | null,"validated_by"?: string | null
                   }
                   Relationships: [
                     {
@@ -781,6 +807,12 @@ isOneToOne: false
 isOneToOne: false
       referencedRelation: "users"
       referencedColumns: ["id"]
+    },{
+      foreignKeyName: "offer_requirements_pliego_case_fkey"
+      columns: ["pliego_id","offer_case_id"]
+isOneToOne: false
+      referencedRelation: "offer_case_pliegos"
+      referencedColumns: ["id","offer_case_id"]
     },{
       foreignKeyName: "offer_requirements_validated_by_fkey"
       columns: ["validated_by"]
