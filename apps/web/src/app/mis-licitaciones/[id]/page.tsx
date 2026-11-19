@@ -202,9 +202,6 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
                   Plazo {formatDateTimeMadrid(tenderSummary.deadline_at)}
                 </span>
               ) : null}
-              {offerCase.owner_member?.display_name ? (
-                <span>Resp. {offerCase.owner_member.display_name}</span>
-              ) : null}
               {offerCase.outcome_on ? (
                 <span>Outcome {formatDateMadrid(offerCase.outcome_on)}</span>
               ) : null}
@@ -249,20 +246,6 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
               offerCase.owner_member?.display_name?.trim() || "Sin asignar"
             }
           />
-        </div>
-
-        <div className="mt-4 flex flex-wrap gap-2">
-          {tenderSummary ? (
-            <Link
-              href={`/tenders/${tenderSummary.id}?from=mis-licitaciones`}
-              className="inline-flex rounded-lg border border-border bg-background px-3 py-1.5 text-sm font-medium text-foreground hover:bg-muted"
-            >
-              Ficha pública
-            </Link>
-          ) : null}
-          <span className="inline-flex items-center rounded-lg border border-border bg-muted/50 px-3 py-1.5 text-sm text-muted-foreground">
-            Etapa: {stageLabel}
-          </span>
         </div>
       </section>
 
