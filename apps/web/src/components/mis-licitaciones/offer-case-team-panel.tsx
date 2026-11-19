@@ -87,9 +87,13 @@ export function OfferCaseTeamPanel({
     return result.data;
   }
 
-  async function openPicker(mode: PickerMode) {
+  async function openPicker(mode: Exclude<PickerMode, null>) {
     setError(null);
     setQuery("");
+    if (picker === mode) {
+      setPicker(null);
+      return;
+    }
     setPicker(mode);
     await ensureDirectory();
   }
@@ -129,6 +133,7 @@ export function OfferCaseTeamPanel({
       return;
     }
     setPicker(null);
+    setQuery("");
     router.refresh();
   }
 
@@ -147,6 +152,7 @@ export function OfferCaseTeamPanel({
       return;
     }
     setPicker(null);
+    setQuery("");
     router.refresh();
   }
 
@@ -164,55 +170,120 @@ export function OfferCaseTeamPanel({
     router.refresh();
   }
 
+  function renderExpandedPicker(mode: "owner" | "worker") {
+    return (
+      <div className="border-t border-border px-3 py-2.5">
+        <input
+          type="search"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Buscar por nombre…"
+          className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+          autoFocus
+        />
+        <ul className="mt-2 max-h-56 overflow-y-auto rounded-md border border-border bg-background">
+          {directory == null ? (
+            <li className="px-3 py-2 text-muted-foreground">Cargando…</li>
+          ) : filtered.length === 0 ? (
+            <li className="px-3 py-2 text-muted-foreground">Sin resultados</li>
+          ) : (
+            filtered.map((m) => (
+              <li key={m.id}>
+                <button
+                  type="button"
+                  disabled={pending}
+                  onClick={() =>
+                    void (mode === "owner"
+                      ? onPickOwner(m.id)
+                      : onAddWorker(m.id))
+                  }
+                  className={cn(
+                    "flex w-full items-center gap-2.5 px-3 py-2 text-left hover:bg-muted",
+                    pending && "opacity-60",
+                  )}
+                >
+                  <MemberAvatar name={m.displayName} avatarUrl={m.avatarUrl} />
+                  <span className="min-w-0">
+                    <span className="block truncate font-medium">
+                      {m.displayName}
+                    </span>
+                    {m.roleTitle ? (
+                      <span className="block truncate text-xs text-muted-foreground">
+                        {m.roleTitle}
+                      </span>
+                    ) : null}
+                  </span>
+                </button>
+              </li>
+            ))
+          )}
+        </ul>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6 text-sm">
       <section className="space-y-3">
         <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           Responsable
         </h3>
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border px-3 py-2.5">
-          {owner ? (
-            <div className="flex min-w-0 items-center gap-2.5">
-              <MemberAvatar
-                name={owner.display_name}
-                avatarUrl={owner.avatar_url}
-              />
-              <div className="min-w-0">
-                <p className="truncate font-medium text-foreground">
-                  {owner.display_name}
-                </p>
-                {owner.role_title ? (
-                  <p className="truncate text-xs text-muted-foreground">
-                    {owner.role_title}
-                  </p>
-                ) : null}
-              </div>
-            </div>
-          ) : (
-            <p className="text-muted-foreground">Sin asignar</p>
+        <div
+          className={cn(
+            "rounded-lg border border-border",
+            picker === "owner" && "border-primary/40",
           )}
-          <div className="flex flex-wrap gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              disabled={pending}
-              onClick={() => void openPicker("owner")}
-            >
-              {owner ? "Cambiar" : "Asignar"}
-            </Button>
+        >
+          <div className="flex flex-wrap items-center justify-between gap-3 px-3 py-2.5">
             {owner ? (
+              <div className="flex min-w-0 items-center gap-2.5">
+                <MemberAvatar
+                  name={owner.display_name}
+                  avatarUrl={owner.avatar_url}
+                />
+                <div className="min-w-0">
+                  <p className="truncate font-medium text-foreground">
+                    {owner.display_name}
+                  </p>
+                  {owner.role_title ? (
+                    <p className="truncate text-xs text-muted-foreground">
+                      {owner.role_title}
+                    </p>
+                  ) : null}
+                </div>
+              </div>
+            ) : (
+              <p className="text-muted-foreground">Sin asignar</p>
+            )}
+            <div className="flex flex-wrap gap-2">
               <Button
                 type="button"
-                variant="ghost"
+                variant="outline"
                 size="sm"
                 disabled={pending}
-                onClick={() => void onPickOwner(null)}
+                aria-expanded={picker === "owner"}
+                onClick={() => void openPicker("owner")}
               >
-                Quitar
+                {picker === "owner"
+                  ? "Cerrar"
+                  : owner
+                    ? "Cambiar"
+                    : "Asignar"}
               </Button>
-            ) : null}
+              {owner && picker !== "owner" ? (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  disabled={pending}
+                  onClick={() => void onPickOwner(null)}
+                >
+                  Quitar
+                </Button>
+              ) : null}
+            </div>
           </div>
+          {picker === "owner" ? renderExpandedPicker("owner") : null}
         </div>
       </section>
 
@@ -257,87 +328,45 @@ export function OfferCaseTeamPanel({
             ))}
           </ul>
         )}
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          disabled={pending}
-          onClick={() => void openPicker("worker")}
+        <div
+          className={cn(
+            "rounded-lg",
+            picker === "worker"
+              ? "border border-primary/40"
+              : "border border-transparent",
+          )}
         >
-          Añadir persona
-        </Button>
-      </section>
-
-      {picker ? (
-        <div className="rounded-lg border border-border bg-muted/30 p-3">
-          <div className="flex items-center justify-between gap-2">
-            <p className="text-sm font-medium text-foreground">
-              {picker === "owner"
-                ? "Elegir responsable"
-                : "Añadir al equipo"}
-            </p>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              disabled={pending}
-              onClick={closePicker}
-            >
-              Cerrar
-            </Button>
-          </div>
-          <input
-            type="search"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Buscar por nombre…"
-            className="mt-2 w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-            autoFocus
-          />
-          <ul className="mt-2 max-h-56 overflow-y-auto rounded-md border border-border bg-background">
-            {directory == null ? (
-              <li className="px-3 py-2 text-muted-foreground">Cargando…</li>
-            ) : filtered.length === 0 ? (
-              <li className="px-3 py-2 text-muted-foreground">
-                Sin resultados
-              </li>
+          <div className="flex flex-wrap items-center justify-between gap-2 px-0 py-0">
+            {picker === "worker" ? (
+              <div className="flex w-full flex-wrap items-center justify-between gap-2 px-3 py-2.5">
+                <p className="font-medium text-foreground">Añadir persona</p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={pending}
+                  aria-expanded
+                  onClick={closePicker}
+                >
+                  Cerrar
+                </Button>
+              </div>
             ) : (
-              filtered.map((m) => (
-                <li key={m.id}>
-                  <button
-                    type="button"
-                    disabled={pending}
-                    onClick={() =>
-                      void (picker === "owner"
-                        ? onPickOwner(m.id)
-                        : onAddWorker(m.id))
-                    }
-                    className={cn(
-                      "flex w-full items-center gap-2.5 px-3 py-2 text-left hover:bg-muted",
-                      pending && "opacity-60",
-                    )}
-                  >
-                    <MemberAvatar
-                      name={m.displayName}
-                      avatarUrl={m.avatarUrl}
-                    />
-                    <span className="min-w-0">
-                      <span className="block truncate font-medium">
-                        {m.displayName}
-                      </span>
-                      {m.roleTitle ? (
-                        <span className="block truncate text-xs text-muted-foreground">
-                          {m.roleTitle}
-                        </span>
-                      ) : null}
-                    </span>
-                  </button>
-                </li>
-              ))
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={pending}
+                aria-expanded={false}
+                onClick={() => void openPicker("worker")}
+              >
+                Añadir persona
+              </Button>
             )}
-          </ul>
+          </div>
+          {picker === "worker" ? renderExpandedPicker("worker") : null}
         </div>
-      ) : null}
+      </section>
 
       {error ? (
         <p className="text-sm text-destructive" role="alert">
