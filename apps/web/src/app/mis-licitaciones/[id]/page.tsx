@@ -14,7 +14,10 @@ import {
   type OfferOwnerMember,
   type OfferStage,
 } from "@/lib/queries";
-import { formatCountdown } from "@/lib/bid-countdown";
+import {
+  formatCountdown,
+  formatDeadlineDaysPhrase,
+} from "@/lib/bid-countdown";
 import { formatDateMadrid, formatDateTimeMadrid } from "@/lib/datetime";
 import { formatTenderStatus } from "@/lib/tender-labels";
 import { PAGE_MAIN_WIDE_CLASS } from "@/components/shell/page-width";
@@ -228,19 +231,10 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
             value={prepPct != null ? `${prepPct}%` : "—"}
             bar={prepPct}
           />
-          <Kpi
-            label="Riesgo plazo"
-            value={
-              historic
-                ? "Histórico"
-                : cd.tone === "overdue"
-                  ? "🔴 Crítico"
-                  : cd.tone === "soon"
-                    ? "🟠 Ajustado"
-                    : cd.tone === "ok"
-                      ? "🟢 Holgado"
-                      : "—"
-            }
+          <DeadlineRiskKpi
+            historic={historic}
+            dueIso={historic ? null : due}
+            tone={cd.tone}
           />
           <OwnerTeamKpi
             owner={offerCase.owner_member}
@@ -601,6 +595,63 @@ function Kpi({
             style={{ width: `${Math.min(100, Math.max(0, bar))}%` }}
           />
         </div>
+      ) : null}
+    </OutlinedField>
+  );
+}
+
+function DeadlineRiskKpi({
+  historic,
+  dueIso,
+  tone,
+}: {
+  historic: boolean;
+  dueIso: string | null;
+  tone: "ok" | "soon" | "overdue" | "none";
+}) {
+  const headline = historic
+    ? "Histórico"
+    : tone === "overdue"
+      ? "🔴 Crítico"
+      : tone === "soon"
+        ? "🟠 Ajustado"
+        : tone === "ok"
+          ? "🟢 Holgado"
+          : "—";
+
+  const days = historic
+    ? { phrase: null as string | null, tone: "none" as const }
+    : formatDeadlineDaysPhrase(dueIso);
+
+  const phraseTone = days.tone;
+  const phraseClass =
+    phraseTone === "overdue"
+      ? "text-destructive"
+      : phraseTone === "soon"
+        ? "text-amber-700"
+        : phraseTone === "ok"
+          ? "text-emerald-700"
+          : "text-muted-foreground";
+
+  return (
+    <OutlinedField label="Riesgo plazo">
+      <p
+        className={cn(
+          "text-xl font-semibold tracking-tight sm:text-2xl",
+          tone === "overdue" && "text-destructive",
+          tone === "soon" && "text-amber-700",
+          tone === "ok" && "text-emerald-700",
+          (tone === "none" || historic) && "text-foreground",
+        )}
+      >
+        {headline}
+      </p>
+      {days.phrase ? (
+        <p className={cn("mt-1 text-sm font-medium", phraseClass)}>
+          {days.phrase}
+        </p>
+      ) : !historic && tone === "none" ? (
+        <p className="mt-1 text-sm text-muted-foreground">Sin plazo</p>
       ) : null}
     </OutlinedField>
   );
