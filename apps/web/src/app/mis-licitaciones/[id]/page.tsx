@@ -10,6 +10,8 @@ import {
   getOfferCaseById,
   getTenderById,
   listOfferCaseMembers,
+  type OfferCaseTeamMember,
+  type OfferOwnerMember,
   type OfferStage,
 } from "@/lib/queries";
 import { formatCountdown } from "@/lib/bid-countdown";
@@ -240,11 +242,9 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
                       : "—"
             }
           />
-          <Kpi
-            label="Responsable"
-            value={
-              offerCase.owner_member?.display_name?.trim() || "Sin asignar"
-            }
+          <OwnerTeamKpi
+            owner={offerCase.owner_member}
+            team={teamMembers}
           />
         </div>
       </section>
@@ -578,6 +578,110 @@ function Kpi({
             className="h-full rounded-full bg-primary"
             style={{ width: `${Math.min(100, Math.max(0, bar))}%` }}
           />
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function personInitials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  if (parts.length === 1) return parts[0]!.slice(0, 2).toUpperCase();
+  return `${parts[0]![0] ?? ""}${parts[1]![0] ?? ""}`.toUpperCase();
+}
+
+function PersonAvatar({
+  name,
+  avatarUrl,
+  size,
+}: {
+  name: string;
+  avatarUrl: string | null;
+  size: "md" | "sm";
+}) {
+  const dim = size === "md" ? "size-9 text-xs" : "size-7 text-[0.65rem]";
+  if (avatarUrl) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={avatarUrl}
+        alt=""
+        title={name}
+        className={cn(dim, "shrink-0 rounded-full object-cover")}
+      />
+    );
+  }
+  return (
+    <span
+      title={name}
+      className={cn(
+        dim,
+        "inline-flex shrink-0 items-center justify-center rounded-full bg-background font-semibold text-foreground ring-1 ring-border",
+      )}
+      aria-hidden
+    >
+      {personInitials(name)}
+    </span>
+  );
+}
+
+/** KPI «Responsable y equipo»: avatar + nombre del owner y fila de avatares del equipo. */
+function OwnerTeamKpi({
+  owner,
+  team,
+}: {
+  owner: OfferOwnerMember | null;
+  team: OfferCaseTeamMember[];
+}) {
+  const ownerName = owner?.display_name?.trim() || null;
+  const crew = team.filter((row) => row.member_id !== owner?.id);
+  const visible = crew.slice(0, 5);
+  const extra = crew.length - visible.length;
+
+  return (
+    <div className="rounded-lg border border-border bg-muted/50 px-3 py-2.5">
+      <p className="text-[0.7rem] font-medium uppercase tracking-wide text-muted-foreground">
+        Responsable y equipo
+      </p>
+      <div className="mt-2 flex min-w-0 items-center gap-2.5">
+        {owner && ownerName ? (
+          <>
+            <PersonAvatar
+              name={ownerName}
+              avatarUrl={owner.avatar_url}
+              size="md"
+            />
+            <div className="min-w-0">
+              <p className="truncate text-sm font-semibold text-foreground">
+                {ownerName}
+              </p>
+              <p className="truncate text-xs text-muted-foreground">
+                Responsable del expediente
+              </p>
+            </div>
+          </>
+        ) : (
+          <p className="text-sm font-semibold text-muted-foreground">
+            Sin asignar
+          </p>
+        )}
+      </div>
+      {crew.length > 0 ? (
+        <div className="mt-2.5 flex items-center gap-1.5">
+          {visible.map((row) => (
+            <PersonAvatar
+              key={row.id}
+              name={row.member.display_name}
+              avatarUrl={row.member.avatar_url}
+              size="sm"
+            />
+          ))}
+          {extra > 0 ? (
+            <span className="inline-flex size-7 items-center justify-center rounded-full bg-background text-[0.65rem] font-semibold text-muted-foreground ring-1 ring-border">
+              +{extra}
+            </span>
+          ) : null}
         </div>
       ) : null}
     </div>

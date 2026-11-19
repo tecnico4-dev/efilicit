@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Mis licitaciones · cabecera: KPI «Responsable y equipo» con avatar del owner y fila de avatares del equipo.
 - Mis licitaciones · pestaña Equipo: asignar responsable y añadir/quitar trabajadores desde `eficen_members` (local).
 
 ### Changed
