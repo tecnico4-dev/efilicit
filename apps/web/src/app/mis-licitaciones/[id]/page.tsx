@@ -7,9 +7,13 @@ import {
 import {
   HISTORIC_OFFER_STAGES,
   OFFER_STAGE_LABELS,
+  getLatestOfferCaseIntake,
   getOfferCaseById,
   getTenderById,
   listOfferCaseMembers,
+  listOfferCasePliegos,
+  listOfferDeliverables,
+  listOfferMilestones,
   type OfferCaseTeamMember,
   type OfferOwnerMember,
   type OfferStage,
@@ -24,6 +28,14 @@ import { PAGE_MAIN_WIDE_CLASS } from "@/components/shell/page-width";
 import { ErrorState } from "@/components/ui/state-message";
 import { CaseStageBadge } from "@/components/mis-licitaciones/case-stage-badge";
 import { DetailTabs } from "@/components/mis-licitaciones/detail-tabs";
+import { OfferCaseIntakeStatus } from "@/components/mis-licitaciones/offer-case-intake-status";
+import {
+  ENVELOPE_LABELS,
+  MilestoneRows,
+  PliegosList,
+  REQUIREMENT_CATEGORY_LABELS,
+  SobresList,
+} from "@/components/mis-licitaciones/offer-case-sections";
 import { OfferCaseTeamPanel } from "@/components/mis-licitaciones/offer-case-team-panel";
 import { TenderFichaModalButton } from "@/components/mis-licitaciones/tender-ficha-modal";
 import { cn } from "@/lib/cn";
@@ -92,8 +104,22 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
   }
   if (!offerCase) notFound();
 
-  const teamResult = await listOfferCaseMembers(supabase, offerCase.id);
+  const [teamResult, intakeResult, pliegosResult, deliverablesResult, milestonesResult] =
+    await Promise.all([
+      listOfferCaseMembers(supabase, offerCase.id),
+      getLatestOfferCaseIntake(supabase, offerCase.id),
+      listOfferCasePliegos(supabase, offerCase.id),
+      listOfferDeliverables(supabase, offerCase.id),
+      listOfferMilestones(supabase, offerCase.id),
+    ]);
   const teamMembers = teamResult.data;
+  const milestones = milestonesResult.data;
+  const hasPresentationMilestone = milestones.some(
+    (m) => m.code === "presentacion",
+  );
+  const fromPliego = offerCase.requirements.filter(
+    (r) => r.source_kind === "pliego_xml",
+  ).length;
 
   const tenderSummary = offerCase.tenders;
   const tenderDetailResult = tenderSummary
@@ -323,10 +349,15 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
               ),
               requisitos: (
                 <div className="space-y-3">
-                  <p className="text-sm text-muted-foreground">
-                    Matriz en `offer_requirements` (ADR 026). Filas migradas del
-                    checklist legacy aparecen como categoría «otros».
-                  </p>
+                  {offerCase.requirements.length > 0 ? (
+                    <p className="text-sm text-muted-foreground">
+                      {fromPliego > 0
+                        ? `${fromPliego} extraídos del pliego PLACSP · ${
+                            offerCase.requirements.length - fromPliego
+                          } añadidos a mano. Revisa el texto literal antes de marcar cumplimiento.`
+                        : "Requisitos añadidos a mano."}
+                    </p>
+                  ) : null}
                   {offerCase.requirements.length === 0 ? (
                     <p className="rounded-lg border border-dashed border-border px-4 py-6 text-center text-sm text-muted-foreground">
                       Sin requisitos en este expediente.
@@ -357,13 +388,31 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
                               key={item.id}
                               className="border-b border-border/80"
                             >
-                              <td className="px-2 py-2.5 font-medium text-foreground">
+                              <td
+                                className="px-2 py-2.5 font-medium text-foreground"
+                                title={item.literal_text ?? undefined}
+                              >
                                 {item.title}
                                 <p className="text-xs font-normal text-muted-foreground">
-                                  {item.category}
-                                  {item.source_kind === "legacy_checklist"
-                                    ? " · legacy"
-                                    : ""}
+                                  {[
+                                    REQUIREMENT_CATEGORY_LABELS[item.category] ??
+                                      item.category,
+                                    item.envelope
+                                      ? (ENVELOPE_LABELS[item.envelope] ??
+                                        item.envelope)
+                                      : null,
+                                    item.required_value,
+                                    item.source_kind === "legacy_checklist"
+                                      ? "legacy"
+                                      : null,
+                                  ]
+                                    .filter(Boolean)
+                                    .join(" · ")}
+                                  {item.source_kind === "pliego_xml" ? (
+                                    <span className="ml-1.5 inline-flex rounded border border-primary/30 bg-primary/5 px-1 text-[0.65rem] font-semibold text-primary">
+                                      Pliego
+                                    </span>
+                                  ) : null}
                                 </p>
                               </td>
                               <td className="px-2 py-2.5 text-muted-foreground">
@@ -410,33 +459,23 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
                 </div>
               ),
               sobres: (
-                <div className="space-y-3">
-                  <SobreCard
-                    title="Sobre A — Documentación administrativa"
-                    progress={null}
-                    hint="DEUC, declaraciones, solvencia formal."
-                  />
-                  <SobreCard
-                    title="Sobre B — Criterios de juicio de valor"
-                    progress={null}
-                    hint="Memoria técnica por criterio."
-                  />
-                  <SobreCard
-                    title="Sobre C — Criterios por fórmula"
-                    progress={null}
-                    hint="Oferta económica y mejoras cuantificables."
-                  />
-                </div>
+                <SobresList
+                  deliverables={deliverablesResult.data}
+                  requirements={offerCase.requirements}
+                />
               ),
               pliegos: (
                 <div className="space-y-3 text-sm">
-                  <p className="text-muted-foreground">
-                    Pliegos y fuentes (próximo incremento). Expediente en
-                    `offer_cases`.
-                  </p>
-                  <div className="rounded-lg border border-dashed border-border px-4 py-6 text-center text-muted-foreground">
-                    Sin PCAP/PPT/anexos vinculados · sin fuentes registradas
-                  </div>
+                  <OfferCaseIntakeStatus
+                    offerCaseId={offerCase.id}
+                    userId={profile.data.id}
+                    intake={intakeResult.data}
+                  />
+                  {pliegosResult.error ? (
+                    <ErrorState>{pliegosResult.error.message}</ErrorState>
+                  ) : (
+                    <PliegosList pliegos={pliegosResult.data} />
+                  )}
                 </div>
               ),
               equipo: (
@@ -457,15 +496,18 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
                     }
                     kind="Oficial"
                   />
-                  <CalRow
-                    label="Plazo de presentación"
-                    value={
-                      tenderSummary?.deadline_at
-                        ? formatDateTimeMadrid(tenderSummary.deadline_at)
-                        : "—"
-                    }
-                    kind="Oficial"
-                  />
+                  <MilestoneRows milestones={milestones} />
+                  {hasPresentationMilestone ? null : (
+                    <CalRow
+                      label="Plazo de presentación"
+                      value={
+                        tenderSummary?.deadline_at
+                          ? formatDateTimeMadrid(tenderSummary.deadline_at)
+                          : "—"
+                      }
+                      kind="Oficial"
+                    />
+                  )}
                   <CalRow
                     label="Cierre interno"
                     value={
@@ -801,36 +843,6 @@ function StatusChip({
     >
       {children}
     </span>
-  );
-}
-
-function SobreCard({
-  title,
-  hint,
-  progress,
-}: {
-  title: string;
-  hint: string;
-  progress: number | null;
-}) {
-  return (
-    <div className="rounded-lg border border-border bg-muted/40 p-3">
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <p className="font-medium text-foreground">{title}</p>
-        <span className="text-xs text-muted-foreground">
-          {progress != null ? `${progress}%` : "Sin entregables"}
-        </span>
-      </div>
-      {progress != null ? (
-        <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-border">
-          <div
-            className="h-full rounded-full bg-primary"
-            style={{ width: `${progress}%` }}
-          />
-        </div>
-      ) : null}
-      <p className="mt-2 text-xs text-muted-foreground">{hint}</p>
-    </div>
   );
 }
 

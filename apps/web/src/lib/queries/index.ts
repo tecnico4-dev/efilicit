@@ -201,3 +201,15 @@ export {
   type OfferOwnerMember,
   type OfferStage,
 } from "./offer-pipeline";
+export {
+  PLIEGO_TYPE_LABELS,
+  getLatestOfferCaseIntake,
+  listOfferCasePliegos,
+  listOfferDeliverables,
+  listOfferMilestones,
+  requestOfferCaseIntake,
+  type OfferCaseIntakeRow,
+  type OfferCasePliego,
+  type OfferDeliverableRow,
+  type OfferMilestoneRow,
+} from "./offer-intake";

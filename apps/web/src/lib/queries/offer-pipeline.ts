@@ -4,6 +4,7 @@
  */
 import type { Database } from "@efilicit/types";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { requestOfferCaseIntake } from "./offer-intake";
 
 export const OFFER_STAGES = [
   "interes",
@@ -342,6 +343,8 @@ export async function getOfferCaseById(
         internal_due_at,
         pliego_ref,
         source_kind,
+        source_key,
+        pliego_id,
         sort_order,
         legacy_checklist_item_id,
         validated_by,
@@ -532,6 +535,12 @@ export async function createOfferCase(
     }
     return { data: null, error: new Error(error.message) };
   }
+
+  // Best effort: si falla, el expediente existe y se puede reprocesar desde Pliegos.
+  await requestOfferCaseIntake(client, {
+    offerCaseId: data.id,
+    requestedBy: input.createdBy,
+  });
 
   return { data: { id: data.id }, error: null };
 }

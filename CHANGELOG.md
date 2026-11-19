@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Mis licitaciones · intake de pliegos PLACSP ([ADR 035](docs/adr/035-intake-pliegos-expediente.md)): al crear un expediente se encola `offer_case_intake`; el worker `run-offer-intake` (workflow `offer-intake.yml`, `workflow_dispatch`) lee el RAW CODICE y vuelca pliegos (PCAP/PPT/anexos descargados al bucket privado `offer-docs`; biblioteca solo enlace), requisitos (`source_kind = pliego_xml`), sobres A/B/C con puntos y hitos oficiales. Idempotente por `source_key`; no pisa ediciones. Pestañas Pliegos (estado + «Reprocesar pliegos» + abrir por signed URL), Sobres, Requisitos (origen/sobre/valor) y Calendario con datos reales. Solo local.
 - Mis licitaciones · cabecera: KPI «Responsable y equipo» con avatar del owner y fila de avatares del equipo.
 - Mis licitaciones · pestaña Equipo: asignar responsable y añadir/quitar trabajadores desde `eficen_members` (local).
 

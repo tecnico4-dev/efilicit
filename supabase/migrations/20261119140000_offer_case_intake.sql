@@ -48,7 +48,7 @@ create policy "offer_case_intake_insert_app_user"
     and finished_at is null
   );
 
-revoke all on table public.offer_case_intake from public, anon;
+revoke all on table public.offer_case_intake from public, anon, authenticated;
 grant select, insert on table public.offer_case_intake to authenticated;
 
 -- ---------------------------------------------------------------------------
