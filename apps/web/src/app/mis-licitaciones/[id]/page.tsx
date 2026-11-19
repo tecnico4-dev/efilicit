@@ -701,14 +701,14 @@ function OwnerTeamKpi({
               name={row.member.display_name}
               avatarUrl={row.member.avatar_url}
               size="sm"
-              className={cn(index > 0 && "-ml-2")}
+              className={cn(index > 0 && "-ml-1")}
             />
           ))}
           {extra > 0 ? (
             <span
               className={cn(
                 "inline-flex size-7 items-center justify-center rounded-full bg-muted text-[0.65rem] font-semibold text-muted-foreground ring-2 ring-surface",
-                visible.length > 0 && "-ml-2",
+                visible.length > 0 && "-ml-1",
               )}
             >
               +{extra}

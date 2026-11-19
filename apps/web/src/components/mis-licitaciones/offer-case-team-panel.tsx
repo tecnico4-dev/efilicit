@@ -70,9 +70,15 @@ export function OfferCaseTeamPanel({
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  /** Trabajadores sin el responsable (por si quedó huérfano en datos). */
+  const workers = useMemo(
+    () => team.filter((row) => row.member_id !== owner?.id),
+    [team, owner?.id],
+  );
+
   const teamIds = useMemo(
-    () => new Set(team.map((t) => t.member_id)),
-    [team],
+    () => new Set(workers.map((t) => t.member_id)),
+    [workers],
   );
 
   async function ensureDirectory() {
@@ -135,7 +141,7 @@ export function OfferCaseTeamPanel({
       setError(result.error.message);
       return;
     }
-    // Si ya estaba en trabajadores, sacar de la lista de equipo
+    // Estaba en trabajadores → pasa a responsable (sale del equipo)
     if (memberId) {
       const asWorker = team.find((row) => row.member_id === memberId);
       if (asWorker) {
@@ -311,11 +317,11 @@ export function OfferCaseTeamPanel({
         <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           Trabajadores
         </h3>
-        {team.length === 0 ? (
+        {workers.length === 0 ? (
           <p className="text-muted-foreground">Nadie en el equipo aún.</p>
         ) : (
           <ul className="divide-y divide-border rounded-lg border border-border">
-            {team.map((row) => (
+            {workers.map((row) => (
               <li
                 key={row.id}
                 className="flex flex-wrap items-center justify-between gap-2 px-3 py-2.5"
