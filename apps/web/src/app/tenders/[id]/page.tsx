@@ -437,7 +437,6 @@ export default async function TenderDetailPage({
             {misLicitacionesOn ? (
               <OfferCaseToggle
                 userId={favoriteUserId}
-                displayName={displayName}
                 tenderId={tender.id}
                 existingCaseId={existingOfferCaseId}
               />

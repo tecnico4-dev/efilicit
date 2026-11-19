@@ -12,7 +12,7 @@ export type MisLicitacionesFilters = {
   stages: OfferStage[];
   amountMin: number | null;
   amountMax: number | null;
-  /** `""` = sin filtrar; `"__none__"` = sin responsable; otro = owner_name exacto. */
+  /** `""` = sin filtrar; `"__none__"` = sin responsable; otro = eficen_members.id. */
   ownerKey: string;
 };
 
@@ -137,16 +137,19 @@ export function stagesForScope(scope: "active" | "historic"): OfferStage[] {
 export function ownerOptionsFromCases(
   cases: OfferCaseListItem[],
 ): { value: string; label: string }[] {
-  const names = new Set<string>();
+  const byId = new Map<string, string>();
   let hasNone = false;
   for (const c of cases) {
-    const name = c.owner_name?.trim();
-    if (!name) hasNone = true;
-    else names.add(name);
+    const m = c.owner_member;
+    if (!m?.id) {
+      hasNone = true;
+      continue;
+    }
+    byId.set(m.id, m.display_name.trim() || m.id);
   }
-  const opts = [...names]
-    .sort((a, b) => a.localeCompare(b, "es"))
-    .map((name) => ({ value: name, label: name }));
+  const opts = [...byId.entries()]
+    .sort((a, b) => a[1].localeCompare(b[1], "es"))
+    .map(([value, label]) => ({ value, label }));
   if (hasNone) {
     opts.unshift({ value: OWNER_NONE_KEY, label: "Sin asignar" });
   }
@@ -173,9 +176,9 @@ export function applyMisLicitacionesFilters(
       if (amount == null || amount > f.amountMax) return false;
     }
     if (f.ownerKey === OWNER_NONE_KEY) {
-      if (c.owner_name?.trim()) return false;
+      if (c.owner_member_id) return false;
     } else if (f.ownerKey) {
-      if ((c.owner_name?.trim() ?? "") !== f.ownerKey) return false;
+      if (c.owner_member_id !== f.ownerKey) return false;
     }
     return true;
   });

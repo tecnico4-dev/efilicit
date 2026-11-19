@@ -587,14 +587,14 @@ isOneToOne: false
                   ]
                 },"offer_cases": {
                   Row: {
-                    "created_at": string,"created_by": string | null,"discard_reason": string | null,"go_decided_at": string | null,"go_decided_by": string | null,"go_decision": string | null,"go_reason": string | null,"id": string,"internal_deadline_at": string | null,"legacy_bid_case_id": string | null,"notes": string | null,"outcome_on": string | null,"owner_name": string | null,"owner_user_id": string | null,"preparation_started_on": string | null,"presented_on": string | null,"stage": string,"target_lots": NonNullable<Json>,"tender_id": string,"updated_at": string
+                    "created_at": string,"created_by": string | null,"discard_reason": string | null,"go_decided_at": string | null,"go_decided_by": string | null,"go_decision": string | null,"go_reason": string | null,"id": string,"internal_deadline_at": string | null,"legacy_bid_case_id": string | null,"notes": string | null,"outcome_on": string | null,"owner_member_id": string | null,"preparation_started_on": string | null,"presented_on": string | null,"stage": string,"target_lots": NonNullable<Json>,"tender_id": string,"updated_at": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "created_at"?: string,"created_by"?: string | null,"discard_reason"?: string | null,"go_decided_at"?: string | null,"go_decided_by"?: string | null,"go_decision"?: string | null,"go_reason"?: string | null,"id"?: string,"internal_deadline_at"?: string | null,"legacy_bid_case_id"?: string | null,"notes"?: string | null,"outcome_on"?: string | null,"owner_name"?: string | null,"owner_user_id"?: string | null,"preparation_started_on"?: string | null,"presented_on"?: string | null,"stage"?: string,"target_lots"?: NonNullable<Json>,"tender_id": string,"updated_at"?: string
+                    "created_at"?: string,"created_by"?: string | null,"discard_reason"?: string | null,"go_decided_at"?: string | null,"go_decided_by"?: string | null,"go_decision"?: string | null,"go_reason"?: string | null,"id"?: string,"internal_deadline_at"?: string | null,"legacy_bid_case_id"?: string | null,"notes"?: string | null,"outcome_on"?: string | null,"owner_member_id"?: string | null,"preparation_started_on"?: string | null,"presented_on"?: string | null,"stage"?: string,"target_lots"?: NonNullable<Json>,"tender_id": string,"updated_at"?: string
                   }
                   Update: {
-                    "created_at"?: string,"created_by"?: string | null,"discard_reason"?: string | null,"go_decided_at"?: string | null,"go_decided_by"?: string | null,"go_decision"?: string | null,"go_reason"?: string | null,"id"?: string,"internal_deadline_at"?: string | null,"legacy_bid_case_id"?: string | null,"notes"?: string | null,"outcome_on"?: string | null,"owner_name"?: string | null,"owner_user_id"?: string | null,"preparation_started_on"?: string | null,"presented_on"?: string | null,"stage"?: string,"target_lots"?: NonNullable<Json>,"tender_id"?: string,"updated_at"?: string
+                    "created_at"?: string,"created_by"?: string | null,"discard_reason"?: string | null,"go_decided_at"?: string | null,"go_decided_by"?: string | null,"go_decision"?: string | null,"go_reason"?: string | null,"id"?: string,"internal_deadline_at"?: string | null,"legacy_bid_case_id"?: string | null,"notes"?: string | null,"outcome_on"?: string | null,"owner_member_id"?: string | null,"preparation_started_on"?: string | null,"presented_on"?: string | null,"stage"?: string,"target_lots"?: NonNullable<Json>,"tender_id"?: string,"updated_at"?: string
                   }
                   Relationships: [
                     {
@@ -610,10 +610,10 @@ isOneToOne: false
       referencedRelation: "users"
       referencedColumns: ["id"]
     },{
-      foreignKeyName: "offer_cases_owner_user_id_fkey"
-      columns: ["owner_user_id"]
+      foreignKeyName: "offer_cases_owner_member_id_fkey"
+      columns: ["owner_member_id"]
 isOneToOne: false
-      referencedRelation: "users"
+      referencedRelation: "eficen_members"
       referencedColumns: ["id"]
     },{
       foreignKeyName: "offer_cases_tender_id_fkey"

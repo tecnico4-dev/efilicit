@@ -112,7 +112,9 @@ function CaseListRow({
             </p>
             <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
               <CaseStageBadge stage={item.stage} />
-              {item.owner_name ? <span>Resp. {item.owner_name}</span> : null}
+              {item.owner_member?.display_name ? (
+                <span>Resp. {item.owner_member.display_name}</span>
+              ) : null}
               {scope === "historic" &&
               (item.outcome_on || item.presented_on) ? (
                 <span>
@@ -281,7 +283,9 @@ export function PipelineBoard({
                             item.tenders?.estimated_value,
                             item.tenders?.currency,
                           )}
-                          {item.owner_name ? ` · ${item.owner_name}` : ""}
+                          {item.owner_member?.display_name
+                            ? ` · ${item.owner_member.display_name}`
+                            : ""}
                         </p>
                         <p className="mt-1 text-xs text-muted-foreground">
                           {OFFER_STAGE_LABELS[item.stage as OfferStage] ??

@@ -27,6 +27,11 @@ Además: compartir una licitación favorita a **personas concretas** (no solo a 
 
 - Se eliminan `created_at` / `updated_at` (y su trigger): sin uso de producto.
 - Se añade `avatar_url` nullable para iconos futuros; default visual = iniciales.
+
+### Enmienda 2026-11-19
+
+- `offer_cases.owner_member_id` → `eficen_members` (nullable). Se eliminan `owner_name` / `owner_user_id`.
+- `created_by` sigue siendo `users.id` (quién dio de alta).
 2. **Drop `company_people`** tras retargetar FKs (sin UI ni datos de producto).
 3. **Rename** `shared_favorites` → **`favorites_common`** (mismo contrato; triggers/FK de `notification_common` siguen al PK `tender_id`). Al insertar, `added_by_display_name` preferirá el nombre del miembro enlazado si existe.
 4. **`favorites_shared`** (peer share):

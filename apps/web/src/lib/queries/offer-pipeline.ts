@@ -66,8 +66,16 @@ export type OfferCaseTenderSummary = {
   deadline_at: string | null;
 };
 
+export type OfferOwnerMember = {
+  id: string;
+  display_name: string;
+  role_title: string | null;
+  avatar_url: string | null;
+};
+
 export type OfferCaseListItem = OfferCaseRow & {
   tenders: OfferCaseTenderSummary | null;
+  owner_member: OfferOwnerMember | null;
   requirements_total: number;
   requirements_ready: number;
   next_due_at: string | null;
@@ -75,8 +83,16 @@ export type OfferCaseListItem = OfferCaseRow & {
 
 export type OfferCaseDetail = OfferCaseRow & {
   tenders: OfferCaseTenderSummary | null;
+  owner_member: OfferOwnerMember | null;
   requirements: OfferRequirementRow[];
 };
+
+function asOwnerMember(
+  raw: OfferOwnerMember | OfferOwnerMember[] | null | undefined,
+): OfferOwnerMember | null {
+  if (!raw) return null;
+  return Array.isArray(raw) ? (raw[0] ?? null) : raw;
+}
 
 function isHistoricStage(stage: string): boolean {
   return (HISTORIC_OFFER_STAGES as readonly string[]).includes(stage);
@@ -115,8 +131,7 @@ export async function listOfferCases(
       id,
       tender_id,
       stage,
-      owner_name,
-      owner_user_id,
+      owner_member_id,
       preparation_started_on,
       presented_on,
       outcome_on,
@@ -132,6 +147,12 @@ export async function listOfferCases(
       created_by,
       created_at,
       updated_at,
+      owner_member:eficen_members!owner_member_id (
+        id,
+        display_name,
+        role_title,
+        avatar_url
+      ),
       tenders (
         id,
         title,
@@ -169,8 +190,7 @@ export async function listOfferCases(
       id: row.id,
       tender_id: row.tender_id,
       stage: row.stage,
-      owner_name: row.owner_name,
-      owner_user_id: row.owner_user_id,
+      owner_member_id: row.owner_member_id,
       preparation_started_on: row.preparation_started_on,
       presented_on: row.presented_on,
       outcome_on: row.outcome_on,
@@ -186,6 +206,13 @@ export async function listOfferCases(
       created_by: row.created_by,
       created_at: row.created_at,
       updated_at: row.updated_at,
+      owner_member: asOwnerMember(
+        row.owner_member as
+          | OfferOwnerMember
+          | OfferOwnerMember[]
+          | null
+          | undefined,
+      ),
       tenders,
       requirements_total: items.length,
       requirements_ready: items.filter((i) => i.prep_status === "listo").length,
@@ -244,8 +271,7 @@ export async function getOfferCaseById(
       id,
       tender_id,
       stage,
-      owner_name,
-      owner_user_id,
+      owner_member_id,
       preparation_started_on,
       presented_on,
       outcome_on,
@@ -261,6 +287,12 @@ export async function getOfferCaseById(
       created_by,
       created_at,
       updated_at,
+      owner_member:eficen_members!owner_member_id (
+        id,
+        display_name,
+        role_title,
+        avatar_url
+      ),
       tenders (
         id,
         title,
@@ -320,8 +352,7 @@ export async function getOfferCaseById(
       id: data.id,
       tender_id: data.tender_id,
       stage: data.stage,
-      owner_name: data.owner_name,
-      owner_user_id: data.owner_user_id,
+      owner_member_id: data.owner_member_id,
       preparation_started_on: data.preparation_started_on,
       presented_on: data.presented_on,
       outcome_on: data.outcome_on,
@@ -337,6 +368,13 @@ export async function getOfferCaseById(
       created_by: data.created_by,
       created_at: data.created_at,
       updated_at: data.updated_at,
+      owner_member: asOwnerMember(
+        data.owner_member as
+          | OfferOwnerMember
+          | OfferOwnerMember[]
+          | null
+          | undefined,
+      ),
       tenders,
       requirements,
     },
@@ -349,7 +387,6 @@ export async function createOfferCase(
   input: {
     tenderId: string;
     createdBy: string;
-    ownerName?: string | null;
   },
 ): Promise<{ data: { id: string } | null; error: Error | null }> {
   const { data, error } = await client
@@ -357,7 +394,7 @@ export async function createOfferCase(
     .insert({
       tender_id: input.tenderId,
       created_by: input.createdBy,
-      owner_name: input.ownerName ?? null,
+      owner_member_id: null,
       stage: "interes",
       preparation_started_on: new Date().toISOString().slice(0, 10),
     })

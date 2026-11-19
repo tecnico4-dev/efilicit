@@ -12,12 +12,10 @@ import { createOfferCase } from "@/lib/queries";
  */
 export function OfferCaseToggle({
   userId,
-  displayName,
   tenderId,
   existingCaseId,
 }: {
   userId: string;
-  displayName: string | null;
   tenderId: string;
   existingCaseId: string | null;
 }) {
@@ -37,7 +35,6 @@ export function OfferCaseToggle({
     const { data, error: createError } = await createOfferCase(client, {
       tenderId,
       createdBy: userId,
-      ownerName: displayName?.trim() || null,
     });
     setPending(false);
     if (createError || !data) {

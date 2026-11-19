@@ -188,5 +188,6 @@ export {
   offerCaseHistoryYear,
   type OfferCaseDetail,
   type OfferCaseListItem,
+  type OfferOwnerMember,
   type OfferStage,
 } from "./offer-pipeline";

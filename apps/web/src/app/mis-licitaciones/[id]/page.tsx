@@ -197,8 +197,8 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
                   Plazo {formatDateTimeMadrid(tenderSummary.deadline_at)}
                 </span>
               ) : null}
-              {offerCase.owner_name ? (
-                <span>Resp. {offerCase.owner_name}</span>
+              {offerCase.owner_member?.display_name ? (
+                <span>Resp. {offerCase.owner_member.display_name}</span>
               ) : null}
               {offerCase.outcome_on ? (
                 <span>Outcome {formatDateMadrid(offerCase.outcome_on)}</span>
@@ -240,7 +240,9 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
           />
           <Kpi
             label="Responsable"
-            value={offerCase.owner_name?.trim() || "Sin asignar"}
+            value={
+              offerCase.owner_member?.display_name?.trim() || "Sin asignar"
+            }
           />
         </div>
 
@@ -304,7 +306,10 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
                       <Fact label="Etapa pipeline" value={stageLabel} />
                       <Fact
                         label="Responsable"
-                        value={offerCase.owner_name?.trim() || "Sin asignar"}
+                        value={
+                          offerCase.owner_member?.display_name?.trim() ||
+                          "Sin asignar"
+                        }
                       />
                     </dl>
                   </div>
@@ -456,10 +461,15 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
                 <div className="space-y-3 text-sm">
                   <Fact
                     label="Responsable del expediente"
-                    value={offerCase.owner_name?.trim() || "Sin asignar"}
+                    value={
+                      offerCase.owner_member?.display_name?.trim() ||
+                      "Sin asignar"
+                    }
                   />
                   <p className="text-muted-foreground">
-                    Equipo con roles llegará cuando `owner_user_id` esté en uso.
+                    El responsable se elige del directorio Eficen
+                    (`owner_member_id`). El equipo con roles irá en{" "}
+                    `offer_case_members`.
                   </p>
                 </div>
               ),
