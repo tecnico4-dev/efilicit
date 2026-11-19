@@ -65,7 +65,9 @@ export {
 export {
   getEficenMemberDisplayNameByUserId,
   listEficenMembersForShare,
+  listEficenMembersForTeam,
   type EficenMemberForShare,
+  type EficenMemberForTeam,
 } from "./eficen-members";
 export {
   addOwnFavorite,
@@ -178,16 +180,24 @@ export {
 export {
   ACTIVE_OFFER_STAGES,
   HISTORIC_OFFER_STAGES,
+  OFFER_MEMBER_ROLE_LABELS,
+  OFFER_MEMBER_ROLES,
   OFFER_STAGE_LABELS,
   OFFER_STAGES,
+  addOfferCaseMember,
   createOfferCase,
   getOfferCaseById,
   getOfferCaseIdByTenderId,
   listOfferCaseHistoryYears,
+  listOfferCaseMembers,
   listOfferCases,
   offerCaseHistoryYear,
+  removeOfferCaseMember,
+  setOfferCaseOwner,
   type OfferCaseDetail,
   type OfferCaseListItem,
+  type OfferCaseTeamMember,
+  type OfferMemberRole,
   type OfferOwnerMember,
   type OfferStage,
 } from "./offer-pipeline";

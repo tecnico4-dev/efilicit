@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { cn } from "@/lib/cn";
 
 const TABS = [
@@ -15,12 +15,29 @@ const TABS = [
 
 type TabId = (typeof TABS)[number]["id"];
 
+const TAB_IDS = new Set<string>(TABS.map((t) => t.id));
+const TAB_STORAGE_KEY = "efilicit:mis-licitaciones-detail-tab";
+
+function isTabId(value: string | null): value is TabId {
+  return value != null && TAB_IDS.has(value);
+}
+
 export function DetailTabs({
   panes,
 }: {
   panes: Record<TabId, ReactNode>;
 }) {
   const [tab, setTab] = useState<TabId>("resumen");
+
+  useEffect(() => {
+    const saved = sessionStorage.getItem(TAB_STORAGE_KEY);
+    if (isTabId(saved)) setTab(saved);
+  }, []);
+
+  function selectTab(next: TabId) {
+    setTab(next);
+    sessionStorage.setItem(TAB_STORAGE_KEY, next);
+  }
 
   return (
     <div>
@@ -29,7 +46,7 @@ export function DetailTabs({
           <button
             key={t.id}
             type="button"
-            onClick={() => setTab(t.id)}
+            onClick={() => selectTab(t.id)}
             className={cn(
               "rounded-t-md px-3 py-1.5 text-sm transition-colors",
               tab === t.id

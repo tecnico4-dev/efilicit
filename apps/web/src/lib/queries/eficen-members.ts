@@ -12,6 +12,14 @@ export type EficenMemberForShare = {
   userId: string;
 };
 
+/** Ficha del directorio para pickers de Mis licitaciones (responsable / equipo). */
+export type EficenMemberForTeam = {
+  id: string;
+  displayName: string;
+  roleTitle: string | null;
+  avatarUrl: string | null;
+};
+
 /**
  * Miembros activos con cuenta, para el picker «Personas».
  * Excluye al usuario actual (no compartirse a uno mismo).
@@ -40,6 +48,32 @@ export async function listEficenMembersForShare(
     });
   }
   return { data: rows, error: null };
+}
+
+/**
+ * Miembros activos del directorio para responsable / equipo del expediente.
+ * No exige cuenta (`user_id`); no excluye al usuario actual.
+ */
+export async function listEficenMembersForTeam(
+  client: SupabaseClient<Database>,
+): Promise<{ data: EficenMemberForTeam[]; error: Error | null }> {
+  const { data, error } = await client
+    .from("eficen_members")
+    .select("id, display_name, role_title, avatar_url")
+    .eq("active", true)
+    .order("display_name", { ascending: true });
+
+  if (error) return { data: [], error: new Error(error.message) };
+
+  return {
+    data: (data ?? []).map((row) => ({
+      id: row.id,
+      displayName: row.display_name,
+      roleTitle: row.role_title,
+      avatarUrl: row.avatar_url,
+    })),
+    error: null,
+  };
 }
 
 /** Nombre visible del miembro enlazado a un users.id (o null). */

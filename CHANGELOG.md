@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Mis licitaciones · pestaña Equipo: asignar responsable y añadir/quitar trabajadores desde `eficen_members` (local).
+
 ### Changed
 
 - `offer_case_members`: `member_id` → `eficen_members`; se quitan `user_id` / `created_at`. Migración local.

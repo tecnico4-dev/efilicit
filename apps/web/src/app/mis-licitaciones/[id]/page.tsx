@@ -9,6 +9,7 @@ import {
   OFFER_STAGE_LABELS,
   getOfferCaseById,
   getTenderById,
+  listOfferCaseMembers,
   type OfferStage,
 } from "@/lib/queries";
 import { formatCountdown } from "@/lib/bid-countdown";
@@ -18,6 +19,7 @@ import { PAGE_MAIN_WIDE_CLASS } from "@/components/shell/page-width";
 import { ErrorState } from "@/components/ui/state-message";
 import { CaseStageBadge } from "@/components/mis-licitaciones/case-stage-badge";
 import { DetailTabs } from "@/components/mis-licitaciones/detail-tabs";
+import { OfferCaseTeamPanel } from "@/components/mis-licitaciones/offer-case-team-panel";
 import { TenderFichaModalButton } from "@/components/mis-licitaciones/tender-ficha-modal";
 import { cn } from "@/lib/cn";
 
@@ -84,6 +86,9 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
     );
   }
   if (!offerCase) notFound();
+
+  const teamResult = await listOfferCaseMembers(supabase, offerCase.id);
+  const teamMembers = teamResult.data;
 
   const tenderSummary = offerCase.tenders;
   const tenderDetailResult = tenderSummary
@@ -458,20 +463,11 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
                 </div>
               ),
               equipo: (
-                <div className="space-y-3 text-sm">
-                  <Fact
-                    label="Responsable del expediente"
-                    value={
-                      offerCase.owner_member?.display_name?.trim() ||
-                      "Sin asignar"
-                    }
-                  />
-                  <p className="text-muted-foreground">
-                    El responsable se elige del directorio Eficen
-                    (`owner_member_id`). El equipo con roles irá en{" "}
-                    `offer_case_members`.
-                  </p>
-                </div>
+                <OfferCaseTeamPanel
+                  offerCaseId={offerCase.id}
+                  owner={offerCase.owner_member}
+                  team={teamMembers}
+                />
               ),
               calendario: (
                 <ul className="space-y-0 text-sm">

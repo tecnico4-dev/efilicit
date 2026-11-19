@@ -87,6 +87,29 @@ export type OfferCaseDetail = OfferCaseRow & {
   requirements: OfferRequirementRow[];
 };
 
+export const OFFER_MEMBER_ROLES = [
+  "preparador",
+  "revisor",
+  "aprobador",
+  "otro",
+] as const;
+
+export type OfferMemberRole = (typeof OFFER_MEMBER_ROLES)[number];
+
+export const OFFER_MEMBER_ROLE_LABELS: Record<OfferMemberRole, string> = {
+  preparador: "Preparador",
+  revisor: "Revisor",
+  aprobador: "Aprobador",
+  otro: "Otro",
+};
+
+export type OfferCaseTeamMember = {
+  id: string;
+  member_id: string;
+  member_role: OfferMemberRole;
+  member: OfferOwnerMember;
+};
+
 function asOwnerMember(
   raw: OfferOwnerMember | OfferOwnerMember[] | null | undefined,
 ): OfferOwnerMember | null {
@@ -380,6 +403,107 @@ export async function getOfferCaseById(
     },
     error: null,
   };
+}
+
+function asMemberRole(raw: string): OfferMemberRole {
+  if ((OFFER_MEMBER_ROLES as readonly string[]).includes(raw)) {
+    return raw as OfferMemberRole;
+  }
+  return "preparador";
+}
+
+export async function listOfferCaseMembers(
+  client: SupabaseClient<Database>,
+  offerCaseId: string,
+): Promise<{ data: OfferCaseTeamMember[]; error: Error | null }> {
+  const { data, error } = await client
+    .from("offer_case_members")
+    .select(
+      `
+      id,
+      member_id,
+      member_role,
+      member:eficen_members!member_id (
+        id,
+        display_name,
+        role_title,
+        avatar_url
+      )
+    `,
+    )
+    .eq("offer_case_id", offerCaseId)
+    .order("id", { ascending: true });
+
+  if (error) return { data: [], error: new Error(error.message) };
+
+  const rows: OfferCaseTeamMember[] = [];
+  for (const row of data ?? []) {
+    const member = asOwnerMember(
+      row.member as OfferOwnerMember | OfferOwnerMember[] | null | undefined,
+    );
+    if (!member) continue;
+    rows.push({
+      id: row.id,
+      member_id: row.member_id,
+      member_role: asMemberRole(row.member_role),
+      member,
+    });
+  }
+  rows.sort((a, b) =>
+    a.member.display_name.localeCompare(b.member.display_name, "es"),
+  );
+  return { data: rows, error: null };
+}
+
+export async function setOfferCaseOwner(
+  client: SupabaseClient<Database>,
+  input: { offerCaseId: string; ownerMemberId: string | null },
+): Promise<{ error: Error | null }> {
+  const { error } = await client
+    .from("offer_cases")
+    .update({ owner_member_id: input.ownerMemberId })
+    .eq("id", input.offerCaseId);
+  if (error) return { error: new Error(error.message) };
+  return { error: null };
+}
+
+export async function addOfferCaseMember(
+  client: SupabaseClient<Database>,
+  input: {
+    offerCaseId: string;
+    memberId: string;
+    memberRole?: OfferMemberRole;
+  },
+): Promise<{ data: { id: string } | null; error: Error | null }> {
+  const { data, error } = await client
+    .from("offer_case_members")
+    .insert({
+      offer_case_id: input.offerCaseId,
+      member_id: input.memberId,
+      member_role: input.memberRole ?? "preparador",
+    })
+    .select("id")
+    .single();
+
+  if (error) {
+    if (error.code === "23505") {
+      return { data: null, error: new Error("Esa persona ya está en el equipo") };
+    }
+    return { data: null, error: new Error(error.message) };
+  }
+  return { data: { id: data.id }, error: null };
+}
+
+export async function removeOfferCaseMember(
+  client: SupabaseClient<Database>,
+  membershipId: string,
+): Promise<{ error: Error | null }> {
+  const { error } = await client
+    .from("offer_case_members")
+    .delete()
+    .eq("id", membershipId);
+  if (error) return { error: new Error(error.message) };
+  return { error: null };
 }
 
 export async function createOfferCase(
