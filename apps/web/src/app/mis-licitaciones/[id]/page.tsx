@@ -689,7 +689,7 @@ function OwnerTeamKpi({
           </>
         ) : (
           <p className="text-sm font-semibold text-muted-foreground">
-            Sin asignar
+            {crew.length > 0 ? "Responsable sin asignar" : "Sin asignar"}
           </p>
         )}
       </div>
