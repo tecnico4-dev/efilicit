@@ -14,6 +14,7 @@ from efilicit_ingestion.connectors.placsp import (
 )
 from efilicit_ingestion.connectors.placsp.errors import (
     ArtifactTooLargeError,
+    InvalidZipPayloadError,
     PlacspFetchError,
     PlacspHttpError,
 )
@@ -109,19 +110,59 @@ def test_fetch_http_error() -> None:
 
 def test_fetch_retries_then_succeeds_with_httpx_mock() -> None:
     attempts = {"n": 0}
+    payload = b"PK\x03\x04-recovered-zip"
 
     def handler(request: httpx.Request) -> httpx.Response:
         attempts["n"] += 1
         if attempts["n"] < 3:
             raise httpx.ConnectError("temporary", request=request)
-        return httpx.Response(200, content=b"recovered-zip")
+        return httpx.Response(200, content=payload)
 
     client = httpx.Client(transport=httpx.MockTransport(handler))
     connector = PlacspConnector(http_client=client, retry_attempts=3)
     raw = connector.fetch(_artifact())
-    assert raw == b"recovered-zip"
+    assert raw == payload
     assert attempts["n"] == 3
     client.close()
+
+
+def test_fetch_retries_invalid_zip_then_succeeds() -> None:
+    calls = {"n": 0}
+    good = b"PK\x03\x04-ok"
+
+    def transport(url: str) -> tuple[int, dict[str, str], bytes]:
+        _ = url
+        calls["n"] += 1
+        if calls["n"] < 3:
+            return 200, {"content-type": "text/html"}, b"<html>busy</html>"
+        return 200, {"content-type": "application/zip"}, good
+
+    connector = PlacspConnector(
+        fetch_transport=transport,
+        invalid_zip_retry_attempts=3,
+        invalid_zip_retry_wait_seconds=0,
+    )
+    assert connector.fetch(_artifact()) == good
+    assert calls["n"] == 3
+
+
+def test_fetch_invalid_zip_exhausted_raises() -> None:
+    calls = {"n": 0}
+
+    def transport(url: str) -> tuple[int, dict[str, str], bytes]:
+        _ = url
+        calls["n"] += 1
+        return 200, {}, b"not-a-zip"
+
+    connector = PlacspConnector(
+        fetch_transport=transport,
+        invalid_zip_retry_attempts=3,
+        invalid_zip_retry_wait_seconds=0,
+    )
+    with pytest.raises(InvalidZipPayloadError) as exc_info:
+        connector.fetch(_artifact())
+    assert "missing PK header" in str(exc_info.value)
+    assert calls["n"] == 3
 
 
 def test_fetch_timeout_is_classified() -> None:

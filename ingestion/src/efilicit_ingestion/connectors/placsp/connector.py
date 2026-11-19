@@ -15,6 +15,8 @@ from datetime import date
 import httpx
 
 from efilicit_ingestion.connectors.placsp.fetch import (
+    DEFAULT_INVALID_ZIP_RETRY_ATTEMPTS,
+    DEFAULT_INVALID_ZIP_RETRY_WAIT_SECONDS,
     DEFAULT_MAX_BYTES,
     DEFAULT_RETRY_ATTEMPTS,
     DEFAULT_TIMEOUT_SECONDS,
@@ -68,11 +70,14 @@ class PlacspConnector:
         timeout_seconds: float = DEFAULT_TIMEOUT_SECONDS,
         max_bytes: int = DEFAULT_MAX_BYTES,
         retry_attempts: int = DEFAULT_RETRY_ATTEMPTS,
+        invalid_zip_retry_attempts: int = DEFAULT_INVALID_ZIP_RETRY_ATTEMPTS,
+        invalid_zip_retry_wait_seconds: float = DEFAULT_INVALID_ZIP_RETRY_WAIT_SECONDS,
     ) -> None:
         """Configura sindicación, ventana de meses y política de descarga.
 
         - Sin from/to: descubre solo el mes de ``as_of`` (o hoy) — slice acotado.
         - Live: ZIPs pueden ser cientos de MiB → ``max_bytes`` alto por defecto.
+        - Body sin magic ``PK``: reintenta descarga (HTML/error intermitente).
         """
         self.syndication = syndication
         self.source_code = syndication.source_code
@@ -86,6 +91,8 @@ class PlacspConnector:
             timeout_seconds=timeout_seconds,
             max_bytes=max_bytes,
             retry_attempts=retry_attempts,
+            invalid_zip_retry_attempts=invalid_zip_retry_attempts,
+            invalid_zip_retry_wait_seconds=invalid_zip_retry_wait_seconds,
         )
 
     def discover(self, context: SyncContext) -> list[RemoteArtifact]:

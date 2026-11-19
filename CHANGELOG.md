@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Ingesta PLACSP: si el body descargado no tiene magic ``PK``, reintenta la descarga 3 veces (espera 60 s) antes de fallar el job (HTML/error intermitente de Hacienda).
 - Mis licitaciones · filtros: se borran al salir del área (otra pestaña de la app); listado ↔ expediente los conserva.
 - Mis licitaciones · filtros: modal (estilo Recomendaciones) con año (histórico), estado, importe y responsable; aplica en cliente.
 - Mis licitaciones · lista: fijo 10 por página, sin scroll interno; solo paginación al pie.

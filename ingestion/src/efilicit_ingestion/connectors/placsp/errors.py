@@ -22,3 +22,11 @@ class PlacspHttpError(PlacspFetchError):
         self.status_code = status_code
         self.url = url
         super().__init__(f"HTTP {status_code} fetching {url}")
+
+
+class InvalidZipPayloadError(PlacspFetchError):
+    """HTTP 200 cuyo body no es un ZIP (falta magic ``PK``).
+
+    Suele ser HTML/error intermitente de Hacienda; el fetch puede reintentar
+    unas pocas veces antes de fallar el job.
+    """

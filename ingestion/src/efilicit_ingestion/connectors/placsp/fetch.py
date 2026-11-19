@@ -3,12 +3,14 @@
 Los paquetes mensuales pueden ser muy grandes → presupuesto por defecto
 512 MiB, timeout largo y descarga en stream (corta si el body crece de más).
 Solo reintenta fallos de transporte/timeout; un HTTP 4xx/5xx tipado no se
-reintenta a ciegas.
+reintenta a ciegas. Si el body no empieza por ``PK``, reintenta la descarga
+unas pocas veces (HTML/error intermitente de la fuente).
 """
 
 from __future__ import annotations
 
 import hashlib
+import time
 from collections.abc import Callable
 from dataclasses import dataclass
 
@@ -22,6 +24,7 @@ from tenacity import (
 
 from efilicit_ingestion.connectors.placsp.errors import (
     ArtifactTooLargeError,
+    InvalidZipPayloadError,
     PlacspFetchError,
     PlacspHttpError,
 )
@@ -30,6 +33,9 @@ from efilicit_ingestion.connectors.placsp.errors import (
 DEFAULT_MAX_BYTES = 512 * 1024 * 1024
 DEFAULT_TIMEOUT_SECONDS = 600.0
 DEFAULT_RETRY_ATTEMPTS = 4
+# Intentos totales si el body no tiene magic PK (incluye el primero).
+DEFAULT_INVALID_ZIP_RETRY_ATTEMPTS = 3
+DEFAULT_INVALID_ZIP_RETRY_WAIT_SECONDS = 60.0
 
 # Getter inyectable en tests: (url) -> (status_code, headers, body). Sin red real.
 FetchTransport = Callable[[str], tuple[int, dict[str, str], bytes]]
@@ -45,6 +51,8 @@ class FetchSettings:
     timeout_seconds: float = DEFAULT_TIMEOUT_SECONDS
     max_bytes: int = DEFAULT_MAX_BYTES
     retry_attempts: int = DEFAULT_RETRY_ATTEMPTS
+    invalid_zip_retry_attempts: int = DEFAULT_INVALID_ZIP_RETRY_ATTEMPTS
+    invalid_zip_retry_wait_seconds: float = DEFAULT_INVALID_ZIP_RETRY_WAIT_SECONDS
 
 
 def download_bytes(
@@ -59,12 +67,19 @@ def download_bytes(
     Preferir ``transport`` en tests/fixtures. Si no, ``http_client`` reutilizable
     o un ``httpx.Client`` de vida corta. Content-Length declarado > max → fallo
     temprano sin bajar el cuerpo entero.
+
+    Tras un HTTP 200, exige magic ``PK`` (ZIP). Si falta, reintenta la descarga
+    ``invalid_zip_retry_attempts`` veces con espera fija entre intentos.
     """
     cfg = settings or FetchSettings()
     if cfg.max_bytes <= 0:
         raise ValueError("max_bytes must be positive")
     if cfg.retry_attempts < 1:
         raise ValueError("retry_attempts must be >= 1")
+    if cfg.invalid_zip_retry_attempts < 1:
+        raise ValueError("invalid_zip_retry_attempts must be >= 1")
+    if cfg.invalid_zip_retry_wait_seconds < 0:
+        raise ValueError("invalid_zip_retry_wait_seconds must be >= 0")
 
     @retry(
         retry=retry_if_exception_type((httpx.TransportError, httpx.TimeoutException)),
@@ -120,14 +135,30 @@ def download_bytes(
         with httpx.Client(timeout=timeout, follow_redirects=True) as client:
             return _via_client(client)
 
-    try:
-        return _once()
-    except PlacspFetchError:
-        raise
-    except httpx.TimeoutException as exc:
-        raise PlacspFetchError(f"timeout fetching {url}") from exc
-    except httpx.TransportError as exc:
-        raise PlacspFetchError(f"transport error fetching {url}: {exc}") from exc
+    last_invalid: InvalidZipPayloadError | None = None
+    for attempt in range(1, cfg.invalid_zip_retry_attempts + 1):
+        try:
+            body = _once()
+        except PlacspFetchError:
+            raise
+        except httpx.TimeoutException as exc:
+            raise PlacspFetchError(f"timeout fetching {url}") from exc
+        except httpx.TransportError as exc:
+            raise PlacspFetchError(f"transport error fetching {url}: {exc}") from exc
+
+        if body.startswith(b"PK"):
+            return body
+
+        last_invalid = InvalidZipPayloadError(
+            f"artifact does not look like a ZIP (missing PK header): {url} "
+            f"(attempt {attempt}/{cfg.invalid_zip_retry_attempts}, "
+            f"bytes={len(body)})"
+        )
+        if attempt < cfg.invalid_zip_retry_attempts:
+            time.sleep(cfg.invalid_zip_retry_wait_seconds)
+
+    assert last_invalid is not None
+    raise last_invalid
 
 
 def _enforce_limits(
