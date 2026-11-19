@@ -255,6 +255,29 @@ def build_parser() -> argparse.ArgumentParser:
         help="Solo recalcular este users.id (UUID).",
     )
 
+    intake = sub.add_parser(
+        "run-offer-intake",
+        help=(
+            "Intake de pliegos del expediente (ADR 035): procesa offer_case_intake "
+            "pendientes. Necesita EFILICIT_DATABASE_URL + Storage service_role."
+        ),
+    )
+    intake.add_argument(
+        "--limit",
+        type=int,
+        default=10,
+        help="Máximo de trabajos por ejecución (default: 10).",
+    )
+    intake.add_argument(
+        "--offer-case-id",
+        help="Encola (si no hay trabajo abierto) y procesa solo este expediente.",
+    )
+    intake.add_argument(
+        "--no-download",
+        action="store_true",
+        help="Solo volcar el XML; no descargar pliegos.",
+    )
+
     health = sub.add_parser(
         "source-health",
         help=(
@@ -294,6 +317,8 @@ def main(argv: list[str] | None = None) -> int:
         return _cmd_run_alerts(args)
     if args.command == "run-recommendations":
         return _cmd_run_recommendations(args)
+    if args.command == "run-offer-intake":
+        return _cmd_run_offer_intake(args)
     if args.command == "source-health":
         return _cmd_source_health(args)
 
@@ -487,6 +512,32 @@ def _cmd_run_recommendations(args: argparse.Namespace) -> int:
         f"by_profile={result.by_profile} cold_skip={result.skipped_cold}"
     )
     return 0
+
+
+def _cmd_run_offer_intake(args: argparse.Namespace) -> int:
+    from efilicit_ingestion.run_offer_intake import (
+        OfferIntakeRunConfig,
+        format_result as format_intake_result,
+        run_offer_intake,
+    )
+
+    if args.limit < 1:
+        print("error: --limit must be >= 1", file=sys.stderr)
+        return 2
+
+    config = OfferIntakeRunConfig(
+        limit=args.limit,
+        offer_case_id=args.offer_case_id or None,
+        download=not bool(args.no_download),
+    )
+    try:
+        result = run_offer_intake(config)
+    except Exception as exc:  # noqa: BLE001
+        _print_cli_error(exc)
+        return 1
+
+    print(format_intake_result(result))
+    return 1 if result.failed else 0
 
 
 def _cmd_source_health(args: argparse.Namespace) -> int:

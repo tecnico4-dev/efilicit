@@ -1,0 +1,77 @@
+# ADR 035 — intake de pliegos del expediente (Mis licitaciones).
+#
+# Disparo: workflow_dispatch (cron externo). Sin on.schedule (ADR 005).
+# Procesa offer_case_intake pendientes: XML PLACSP → offer_* + pliegos a offer-docs.
+name: Offer intake
+
+on:
+  workflow_dispatch:
+    inputs:
+      limit:
+        description: "Máximo de trabajos por ejecución"
+        required: false
+        default: "10"
+      offer_case_id:
+        description: "Opcional: encolar y procesar solo este offer_cases.id (UUID)"
+        required: false
+        default: ""
+      download:
+        description: "Descargar pliegos (false = solo volcar el XML)"
+        type: boolean
+        default: true
+
+concurrency:
+  group: offer-intake
+  cancel-in-progress: false
+
+jobs:
+  intake:
+    name: Run offer intake
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: ingestion
+    env:
+      EFILICIT_DATABASE_URL: ${{ secrets.EFILICIT_DATABASE_URL }}
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      LIMIT: ${{ inputs.limit }}
+      OFFER_CASE_ID: ${{ inputs.offer_case_id }}
+      DOWNLOAD: ${{ inputs.download }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Sync dependencies
+        run: uv sync --frozen
+
+      - name: Guard secrets
+        run: |
+          set -euo pipefail
+          for name in EFILICIT_DATABASE_URL SUPABASE_URL SUPABASE_SERVICE_ROLE_KEY; do
+            if [ -z "${!name:-}" ]; then
+              echo "::error::Missing repository secret ${name}"
+              exit 1
+            fi
+          done
+
+      - name: Run offer intake CLI
+        run: |
+          set -euo pipefail
+          ARGS=(--limit "${LIMIT:-10}")
+          if [ -n "${OFFER_CASE_ID:-}" ]; then
+            ARGS+=(--offer-case-id "$OFFER_CASE_ID")
+          fi
+          if [ "${DOWNLOAD:-true}" != "true" ]; then
+            ARGS+=(--no-download)
+          fi
+          uv run python -m efilicit_ingestion.cli run-offer-intake "${ARGS[@]}"
