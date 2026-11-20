@@ -324,8 +324,9 @@ export function HomeDashboard({
           recommendations.propia.length > 0 ||
           recommendations.subcontrata.length > 0 ||
           recommendations.sinPerfil.length > 0;
-        const hasFavoritesSlide = favorites.length > 0;
+        const hasAttention = attention.length > 0;
         const hasStatusChanges = recentNotifications.length > 0;
+        const hasFavoritesSlide = hasAttention || hasStatusChanges;
         const slides: HomeFeedSlide[] = [];
 
         if (hasRecommendations) {
@@ -353,28 +354,24 @@ export function HomeDashboard({
             content: (
               <div
                 className={
-                  hasStatusChanges
+                  hasAttention && hasStatusChanges
                     ? "grid grid-cols-1 items-start gap-8 lg:grid-cols-2 lg:gap-6"
                     : "grid grid-cols-1 items-start"
                 }
               >
-                <section className="min-w-0">
-                  <div className="flex flex-wrap items-baseline justify-between gap-2">
-                    <h2 className="text-xl font-semibold tracking-tight text-foreground">
-                      Última oportunidad
-                    </h2>
-                    <Link
-                      href="/favorites/tenders"
-                      className="text-sm font-medium text-link hover:underline"
-                    >
-                      Ver favoritos
-                    </Link>
-                  </div>
-                  {attention.length === 0 ? (
-                    <p className="mt-4 text-sm text-muted-foreground">
-                      Ninguna con plazo próximo o reciente.
-                    </p>
-                  ) : (
+                {hasAttention ? (
+                  <section className="min-w-0">
+                    <div className="flex flex-wrap items-baseline justify-between gap-2">
+                      <h2 className="text-xl font-semibold tracking-tight text-foreground">
+                        Última oportunidad
+                      </h2>
+                      <Link
+                        href="/favorites/tenders"
+                        className="text-sm font-medium text-link hover:underline"
+                      >
+                        Ver favoritos
+                      </Link>
+                    </div>
                     <ul className="mt-4 divide-y divide-border border-y border-border">
                       {attention.map((fav) => {
                         const tender = fav.tenders!;
@@ -405,8 +402,8 @@ export function HomeDashboard({
                         );
                       })}
                     </ul>
-                  )}
-                </section>
+                  </section>
+                ) : null}
 
                 {hasStatusChanges ? (
                   <section className="min-w-0">
