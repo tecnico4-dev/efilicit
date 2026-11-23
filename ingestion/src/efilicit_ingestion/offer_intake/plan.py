@@ -85,7 +85,6 @@ class DeliverableRow:
     points_max: float | None
     sort_order: int
     parent_key: str | None = None
-    requirement_key: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -252,7 +251,6 @@ def _deliverables(
                     points_max=criterion.weight,
                     sort_order=order * 100 + child_order,
                     parent_key=f"env:{envelope}",
-                    requirement_key=criterion.source_key,
                 )
             )
     return out

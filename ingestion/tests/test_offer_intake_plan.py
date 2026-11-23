@@ -68,7 +68,7 @@ def test_deliverables_group_criteria_by_envelope() -> None:
 
     children_c = [d for d in plan.deliverables if d.parent_key == "env:C"]
     assert len(children_c) == 3
-    assert all(d.requirement_key and d.requirement_key.startswith("crit:") for d in children_c)
+    assert all(d.source_key.startswith("env:C:crit:") for d in children_c)
 
 
 def test_target_lots_filter_lot_scoped_items() -> None:

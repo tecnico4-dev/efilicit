@@ -240,44 +240,6 @@ def test_block_b_company_document_in_use_is_not_deletable() -> None:
             conn.execute("rollback")
 
 
-def test_block_b_cannot_link_requirement_to_deliverable_of_other_case() -> None:
-    with psycopg.connect(default_database_url()) as conn:
-        _require_offer_schema(conn)
-        conn.execute("begin")
-        try:
-            t_a = _insert_tender(conn, title="Integrity case A")
-            t_b = _insert_tender(conn, title="Integrity case B")
-            case_a = _insert_offer_case(conn, t_a)
-            case_b = _insert_offer_case(conn, t_b)
-            req_a = _insert_requirement(conn, case_a, title="Req A")
-            del_b = _insert_deliverable(conn, case_b, title="Del B")
-
-            conn.execute("savepoint sp_cross")
-            with pytest.raises(pg_errors.ForeignKeyViolation):
-                conn.execute(
-                    """
-                    insert into public.offer_requirement_deliverables (
-                      requirement_id, deliverable_id, offer_case_id
-                    ) values (%s, %s, %s)
-                    """,
-                    (req_a, del_b, case_a),
-                )
-            conn.execute("rollback to savepoint sp_cross")
-
-            # Vínculo coherente (mismo caso) → OK
-            del_a = _insert_deliverable(conn, case_a, title="Del A")
-            conn.execute(
-                """
-                insert into public.offer_requirement_deliverables (
-                  requirement_id, deliverable_id, offer_case_id
-                ) values (%s, %s, %s)
-                """,
-                (req_a, del_a, case_a),
-            )
-        finally:
-            conn.execute("rollback")
-
-
 def test_block_b_deliverable_parent_must_same_case() -> None:
     with psycopg.connect(default_database_url()) as conn:
         _require_offer_schema(conn)

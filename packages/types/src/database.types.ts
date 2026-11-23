@@ -701,38 +701,6 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
-                },"offer_requirement_deliverables": {
-                  Row: {
-                    "deliverable_id": string,"linked_at": string,"offer_case_id": string,"requirement_id": string
-                  }
-                  ComputedFields: never
-                  Insert: {
-                    "deliverable_id": string,"linked_at"?: string,"offer_case_id": string,"requirement_id": string
-                  }
-                  Update: {
-                    "deliverable_id"?: string,"linked_at"?: string,"offer_case_id"?: string,"requirement_id"?: string
-                  }
-                  Relationships: [
-                    {
-      foreignKeyName: "offer_requirement_deliverables_case_fkey"
-      columns: ["offer_case_id"]
-isOneToOne: false
-      referencedRelation: "offer_cases"
-      referencedColumns: ["id"]
-    },{
-      foreignKeyName: "offer_requirement_deliverables_deliverable_case_fkey"
-      columns: ["deliverable_id","offer_case_id"]
-isOneToOne: false
-      referencedRelation: "offer_deliverables"
-      referencedColumns: ["id","offer_case_id"]
-    },{
-      foreignKeyName: "offer_requirement_deliverables_requirement_case_fkey"
-      columns: ["requirement_id","offer_case_id"]
-isOneToOne: false
-      referencedRelation: "offer_requirements"
-      referencedColumns: ["id","offer_case_id"]
-    }
-                  ]
                 },"offer_requirement_evidence": {
                   Row: {
                     "created_at": string,"created_by": string | null,"document_id": string | null,"evidence_kind": string,"financial_id": string | null,"id": string,"notes": string | null,"person_id": string | null,"reference_id": string | null,"requirement_id": string,"url": string | null

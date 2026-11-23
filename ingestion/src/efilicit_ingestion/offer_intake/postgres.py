@@ -234,20 +234,6 @@ def apply_plan(conn: psycopg.Connection, offer_case_id: UUID, plan: IntakePlan) 
             ),
         )
         stats.deliverables += cur.rowcount
-        if d.requirement_key:
-            conn.execute(
-                """
-                insert into public.offer_requirement_deliverables
-                  (requirement_id, deliverable_id, offer_case_id)
-                select r.id, d.id, r.offer_case_id
-                from public.offer_requirements r
-                join public.offer_deliverables d
-                  on d.offer_case_id = r.offer_case_id and d.source_key = %s
-                where r.offer_case_id = %s and r.source_key = %s
-                on conflict do nothing
-                """,
-                (d.source_key, offer_case_id, d.requirement_key),
-            )
 
     for m in plan.milestones:
         cur = conn.execute(
