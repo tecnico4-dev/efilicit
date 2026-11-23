@@ -227,8 +227,9 @@ export function OfferRequirementsFiltersModal({
 }
 
 /**
- * Desplegable multi-valor (misma estética que CriteriaMultiSelect del buscador/alertas).
- * `selected` vacío = «Todos» (sin filtrar).
+ * Desplegable multi-valor (estilo CriteriaMultiSelect).
+ * `selected` vacío en el padre = «Todos» (sin filtrar).
+ * «Limpiar» vacía casillas; si cierras con 0 ticks, se restaura lo anterior.
  */
 function FilterMultiSelect({
   id,
@@ -254,25 +255,51 @@ function FilterMultiSelect({
     return m;
   }, [options]);
 
-  const isAll = selected.length === 0;
-  const uiSelected = isAll ? allValues : selected;
+  /** Selección en UI mientras el menú está abierto (puede ser []). */
+  const [draft, setDraft] = useState<string[]>([]);
 
-  const summary = isAll
-    ? allLabel
-    : selected.length <= 2
-      ? selected.map((v) => labelByValue.get(v) ?? v).join(", ")
-      : `${selected.length} seleccionados`;
+  function toUiSelection(values: string[]): string[] {
+    return values.length === 0 ? [...allValues] : [...values];
+  }
 
-  function toggle(value: string) {
-    const current = isAll ? [...allValues] : [...selected];
-    const next = current.includes(value)
-      ? current.filter((v) => v !== value)
-      : [...current, value];
-    if (next.length === 0 || next.length === allValues.length) {
+  function commitFromUi(ui: string[]) {
+    if (ui.length === 0 || ui.length === allValues.length) {
       onChange([]);
       return;
     }
-    onChange(next);
+    onChange(ui);
+  }
+
+  function openMenu() {
+    setDraft(toUiSelection(selected));
+    setOpen(true);
+  }
+
+  function closeMenu() {
+    // Limpiar + cerrar (0 casillas) → se mantiene lo que había en el modal.
+    if (draft.length > 0) {
+      commitFromUi(draft);
+    }
+    setOpen(false);
+  }
+
+  const isAll = open
+    ? draft.length === allValues.length && allValues.length > 0
+    : selected.length === 0;
+  const uiSelected = open ? draft : toUiSelection(selected);
+
+  const summary =
+    selected.length === 0
+      ? allLabel
+      : selected.length <= 2
+        ? selected.map((v) => labelByValue.get(v) ?? v).join(", ")
+        : `${selected.length} seleccionados`;
+
+  function toggle(value: string) {
+    setDraft((prev) => {
+      if (prev.includes(value)) return prev.filter((v) => v !== value);
+      return [...prev, value];
+    });
   }
 
   return (
@@ -287,7 +314,7 @@ function FilterMultiSelect({
           id={id}
           aria-expanded={open}
           aria-haspopup="listbox"
-          onClick={() => setOpen((v) => !v)}
+          onClick={() => (open ? closeMenu() : openMenu())}
           className="flex w-full items-center justify-between gap-2 rounded-md border border-border bg-background px-3 py-2 text-left text-sm text-foreground outline-none hover:bg-muted/40 focus:ring-2 focus:ring-ring"
         >
           <span className="min-w-0 truncate">{summary}</span>
@@ -298,7 +325,7 @@ function FilterMultiSelect({
         <AnchoredPortal
           open={open}
           anchorRef={triggerRef}
-          onDismiss={() => setOpen(false)}
+          onDismiss={closeMenu}
           className="flex flex-col overflow-hidden bg-surface p-0"
           maxHeight={224}
           overflowY="hidden"
@@ -312,14 +339,14 @@ function FilterMultiSelect({
                   ? "bg-primary text-primary-foreground"
                   : "text-muted-foreground hover:bg-muted hover:text-foreground",
               )}
-              onClick={() => onChange([])}
+              onClick={() => setDraft([...allValues])}
             >
               {allLabel}
             </button>
             <button
               type="button"
               className="flex-1 border-l border-border px-3 py-1.5 text-left text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-              onClick={() => onChange([])}
+              onClick={() => setDraft([])}
             >
               Limpiar
             </button>
