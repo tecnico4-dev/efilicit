@@ -357,8 +357,8 @@ function MemberPicker({
 }
 
 const thCenter =
-  "px-3 py-2 text-center font-semibold whitespace-nowrap";
-const tdCenter = "px-3 py-3 text-center align-middle";
+  "px-2 py-2 text-center font-semibold whitespace-nowrap";
+const tdCenter = "px-2 py-3 text-center align-middle";
 
 export function OfferRequirementsTable({
   requirements,
@@ -396,14 +396,14 @@ export function OfferRequirementsTable({
         </p>
       ) : null}
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[860px] table-fixed border-collapse text-sm">
+        <table className="w-full min-w-[820px] table-fixed border-collapse text-sm">
           <colgroup>
-            <col className="w-[42%]" />
-            <col className="w-[10%]" />
+            <col className="w-[48%]" />
+            <col className="w-[9%]" />
+            <col className="w-[11%]" />
             <col className="w-[12%]" />
-            <col className="w-[13%]" />
-            <col className="w-[13%]" />
-            <col className="w-[10%]" />
+            <col className="w-[11%]" />
+            <col className="w-[9%]" />
           </colgroup>
           <thead>
             <tr className="border-b border-border text-[0.7rem] uppercase tracking-wide text-muted-foreground">
