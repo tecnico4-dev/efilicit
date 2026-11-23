@@ -105,6 +105,7 @@ function EditableChipSelect({
   options,
   tone,
   disabled,
+  locked,
   ariaLabel,
   onChange,
 }: {
@@ -112,29 +113,82 @@ function EditableChipSelect({
   options: { value: string; label: string }[];
   tone: ChipTone;
   disabled?: boolean;
+  /** Solo lectura visual (p. ej. fila en «No aplica»). */
+  locked?: boolean;
   ariaLabel: string;
   onChange: (next: string) => void;
 }) {
+  const [open, setOpen] = useState(false);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const label = options.find((o) => o.value === value)?.label ?? value;
+  const inert = Boolean(disabled || locked);
+
   return (
-    <select
-      value={value}
-      disabled={disabled}
-      aria-label={ariaLabel}
-      onChange={(e) => onChange(e.target.value)}
-      className={cn(
-        "mx-auto block cursor-pointer appearance-none rounded-full border px-3 py-1.5",
-        "text-center text-xs font-semibold leading-none outline-none [text-align-last:center]",
-        "focus-visible:ring-2 focus-visible:ring-primary/40",
-        "disabled:cursor-wait disabled:opacity-60",
-        chipClass[tone],
-      )}
-    >
-      {options.map((opt) => (
-        <option key={opt.value} value={opt.value}>
-          {opt.label}
-        </option>
-      ))}
-    </select>
+    <div className="relative flex justify-center">
+      <button
+        ref={triggerRef}
+        type="button"
+        disabled={inert}
+        aria-label={ariaLabel}
+        aria-expanded={open}
+        aria-haspopup="listbox"
+        onClick={() => !inert && setOpen((v) => !v)}
+        className={cn(
+          "inline-flex items-center justify-center rounded-full border px-3 py-1.5",
+          "text-center text-xs font-semibold leading-none outline-none",
+          "focus-visible:ring-2 focus-visible:ring-primary/40",
+          locked
+            ? "cursor-default border-border/40 bg-muted/40 text-muted-foreground/50"
+            : cn(
+                "cursor-pointer",
+                chipClass[tone],
+                disabled && "cursor-wait opacity-60",
+              ),
+        )}
+      >
+        {label}
+      </button>
+
+      <AnchoredPortal
+        open={open && !inert}
+        anchorRef={triggerRef}
+        onDismiss={() => setOpen(false)}
+        matchAnchorWidth={false}
+        align="center"
+        minWidth={140}
+        maxWidth={200}
+        maxHeight={260}
+        className="bg-background p-1"
+      >
+        <ul role="listbox" className="py-0.5">
+          {options.map((opt) => {
+            const selected = opt.value === value;
+            return (
+              <li key={opt.value}>
+                <button
+                  type="button"
+                  role="option"
+                  aria-selected={selected}
+                  className={cn(
+                    "flex w-full items-center justify-center rounded-md px-2.5 py-1.5 text-center text-sm",
+                    "hover:bg-muted",
+                    selected
+                      ? "font-semibold text-foreground"
+                      : "text-foreground",
+                  )}
+                  onClick={() => {
+                    onChange(opt.value);
+                    setOpen(false);
+                  }}
+                >
+                  {opt.label}
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      </AnchoredPortal>
+    </div>
   );
 }
 
@@ -142,35 +196,49 @@ function MemberPicker({
   value,
   members,
   disabled,
+  locked,
   onChange,
 }: {
   value: string | null;
   members: EficenMemberForTeam[];
   disabled?: boolean;
+  locked?: boolean;
   onChange: (next: string | null) => void;
 }) {
   const [open, setOpen] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const selected = members.find((m) => m.id === value) ?? null;
+  const inert = Boolean(disabled || locked);
 
   return (
     <div className="relative flex justify-center">
       <button
         ref={triggerRef}
         type="button"
-        disabled={disabled}
+        disabled={inert}
         aria-expanded={open}
         aria-haspopup="listbox"
-        onClick={() => !disabled && setOpen((v) => !v)}
+        onClick={() => !inert && setOpen((v) => !v)}
         className={cn(
           "inline-flex max-w-full items-center gap-1.5 rounded-sm text-left text-xs font-medium",
-          "outline-none hover:underline focus-visible:ring-2 focus-visible:ring-primary/40",
-          "disabled:cursor-wait disabled:opacity-60 disabled:no-underline",
-          selected ? "text-foreground" : "text-muted-foreground",
+          "outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
+          locked
+            ? "cursor-default text-muted-foreground/45"
+            : cn(
+                "hover:underline",
+                disabled && "cursor-wait opacity-60 no-underline",
+                selected ? "text-foreground" : "text-muted-foreground",
+              ),
         )}
       >
         <PersonIcon
-          className={selected ? "text-foreground" : "text-muted-foreground"}
+          className={
+            locked
+              ? "text-muted-foreground/45"
+              : selected
+                ? "text-foreground"
+                : "text-muted-foreground"
+          }
         />
         <span className="truncate">
           {selected ? shortMemberName(selected.displayName) : "Sin asignar"}
@@ -178,7 +246,7 @@ function MemberPicker({
       </button>
 
       <AnchoredPortal
-        open={open && !disabled}
+        open={open && !inert}
         anchorRef={triggerRef}
         onDismiss={() => setOpen(false)}
         matchAnchorWidth={false}
@@ -294,14 +362,27 @@ export function OfferRequirementsTable({
           <tbody>
             {requirements.map((item) => {
               const busy = pendingId === item.id;
+              const naLocked = item.compliance_status === "no_aplica";
               const dueDay = item.internal_due_at
                 ? calendarDayMadrid(item.internal_due_at)
                 : null;
               return (
                 <tr key={item.id} className="border-b border-border/80">
-                  <td className="px-3 py-3 align-middle font-medium text-foreground">
+                  <td
+                    className={cn(
+                      "px-3 py-3 align-middle font-medium",
+                      naLocked ? "text-muted-foreground/55" : "text-foreground",
+                    )}
+                  >
                     <p className="line-clamp-2 leading-snug">{item.title}</p>
-                    <p className="mt-0.5 line-clamp-2 text-xs font-normal text-muted-foreground">
+                    <p
+                      className={cn(
+                        "mt-0.5 line-clamp-2 text-xs font-normal",
+                        naLocked
+                          ? "text-muted-foreground/45"
+                          : "text-muted-foreground",
+                      )}
+                    >
                       {[
                         REQUIREMENT_CATEGORY_LABELS[item.category] ??
                           item.category,
@@ -316,7 +397,14 @@ export function OfferRequirementsTable({
                         .filter(Boolean)
                         .join(" · ")}
                       {item.source_kind === "pliego_xml" ? (
-                        <span className="ml-1.5 inline-flex rounded border border-primary/30 bg-primary/5 px-1 text-[0.65rem] font-semibold text-primary">
+                        <span
+                          className={cn(
+                            "ml-1.5 inline-flex rounded border px-1 text-[0.65rem] font-semibold",
+                            naLocked
+                              ? "border-border/40 bg-muted/40 text-muted-foreground/50"
+                              : "border-primary/30 bg-primary/5 text-primary",
+                          )}
+                        >
                           Pliego
                         </span>
                       ) : null}
@@ -326,8 +414,10 @@ export function OfferRequirementsTable({
                     <span
                       className={cn(
                         "text-xs font-semibold",
-                        TYPE_CLASS[item.requirement_type] ??
-                          "text-muted-foreground",
+                        naLocked
+                          ? "text-muted-foreground/45"
+                          : (TYPE_CLASS[item.requirement_type] ??
+                            "text-muted-foreground"),
                       )}
                     >
                       {TYPE_LABELS[item.requirement_type] ??
@@ -355,6 +445,7 @@ export function OfferRequirementsTable({
                     <EditableChipSelect
                       value={item.prep_status}
                       disabled={busy}
+                      locked={naLocked}
                       tone={prepTone(item.prep_status)}
                       ariaLabel="Preparación"
                       options={OFFER_PREP_STATUSES.map((s) => ({
@@ -373,6 +464,7 @@ export function OfferRequirementsTable({
                       value={item.owner_member_id}
                       members={members}
                       disabled={busy}
+                      locked={naLocked}
                       onChange={(v) =>
                         void patch(item.id, { owner_member_id: v })
                       }
@@ -382,6 +474,7 @@ export function OfferRequirementsTable({
                     <SingleDatePicker
                       value={dueDay}
                       disabled={busy}
+                      locked={naLocked}
                       toneClassName={dueToneClass(item.internal_due_at)}
                       onChange={(day) =>
                         void patch(item.id, {
@@ -391,7 +484,6 @@ export function OfferRequirementsTable({
                         })
                       }
                     />
-                    {/* Accesible: fecha formateada Madrid si el ISO cambia de día por TZ */}
                     <span className="sr-only">
                       {item.internal_due_at
                         ? formatDateMadrid(item.internal_due_at)

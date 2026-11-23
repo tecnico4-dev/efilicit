@@ -68,6 +68,7 @@ function formatEs(iso: string): string {
 export function SingleDatePicker({
   value,
   disabled,
+  locked,
   className,
   toneClassName,
   onChange,
@@ -75,6 +76,8 @@ export function SingleDatePicker({
   /** YYYY-MM-DD o null */
   value: string | null;
   disabled?: boolean;
+  /** Solo lectura (p. ej. fila en «No aplica»). */
+  locked?: boolean;
   className?: string;
   toneClassName?: string;
   onChange: (next: string | null) => void;
@@ -85,32 +88,38 @@ export function SingleDatePicker({
     startOfMonth(parseIso(value ?? "") ?? new Date()),
   );
   const cells = useMemo(() => buildMonthCells(viewMonth), [viewMonth]);
+  const inert = Boolean(disabled || locked);
 
   return (
     <div className={cn("relative inline-flex justify-center", className)}>
       <button
         ref={triggerRef}
         type="button"
-        disabled={disabled}
+        disabled={inert}
         aria-expanded={open}
         aria-haspopup="dialog"
         onClick={() => {
-          if (disabled) return;
+          if (inert) return;
           setViewMonth(startOfMonth(parseIso(value ?? "") ?? new Date()));
           setOpen((v) => !v);
         }}
         className={cn(
-          "cursor-pointer text-xs font-medium outline-none",
-          "hover:underline focus-visible:ring-2 focus-visible:ring-primary/40 rounded-sm",
-          "disabled:cursor-wait disabled:opacity-60 disabled:no-underline",
-          value ? toneClassName : "text-muted-foreground",
+          "text-xs font-medium outline-none rounded-sm",
+          "focus-visible:ring-2 focus-visible:ring-primary/40",
+          locked
+            ? "cursor-default text-muted-foreground/45"
+            : cn(
+                "cursor-pointer hover:underline",
+                disabled && "cursor-wait opacity-60 no-underline",
+                value ? toneClassName : "text-muted-foreground",
+              ),
         )}
       >
         {value ? formatEs(value) : "—"}
       </button>
 
       <AnchoredPortal
-        open={open && !disabled}
+        open={open && !inert}
         anchorRef={triggerRef}
         onDismiss={() => setOpen(false)}
         matchAnchorWidth={false}
