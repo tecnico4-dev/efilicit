@@ -1,12 +1,11 @@
 "use client";
 
 import { createPortal } from "react-dom";
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { AnchoredPortal } from "@/components/ui/anchored-portal";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/cn";
-import {
-  ENVELOPE_LABELS,
-} from "@/components/mis-licitaciones/offer-case-sections";
+import { ENVELOPE_LABELS } from "@/components/mis-licitaciones/offer-case-sections";
 import {
   OFFER_COMPLIANCE_LABELS,
   OFFER_COMPLIANCE_STATUSES,
@@ -52,11 +51,19 @@ const TYPE_OPTIONS = [
   { value: "excluyente", label: "Excluyente" },
   { value: "puntuable", label: "Puntuable" },
   { value: "informativo", label: "Informativo" },
-] as const;
+];
 
 const ENVELOPE_OPTIONS = Object.entries(ENVELOPE_LABELS).map(
   ([value, label]) => ({ value, label }),
 );
+
+const DUE_OPTIONS: { value: OfferRequirementsFilters["due"]; label: string }[] =
+  [
+    { value: "", label: "Todas" },
+    { value: "con", label: "Con fecha" },
+    { value: "sin", label: "Sin fecha" },
+    { value: "vencida", label: "Vencida" },
+  ];
 
 type Props = {
   open: boolean;
@@ -67,7 +74,7 @@ type Props = {
   onClear: () => void;
 };
 
-/** Modal de filtros de la pestaña Requisitos (shell como Mis licitaciones). */
+/** Modal de filtros Requisitos — campos estilo Crear alerta / Criteria. */
 export function OfferRequirementsFiltersModal({
   open,
   ownerOptions,
@@ -79,33 +86,22 @@ export function OfferRequirementsFiltersModal({
   const titleId = useId();
   const [mounted, setMounted] = useState(false);
   const [draft, setDraft] = useState<OfferRequirementsFilters>(applied);
+  const [formKey, setFormKey] = useState(0);
 
   useEffect(() => setMounted(true), []);
 
   useEffect(() => {
     if (!open) return;
     setDraft(applied);
+    setFormKey((k) => k + 1);
   }, [open, applied]);
 
   if (!mounted || !open) return null;
 
-  function toggle(
-    key: keyof Pick<
-      OfferRequirementsFilters,
-      "types" | "compliance" | "prep" | "owners" | "envelopes"
-    >,
-    value: string,
-  ) {
-    setDraft((prev) => {
-      const has = prev[key].includes(value);
-      return {
-        ...prev,
-        [key]: has
-          ? prev[key].filter((v) => v !== value)
-          : [...prev[key], value],
-      };
-    });
-  }
+  const ownerOpts = [
+    { value: OWNER_UNASSIGNED, label: "Sin asignar" },
+    ...ownerOptions,
+  ];
 
   return createPortal(
     <div
@@ -117,7 +113,7 @@ export function OfferRequirementsFiltersModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className="flex max-h-[min(92vh,48rem)] w-full max-w-3xl flex-col overflow-hidden rounded-xl border border-border bg-surface shadow-xl"
+        className="flex max-h-[min(92vh,48rem)] w-full max-w-4xl flex-col overflow-hidden rounded-xl border border-border bg-surface shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3 sm:px-5">
@@ -130,7 +126,7 @@ export function OfferRequirementsFiltersModal({
           <button
             type="button"
             onClick={onClose}
-            className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-destructive bg-surface text-destructive transition-colors hover:bg-destructive/10"
+            className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-destructive bg-surface text-destructive transition-colors hover:bg-destructive/10 hover:text-destructive"
             aria-label="Cerrar"
           >
             <span aria-hidden className="text-xl leading-none">
@@ -140,95 +136,87 @@ export function OfferRequirementsFiltersModal({
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-5">
-          <div className="grid gap-5 sm:grid-cols-2">
-            <MultiCheck
-              label="Tipo"
-              options={[...TYPE_OPTIONS]}
-              selected={draft.types}
-              onToggle={(v) => toggle("types", v)}
-            />
-            <MultiCheck
-              label="¿Cumplimos?"
-              options={OFFER_COMPLIANCE_STATUSES.map((s) => ({
-                value: s,
-                label: OFFER_COMPLIANCE_LABELS[s],
-              }))}
-              selected={draft.compliance}
-              onToggle={(v) => toggle("compliance", v)}
-            />
-            <MultiCheck
-              label="Preparación"
-              options={OFFER_PREP_STATUSES.map((s) => ({
-                value: s,
-                label: OFFER_PREP_LABELS[s],
-              }))}
-              selected={draft.prep}
-              onToggle={(v) => toggle("prep", v)}
-            />
-            <MultiCheck
-              label="Responsable"
-              options={[
-                { value: OWNER_UNASSIGNED, label: "Sin asignar" },
-                ...ownerOptions,
-              ]}
-              selected={draft.owners}
-              onToggle={(v) => toggle("owners", v)}
-            />
-            <MultiCheck
-              label="Sobre"
-              options={ENVELOPE_OPTIONS}
-              selected={draft.envelopes}
-              onToggle={(v) => toggle("envelopes", v)}
-            />
-            <div>
-              <p className="text-sm font-medium text-foreground">
-                Fecha interna
-              </p>
-              <div className="mt-2 space-y-1.5">
-                {(
-                  [
-                    { value: "", label: "Todas" },
-                    { value: "con", label: "Con fecha" },
-                    { value: "sin", label: "Sin fecha" },
-                    { value: "vencida", label: "Vencida" },
-                  ] as const
-                ).map((opt) => (
-                  <label
-                    key={opt.value || "all"}
-                    className="flex cursor-pointer items-center gap-2 text-sm text-foreground"
-                  >
-                    <input
-                      type="radio"
-                      name="req-due-filter"
-                      checked={draft.due === opt.value}
-                      onChange={() =>
-                        setDraft((prev) => ({ ...prev, due: opt.value }))
-                      }
-                      className="size-3.5 accent-primary"
-                    />
-                    {opt.label}
-                  </label>
-                ))}
-              </div>
+          <div key={formKey} className="space-y-4">
+            <div className="grid gap-4 sm:grid-cols-3">
+              <FilterMultiSelect
+                id="req-filter-type"
+                label="Tipo"
+                options={TYPE_OPTIONS}
+                selected={draft.types}
+                onChange={(types) => setDraft((p) => ({ ...p, types }))}
+              />
+              <FilterMultiSelect
+                id="req-filter-compliance"
+                label="¿Cumplimos?"
+                options={OFFER_COMPLIANCE_STATUSES.map((s) => ({
+                  value: s,
+                  label: OFFER_COMPLIANCE_LABELS[s],
+                }))}
+                selected={draft.compliance}
+                onChange={(compliance) =>
+                  setDraft((p) => ({ ...p, compliance }))
+                }
+              />
+              <FilterMultiSelect
+                id="req-filter-prep"
+                label="Preparación"
+                options={OFFER_PREP_STATUSES.map((s) => ({
+                  value: s,
+                  label: OFFER_PREP_LABELS[s],
+                }))}
+                selected={draft.prep}
+                onChange={(prep) => setDraft((p) => ({ ...p, prep }))}
+              />
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-3">
+              <FilterMultiSelect
+                id="req-filter-owner"
+                label="Responsable"
+                options={ownerOpts}
+                selected={draft.owners}
+                onChange={(owners) => setDraft((p) => ({ ...p, owners }))}
+              />
+              <FilterMultiSelect
+                id="req-filter-envelope"
+                label="Sobre"
+                options={ENVELOPE_OPTIONS}
+                selected={draft.envelopes}
+                onChange={(envelopes) =>
+                  setDraft((p) => ({ ...p, envelopes }))
+                }
+              />
+              <FilterSingleSelect
+                id="req-filter-due"
+                label="Fecha interna"
+                options={DUE_OPTIONS}
+                value={draft.due}
+                onChange={(due) => setDraft((p) => ({ ...p, due }))}
+              />
             </div>
           </div>
         </div>
 
-        <div className="flex shrink-0 items-center justify-end gap-2 border-t border-border px-4 py-3 sm:px-5">
-          <button
+        <div className="flex flex-wrap items-center justify-end gap-2 border-t border-border px-4 py-3 sm:px-5">
+          <Button type="button" onClick={() => onApply(draft)}>
+            Aplicar
+          </Button>
+          <Button
             type="button"
+            variant="outline"
             onClick={() => {
               setDraft(EMPTY_OFFER_REQUIREMENTS_FILTERS);
               onClear();
             }}
-            className="px-2 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             Limpiar
-          </button>
-          <Button type="button" size="sm" onClick={() => onApply(draft)}>
-            Aplicar
           </Button>
-          <Button type="button" variant="outline" size="sm" onClick={onClose}>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onClose}
+            className="border-destructive text-destructive hover:bg-destructive/10 hover:text-destructive"
+          >
             Cancelar
           </Button>
         </div>
@@ -238,48 +226,202 @@ export function OfferRequirementsFiltersModal({
   );
 }
 
-function MultiCheck({
+/**
+ * Desplegable multi-valor (misma estética que CriteriaMultiSelect del buscador/alertas).
+ * `selected` vacío = «Todos» (sin filtrar).
+ */
+function FilterMultiSelect({
+  id,
   label,
   options,
   selected,
-  onToggle,
+  onChange,
+  allLabel = "Todos",
 }: {
+  id: string;
   label: string;
   options: { value: string; label: string }[];
   selected: string[];
-  onToggle: (value: string) => void;
+  onChange: (next: string[]) => void;
+  allLabel?: string;
 }) {
+  const [open, setOpen] = useState(false);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const allValues = useMemo(() => options.map((o) => o.value), [options]);
+  const labelByValue = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const o of options) m.set(o.value, o.label);
+    return m;
+  }, [options]);
+
+  const isAll = selected.length === 0;
+  const uiSelected = isAll ? allValues : selected;
+
+  const summary = isAll
+    ? allLabel
+    : selected.length <= 2
+      ? selected.map((v) => labelByValue.get(v) ?? v).join(", ")
+      : `${selected.length} seleccionados`;
+
+  function toggle(value: string) {
+    const current = isAll ? [...allValues] : [...selected];
+    const next = current.includes(value)
+      ? current.filter((v) => v !== value)
+      : [...current, value];
+    if (next.length === 0 || next.length === allValues.length) {
+      onChange([]);
+      return;
+    }
+    onChange(next);
+  }
+
   return (
     <div>
-      <p className="text-sm font-medium text-foreground">{label}</p>
-      <p className="mt-0.5 text-xs text-muted-foreground">
-        {selected.length === 0
-          ? "Todos"
-          : `${selected.length} seleccionados`}
-      </p>
-      <ul className="mt-2 max-h-40 space-y-1 overflow-y-auto rounded-md border border-border bg-background p-2">
-        {options.map((opt) => {
-          const checked = selected.includes(opt.value);
-          return (
-            <li key={opt.value}>
-              <label
-                className={cn(
-                  "flex cursor-pointer items-center gap-2 rounded-md px-1.5 py-1 text-sm hover:bg-muted",
-                  checked ? "text-foreground" : "text-muted-foreground",
-                )}
-              >
-                <input
-                  type="checkbox"
-                  checked={checked}
-                  onChange={() => onToggle(opt.value)}
-                  className="size-3.5 accent-primary"
-                />
-                <span className="truncate">{opt.label}</span>
-              </label>
-            </li>
-          );
-        })}
-      </ul>
+      <label htmlFor={id} className="block text-sm font-medium text-foreground">
+        {label}
+      </label>
+      <div className="relative mt-1">
+        <button
+          ref={triggerRef}
+          type="button"
+          id={id}
+          aria-expanded={open}
+          aria-haspopup="listbox"
+          onClick={() => setOpen((v) => !v)}
+          className="flex w-full items-center justify-between gap-2 rounded-md border border-border bg-background px-3 py-2 text-left text-sm text-foreground outline-none hover:bg-muted/40 focus:ring-2 focus:ring-ring"
+        >
+          <span className="min-w-0 truncate">{summary}</span>
+          <span aria-hidden className="shrink-0 text-xs text-muted-foreground">
+            ▾
+          </span>
+        </button>
+        <AnchoredPortal
+          open={open}
+          anchorRef={triggerRef}
+          onDismiss={() => setOpen(false)}
+          className="flex flex-col overflow-hidden bg-surface p-0"
+          maxHeight={224}
+          overflowY="hidden"
+        >
+          <div className="flex shrink-0 border-b border-border bg-surface">
+            <button
+              type="button"
+              className={cn(
+                "flex-1 px-3 py-1.5 text-left text-xs font-medium transition-colors",
+                isAll
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground",
+              )}
+              onClick={() => onChange([])}
+            >
+              {allLabel}
+            </button>
+            <button
+              type="button"
+              className="flex-1 border-l border-border px-3 py-1.5 text-left text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              onClick={() => onChange([])}
+            >
+              Limpiar
+            </button>
+          </div>
+          <ul
+            role="listbox"
+            aria-multiselectable
+            className="min-h-0 flex-1 overflow-y-auto py-1"
+          >
+            {options.map((opt) => {
+              const checked = uiSelected.includes(opt.value);
+              return (
+                <li key={opt.value} role="option" aria-selected={checked}>
+                  <label className="flex cursor-pointer items-center gap-2 px-3 py-1.5 text-sm text-foreground hover:bg-muted">
+                    <input
+                      type="checkbox"
+                      className="ef-checkbox"
+                      checked={checked}
+                      onChange={() => toggle(opt.value)}
+                    />
+                    <span className="min-w-0 truncate">{opt.label}</span>
+                  </label>
+                </li>
+              );
+            })}
+          </ul>
+        </AnchoredPortal>
+      </div>
+    </div>
+  );
+}
+
+function FilterSingleSelect({
+  id,
+  label,
+  options,
+  value,
+  onChange,
+}: {
+  id: string;
+  label: string;
+  options: { value: OfferRequirementsFilters["due"]; label: string }[];
+  value: OfferRequirementsFilters["due"];
+  onChange: (next: OfferRequirementsFilters["due"]) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const summary =
+    options.find((o) => o.value === value)?.label ?? "Todas";
+
+  return (
+    <div>
+      <label htmlFor={id} className="block text-sm font-medium text-foreground">
+        {label}
+      </label>
+      <div className="relative mt-1">
+        <button
+          ref={triggerRef}
+          type="button"
+          id={id}
+          aria-expanded={open}
+          aria-haspopup="listbox"
+          onClick={() => setOpen((v) => !v)}
+          className="flex w-full items-center justify-between gap-2 rounded-md border border-border bg-background px-3 py-2 text-left text-sm text-foreground outline-none hover:bg-muted/40 focus:ring-2 focus:ring-ring"
+        >
+          <span className="min-w-0 truncate">{summary}</span>
+          <span aria-hidden className="shrink-0 text-xs text-muted-foreground">
+            ▾
+          </span>
+        </button>
+        <AnchoredPortal
+          open={open}
+          anchorRef={triggerRef}
+          onDismiss={() => setOpen(false)}
+          className="bg-surface p-1"
+          maxHeight={220}
+        >
+          <ul role="listbox" className="py-0.5">
+            {options.map((opt) => (
+              <li key={opt.value || "all"}>
+                <button
+                  type="button"
+                  role="option"
+                  aria-selected={opt.value === value}
+                  className={cn(
+                    "flex w-full rounded-md px-2.5 py-1.5 text-left text-sm hover:bg-muted",
+                    opt.value === value
+                      ? "font-semibold text-foreground"
+                      : "text-foreground",
+                  )}
+                  onClick={() => {
+                    onChange(opt.value);
+                    setOpen(false);
+                  }}
+                >
+                  {opt.label}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </AnchoredPortal>
+      </div>
     </div>
   );
 }
