@@ -29,7 +29,6 @@ import { formatTenderStatus } from "@/lib/tender-labels";
 import { PAGE_MAIN_WIDE_CLASS } from "@/components/shell/page-width";
 import { ErrorState } from "@/components/ui/state-message";
 import { FavoriteKindBubble } from "@/components/favorites/favorite-kind-bubble";
-import { CaseStageBadge } from "@/components/mis-licitaciones/case-stage-badge";
 import { DetailTabs } from "@/components/mis-licitaciones/detail-tabs";
 import { OfferCaseIntakeStatus } from "@/components/mis-licitaciones/offer-case-intake-status";
 import {
@@ -192,26 +191,11 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
       <section className="rounded-xl border border-border bg-surface p-4 sm:p-5">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <CaseStageBadge stage={offerCase.stage} />
-              <FavoriteKindBubble kind={asOfferCaseKind(offerCase.kind)} />
-              {!historic && cd.tone !== "none" ? (
-                <span
-                  className={cn(
-                    "text-xs font-medium",
-                    cd.tone === "overdue" && "text-destructive",
-                    cd.tone === "soon" && "text-amber-700",
-                    cd.tone === "ok" && "text-muted-foreground",
-                  )}
-                >
-                  {cd.label}
-                </span>
-              ) : null}
-            </div>
-            <h1 className="mt-2 text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
+            <h1 className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
               {tenderSummary?.title ?? "Licitación eliminada"}
             </h1>
-            <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-sm text-muted-foreground">
+            <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
+              <FavoriteKindBubble kind={asOfferCaseKind(offerCase.kind)} />
               {tenderSummary ? (
                 <span>
                   {formatMoney(
@@ -236,7 +220,7 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
           {tenderFull ? <TenderFichaModalButton tender={tenderFull} /> : null}
         </div>
 
-        <div className="mt-4 grid gap-3 pt-1 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-4 grid gap-2.5 pt-1 sm:grid-cols-2 lg:grid-cols-5">
           <Kpi
             label="Requisitos excluyentes"
             value={
@@ -253,21 +237,12 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
             value={prepPct != null ? `${prepPct}%` : "—"}
             bar={prepPct}
           />
-          {historic ? (
-            <OutlinedField label="Tipo">
-              <p className="text-sm font-semibold text-foreground">
-                {asOfferCaseKind(offerCase.kind) === "subcontrata"
-                  ? "Subcontrata"
-                  : "Eficen"}
-              </p>
-            </OutlinedField>
-          ) : (
-            <DeadlineRiskKpi
-              historic={false}
-              dueIso={due}
-              tone={cd.tone}
-            />
-          )}
+          <Kpi label="Estado" value={stageLabel} valueSize="lg" />
+          <DeadlineRiskKpi
+            historic={historic}
+            dueIso={due}
+            tone={cd.tone}
+          />
           <OwnerTeamKpi
             owner={offerCase.owner_member}
             team={teamMembers}
