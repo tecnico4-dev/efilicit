@@ -65,7 +65,7 @@ export default async function MisLicitacionesPage({ searchParams }: PageProps) {
       <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
         {tab === "active"
           ? "Abre una licitación en el buscador y pulsa «Añadir a Mis licitaciones»."
-          : "Cuando un expediente pase a adjudicada, no adjudicada, descartada, subcontrata o desierta aparecerá aquí."}
+          : "Cuando un expediente pase a adjudicada, no adjudicada o descartada aparecerá aquí."}
       </p>
       {tab === "active" ? (
         <Link

@@ -4,12 +4,14 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import {
   OFFER_STAGE_LABELS,
+  asOfferCaseKind,
   type OfferCaseListItem,
   type OfferStage,
 } from "@/lib/queries";
 import { formatCountdown } from "@/lib/bid-countdown";
 import { formatDateMadrid } from "@/lib/datetime";
 import { CaseStageBadge } from "@/components/mis-licitaciones/case-stage-badge";
+import { FavoriteKindBubble } from "@/components/favorites/favorite-kind-bubble";
 import { ListPager } from "@/app/favorites/list-pager";
 import { cn } from "@/lib/cn";
 
@@ -25,8 +27,7 @@ const ACTIVE_KANBAN: { label: string; stages: OfferStage[] }[] = [
 const HISTORIC_KANBAN: { label: string; stages: OfferStage[] }[] = [
   { label: "Adjudicada", stages: ["adjudicada"] },
   { label: "No adjudicada", stages: ["no_adjudicada"] },
-  { label: "Subcontrata", stages: ["subcontrata"] },
-  { label: "Descartada / Desierta", stages: ["descartada", "desierta"] },
+  { label: "Descartada", stages: ["descartada"] },
 ];
 
 function formatMoneySafe(
@@ -112,6 +113,7 @@ function CaseListRow({
             </p>
             <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
               <CaseStageBadge stage={item.stage} />
+              <FavoriteKindBubble kind={asOfferCaseKind(item.kind)} />
               {item.owner_member?.display_name ? (
                 <span>Resp. {item.owner_member.display_name}</span>
               ) : null}
@@ -278,6 +280,15 @@ export function PipelineBoard({
                         <p className="font-medium text-foreground">
                           {item.tenders?.title ?? "Licitación eliminada"}
                         </p>
+                        <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                          <FavoriteKindBubble
+                            kind={asOfferCaseKind(item.kind)}
+                          />
+                          <span className="text-xs text-muted-foreground">
+                            {OFFER_STAGE_LABELS[item.stage as OfferStage] ??
+                              item.stage}
+                          </span>
+                        </div>
                         <p className="mt-1 text-xs text-muted-foreground">
                           {formatMoneySafe(
                             item.tenders?.estimated_value,
@@ -286,10 +297,6 @@ export function PipelineBoard({
                           {item.owner_member?.display_name
                             ? ` · ${item.owner_member.display_name}`
                             : ""}
-                        </p>
-                        <p className="mt-1 text-xs text-muted-foreground">
-                          {OFFER_STAGE_LABELS[item.stage as OfferStage] ??
-                            item.stage}
                         </p>
                       </Link>
                     ))

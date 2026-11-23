@@ -439,6 +439,7 @@ export default async function TenderDetailPage({
                 userId={favoriteUserId}
                 tenderId={tender.id}
                 existingCaseId={existingOfferCaseId}
+                kind={favoriteKind ?? defaultInterestKind}
               />
             ) : null}
             <TenderFavoriteActions

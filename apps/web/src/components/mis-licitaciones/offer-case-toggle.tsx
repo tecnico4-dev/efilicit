@@ -4,20 +4,27 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
-import { createOfferCase } from "@/lib/queries";
+import {
+  createOfferCase,
+  type FavoriteKind,
+  type OfferCaseKind,
+} from "@/lib/queries";
 
 /**
  * Añade la licitación al pipeline de oferta (Mis licitaciones / offer_cases).
  * Si ya existe, enlaza al expediente.
+ * `kind` debería venir del favorito/interés; si falta → propia (Eficen).
  */
 export function OfferCaseToggle({
   userId,
   tenderId,
   existingCaseId,
+  kind = null,
 }: {
   userId: string;
   tenderId: string;
   existingCaseId: string | null;
+  kind?: FavoriteKind | OfferCaseKind | null;
 }) {
   const router = useRouter();
   const [caseId, setCaseId] = useState(existingCaseId);
@@ -35,6 +42,7 @@ export function OfferCaseToggle({
     const { data, error: createError } = await createOfferCase(client, {
       tenderId,
       createdBy: userId,
+      kind,
     });
     setPending(false);
     if (createError || !data) {

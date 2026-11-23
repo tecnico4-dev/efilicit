@@ -6,7 +6,7 @@
 
 **Reemplaza:** Ninguno
 
-**Reemplazado por:** [026](026-mis-licitaciones-offer-cases.md) (`offer_*` / `/mis-licitaciones`). Tablas `bid_*` y UI `/my-tenders` **retiradas** (migración `20261110140000`, 2026-11-10).
+**Reemplazado por:** [026](026-mis-licitaciones-offer-cases.md) (`offer_*` / `/mis-licitaciones`). Tablas `bid_*` y UI `/my-tenders` **retiradas** (migración `20261110140000`, 2026-11-10). Stages históricos y `subcontrata` como etapa enmendados por [036](036-offer-cases-kind-y-historico-tres-estados.md).
 
 ---
 

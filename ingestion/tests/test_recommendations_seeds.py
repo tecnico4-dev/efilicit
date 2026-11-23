@@ -105,9 +105,9 @@ def test_favorite_alone_weight() -> None:
 def test_common_and_offer_lower_weight() -> None:
     common = [FavoriteRow("c1", "propia", title="Común")]
     offers = [
-        OfferCaseRow("o1", "adjudicada", title="Adj"),
-        OfferCaseRow("o2", "descartada", title="No"),
-        OfferCaseRow("o3", "subcontrata", title="Sub"),
+        OfferCaseRow("o1", "adjudicada", kind="propia", title="Adj"),
+        OfferCaseRow("o2", "descartada", kind="propia", title="No"),
+        OfferCaseRow("o3", "adjudicada", kind="subcontrata", title="Sub"),
     ]
     pos_p, _ = build_seeds_for_profile(
         "propia",

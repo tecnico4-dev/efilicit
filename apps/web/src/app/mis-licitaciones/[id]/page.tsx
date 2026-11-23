@@ -7,6 +7,7 @@ import {
 import {
   HISTORIC_OFFER_STAGES,
   OFFER_STAGE_LABELS,
+  asOfferCaseKind,
   getLatestOfferCaseIntake,
   getOfferCaseById,
   getTenderById,
@@ -26,6 +27,7 @@ import { formatDateMadrid, formatDateTimeMadrid } from "@/lib/datetime";
 import { formatTenderStatus } from "@/lib/tender-labels";
 import { PAGE_MAIN_WIDE_CLASS } from "@/components/shell/page-width";
 import { ErrorState } from "@/components/ui/state-message";
+import { FavoriteKindBubble } from "@/components/favorites/favorite-kind-bubble";
 import { CaseStageBadge } from "@/components/mis-licitaciones/case-stage-badge";
 import { DetailTabs } from "@/components/mis-licitaciones/detail-tabs";
 import { OfferCaseIntakeStatus } from "@/components/mis-licitaciones/offer-case-intake-status";
@@ -200,7 +202,8 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
               <CaseStageBadge stage={offerCase.stage} />
-              {cd.tone !== "none" ? (
+              <FavoriteKindBubble kind={asOfferCaseKind(offerCase.kind)} />
+              {!historic && cd.tone !== "none" ? (
                 <span
                   className={cn(
                     "text-xs font-medium",
@@ -257,11 +260,21 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
             value={prepPct != null ? `${prepPct}%` : "—"}
             bar={prepPct}
           />
-          <DeadlineRiskKpi
-            historic={historic}
-            dueIso={historic ? null : due}
-            tone={cd.tone}
-          />
+          {historic ? (
+            <OutlinedField label="Tipo">
+              <p className="text-sm font-semibold text-foreground">
+                {asOfferCaseKind(offerCase.kind) === "subcontrata"
+                  ? "Subcontrata"
+                  : "Eficen"}
+              </p>
+            </OutlinedField>
+          ) : (
+            <DeadlineRiskKpi
+              historic={false}
+              dueIso={due}
+              tone={cd.tone}
+            />
+          )}
           <OwnerTeamKpi
             owner={offerCase.owner_member}
             team={teamMembers}

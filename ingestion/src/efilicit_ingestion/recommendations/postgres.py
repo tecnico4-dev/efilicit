@@ -159,7 +159,7 @@ def load_user_seed_inputs(conn: Any, user_id: str) -> dict[str, Any]:
             cur,
             table_name="offer_cases",
             sql="""
-            select tender_id::text, stage
+            select tender_id::text, stage, coalesce(kind, 'propia')
             from public.offer_cases
             """,
         )
@@ -233,11 +233,12 @@ def load_user_seed_inputs(conn: Any, user_id: str) -> dict[str, Any]:
         OfferCaseRow(
             tender_id=tid,
             stage=stage,
+            kind="subcontrata" if kind == "subcontrata" else "propia",
             **{k: enrich(tid)[k] for k in (
                 "title", "cpv_codes", "contract_type", "estimated_value"
             )},
         )
-        for tid, stage in offer_rows
+        for tid, stage, kind in offer_rows
     ]
     return {
         "ratings": ratings,

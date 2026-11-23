@@ -46,6 +46,7 @@ class FavoriteRow:
 class OfferCaseRow:
     tender_id: str
     stage: str
+    kind: ProfileKind = "propia"
     title: str = ""
     cpv_codes: tuple[str, ...] = ()
     contract_type: str | None = None
@@ -66,8 +67,8 @@ def _meta(
     }
 
 
-def _offer_profile(stage: str) -> ProfileKind:
-    return "subcontrata" if stage == "subcontrata" else "propia"
+def _offer_profile(kind: str) -> ProfileKind:
+    return "subcontrata" if kind == "subcontrata" else "propia"
 
 
 def _offer_weight(stage: str) -> float:
@@ -80,10 +81,9 @@ def _offer_weight(stage: str) -> float:
         "presentada",
         "en_evaluacion",
         "requerimiento",
-        "subcontrata",
     }:
         return WEIGHT_OFFER_ACTIVE
-    if stage in {"no_adjudicada", "desierta"}:
+    if stage == "no_adjudicada":
         return WEIGHT_OFFER_HIST
     # descartada: no semilla positiva
     return 0.0
@@ -210,9 +210,9 @@ def build_seeds_for_profile(
             )
         )
 
-    # Offer cases → perfil según stage
+    # Offer cases → perfil según kind (propia | subcontrata)
     for o in offer_cases:
-        if _offer_profile(o.stage) != profile:
+        if _offer_profile(o.kind) != profile:
             continue
         w = _offer_weight(o.stage)
         if w <= 0:

@@ -1,9 +1,11 @@
 /**
- * Mis licitaciones — expediente de oferta (ADR 026, tablas offer_*).
+ * Mis licitaciones — expediente de oferta (ADR 026 + 036, tablas offer_*).
  * Cliente autenticado + RLS is_app_user(); nunca service_role.
  */
 import type { Database } from "@efilicit/types";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import type { FavoriteKind } from "./favorite-kind";
+import { asFavoriteKind } from "./favorite-kind";
 import { requestOfferCaseIntake } from "./offer-intake";
 
 export const OFFER_STAGES = [
@@ -16,11 +18,12 @@ export const OFFER_STAGES = [
   "adjudicada",
   "no_adjudicada",
   "descartada",
-  "subcontrata",
-  "desierta",
 ] as const;
 
 export type OfferStage = (typeof OFFER_STAGES)[number];
+
+/** Mismo vocabulario que favoritos: propia = Eficen; subcontrata. */
+export type OfferCaseKind = FavoriteKind;
 
 export const ACTIVE_OFFER_STAGES = [
   "interes",
@@ -35,8 +38,6 @@ export const HISTORIC_OFFER_STAGES = [
   "adjudicada",
   "no_adjudicada",
   "descartada",
-  "subcontrata",
-  "desierta",
 ] as const satisfies readonly OfferStage[];
 
 export const OFFER_STAGE_LABELS: Record<OfferStage, string> = {
@@ -49,8 +50,6 @@ export const OFFER_STAGE_LABELS: Record<OfferStage, string> = {
   adjudicada: "Adjudicada",
   no_adjudicada: "No adjudicada",
   descartada: "Descartada",
-  subcontrata: "Subcontrata",
-  desierta: "Desierta",
 };
 
 type OfferCaseRow = Database["public"]["Tables"]["offer_cases"]["Row"];
@@ -129,6 +128,12 @@ export function offerCaseHistoryYear(row: OfferCaseRow): number | null {
   return Number.isFinite(y) ? y : null;
 }
 
+export function asOfferCaseKind(
+  raw: string | null | undefined,
+): OfferCaseKind {
+  return asFavoriteKind(raw) ?? "propia";
+}
+
 export async function getOfferCaseIdByTenderId(
   client: SupabaseClient<Database>,
   tenderId: string,
@@ -155,6 +160,7 @@ export async function listOfferCases(
       id,
       tender_id,
       stage,
+      kind,
       owner_member_id,
       preparation_started_on,
       presented_on,
@@ -214,6 +220,7 @@ export async function listOfferCases(
       id: row.id,
       tender_id: row.tender_id,
       stage: row.stage,
+      kind: row.kind,
       owner_member_id: row.owner_member_id,
       preparation_started_on: row.preparation_started_on,
       presented_on: row.presented_on,
@@ -295,6 +302,7 @@ export async function getOfferCaseById(
       id,
       tender_id,
       stage,
+      kind,
       owner_member_id,
       preparation_started_on,
       presented_on,
@@ -378,6 +386,7 @@ export async function getOfferCaseById(
       id: data.id,
       tender_id: data.tender_id,
       stage: data.stage,
+      kind: data.kind,
       owner_member_id: data.owner_member_id,
       preparation_started_on: data.preparation_started_on,
       presented_on: data.presented_on,
@@ -514,14 +523,18 @@ export async function createOfferCase(
   input: {
     tenderId: string;
     createdBy: string;
+    /** Si no viene (p. ej. sin favorito), default propia (= Eficen). */
+    kind?: OfferCaseKind | null;
   },
 ): Promise<{ data: { id: string } | null; error: Error | null }> {
+  const kind = asOfferCaseKind(input.kind);
   const { data, error } = await client
     .from("offer_cases")
     .insert({
       tender_id: input.tenderId,
       created_by: input.createdBy,
       owner_member_id: null,
+      kind,
       stage: "interes",
       preparation_started_on: new Date().toISOString().slice(0, 10),
     })

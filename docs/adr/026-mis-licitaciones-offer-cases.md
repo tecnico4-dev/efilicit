@@ -6,7 +6,7 @@
 
 **Reemplaza:** Ninguno (extiende [023](023-mis-licitaciones-pipeline-compartido.md))
 
-**Reemplazado por:** Ninguno
+**Reemplazado por:** Parcialmente [036](036-offer-cases-kind-y-historico-tres-estados.md) (`kind` + histórico en 3 estados)
 
 **Retirada legacy (2026-11-10):** UI `/my-tenders` y tablas `bid_*` eliminadas (migración `20261110140000_drop_bid_pipeline_legacy.sql`). Solo `offer_*` / `company_*` + `/mis-licitaciones`.
 
