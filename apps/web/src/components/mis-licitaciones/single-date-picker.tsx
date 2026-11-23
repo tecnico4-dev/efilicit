@@ -69,6 +69,7 @@ export function SingleDatePicker({
   value,
   disabled,
   locked,
+  readOnly,
   className,
   toneClassName,
   onChange,
@@ -78,6 +79,8 @@ export function SingleDatePicker({
   disabled?: boolean;
   /** Solo lectura (p. ej. fila en «No aplica»). */
   locked?: boolean;
+  /** Vista: misma estética, sin abrir calendario. */
+  readOnly?: boolean;
   className?: string;
   toneClassName?: string;
   onChange: (next: string | null) => void;
@@ -88,14 +91,15 @@ export function SingleDatePicker({
     startOfMonth(parseIso(value ?? "") ?? new Date()),
   );
   const cells = useMemo(() => buildMonthCells(viewMonth), [viewMonth]);
-  const inert = Boolean(disabled || locked);
+  const inert = Boolean(disabled || locked || readOnly);
 
   return (
     <div className={cn("relative inline-flex justify-center", className)}>
       <button
         ref={triggerRef}
         type="button"
-        disabled={inert}
+        disabled={Boolean(disabled || locked)}
+        aria-disabled={inert}
         aria-expanded={open}
         aria-haspopup="dialog"
         onClick={() => {
@@ -109,7 +113,7 @@ export function SingleDatePicker({
           locked
             ? "cursor-default text-muted-foreground/45"
             : cn(
-                "cursor-pointer hover:underline",
+                readOnly ? "cursor-default" : "cursor-pointer hover:underline",
                 disabled && "cursor-wait opacity-60 no-underline",
                 value ? toneClassName : "text-muted-foreground",
               ),
