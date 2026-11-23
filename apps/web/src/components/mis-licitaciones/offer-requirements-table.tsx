@@ -39,6 +39,7 @@ import {
   type OfferPrepStatus,
   type OfferRequirementDetail,
 } from "@/lib/queries";
+import { useUnsavedNavigationGuard } from "@/lib/use-unsaved-navigation-guard";
 
 type ReqDraft = {
   compliance_status: OfferComplianceStatus;
@@ -675,6 +676,11 @@ export function OfferRequirementsTable({
   }, [dirty, editing]);
 
   useDetailTabsLeaveGuard(editing, () => requestLeave());
+  useUnsavedNavigationGuard({
+    enabled: editing,
+    dirty,
+    confirmLeave: requestLeave,
+  });
 
   async function resolveLeave(
     action: "save" | "discard" | "cancel",
