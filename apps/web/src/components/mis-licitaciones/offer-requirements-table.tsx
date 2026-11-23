@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
+import { useRef, useState, useTransition, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/cn";
 import { calendarDayMadrid, formatDateMadrid } from "@/lib/datetime";
@@ -360,6 +360,92 @@ const thCenter =
   "px-2 py-2 text-center font-semibold whitespace-nowrap";
 const tdCenter = "px-2 py-3 text-center align-middle";
 
+/** Placeholder de acciones (funcionalidad pendiente). */
+function ToolbarButton({
+  icon,
+  label,
+}: {
+  icon: ReactNode;
+  label: string;
+}) {
+  return (
+    <button
+      type="button"
+      className={cn(
+        "inline-flex shrink-0 items-center gap-1.5 px-2 py-1.5",
+        "text-sm font-medium text-primary-dark",
+        "transition-colors hover:text-primary",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+      )}
+      aria-label={label}
+    >
+      {icon}
+      {label}
+    </button>
+  );
+}
+
+function FiltersIcon() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="size-4 shrink-0"
+      aria-hidden
+    >
+      <path d="M4 7h16" />
+      <path d="M7 12h10" />
+      <path d="M10 17h4" />
+    </svg>
+  );
+}
+
+function EditIcon() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="size-4 shrink-0"
+      aria-hidden
+    >
+      <path d="M12 20h9" />
+      <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
+    </svg>
+  );
+}
+
+function TrashIcon() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="size-4 shrink-0"
+      aria-hidden
+    >
+      <path d="M3 6h18" />
+      <path d="M8 6V4h8v2" />
+      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+      <path d="M10 11v6" />
+      <path d="M14 11v6" />
+    </svg>
+  );
+}
+
 export function OfferRequirementsTable({
   requirements,
   members,
@@ -395,6 +481,11 @@ export function OfferRequirementsTable({
           {error}
         </p>
       ) : null}
+      <div className="flex justify-end gap-1">
+        <ToolbarButton icon={<FiltersIcon />} label="Filtrar" />
+        <ToolbarButton icon={<EditIcon />} label="Editar" />
+        <ToolbarButton icon={<TrashIcon />} label="Eliminar" />
+      </div>
       <div className="overflow-x-auto">
         <table className="w-full min-w-[780px] table-fixed border-collapse text-sm">
           <colgroup>
