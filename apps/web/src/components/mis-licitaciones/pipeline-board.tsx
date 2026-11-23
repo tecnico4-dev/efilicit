@@ -113,7 +113,9 @@ function CaseListRow({
             </p>
             <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
               <CaseStageBadge stage={item.stage} />
-              <FavoriteKindBubble kind={asOfferCaseKind(item.kind)} />
+              {asOfferCaseKind(item.kind) === "subcontrata" ? (
+                <FavoriteKindBubble kind="subcontrata" />
+              ) : null}
               {item.owner_member?.display_name ? (
                 <span>Resp. {item.owner_member.display_name}</span>
               ) : null}
@@ -281,9 +283,9 @@ export function PipelineBoard({
                           {item.tenders?.title ?? "Licitación eliminada"}
                         </p>
                         <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                          <FavoriteKindBubble
-                            kind={asOfferCaseKind(item.kind)}
-                          />
+                          {asOfferCaseKind(item.kind) === "subcontrata" ? (
+                            <FavoriteKindBubble kind="subcontrata" />
+                          ) : null}
                           <span className="text-xs text-muted-foreground">
                             {OFFER_STAGE_LABELS[item.stage as OfferStage] ??
                               item.stage}
