@@ -100,6 +100,54 @@ function PersonIcon({ className }: { className?: string }) {
   );
 }
 
+function memberInitials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  if (parts.length === 1) return parts[0]!.slice(0, 2).toUpperCase();
+  return `${parts[0]![0] ?? ""}${parts[1]![0] ?? ""}`.toUpperCase();
+}
+
+/** Avatar del directorio: foto o círculo con iniciales. */
+function MemberAvatar({
+  name,
+  avatarUrl,
+  className,
+  muted,
+}: {
+  name: string;
+  avatarUrl: string | null;
+  className?: string;
+  muted?: boolean;
+}) {
+  if (avatarUrl) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={avatarUrl}
+        alt=""
+        className={cn(
+          "size-4 shrink-0 rounded-full object-cover",
+          muted && "opacity-50",
+          className,
+        )}
+      />
+    );
+  }
+  return (
+    <span
+      className={cn(
+        "inline-flex size-4 shrink-0 items-center justify-center rounded-full",
+        "bg-muted text-[0.55rem] font-semibold leading-none text-foreground",
+        muted && "bg-muted/60 text-muted-foreground/50",
+        className,
+      )}
+      aria-hidden
+    >
+      {memberInitials(name)}
+    </span>
+  );
+}
+
 function EditableChipSelect({
   value,
   options,
@@ -231,15 +279,19 @@ function MemberPicker({
               ),
         )}
       >
-        <PersonIcon
-          className={
-            locked
-              ? "text-muted-foreground/45"
-              : selected
-                ? "text-foreground"
-                : "text-muted-foreground"
-          }
-        />
+        {selected ? (
+          <MemberAvatar
+            name={selected.displayName}
+            avatarUrl={selected.avatarUrl}
+            muted={locked}
+          />
+        ) : (
+          <PersonIcon
+            className={
+              locked ? "text-muted-foreground/45" : "text-muted-foreground"
+            }
+          />
+        )}
         <span className="truncate">
           {selected ? shortMemberName(selected.displayName) : "Sin asignar"}
         </span>
@@ -289,7 +341,11 @@ function MemberPicker({
                   setOpen(false);
                 }}
               >
-                <PersonIcon />
+                <MemberAvatar
+                  name={m.displayName}
+                  avatarUrl={m.avatarUrl}
+                  className="size-5 text-[0.6rem]"
+                />
                 <span className="truncate">{m.displayName}</span>
               </button>
             </li>
