@@ -396,14 +396,14 @@ export function OfferRequirementsTable({
         </p>
       ) : null}
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[820px] table-fixed border-collapse text-sm">
+        <table className="w-full min-w-[780px] table-fixed border-collapse text-sm">
           <colgroup>
-            <col className="w-[48%]" />
-            <col className="w-[9%]" />
-            <col className="w-[11%]" />
-            <col className="w-[12%]" />
-            <col className="w-[11%]" />
-            <col className="w-[9%]" />
+            <col className="w-[54%]" />
+            <col className="w-[8%]" />
+            <col className="w-[10%]" />
+            <col className="w-[10%]" />
+            <col className="w-[10%]" />
+            <col className="w-[8%]" />
           </colgroup>
           <thead>
             <tr className="border-b border-border text-[0.7rem] uppercase tracking-wide text-muted-foreground">
