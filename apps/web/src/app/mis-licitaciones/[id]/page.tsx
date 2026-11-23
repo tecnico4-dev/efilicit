@@ -11,6 +11,7 @@ import {
   getLatestOfferCaseIntake,
   getOfferCaseById,
   getTenderById,
+  listEficenMembersForTeam,
   listOfferCaseMembers,
   listOfferCasePliegos,
   listOfferDeliverables,
@@ -38,6 +39,7 @@ import {
   REQUIREMENT_CATEGORY_LABELS,
   SobresList,
 } from "@/components/mis-licitaciones/offer-case-sections";
+import { OfferRequirementsTable } from "@/components/mis-licitaciones/offer-requirements-table";
 import { OfferCaseTeamPanel } from "@/components/mis-licitaciones/offer-case-team-panel";
 import { TenderFichaModalButton } from "@/components/mis-licitaciones/tender-ficha-modal";
 import { cn } from "@/lib/cn";
@@ -246,7 +248,7 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
 
         <div className="mt-4 grid gap-3 pt-1 sm:grid-cols-2 lg:grid-cols-4">
           <Kpi
-            label="Cumplimiento excl."
+            label="Requisitos excluyentes"
             value={
               excl.length > 0
                 ? `${exclOk}/${excl.length}`
@@ -254,6 +256,7 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
                   ? `${ready}/${total} prep.`
                   : "Sin requisitos"
             }
+            valueSize="lg"
           />
           <Kpi
             label="Preparación"
@@ -635,14 +638,25 @@ function Kpi({
   label,
   value,
   bar,
+  valueSize = "md",
 }: {
   label: string;
   value: string;
   bar?: number | null;
+  valueSize?: "md" | "lg";
 }) {
   return (
     <OutlinedField label={label}>
-      <p className="text-base font-semibold text-foreground">{value}</p>
+      <p
+        className={cn(
+          "font-semibold text-foreground",
+          valueSize === "lg"
+            ? "text-xl tracking-tight sm:text-2xl"
+            : "text-base",
+        )}
+      >
+        {value}
+      </p>
       {bar != null ? (
         <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-border">
           <div
