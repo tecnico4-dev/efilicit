@@ -90,6 +90,7 @@ export const OFFER_PREP_STATUSES = [
   "en_curso",
   "en_revision",
   "listo",
+  "bloqueado",
 ] as const;
 
 export type OfferPrepStatus = (typeof OFFER_PREP_STATUSES)[number];
@@ -99,6 +100,7 @@ export const OFFER_PREP_LABELS: Record<OfferPrepStatus, string> = {
   en_curso: "En curso",
   en_revision: "En revisión",
   listo: "Listo",
+  bloqueado: "Bloqueado",
 };
 
 export type OfferCaseTenderSummary = {
