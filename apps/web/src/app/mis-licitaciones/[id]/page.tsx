@@ -331,6 +331,7 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
                   </p>
                 ) : (
                   <OfferRequirementsTable
+                    offerCaseId={offerCase.id}
                     requirements={offerCase.requirements}
                     members={membersResult.data}
                   />

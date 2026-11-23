@@ -2,6 +2,7 @@
 
 import {
   useCallback,
+  useEffect,
   useMemo,
   useRef,
   useState,
@@ -33,11 +34,14 @@ import {
   OFFER_COMPLIANCE_STATUSES,
   OFFER_PREP_LABELS,
   OFFER_PREP_STATUSES,
+  OFFER_REQUIREMENT_TYPES,
+  createOfferRequirement,
   updateOfferRequirement,
   type EficenMemberForTeam,
   type OfferComplianceStatus,
   type OfferPrepStatus,
   type OfferRequirementDetail,
+  type OfferRequirementType,
 } from "@/lib/queries";
 import { useUnsavedNavigationGuard } from "@/lib/use-unsaved-navigation-guard";
 
@@ -47,6 +51,35 @@ type ReqDraft = {
   owner_member_id: string | null;
   internal_due_at: string | null;
 };
+
+type CreateDraft = {
+  title: string;
+  requirement_type: OfferRequirementType;
+  compliance_status: OfferComplianceStatus;
+  prep_status: OfferPrepStatus;
+  owner_member_id: string | null;
+  internal_due_at: string | null;
+};
+
+const EMPTY_CREATE_DRAFT: CreateDraft = {
+  title: "",
+  requirement_type: "informativo",
+  compliance_status: "sin_verificar",
+  prep_status: "pendiente",
+  owner_member_id: null,
+  internal_due_at: null,
+};
+
+function createDraftHasContent(d: CreateDraft): boolean {
+  return (
+    d.title.trim() !== "" ||
+    d.requirement_type !== EMPTY_CREATE_DRAFT.requirement_type ||
+    d.compliance_status !== EMPTY_CREATE_DRAFT.compliance_status ||
+    d.prep_status !== EMPTY_CREATE_DRAFT.prep_status ||
+    d.owner_member_id != null ||
+    d.internal_due_at != null
+  );
+}
 
 function snapshotReq(item: OfferRequirementDetail): ReqDraft {
   return {
@@ -503,10 +536,31 @@ function TrashIcon() {
   );
 }
 
+function PlusIcon() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="size-4 shrink-0"
+      aria-hidden
+    >
+      <path d="M12 5v14" />
+      <path d="M5 12h14" />
+    </svg>
+  );
+}
+
 export function OfferRequirementsTable({
+  offerCaseId,
   requirements,
   members,
 }: {
+  offerCaseId: string;
   requirements: OfferRequirementDetail[];
   members: EficenMemberForTeam[];
 }) {
@@ -522,10 +576,20 @@ export function OfferRequirementsTable({
 
   const [editing, setEditing] = useState(false);
   const [drafts, setDrafts] = useState<Record<string, ReqDraft>>({});
+  const [creating, setCreating] = useState(false);
+  const [createDraft, setCreateDraft] =
+    useState<CreateDraft>(EMPTY_CREATE_DRAFT);
+  const [creatingBusy, setCreatingBusy] = useState(false);
+  const createTitleRef = useRef<HTMLInputElement>(null);
   const [leaveOpen, setLeaveOpen] = useState(false);
   const leaveResolverRef = useRef<((ok: boolean) => void) | null>(null);
 
   const filterCount = countOfferRequirementsFilters(filters);
+
+  useEffect(() => {
+    if (!creating) return;
+    createTitleRef.current?.focus();
+  }, [creating]);
 
   const ownerOptions = useMemo(
     () =>
@@ -550,7 +614,7 @@ export function OfferRequirementsTable({
     });
   }, [requirements, drafts]);
 
-  const dirty = useMemo(() => {
+  const editDirty = useMemo(() => {
     if (!editing) return false;
     return requirements.some((item) => {
       const draft = drafts[item.id];
@@ -558,6 +622,9 @@ export function OfferRequirementsTable({
       return !draftsEqual(draft, snapshotReq(item));
     });
   }, [editing, drafts, requirements]);
+
+  const createDirty = creating && createDraftHasContent(createDraft);
+  const dirty = editDirty || createDirty;
 
   const filteredRows = useMemo(() => {
     const now = Date.now();
@@ -658,7 +725,51 @@ export function OfferRequirementsTable({
   function discardDrafts() {
     setDrafts({});
     setEditing(false);
+    setCreating(false);
+    setCreateDraft(EMPTY_CREATE_DRAFT);
     setError(null);
+  }
+
+  function cancelCreating() {
+    setCreating(false);
+    setCreateDraft(EMPTY_CREATE_DRAFT);
+    setError(null);
+  }
+
+  async function submitCreate(): Promise<boolean> {
+    const title = createDraft.title.trim();
+    if (!title) {
+      setError("El título del requisito es obligatorio.");
+      createTitleRef.current?.focus();
+      return false;
+    }
+    setError(null);
+    setCreatingBusy(true);
+    const sortOrder =
+      requirements.reduce((max, r) => Math.max(max, r.sort_order), 0) + 1;
+    const client = createSupabaseBrowserClient();
+    let compliance = createDraft.compliance_status;
+    let prep = createDraft.prep_status;
+    if (compliance === "cumple") prep = "listo";
+    const result = await createOfferRequirement(client, {
+      offerCaseId,
+      title,
+      requirement_type: createDraft.requirement_type,
+      compliance_status: compliance,
+      prep_status: prep,
+      owner_member_id: createDraft.owner_member_id,
+      internal_due_at: createDraft.internal_due_at,
+      sort_order: sortOrder,
+    });
+    setCreatingBusy(false);
+    if (result.error) {
+      setError(result.error.message);
+      return false;
+    }
+    setCreating(false);
+    setCreateDraft(EMPTY_CREATE_DRAFT);
+    startTransition(() => router.refresh());
+    return true;
   }
 
   const requestLeave = useCallback((): Promise<boolean> => {
@@ -667,17 +778,21 @@ export function OfferRequirementsTable({
         setEditing(false);
         setDrafts({});
       }
+      if (creating) {
+        setCreating(false);
+        setCreateDraft(EMPTY_CREATE_DRAFT);
+      }
       return Promise.resolve(true);
     }
     setLeaveOpen(true);
     return new Promise<boolean>((resolve) => {
       leaveResolverRef.current = resolve;
     });
-  }, [dirty, editing]);
+  }, [dirty, editing, creating]);
 
-  useDetailTabsLeaveGuard(editing, () => requestLeave());
+  useDetailTabsLeaveGuard(editing || creating, () => requestLeave());
   useUnsavedNavigationGuard({
-    enabled: editing,
+    enabled: editing || creating,
     dirty,
     confirmLeave: requestLeave,
   });
@@ -698,7 +813,13 @@ export function OfferRequirementsTable({
       resolve(true);
       return;
     }
-    const ok = await flushDrafts();
+    let ok = true;
+    if (editDirty) ok = await flushDrafts();
+    if (ok && creating && createDraftHasContent(createDraft)) {
+      ok = await submitCreate();
+    } else if (ok && creating) {
+      cancelCreating();
+    }
     resolve(ok);
   }
 
@@ -714,12 +835,12 @@ export function OfferRequirementsTable({
           icon={<FiltersIcon />}
           label={filterCount > 0 ? `Filtrar(${filterCount})` : "Filtrar"}
           onClick={() => setFiltersOpen(true)}
-          disabled={saving}
+          disabled={saving || creatingBusy}
         />
         <ToolbarButton
           icon={<EditIcon />}
           label={editing ? "Aplicar cambios" : "Editar"}
-          disabled={saving}
+          disabled={saving || creatingBusy}
           onClick={() => {
             if (!editing) {
               setEditing(true);
@@ -730,7 +851,25 @@ export function OfferRequirementsTable({
             void flushDrafts();
           }}
         />
-        <ToolbarButton icon={<TrashIcon />} label="Eliminar" disabled={saving} />
+        <ToolbarButton
+          icon={<PlusIcon />}
+          label="Crear"
+          disabled={saving || creatingBusy}
+          onClick={() => {
+            setError(null);
+            if (creating) {
+              createTitleRef.current?.focus();
+              return;
+            }
+            setCreateDraft(EMPTY_CREATE_DRAFT);
+            setCreating(true);
+          }}
+        />
+        <ToolbarButton
+          icon={<TrashIcon />}
+          label="Eliminar"
+          disabled={saving || creatingBusy}
+        />
       </div>
 
       <div className="overflow-x-auto">
@@ -754,7 +893,139 @@ export function OfferRequirementsTable({
             </tr>
           </thead>
           <tbody>
-            {filteredRows.length === 0 ? (
+            {creating ? (
+              <tr className="border-b border-primary/30 bg-primary/5">
+                <td className="px-3 py-3 align-middle">
+                  <input
+                    ref={createTitleRef}
+                    type="text"
+                    value={createDraft.title}
+                    disabled={creatingBusy}
+                    placeholder="Título del requisito…"
+                    aria-label="Título del nuevo requisito"
+                    className="w-full rounded-md border border-border bg-background px-2 py-1.5 text-sm font-medium text-foreground outline-none focus:ring-2 focus:ring-primary/40"
+                    onChange={(e) =>
+                      setCreateDraft((d) => ({ ...d, title: e.target.value }))
+                    }
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        void submitCreate();
+                      }
+                      if (e.key === "Escape") {
+                        e.preventDefault();
+                        cancelCreating();
+                      }
+                    }}
+                  />
+                  <p className="mt-1 text-[0.7rem] text-muted-foreground">
+                    Enter para crear · Esc para cancelar
+                  </p>
+                </td>
+                <td className={tdCenter}>
+                  <EditableChipSelect
+                    value={createDraft.requirement_type}
+                    disabled={creatingBusy}
+                    tone={
+                      createDraft.requirement_type === "excluyente"
+                        ? "bad"
+                        : createDraft.requirement_type === "puntuable"
+                          ? "warn"
+                          : "muted"
+                    }
+                    ariaLabel="Tipo"
+                    options={OFFER_REQUIREMENT_TYPES.map((s) => ({
+                      value: s,
+                      label: TYPE_LABELS[s] ?? s,
+                    }))}
+                    onChange={(v) =>
+                      setCreateDraft((d) => ({
+                        ...d,
+                        requirement_type: v as OfferRequirementType,
+                      }))
+                    }
+                  />
+                </td>
+                <td className={tdCenter}>
+                  <EditableChipSelect
+                    value={createDraft.compliance_status}
+                    disabled={creatingBusy}
+                    tone={complianceTone(createDraft.compliance_status)}
+                    ariaLabel="Cumplimiento"
+                    options={OFFER_COMPLIANCE_STATUSES.map((s) => ({
+                      value: s,
+                      label: OFFER_COMPLIANCE_LABELS[s],
+                    }))}
+                    onChange={(v) => {
+                      const compliance = v as OfferComplianceStatus;
+                      setCreateDraft((d) => ({
+                        ...d,
+                        compliance_status: compliance,
+                        ...(compliance === "cumple"
+                          ? { prep_status: "listo" as const }
+                          : {}),
+                      }));
+                    }}
+                  />
+                </td>
+                <td className={tdCenter}>
+                  <EditableChipSelect
+                    value={createDraft.prep_status}
+                    disabled={
+                      creatingBusy ||
+                      createDraft.compliance_status === "no_aplica"
+                    }
+                    locked={createDraft.compliance_status === "no_aplica"}
+                    tone={prepTone(createDraft.prep_status)}
+                    ariaLabel="Preparación"
+                    options={OFFER_PREP_STATUSES.map((s) => ({
+                      value: s,
+                      label: OFFER_PREP_LABELS[s],
+                    }))}
+                    onChange={(v) =>
+                      setCreateDraft((d) => ({
+                        ...d,
+                        prep_status: v as OfferPrepStatus,
+                      }))
+                    }
+                  />
+                </td>
+                <td className={tdCenter}>
+                  <MemberPicker
+                    value={createDraft.owner_member_id}
+                    members={members}
+                    disabled={creatingBusy}
+                    locked={createDraft.compliance_status === "no_aplica"}
+                    onChange={(v) =>
+                      setCreateDraft((d) => ({ ...d, owner_member_id: v }))
+                    }
+                  />
+                </td>
+                <td className={tdCenter}>
+                  <SingleDatePicker
+                    value={
+                      createDraft.internal_due_at
+                        ? calendarDayMadrid(createDraft.internal_due_at)
+                        : null
+                    }
+                    disabled={creatingBusy}
+                    locked={createDraft.compliance_status === "no_aplica"}
+                    toneClassName={
+                      createDraft.compliance_status === "cumple"
+                        ? "text-muted-foreground"
+                        : dueToneClass(createDraft.internal_due_at)
+                    }
+                    onChange={(day) =>
+                      setCreateDraft((d) => ({
+                        ...d,
+                        internal_due_at: day ? `${day}T12:00:00.000Z` : null,
+                      }))
+                    }
+                  />
+                </td>
+              </tr>
+            ) : null}
+            {filteredRows.length === 0 && !creating ? (
               <tr>
                 <td
                   colSpan={6}

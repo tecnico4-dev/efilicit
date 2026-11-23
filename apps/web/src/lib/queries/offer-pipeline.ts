@@ -555,6 +555,54 @@ export async function updateOfferRequirement(
   return { error: null };
 }
 
+export const OFFER_REQUIREMENT_TYPES = [
+  "excluyente",
+  "puntuable",
+  "informativo",
+] as const;
+
+export type OfferRequirementType = (typeof OFFER_REQUIREMENT_TYPES)[number];
+
+/** Alta manual de un requisito en el expediente. */
+export async function createOfferRequirement(
+  client: SupabaseClient<Database>,
+  input: {
+    offerCaseId: string;
+    title: string;
+    requirement_type?: OfferRequirementType;
+    compliance_status?: OfferComplianceStatus;
+    prep_status?: OfferPrepStatus;
+    owner_member_id?: string | null;
+    internal_due_at?: string | null;
+    sort_order?: number;
+  },
+): Promise<{ data: { id: string } | null; error: Error | null }> {
+  const title = input.title.trim();
+  if (!title) {
+    return { data: null, error: new Error("El título del requisito es obligatorio.") };
+  }
+
+  const { data, error } = await client
+    .from("offer_requirements")
+    .insert({
+      offer_case_id: input.offerCaseId,
+      title,
+      requirement_type: input.requirement_type ?? "informativo",
+      compliance_status: input.compliance_status ?? "sin_verificar",
+      prep_status: input.prep_status ?? "pendiente",
+      owner_member_id: input.owner_member_id ?? null,
+      internal_due_at: input.internal_due_at ?? null,
+      source_kind: "manual",
+      category: "otros",
+      sort_order: input.sort_order ?? 0,
+    })
+    .select("id")
+    .single();
+
+  if (error) return { data: null, error: new Error(error.message) };
+  return { data: data ? { id: data.id } : null, error: null };
+}
+
 export async function addOfferCaseMember(
   client: SupabaseClient<Database>,
   input: {

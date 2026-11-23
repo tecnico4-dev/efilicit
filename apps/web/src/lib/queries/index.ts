@@ -199,7 +199,9 @@ export {
   offerCaseHistoryYear,
   removeOfferCaseMember,
   setOfferCaseOwner,
+  createOfferRequirement,
   updateOfferRequirement,
+  OFFER_REQUIREMENT_TYPES,
   type OfferCaseDetail,
   type OfferCaseKind,
   type OfferCaseListItem,
@@ -209,6 +211,7 @@ export {
   type OfferOwnerMember,
   type OfferPrepStatus,
   type OfferRequirementDetail,
+  type OfferRequirementType,
   type OfferStage,
 } from "./offer-pipeline";
 export {
