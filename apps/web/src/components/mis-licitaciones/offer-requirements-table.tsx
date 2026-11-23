@@ -977,12 +977,11 @@ function LeaveWithoutSavingModal({
         <div className="mt-5 flex flex-wrap justify-end gap-2">
           <Button
             type="button"
-            variant="outline"
             size="sm"
             disabled={busy}
-            onClick={onCancel}
+            onClick={onSave}
           >
-            Cancelar
+            Guardar edición
           </Button>
           <Button
             type="button"
@@ -990,16 +989,18 @@ function LeaveWithoutSavingModal({
             size="sm"
             disabled={busy}
             onClick={onDiscard}
+            className="border-destructive text-destructive hover:bg-destructive/10"
           >
             No guardar
           </Button>
           <Button
             type="button"
+            variant="outline"
             size="sm"
             disabled={busy}
-            onClick={onSave}
+            onClick={onCancel}
           >
-            Guardar
+            Cancelar
           </Button>
         </div>
       </div>
