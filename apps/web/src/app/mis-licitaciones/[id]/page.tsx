@@ -33,10 +33,8 @@ import { CaseStageBadge } from "@/components/mis-licitaciones/case-stage-badge";
 import { DetailTabs } from "@/components/mis-licitaciones/detail-tabs";
 import { OfferCaseIntakeStatus } from "@/components/mis-licitaciones/offer-case-intake-status";
 import {
-  ENVELOPE_LABELS,
   MilestoneRows,
   PliegosList,
-  REQUIREMENT_CATEGORY_LABELS,
   SobresList,
 } from "@/components/mis-licitaciones/offer-case-sections";
 import { OfferRequirementsTable } from "@/components/mis-licitaciones/offer-requirements-table";
@@ -67,21 +65,6 @@ function isHistoric(stage: string): boolean {
   return (HISTORIC_OFFER_STAGES as readonly string[]).includes(stage);
 }
 
-const COMPLIANCE_LABEL: Record<string, string> = {
-  cumple: "cumple",
-  parcial: "parcial",
-  no_cumple: "no cumple",
-  sin_verificar: "sin verificar",
-  no_aplica: "no aplica",
-};
-
-const PREP_LABEL: Record<string, string> = {
-  pendiente: "pendiente",
-  en_curso: "en curso",
-  en_revision: "en revisión",
-  listo: "listo",
-};
-
 export default async function MisLicitacionDetailPage({ params }: PageProps) {
   const { id } = await params;
   const supabase = await getSupabaseServerClient();
@@ -108,14 +91,21 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
   }
   if (!offerCase) notFound();
 
-  const [teamResult, intakeResult, pliegosResult, deliverablesResult, milestonesResult] =
-    await Promise.all([
-      listOfferCaseMembers(supabase, offerCase.id),
-      getLatestOfferCaseIntake(supabase, offerCase.id),
-      listOfferCasePliegos(supabase, offerCase.id),
-      listOfferDeliverables(supabase, offerCase.id),
-      listOfferMilestones(supabase, offerCase.id),
-    ]);
+  const [
+    teamResult,
+    intakeResult,
+    pliegosResult,
+    deliverablesResult,
+    milestonesResult,
+    membersResult,
+  ] = await Promise.all([
+    listOfferCaseMembers(supabase, offerCase.id),
+    getLatestOfferCaseIntake(supabase, offerCase.id),
+    listOfferCasePliegos(supabase, offerCase.id),
+    listOfferDeliverables(supabase, offerCase.id),
+    listOfferMilestones(supabase, offerCase.id),
+    listEficenMembersForTeam(supabase),
+  ]);
   const teamMembers = teamResult.data;
   const milestones = milestonesResult.data;
   const hasPresentationMilestone = milestones.some(
@@ -370,7 +360,7 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
                       {fromPliego > 0
                         ? `${fromPliego} extraídos del pliego PLACSP · ${
                             offerCase.requirements.length - fromPliego
-                          } añadidos a mano. Revisa el texto literal antes de marcar cumplimiento.`
+                          } añadidos a mano. Revisa el texto antes de marcar cumplimiento.`
                         : "Requisitos añadidos a mano."}
                     </p>
                   ) : null}
@@ -379,98 +369,10 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
                       Sin requisitos en este expediente.
                     </p>
                   ) : (
-                    <div className="overflow-x-auto">
-                      <table className="w-full min-w-[720px] border-collapse text-sm">
-                        <thead>
-                          <tr className="border-b border-border text-left text-[0.7rem] uppercase tracking-wide text-muted-foreground">
-                            <th className="px-2 py-2 font-semibold">
-                              Requisito
-                            </th>
-                            <th className="px-2 py-2 font-semibold">Tipo</th>
-                            <th className="px-2 py-2 font-semibold">
-                              ¿Cumplimos?
-                            </th>
-                            <th className="px-2 py-2 font-semibold">
-                              Preparación
-                            </th>
-                            <th className="px-2 py-2 font-semibold">
-                              Fecha interna
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {offerCase.requirements.map((item) => (
-                            <tr
-                              key={item.id}
-                              className="border-b border-border/80"
-                            >
-                              <td
-                                className="px-2 py-2.5 font-medium text-foreground"
-                                title={item.literal_text ?? undefined}
-                              >
-                                {item.title}
-                                <p className="text-xs font-normal text-muted-foreground">
-                                  {[
-                                    REQUIREMENT_CATEGORY_LABELS[item.category] ??
-                                      item.category,
-                                    item.envelope
-                                      ? (ENVELOPE_LABELS[item.envelope] ??
-                                        item.envelope)
-                                      : null,
-                                    item.required_value,
-                                    item.source_kind === "legacy_checklist"
-                                      ? "legacy"
-                                      : null,
-                                  ]
-                                    .filter(Boolean)
-                                    .join(" · ")}
-                                  {item.source_kind === "pliego_xml" ? (
-                                    <span className="ml-1.5 inline-flex rounded border border-primary/30 bg-primary/5 px-1 text-[0.65rem] font-semibold text-primary">
-                                      Pliego
-                                    </span>
-                                  ) : null}
-                                </p>
-                              </td>
-                              <td className="px-2 py-2.5 text-muted-foreground">
-                                {item.requirement_type}
-                              </td>
-                              <td className="px-2 py-2.5">
-                                <StatusChip
-                                  tone={
-                                    item.compliance_status === "cumple"
-                                      ? "ok"
-                                      : item.compliance_status === "no_cumple"
-                                        ? "bad"
-                                        : item.compliance_status ===
-                                            "sin_verificar"
-                                          ? "warn"
-                                          : "muted"
-                                  }
-                                >
-                                  {COMPLIANCE_LABEL[item.compliance_status] ??
-                                    item.compliance_status}
-                                </StatusChip>
-                              </td>
-                              <td className="px-2 py-2.5">
-                                <StatusChip
-                                  tone={
-                                    item.prep_status === "listo" ? "ok" : "warn"
-                                  }
-                                >
-                                  {PREP_LABEL[item.prep_status] ??
-                                    item.prep_status}
-                                </StatusChip>
-                              </td>
-                              <td className="px-2 py-2.5 text-muted-foreground">
-                                {item.internal_due_at
-                                  ? formatDateMadrid(item.internal_due_at)
-                                  : "—"}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
+                    <OfferRequirementsTable
+                      requirements={offerCase.requirements}
+                      members={membersResult.data}
+                    />
                   )}
                 </div>
               ),
@@ -846,30 +748,6 @@ function Fact({ label, value }: { label: string; value: string }) {
       <dt className="text-xs text-muted-foreground">{label}</dt>
       <dd className="mt-0.5 font-medium text-foreground">{value}</dd>
     </div>
-  );
-}
-
-function StatusChip({
-  children,
-  tone,
-}: {
-  children: React.ReactNode;
-  tone: "ok" | "warn" | "bad" | "muted";
-}) {
-  return (
-    <span
-      className={cn(
-        "inline-flex rounded-full border px-2 py-0.5 text-xs font-semibold",
-        tone === "ok" &&
-          "border-emerald-300/60 bg-emerald-50 text-emerald-900",
-        tone === "warn" && "border-amber-300/60 bg-amber-50 text-amber-900",
-        tone === "bad" &&
-          "border-destructive/40 bg-destructive/10 text-destructive",
-        tone === "muted" && "border-border bg-muted text-muted-foreground",
-      )}
-    >
-      {children}
-    </span>
   );
 }
 

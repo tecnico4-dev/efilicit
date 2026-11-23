@@ -56,6 +56,51 @@ type OfferCaseRow = Database["public"]["Tables"]["offer_cases"]["Row"];
 type OfferRequirementRow =
   Database["public"]["Tables"]["offer_requirements"]["Row"];
 
+export type OfferOwnerMember = {
+  id: string;
+  display_name: string;
+  role_title: string | null;
+  avatar_url: string | null;
+};
+
+export type OfferRequirementDetail = OfferRequirementRow & {
+  owner_member: OfferOwnerMember | null;
+};
+
+export const OFFER_COMPLIANCE_STATUSES = [
+  "cumple",
+  "parcial",
+  "no_cumple",
+  "sin_verificar",
+  "no_aplica",
+] as const;
+
+export type OfferComplianceStatus = (typeof OFFER_COMPLIANCE_STATUSES)[number];
+
+export const OFFER_COMPLIANCE_LABELS: Record<OfferComplianceStatus, string> = {
+  cumple: "Cumple",
+  parcial: "Parcial",
+  no_cumple: "No cumple",
+  sin_verificar: "Sin verificar",
+  no_aplica: "No aplica",
+};
+
+export const OFFER_PREP_STATUSES = [
+  "pendiente",
+  "en_curso",
+  "en_revision",
+  "listo",
+] as const;
+
+export type OfferPrepStatus = (typeof OFFER_PREP_STATUSES)[number];
+
+export const OFFER_PREP_LABELS: Record<OfferPrepStatus, string> = {
+  pendiente: "Pendiente",
+  en_curso: "En curso",
+  en_revision: "En revisión",
+  listo: "Listo",
+};
+
 export type OfferCaseTenderSummary = {
   id: string;
   title: string;
@@ -64,13 +109,6 @@ export type OfferCaseTenderSummary = {
   currency: string;
   publication_date: string | null;
   deadline_at: string | null;
-};
-
-export type OfferOwnerMember = {
-  id: string;
-  display_name: string;
-  role_title: string | null;
-  avatar_url: string | null;
 };
 
 export type OfferCaseListItem = OfferCaseRow & {
@@ -84,7 +122,7 @@ export type OfferCaseListItem = OfferCaseRow & {
 export type OfferCaseDetail = OfferCaseRow & {
   tenders: OfferCaseTenderSummary | null;
   owner_member: OfferOwnerMember | null;
-  requirements: OfferRequirementRow[];
+  requirements: OfferRequirementDetail[];
 };
 
 export const OFFER_MEMBER_ROLES = [
@@ -346,8 +384,7 @@ export async function getOfferCaseById(
         compliance_status,
         prep_status,
         envelope,
-        owner_user_id,
-        owner_name,
+        owner_member_id,
         internal_due_at,
         pliego_ref,
         source_kind,
@@ -358,7 +395,13 @@ export async function getOfferCaseById(
         validated_by,
         validated_at,
         created_at,
-        updated_at
+        updated_at,
+        owner_member:eficen_members!owner_member_id (
+          id,
+          display_name,
+          role_title,
+          avatar_url
+        )
       )
     `,
     )
@@ -373,12 +416,23 @@ export async function getOfferCaseById(
   const tenders = Array.isArray(tender) ? (tender[0] ?? null) : tender;
 
   const requirements = (
-    (data.offer_requirements ?? []) as OfferRequirementRow[]
+    (data.offer_requirements ?? []) as Array<
+      OfferRequirementRow & {
+        owner_member?: OfferOwnerMember | OfferOwnerMember[] | null;
+      }
+    >
   )
     .slice()
     .sort((a, b) => {
       if (a.sort_order !== b.sort_order) return a.sort_order - b.sort_order;
       return a.created_at.localeCompare(b.created_at);
+    })
+    .map((row) => {
+      const { owner_member: rawOwner, ...rest } = row;
+      return {
+        ...rest,
+        owner_member: asOwnerMember(rawOwner),
+      } satisfies OfferRequirementDetail;
     });
 
   return {
@@ -475,6 +529,26 @@ export async function setOfferCaseOwner(
     .from("offer_cases")
     .update({ owner_member_id: input.ownerMemberId })
     .eq("id", input.offerCaseId);
+  if (error) return { error: new Error(error.message) };
+  return { error: null };
+}
+
+export async function updateOfferRequirement(
+  client: SupabaseClient<Database>,
+  input: {
+    id: string;
+    patch: {
+      compliance_status?: OfferComplianceStatus;
+      prep_status?: OfferPrepStatus;
+      internal_due_at?: string | null;
+      owner_member_id?: string | null;
+    };
+  },
+): Promise<{ error: Error | null }> {
+  const { error } = await client
+    .from("offer_requirements")
+    .update(input.patch)
+    .eq("id", input.id);
   if (error) return { error: new Error(error.message) };
   return { error: null };
 }

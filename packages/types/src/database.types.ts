@@ -753,14 +753,14 @@ isOneToOne: false
                   ]
                 },"offer_requirements": {
                   Row: {
-                    "category": string,"compliance_status": string,"created_at": string,"envelope": string | null,"id": string,"internal_due_at": string | null,"legacy_checklist_item_id": string | null,"literal_text": string | null,"offer_case_id": string,"our_value": string | null,"owner_name": string | null,"owner_user_id": string | null,"pliego_id": string | null,"pliego_ref": string | null,"prep_status": string,"required_value": string | null,"requirement_type": string,"sort_order": number,"source_key": string | null,"source_kind": string,"title": string,"updated_at": string,"validated_at": string | null,"validated_by": string | null
+                    "category": string,"compliance_status": string,"created_at": string,"envelope": string | null,"id": string,"internal_due_at": string | null,"legacy_checklist_item_id": string | null,"literal_text": string | null,"offer_case_id": string,"our_value": string | null,"owner_member_id": string | null,"pliego_id": string | null,"pliego_ref": string | null,"prep_status": string,"required_value": string | null,"requirement_type": string,"sort_order": number,"source_key": string | null,"source_kind": string,"title": string,"updated_at": string,"validated_at": string | null,"validated_by": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "category"?: string,"compliance_status"?: string,"created_at"?: string,"envelope"?: string | null,"id"?: string,"internal_due_at"?: string | null,"legacy_checklist_item_id"?: string | null,"literal_text"?: string | null,"offer_case_id": string,"our_value"?: string | null,"owner_name"?: string | null,"owner_user_id"?: string | null,"pliego_id"?: string | null,"pliego_ref"?: string | null,"prep_status"?: string,"required_value"?: string | null,"requirement_type"?: string,"sort_order"?: number,"source_key"?: string | null,"source_kind"?: string,"title": string,"updated_at"?: string,"validated_at"?: string | null,"validated_by"?: string | null
+                    "category"?: string,"compliance_status"?: string,"created_at"?: string,"envelope"?: string | null,"id"?: string,"internal_due_at"?: string | null,"legacy_checklist_item_id"?: string | null,"literal_text"?: string | null,"offer_case_id": string,"our_value"?: string | null,"owner_member_id"?: string | null,"pliego_id"?: string | null,"pliego_ref"?: string | null,"prep_status"?: string,"required_value"?: string | null,"requirement_type"?: string,"sort_order"?: number,"source_key"?: string | null,"source_kind"?: string,"title": string,"updated_at"?: string,"validated_at"?: string | null,"validated_by"?: string | null
                   }
                   Update: {
-                    "category"?: string,"compliance_status"?: string,"created_at"?: string,"envelope"?: string | null,"id"?: string,"internal_due_at"?: string | null,"legacy_checklist_item_id"?: string | null,"literal_text"?: string | null,"offer_case_id"?: string,"our_value"?: string | null,"owner_name"?: string | null,"owner_user_id"?: string | null,"pliego_id"?: string | null,"pliego_ref"?: string | null,"prep_status"?: string,"required_value"?: string | null,"requirement_type"?: string,"sort_order"?: number,"source_key"?: string | null,"source_kind"?: string,"title"?: string,"updated_at"?: string,"validated_at"?: string | null,"validated_by"?: string | null
+                    "category"?: string,"compliance_status"?: string,"created_at"?: string,"envelope"?: string | null,"id"?: string,"internal_due_at"?: string | null,"legacy_checklist_item_id"?: string | null,"literal_text"?: string | null,"offer_case_id"?: string,"our_value"?: string | null,"owner_member_id"?: string | null,"pliego_id"?: string | null,"pliego_ref"?: string | null,"prep_status"?: string,"required_value"?: string | null,"requirement_type"?: string,"sort_order"?: number,"source_key"?: string | null,"source_kind"?: string,"title"?: string,"updated_at"?: string,"validated_at"?: string | null,"validated_by"?: string | null
                   }
                   Relationships: [
                     {
@@ -770,10 +770,10 @@ isOneToOne: false
       referencedRelation: "offer_cases"
       referencedColumns: ["id"]
     },{
-      foreignKeyName: "offer_requirements_owner_user_id_fkey"
-      columns: ["owner_user_id"]
+      foreignKeyName: "offer_requirements_owner_member_id_fkey"
+      columns: ["owner_member_id"]
 isOneToOne: false
-      referencedRelation: "users"
+      referencedRelation: "eficen_members"
       referencedColumns: ["id"]
     },{
       foreignKeyName: "offer_requirements_pliego_case_fkey"
