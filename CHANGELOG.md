@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+- Schema Mis licitaciones: se eliminan `offer_sources` + `offer_source_links` (trazabilidad de fuentes sin uso; el intake ya deja origen en requisitos/pliegos). Migración local.
 - Schema Mis licitaciones: se elimina `offer_requirement_deliverables` (puente N:M requisito↔entregable sin uso de producto; el sobre va en `offer_requirements.envelope`). Migración local.
 - Mis licitaciones: stages `subcontrata` y `desierta` dejan de ser etapas del expediente (histórico solo adjudicada / no adjudicada / descartada).
 
