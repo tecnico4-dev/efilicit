@@ -110,10 +110,6 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
   const hasPresentationMilestone = milestones.some(
     (m) => m.code === "presentacion",
   );
-  const fromPliego = offerCase.requirements.filter(
-    (r) => r.source_kind === "pliego_xml",
-  ).length;
-
   const tenderSummary = offerCase.tenders;
   const tenderDetailResult = tenderSummary
     ? await getTenderById(supabase, tenderSummary.id)
@@ -328,29 +324,17 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
                   </div>
                 </div>
               ),
-              requisitos: (
-                <div className="space-y-3">
-                  {offerCase.requirements.length > 0 ? (
-                    <p className="text-sm text-muted-foreground">
-                      {fromPliego > 0
-                        ? `${fromPliego} extraídos del pliego PLACSP · ${
-                            offerCase.requirements.length - fromPliego
-                          } añadidos a mano. Revisa el texto antes de marcar cumplimiento.`
-                        : "Requisitos añadidos a mano."}
-                    </p>
-                  ) : null}
-                  {offerCase.requirements.length === 0 ? (
-                    <p className="rounded-lg border border-dashed border-border px-4 py-6 text-center text-sm text-muted-foreground">
-                      Sin requisitos en este expediente.
-                    </p>
-                  ) : (
-                    <OfferRequirementsTable
-                      requirements={offerCase.requirements}
-                      members={membersResult.data}
-                    />
-                  )}
-                </div>
-              ),
+              requisitos:
+                offerCase.requirements.length === 0 ? (
+                  <p className="rounded-lg border border-dashed border-border px-4 py-6 text-center text-sm text-muted-foreground">
+                    Sin requisitos en este expediente.
+                  </p>
+                ) : (
+                  <OfferRequirementsTable
+                    requirements={offerCase.requirements}
+                    members={membersResult.data}
+                  />
+                ),
               sobres: (
                 <SobresList
                   deliverables={deliverablesResult.data}
