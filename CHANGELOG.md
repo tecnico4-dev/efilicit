@@ -22,7 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Mis licitaciones · Requisitos (UI): chips centrados (menú portal alineado a la burbuja); «No aplica» bloquea el resto de la fila; tipo en texto coloreado; preparación con `bloqueado` y tonos; orden Responsable → Fecha; fecha con calendario estilo buscador; responsable = icono + «Nombre A.». Migración local (`prep_status` + `bloqueado`).
+- Mis licitaciones · Requisitos (UI): chips centrados (menú portal alineado a la burbuja); «No aplica» bloquea el resto de la fila; «Cumple» pone preparación en listo y deja la fecha en gris; tipo en texto coloreado; preparación con `bloqueado` y tonos; orden Responsable → Fecha; fecha con calendario estilo buscador; responsable = icono + «Nombre A.». Migración local (`prep_status` + `bloqueado`).
 - Mis licitaciones · Requisitos: columnas Cumplimos / Preparación / Fecha interna / Responsable editables; responsable = `eficen_members` (`owner_member_id`). Migración local.
 - `offer_case_members`: `member_id` → `eficen_members`; se quitan `user_id` / `created_at`. Migración local.
 - `offer_cases`: responsable = `owner_member_id` → `eficen_members` (nullable); se quitan `owner_name` / `owner_user_id`. `created_by` se mantiene. Migración local — enmienda [ADR 032](docs/adr/032-eficen-members-favorites-shared.md).

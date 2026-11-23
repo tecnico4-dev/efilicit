@@ -434,11 +434,15 @@ export function OfferRequirementsTable({
                         value: s,
                         label: OFFER_COMPLIANCE_LABELS[s],
                       }))}
-                      onChange={(v) =>
+                      onChange={(v) => {
+                        const compliance = v as OfferComplianceStatus;
                         void patch(item.id, {
-                          compliance_status: v as OfferComplianceStatus,
-                        })
-                      }
+                          compliance_status: compliance,
+                          ...(compliance === "cumple"
+                            ? { prep_status: "listo" as const }
+                            : {}),
+                        });
+                      }}
                     />
                   </td>
                   <td className={tdCenter}>
@@ -475,7 +479,11 @@ export function OfferRequirementsTable({
                       value={dueDay}
                       disabled={busy}
                       locked={naLocked}
-                      toneClassName={dueToneClass(item.internal_due_at)}
+                      toneClassName={
+                        item.compliance_status === "cumple"
+                          ? "text-muted-foreground"
+                          : dueToneClass(item.internal_due_at)
+                      }
                       onChange={(day) =>
                         void patch(item.id, {
                           internal_due_at: day
