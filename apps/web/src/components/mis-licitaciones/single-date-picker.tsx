@@ -319,6 +319,7 @@ export function SingleDatePicker({
 
   return (
     <div
+      ref={triggerRef}
       className={cn(
         "relative inline-flex",
         alignStart ? "justify-start" : "justify-center",
@@ -326,7 +327,6 @@ export function SingleDatePicker({
       )}
     >
       <button
-        ref={triggerRef}
         type="button"
         disabled={Boolean(disabled || locked)}
         aria-disabled={inert}
