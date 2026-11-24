@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { DigestFrequency } from "@/lib/queries";
 import { isMisLicitacionesEnabled } from "@/lib/features/mis-licitaciones";
-import { MisLicitacionesNavLink } from "@/components/mis-licitaciones/mis-licitaciones-nav-link";
 import { cn } from "@/lib/cn";
 import type { ReactNode } from "react";
 import { FavoritesSubnav } from "@/app/favorites/favorites-subnav";
@@ -129,11 +128,12 @@ export function AppHeader({
 
           <div className="flex items-center gap-2">
             {isMisLicitacionesEnabled() ? (
-              <MisLicitacionesNavLink
+              <Link
+                href="/mis-licitaciones"
                 className={navClass(pathname.startsWith("/mis-licitaciones"))}
               >
                 Mis licitaciones
-              </MisLicitacionesNavLink>
+              </Link>
             ) : null}
             {notifications}
             {userId ? (

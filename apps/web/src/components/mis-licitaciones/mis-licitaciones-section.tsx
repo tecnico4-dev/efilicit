@@ -22,10 +22,6 @@ import {
   MisLicitacionesFiltersButton,
   MisLicitacionesFiltersModal,
 } from "@/components/mis-licitaciones/mis-licitaciones-filters-modal";
-import {
-  loadMisLicitacionesNav,
-  saveMisLicitacionesNav,
-} from "@/components/mis-licitaciones/mis-licitaciones-nav-session";
 
 type Scope = "active" | "historic";
 
@@ -47,28 +43,12 @@ export function MisLicitacionesSection({
   empty: ReactNode;
 }) {
   const [view, setView] = useState<PipelineViewMode>("lista");
-  const [viewReady, setViewReady] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
   // Vacío en SSR + primer paint cliente (evita hydration mismatch con sessionStorage).
   const [filters, setFilters] = useState<MisLicitacionesFilters>(
     EMPTY_MIS_LICITACIONES_FILTERS,
   );
   const [filtersReady, setFiltersReady] = useState(false);
-
-  useEffect(() => {
-    const nav = loadMisLicitacionesNav();
-    setView(nav.view);
-    setViewReady(true);
-  }, []);
-
-  useEffect(() => {
-    saveMisLicitacionesNav({ scope });
-  }, [scope]);
-
-  useEffect(() => {
-    if (!viewReady) return;
-    saveMisLicitacionesNav({ view });
-  }, [view, viewReady]);
 
   useEffect(() => {
     const stored = loadMisLicitacionesFiltersForScope(scope);
@@ -90,11 +70,6 @@ export function MisLicitacionesSection({
   function updateFilters(next: MisLicitacionesFilters) {
     setFilters(next);
     saveMisLicitacionesFiltersForScope(scope, next);
-  }
-
-  function changeView(next: PipelineViewMode) {
-    setView(next);
-    saveMisLicitacionesNav({ view: next });
   }
 
   const ownerOptions = useMemo(() => ownerOptionsFromCases(cases), [cases]);
@@ -125,7 +100,7 @@ export function MisLicitacionesSection({
         </div>
 
         <div className="mb-px flex shrink-0 items-center gap-3">
-          <RecommendationsViewToggle view={view} onChange={changeView} />
+          <RecommendationsViewToggle view={view} onChange={setView} />
           <MisLicitacionesFiltersButton
             activeCount={activeFilterCount}
             onClick={() => setFilterOpen(true)}
