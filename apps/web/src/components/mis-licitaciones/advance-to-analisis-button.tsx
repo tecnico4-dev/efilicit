@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { advanceOfferCaseToAnalisis } from "@/lib/queries";
 
-function useAdvanceToAnalisis(offerCaseId: string) {
+function useAdvanceToAnalisis(offerCaseId: string, userId: string) {
   const router = useRouter();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -16,10 +16,10 @@ function useAdvanceToAnalisis(offerCaseId: string) {
     setPending(true);
     setError(null);
     const client = createSupabaseBrowserClient();
-    const { error: err } = await advanceOfferCaseToAnalisis(
-      client,
+    const { error: err } = await advanceOfferCaseToAnalisis(client, {
       offerCaseId,
-    );
+      createdBy: userId,
+    });
     setPending(false);
     if (err) {
       setError(err.message);
@@ -34,10 +34,12 @@ function useAdvanceToAnalisis(offerCaseId: string) {
 /** CTA compacto bajo el KPI Estado (cabecera). */
 export function AdvanceToAnalisisLink({
   offerCaseId,
+  userId,
 }: {
   offerCaseId: string;
+  userId: string;
 }) {
-  const { pending, error, advance } = useAdvanceToAnalisis(offerCaseId);
+  const { pending, error, advance } = useAdvanceToAnalisis(offerCaseId, userId);
 
   return (
     <div className="mt-1.5">
@@ -61,10 +63,12 @@ export function AdvanceToAnalisisLink({
 /** Bloque en Resumen mientras el expediente está en Interés. */
 export function AdvanceToAnalisisButton({
   offerCaseId,
+  userId,
 }: {
   offerCaseId: string;
+  userId: string;
 }) {
-  const { pending, error, advance } = useAdvanceToAnalisis(offerCaseId);
+  const { pending, error, advance } = useAdvanceToAnalisis(offerCaseId, userId);
 
   return (
     <div className="rounded-xl border border-primary/25 bg-primary/5 p-4 sm:p-5">

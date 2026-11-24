@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Mis licitaciones · Bitácora: timeline sobre `offer_case_log`; altas manuales; auto-registro al pasar a Análisis y al decidir GO/NO-GO.
 - Buzón · Licitaciones compartidas: tabla `notification_shared` (`share_id`, `read_at`, `trashed_at`) + trigger al INSERT/reactivar `favorites_shared` + UI en el buzón (copy tipo Común; open/papelera) — [ADR 037](docs/adr/037-notification-shared-peer.md). Solo local/Studio.
 - Mis licitaciones: `offer_cases.kind` obligatorio (`propia` | `subcontrata`); histórico = 3 estados; UI sin riesgo de plazo en histórico; semillas recomendaciones por kind — [ADR 036](docs/adr/036-offer-cases-kind-y-historico-tres-estados.md). Solo local/Studio.
 - Mis licitaciones · intake de pliegos PLACSP ([ADR 035](docs/adr/035-intake-pliegos-expediente.md)): al crear un expediente se encola `offer_case_intake`; el worker `run-offer-intake` (workflow `offer-intake.yml`, `workflow_dispatch`) lee el RAW CODICE y vuelca pliegos (PCAP/PPT/anexos descargados al bucket privado `offer-docs`; biblioteca solo enlace), requisitos (`source_kind = pliego_xml`), sobres A/B/C con puntos y hitos oficiales. Idempotente por `source_key`; no pisa ediciones. Pestañas Pliegos (estado + «Reprocesar pliegos» + abrir por signed URL), Sobres, Requisitos (origen/sobre/valor) y Calendario con datos reales. Solo local.

@@ -42,6 +42,7 @@ import {
   AdvanceToAnalisisLink,
 } from "@/components/mis-licitaciones/advance-to-analisis-button";
 import { AwardCriteriaSummary } from "@/components/mis-licitaciones/award-criteria-summary";
+import { OfferCaseLogPanel } from "@/components/mis-licitaciones/offer-case-log-panel";
 import { OfferGoDecisionCard } from "@/components/mis-licitaciones/offer-go-decision-card";
 import { TenderFichaModalButton } from "@/components/mis-licitaciones/tender-ficha-modal";
 import { cn } from "@/lib/cn";
@@ -236,7 +237,10 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
               <p className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
                 {stageLabel}
               </p>
-              <AdvanceToAnalisisLink offerCaseId={offerCase.id} />
+              <AdvanceToAnalisisLink
+                offerCaseId={offerCase.id}
+                userId={profile.data.id}
+              />
             </OutlinedField>
           ) : (
             <Kpi label="Estado" value={stageLabel} valueSize="lg" />
@@ -260,7 +264,10 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
               resumen: (
                 <div className="space-y-5 text-sm">
                   {offerCase.stage === "interes" ? (
-                    <AdvanceToAnalisisButton offerCaseId={offerCase.id} />
+                    <AdvanceToAnalisisButton
+                      offerCaseId={offerCase.id}
+                      userId={profile.data.id}
+                    />
                   ) : null}
                   {offerCase.stage === "analisis" ||
                   offerCase.go_decision === "go" ||
@@ -394,12 +401,10 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
                 </ul>
               ),
               bitacora: (
-                <div className="space-y-3 text-sm">
-                  <p className="rounded-lg border border-dashed border-border px-4 py-6 text-center text-muted-foreground">
-                    Bitácora tipada en un incremento posterior. El expediente ya
-                    está en `offer_cases`.
-                  </p>
-                </div>
+                <OfferCaseLogPanel
+                  offerCaseId={offerCase.id}
+                  userId={profile.data.id}
+                />
               ),
             }}
           />

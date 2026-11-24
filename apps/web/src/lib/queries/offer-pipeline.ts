@@ -562,17 +562,177 @@ export async function setOfferCaseOwner(
   return { error: null };
 }
 
+export const OFFER_LOG_EVENT_TYPES = [
+  "stage_change",
+  "go_decision",
+  "aclaracion",
+  "rectificacion",
+  "ampliacion_plazo",
+  "requerimiento",
+  "subsanacion",
+  "requirement_change",
+  "comentario",
+  "otro",
+] as const;
+
+export type OfferLogEventType = (typeof OFFER_LOG_EVENT_TYPES)[number];
+
+/** Tipos que el usuario puede elegir al añadir una entrada manual. */
+export const OFFER_LOG_MANUAL_EVENT_TYPES = [
+  "comentario",
+  "aclaracion",
+  "rectificacion",
+  "ampliacion_plazo",
+  "requerimiento",
+  "subsanacion",
+  "otro",
+] as const satisfies readonly OfferLogEventType[];
+
+export const OFFER_LOG_EVENT_LABELS: Record<OfferLogEventType, string> = {
+  stage_change: "Cambio de etapa",
+  go_decision: "Decisión GO / NO-GO",
+  aclaracion: "Aclaración",
+  rectificacion: "Rectificación",
+  ampliacion_plazo: "Ampliación de plazo",
+  requerimiento: "Requerimiento",
+  subsanacion: "Subsanación",
+  requirement_change: "Cambio de requisito",
+  comentario: "Comentario",
+  otro: "Otro",
+};
+
+export type OfferCaseLogEntry = {
+  id: string;
+  offer_case_id: string;
+  event_type: OfferLogEventType;
+  body: string;
+  happened_on: string;
+  created_by: string | null;
+  created_by_name: string | null;
+  related_requirement_id: string | null;
+  related_deliverable_id: string | null;
+  created_at: string;
+};
+
+function asOfferLogEventType(value: string): OfferLogEventType {
+  if ((OFFER_LOG_EVENT_TYPES as readonly string[]).includes(value)) {
+    return value as OfferLogEventType;
+  }
+  return "otro";
+}
+
+function madridTodayIso(): string {
+  return new Date().toLocaleDateString("en-CA", {
+    timeZone: "Europe/Madrid",
+  });
+}
+
+/** Inserta una entrada; no lanza — para auto-log best-effort. */
+export async function insertOfferCaseLog(
+  client: SupabaseClient<Database>,
+  input: {
+    offerCaseId: string;
+    eventType: OfferLogEventType;
+    body: string;
+    createdBy: string | null;
+    happenedOn?: string | null;
+    relatedRequirementId?: string | null;
+    relatedDeliverableId?: string | null;
+  },
+): Promise<{ error: Error | null }> {
+  const body = input.body.trim();
+  if (!body) {
+    return { error: new Error("El texto de la bitácora es obligatorio.") };
+  }
+  const { error } = await client.from("offer_case_log").insert({
+    offer_case_id: input.offerCaseId,
+    event_type: input.eventType,
+    body,
+    happened_on: input.happenedOn?.trim() || madridTodayIso(),
+    created_by: input.createdBy,
+    related_requirement_id: input.relatedRequirementId ?? null,
+    related_deliverable_id: input.relatedDeliverableId ?? null,
+  });
+  if (error) return { error: new Error(error.message) };
+  return { error: null };
+}
+
+export async function listOfferCaseLog(
+  client: SupabaseClient<Database>,
+  offerCaseId: string,
+): Promise<{ data: OfferCaseLogEntry[]; error: Error | null }> {
+  const { data, error } = await client
+    .from("offer_case_log")
+    .select(
+      `
+      id,
+      offer_case_id,
+      event_type,
+      body,
+      happened_on,
+      created_by,
+      related_requirement_id,
+      related_deliverable_id,
+      created_at,
+      author:users!created_by (
+        display_name
+      )
+    `,
+    )
+    .eq("offer_case_id", offerCaseId)
+    .order("happened_on", { ascending: false })
+    .order("created_at", { ascending: false });
+
+  if (error) return { data: [], error: new Error(error.message) };
+
+  const rows: OfferCaseLogEntry[] = (data ?? []).map((row) => {
+    const authorRaw = (
+      row as {
+        author?:
+          | { display_name: string | null }
+          | { display_name: string | null }[]
+          | null;
+      }
+    ).author;
+    const author = Array.isArray(authorRaw)
+      ? (authorRaw[0] ?? null)
+      : (authorRaw ?? null);
+    return {
+      id: row.id,
+      offer_case_id: row.offer_case_id,
+      event_type: asOfferLogEventType(row.event_type),
+      body: row.body,
+      happened_on: row.happened_on,
+      created_by: row.created_by,
+      created_by_name: author?.display_name?.trim() || null,
+      related_requirement_id: row.related_requirement_id,
+      related_deliverable_id: row.related_deliverable_id,
+      created_at: row.created_at,
+    };
+  });
+
+  return { data: rows, error: null };
+}
+
 /** Interés → Análisis (ahí aparece el cuadro go/no-go). */
 export async function advanceOfferCaseToAnalisis(
   client: SupabaseClient<Database>,
-  offerCaseId: string,
+  input: { offerCaseId: string; createdBy: string | null },
 ): Promise<{ error: Error | null }> {
   const { error } = await client
     .from("offer_cases")
     .update({ stage: "analisis" })
-    .eq("id", offerCaseId)
+    .eq("id", input.offerCaseId)
     .eq("stage", "interes");
   if (error) return { error: new Error(error.message) };
+
+  void insertOfferCaseLog(client, {
+    offerCaseId: input.offerCaseId,
+    eventType: "stage_change",
+    body: "Paso de Interés a Análisis.",
+    createdBy: input.createdBy,
+  });
+
   return { error: null };
 }
 
@@ -592,10 +752,9 @@ export async function setOfferCaseGoDecision(
     .maybeSingle();
   if (readError) return { error: new Error(readError.message) };
 
-  const today = new Date().toLocaleDateString("en-CA", {
-    timeZone: "Europe/Madrid",
-  });
+  const today = madridTodayIso();
   // Go cierra Análisis → preparación; no-go → histórico descartada.
+  const nextStage = input.decision === "go" ? "preparacion" : "descartada";
   const patch =
     input.decision === "go"
       ? {
@@ -621,6 +780,27 @@ export async function setOfferCaseGoDecision(
     .update(patch)
     .eq("id", input.offerCaseId);
   if (error) return { error: new Error(error.message) };
+
+  const decisionLabel = input.decision === "go" ? "GO" : "NO-GO";
+  const reasonSuffix = input.reason?.trim()
+    ? ` Motivo: ${input.reason.trim()}`
+    : "";
+  void insertOfferCaseLog(client, {
+    offerCaseId: input.offerCaseId,
+    eventType: "go_decision",
+    body: `Decisión ${decisionLabel}.${reasonSuffix}`,
+    createdBy: input.decidedBy,
+  });
+  void insertOfferCaseLog(client, {
+    offerCaseId: input.offerCaseId,
+    eventType: "stage_change",
+    body:
+      nextStage === "preparacion"
+        ? "Paso a En preparación tras GO."
+        : "Paso a Descartada tras NO-GO.",
+    createdBy: input.decidedBy,
+  });
+
   return { error: null };
 }
 
