@@ -14,6 +14,7 @@ type CriterionRow = {
   title: string;
   typeLabel: string;
   pointsLabel: string;
+  pointsMax: number | null;
   envelopeLabel: string;
   estimate: string | null;
 };
@@ -42,17 +43,21 @@ function mapCriteria(requirements: OfferRequirementDetail[]): CriterionRow[] {
       if (env !== 0) return env;
       return (a.sort_order ?? 0) - (b.sort_order ?? 0);
     })
-    .map((r) => ({
-      id: r.id,
-      title: r.title?.trim() || "Criterio",
-      typeLabel: criterionTypeLabel(r.envelope),
-      pointsLabel: pointsLabel(r.required_value),
-      envelopeLabel:
-        r.envelope && r.envelope in ENVELOPE_LABELS
-          ? ENVELOPE_LABELS[r.envelope]!
-          : r.envelope ?? "—",
-      estimate: r.our_value?.trim() || null,
-    }));
+    .map((r) => {
+      const label = pointsLabel(r.required_value);
+      return {
+        id: r.id,
+        title: r.title?.trim() || "Criterio",
+        typeLabel: criterionTypeLabel(r.envelope),
+        pointsLabel: label,
+        pointsMax: parseScore(r.required_value) ?? parseScore(label),
+        envelopeLabel:
+          r.envelope && r.envelope in ENVELOPE_LABELS
+            ? ENVELOPE_LABELS[r.envelope]!
+            : r.envelope ?? "—",
+        estimate: r.our_value?.trim() || null,
+      };
+    });
 }
 
 function parseScore(raw: string | null | undefined): number | null {
@@ -100,12 +105,35 @@ function sumScores(
   return any ? Math.round(sum * 100) / 100 : null;
 }
 
+/** Solo dígitos y un separador decimal (, o .). */
+function sanitizeEstimateInput(raw: string): string {
+  let out = "";
+  let seenSep = false;
+  for (const ch of raw.replace(/\s/g, "")) {
+    if (ch >= "0" && ch <= "9") {
+      out += ch;
+      continue;
+    }
+    if ((ch === "," || ch === ".") && !seenSep) {
+      out += ch;
+      seenSep = true;
+    }
+  }
+  return out;
+}
+
+function formatEstimateStored(n: number): string {
+  return Number.isInteger(n) ? String(n) : String(Math.round(n * 100) / 100);
+}
+
 function EstimateCell({
   requirementId,
   initial,
+  pointsMax,
 }: {
   requirementId: string;
   initial: string | null;
+  pointsMax: number | null;
 }) {
   const router = useRouter();
   const [value, setValue] = useState(initial ?? "");
@@ -114,18 +142,60 @@ function EstimateCell({
 
   useEffect(() => {
     setValue(initial ?? "");
+    setError(null);
   }, [initial]);
 
   async function save() {
-    const next = value.trim();
+    const nextRaw = value.trim();
     const prev = (initial ?? "").trim();
-    if (next === prev) return;
+    if (nextRaw === prev) {
+      setError(null);
+      return;
+    }
+
+    if (nextRaw.length === 0) {
+      setPending(true);
+      setError(null);
+      const client = createSupabaseBrowserClient();
+      const { error: err } = await updateOfferRequirement(client, {
+        id: requirementId,
+        patch: { our_value: null },
+      });
+      setPending(false);
+      if (err) {
+        setError(err.message);
+        setValue(initial ?? "");
+        return;
+      }
+      router.refresh();
+      return;
+    }
+
+    const n = parseScore(nextRaw);
+    if (n == null || n < 0) {
+      setError("Solo un número ≥ 0");
+      setValue(initial ?? "");
+      return;
+    }
+    if (pointsMax != null && n > pointsMax) {
+      setError(`Máx. ${formatEstimateStored(pointsMax)}`);
+      setValue(initial ?? "");
+      return;
+    }
+
+    const stored = formatEstimateStored(n);
+    if (stored === prev) {
+      setValue(stored);
+      setError(null);
+      return;
+    }
+
     setPending(true);
     setError(null);
     const client = createSupabaseBrowserClient();
     const { error: err } = await updateOfferRequirement(client, {
       id: requirementId,
-      patch: { our_value: next.length > 0 ? next : null },
+      patch: { our_value: stored },
     });
     setPending(false);
     if (err) {
@@ -133,8 +203,12 @@ function EstimateCell({
       setValue(initial ?? "");
       return;
     }
+    setValue(stored);
     router.refresh();
   }
+
+  const maxAttr =
+    pointsMax != null ? String(pointsMax).replace(".", ",") : undefined;
 
   return (
     <div className="min-w-[4.5rem]">
@@ -143,9 +217,22 @@ function EstimateCell({
         inputMode="decimal"
         value={value}
         placeholder="—"
-        aria-label="Estimación de puntos"
+        aria-label={
+          pointsMax != null
+            ? `Estimación de puntos (máximo ${formatEstimateStored(pointsMax)})`
+            : "Estimación de puntos"
+        }
+        title={
+          pointsMax != null
+            ? `Entre 0 y ${formatEstimateStored(pointsMax)}`
+            : undefined
+        }
+        max={maxAttr}
         disabled={pending}
-        onChange={(e) => setValue(e.target.value)}
+        onChange={(e) => {
+          setError(null);
+          setValue(sanitizeEstimateInput(e.target.value));
+        }}
         onBlur={() => void save()}
         onKeyDown={(e) => {
           if (e.key === "Enter") {
@@ -153,6 +240,7 @@ function EstimateCell({
           }
           if (e.key === "Escape") {
             setValue(initial ?? "");
+            setError(null);
             e.currentTarget.blur();
           }
         }}
@@ -236,6 +324,7 @@ export function AwardCriteriaSummary({
                       <EstimateCell
                         requirementId={row.id}
                         initial={row.estimate}
+                        pointsMax={row.pointsMax}
                       />
                     </div>
                   </td>
@@ -262,7 +351,8 @@ export function AwardCriteriaSummary({
       )}
 
       <p className="mt-2 text-xs text-muted-foreground">
-        Estimación = puntos que creéis obtener (editable). Detalle en Requisitos.
+        Estimación = puntos que creéis obtener (0…máx. de la fila). Detalle en
+        Requisitos.
       </p>
     </div>
   );
