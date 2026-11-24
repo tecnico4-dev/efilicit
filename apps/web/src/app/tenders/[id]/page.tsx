@@ -68,13 +68,14 @@ function backLinkFromParams(
   params: Record<string, string | string[] | undefined>,
 ): { href: string; label: string } | null {
   const from = first(params.from);
-  // Buzón / alertas / correo / cambio de estado / retirada Común: sin «volver».
+  // Buzón / alertas / correo / cambio de estado / retirada Común / peer buzón: sin «volver».
   if (
     from === "notifications" ||
     from === "alerts" ||
     from === "email" ||
     from === "favorite-status" ||
-    from === "common-removed"
+    from === "common-removed" ||
+    from === "shared-notification"
   ) {
     return null;
   }

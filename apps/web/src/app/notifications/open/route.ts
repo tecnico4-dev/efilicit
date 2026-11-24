@@ -65,14 +65,14 @@ export async function GET(request: NextRequest) {
 
   const target = new URL(`/tenders/${tenderId}`, request.url);
   // Alta Común → volver a Común, sin valoración.
-  // Peer → volver a Licitaciones compartidas.
+  // Peer (buzón) → sin «volver» (la lista peer sí usa from=favorites-shared).
   // Retirada Común → sin «volver» ni valoración.
   // Cambio de estado → sin valoración (valoración solo digest/alertas).
   const from =
     source === "common"
       ? "favorites-common"
       : source === "shared"
-        ? "favorites-shared"
+        ? "shared-notification"
         : source === "common-removed"
           ? "common-removed"
           : "favorite-status";
