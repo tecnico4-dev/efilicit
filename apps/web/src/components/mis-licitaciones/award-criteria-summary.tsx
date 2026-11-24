@@ -268,90 +268,97 @@ export function AwardCriteriaSummary({
   const estimateTotal = sumScores(rows, (r) => r.estimate);
 
   return (
-    <div>
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-          Criterios de adjudicación
-        </h3>
+    <div className="rounded-xl border border-border bg-muted/25 p-4 sm:p-5">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h3 className="text-sm font-semibold text-foreground">
+            Criterios de adjudicación
+          </h3>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {rows.length === 0
+              ? "Sin criterios en este expediente."
+              : "Puntos del pliego y vuestra estimación (0…máx. de cada fila)."}
+          </p>
+        </div>
         {totals ? (
-          <p className="text-xs text-muted-foreground">{totals}</p>
+          <p className="shrink-0 text-xs text-muted-foreground">{totals}</p>
         ) : null}
       </div>
 
       {rows.length === 0 ? (
-        <p className="mt-2 rounded-lg border border-dashed border-border px-3 py-4 text-sm text-muted-foreground">
+        <p className="mt-4 text-sm text-muted-foreground">
           No hay criterios de adjudicación en este expediente.
         </p>
       ) : (
-        <div className="mt-2 overflow-x-auto rounded-lg border border-border">
-          <table className="w-full min-w-[36rem] border-collapse text-left text-sm">
-            <thead className="border-b border-border bg-muted/40 text-xs uppercase tracking-wide text-muted-foreground">
-              <tr>
-                <th className="px-3 py-2 text-left font-semibold">Criterio</th>
-                <th className="whitespace-nowrap px-3 py-2 text-center font-semibold">
-                  Tipo
-                </th>
-                <th className="whitespace-nowrap px-3 py-2 text-center font-semibold">
-                  Puntos
-                </th>
-                <th className="whitespace-nowrap px-3 py-2 text-center font-semibold">
-                  Sobre
-                </th>
-                <th className="whitespace-nowrap px-3 py-2 text-center font-semibold">
-                  Estimación
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {rows.map((row) => (
-                <tr key={row.id} className="align-top">
-                  <td className="px-3 py-2.5 text-left text-foreground">
-                    {row.title}
+        <>
+          <div className="mt-4 overflow-x-auto rounded-lg border border-border bg-surface">
+            <table className="w-full min-w-[36rem] border-collapse text-left text-sm">
+              <thead className="border-b border-border bg-muted/40 text-xs uppercase tracking-wide text-muted-foreground">
+                <tr>
+                  <th className="px-3 py-2 text-left font-semibold">Criterio</th>
+                  <th className="whitespace-nowrap px-3 py-2 text-center font-semibold">
+                    Tipo
+                  </th>
+                  <th className="whitespace-nowrap px-3 py-2 text-center font-semibold">
+                    Puntos
+                  </th>
+                  <th className="whitespace-nowrap px-3 py-2 text-center font-semibold">
+                    Sobre
+                  </th>
+                  <th className="whitespace-nowrap px-3 py-2 text-center font-semibold">
+                    Estimación
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {rows.map((row) => (
+                  <tr key={row.id} className="align-top">
+                    <td className="px-3 py-2.5 text-left text-foreground">
+                      {row.title}
+                    </td>
+                    <td className="whitespace-nowrap px-3 py-2.5 text-center text-muted-foreground">
+                      {row.typeLabel}
+                    </td>
+                    <td className="whitespace-nowrap px-3 py-2.5 text-center font-medium text-foreground">
+                      {row.pointsLabel}
+                    </td>
+                    <td className="whitespace-nowrap px-3 py-2.5 text-center text-muted-foreground">
+                      {row.envelopeLabel}
+                    </td>
+                    <td className="whitespace-nowrap px-3 py-2 text-center">
+                      <div className="inline-flex justify-center">
+                        <EstimateCell
+                          requirementId={row.id}
+                          initial={row.estimate}
+                          pointsMax={row.pointsMax}
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr className="border-t-2 border-border bg-muted/50">
+                  <td className="px-3 py-2.5 text-left text-sm font-semibold text-foreground">
+                    Total
                   </td>
-                  <td className="whitespace-nowrap px-3 py-2.5 text-center text-muted-foreground">
-                    {row.typeLabel}
+                  <td className="px-3 py-2.5" />
+                  <td className="whitespace-nowrap px-3 py-2.5 text-center text-sm font-semibold text-foreground">
+                    {formatScore(pointsTotal)}
                   </td>
-                  <td className="whitespace-nowrap px-3 py-2.5 text-center font-medium text-foreground">
-                    {row.pointsLabel}
-                  </td>
-                  <td className="whitespace-nowrap px-3 py-2.5 text-center text-muted-foreground">
-                    {row.envelopeLabel}
-                  </td>
-                  <td className="whitespace-nowrap px-3 py-2 text-center">
-                    <div className="inline-flex justify-center">
-                      <EstimateCell
-                        requirementId={row.id}
-                        initial={row.estimate}
-                        pointsMax={row.pointsMax}
-                      />
-                    </div>
+                  <td className="px-3 py-2.5" />
+                  <td className="whitespace-nowrap px-3 py-2.5 text-center text-sm font-semibold text-foreground">
+                    {formatScore(estimateTotal)}
                   </td>
                 </tr>
-              ))}
-            </tbody>
-            <tfoot>
-              <tr className="border-t-2 border-border bg-muted/50">
-                <td className="px-3 py-2.5 text-left text-sm font-semibold text-foreground">
-                  Total
-                </td>
-                <td className="px-3 py-2.5" />
-                <td className="whitespace-nowrap px-3 py-2.5 text-center text-sm font-semibold text-foreground">
-                  {formatScore(pointsTotal)}
-                </td>
-                <td className="px-3 py-2.5" />
-                <td className="whitespace-nowrap px-3 py-2.5 text-center text-sm font-semibold text-foreground">
-                  {formatScore(estimateTotal)}
-                </td>
-              </tr>
-            </tfoot>
-          </table>
-        </div>
+              </tfoot>
+            </table>
+          </div>
+          <p className="mt-3 text-xs text-muted-foreground">
+            Detalle y preparación en la pestaña Requisitos.
+          </p>
+        </>
       )}
-
-      <p className="mt-2 text-xs text-muted-foreground">
-        Estimación = puntos que creéis obtener (0…máx. de la fila). Detalle en
-        Requisitos.
-      </p>
     </div>
   );
 }
