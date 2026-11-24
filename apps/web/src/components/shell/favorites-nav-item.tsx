@@ -24,8 +24,9 @@ export function FavoritesNavItem({ active }: { active: boolean }) {
   return (
     <Link
       href={href}
+      aria-label="Favoritos"
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+        "inline-flex items-center gap-0 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors sm:gap-1.5 sm:px-3",
         active
           ? "bg-primary text-primary-foreground shadow-sm"
           : "text-foreground hover:bg-muted",
@@ -47,7 +48,7 @@ export function FavoritesNavItem({ active }: { active: boolean }) {
       >
         <path d="M19.5 12.572 12 20l-7.5-7.428A5 5 0 1 1 12 5.072a5 5 0 1 1 7.5 7.5Z" />
       </svg>
-      Favoritos
+      <span className="hidden sm:inline">Favoritos</span>
     </Link>
   );
 }

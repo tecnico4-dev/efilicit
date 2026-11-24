@@ -34,15 +34,16 @@ export function RecommendationsNavLink() {
   return (
     <Link
       href="/recommendations"
+      aria-label="Recomendaciones"
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+        "inline-flex items-center gap-0 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors sm:gap-1.5 sm:px-3",
         active
           ? "bg-primary text-primary-foreground shadow-sm"
           : "text-foreground hover:bg-muted",
       )}
     >
       <NavSparklesIcon />
-      Recomendaciones
+      <span className="hidden sm:inline">Recomendaciones</span>
     </Link>
   );
 }

@@ -10,14 +10,17 @@ import { FavoritesSubnav } from "@/app/favorites/favorites-subnav";
 import { AccountMenu } from "./account-menu";
 import { FavoritesNavItem } from "./favorites-nav-item";
 
+/** Nav principal: en <sm solo icono; desde sm etiqueta visible. */
 function navClass(active: boolean) {
   return cn(
-    "inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+    "inline-flex items-center gap-0 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors sm:gap-1.5 sm:px-3",
     active
       ? "bg-primary text-primary-foreground shadow-sm"
       : "text-foreground hover:bg-muted",
   );
 }
+
+const NAV_LABEL_CLASS = "hidden sm:inline";
 
 const NAV_ICON_CLASS = "size-4 shrink-0";
 
@@ -106,18 +109,20 @@ export function AppHeader({
             <Link
               href="/search"
               className={navClass(pathname.startsWith("/search"))}
+              aria-label="Búsqueda"
             >
               <NavSearchIcon />
-              Búsqueda
+              <span className={NAV_LABEL_CLASS}>Búsqueda</span>
             </Link>
             <FavoritesNavItem active={inFavorites} />
             {recommendationsNav}
             <Link
               href="/alerts"
               className={navClass(pathname.startsWith("/alerts"))}
+              aria-label="Alertas"
             >
               <NavAlertIcon />
-              Alertas
+              <span className={NAV_LABEL_CLASS}>Alertas</span>
             </Link>
           </nav>
 
