@@ -339,6 +339,11 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
                   workersEnabled={offerCase.stage !== "interes"}
                 />
               ),
+              tareas: (
+                <p className="rounded-lg border border-dashed border-border px-4 py-6 text-center text-sm text-muted-foreground">
+                  Aún no hay tareas en este expediente.
+                </p>
+              ),
               calendario: (
                 <ul className="space-y-0 text-sm">
                   <CalRow

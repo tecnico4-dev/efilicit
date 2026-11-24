@@ -17,6 +17,7 @@ const TABS = [
   { id: "sobres", label: "Sobres" },
   { id: "pliegos", label: "Pliegos y fuentes" },
   { id: "equipo", label: "Equipo" },
+  { id: "tareas", label: "Tareas" },
   { id: "calendario", label: "Calendario" },
   { id: "bitacora", label: "Bitácora" },
 ] as const;
