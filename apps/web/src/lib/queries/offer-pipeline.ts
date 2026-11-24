@@ -645,6 +645,8 @@ export async function updateOfferRequirement(
       envelope?: OfferEnvelope | null;
       internal_due_at?: string | null;
       owner_member_id?: string | null;
+      /** Estimación / valor propio (p. ej. puntos esperados en un criterio). */
+      our_value?: string | null;
     };
   },
 ): Promise<{ error: Error | null }> {

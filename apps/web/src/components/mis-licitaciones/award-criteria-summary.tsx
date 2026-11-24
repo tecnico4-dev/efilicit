@@ -1,5 +1,13 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { ENVELOPE_LABELS } from "@/components/mis-licitaciones/offer-case-sections";
-import type { OfferRequirementDetail } from "@/lib/queries";
+import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import {
+  updateOfferRequirement,
+  type OfferRequirementDetail,
+} from "@/lib/queries";
 
 type CriterionRow = {
   id: string;
@@ -7,6 +15,7 @@ type CriterionRow = {
   typeLabel: string;
   pointsLabel: string;
   envelopeLabel: string;
+  estimate: string | null;
 };
 
 function criterionTypeLabel(envelope: string | null): string {
@@ -42,6 +51,7 @@ function mapCriteria(requirements: OfferRequirementDetail[]): CriterionRow[] {
         r.envelope && r.envelope in ENVELOPE_LABELS
           ? ENVELOPE_LABELS[r.envelope]!
           : r.envelope ?? "—",
+      estimate: r.our_value?.trim() || null,
     }));
 }
 
@@ -66,9 +76,74 @@ function totalsByEnvelope(rows: CriterionRow[]): string | null {
     .join(" · ");
 }
 
+function EstimateCell({
+  requirementId,
+  initial,
+}: {
+  requirementId: string;
+  initial: string | null;
+}) {
+  const router = useRouter();
+  const [value, setValue] = useState(initial ?? "");
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setValue(initial ?? "");
+  }, [initial]);
+
+  async function save() {
+    const next = value.trim();
+    const prev = (initial ?? "").trim();
+    if (next === prev) return;
+    setPending(true);
+    setError(null);
+    const client = createSupabaseBrowserClient();
+    const { error: err } = await updateOfferRequirement(client, {
+      id: requirementId,
+      patch: { our_value: next.length > 0 ? next : null },
+    });
+    setPending(false);
+    if (err) {
+      setError(err.message);
+      setValue(initial ?? "");
+      return;
+    }
+    router.refresh();
+  }
+
+  return (
+    <div className="min-w-[4.5rem]">
+      <input
+        type="text"
+        inputMode="decimal"
+        value={value}
+        placeholder="—"
+        aria-label="Estimación de puntos"
+        disabled={pending}
+        onChange={(e) => setValue(e.target.value)}
+        onBlur={() => void save()}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            e.currentTarget.blur();
+          }
+          if (e.key === "Escape") {
+            setValue(initial ?? "");
+            e.currentTarget.blur();
+          }
+        }}
+        className="w-full max-w-[5.5rem] rounded-md border border-transparent bg-transparent px-1.5 py-1 text-sm font-medium text-foreground outline-none placeholder:text-muted-foreground hover:border-border focus:border-border focus:bg-surface focus:ring-2 focus:ring-ring/40 disabled:opacity-60"
+      />
+      {error ? (
+        <p className="mt-0.5 text-[10px] text-destructive">{error}</p>
+      ) : null}
+    </div>
+  );
+}
+
 /**
  * Vista resumida de criterios de adjudicación (intake → offer_requirements).
- * Sin estimación propia ni umbral hasta que existan en datos.
+ * Estimación propia = `our_value` (editable).
  */
 export function AwardCriteriaSummary({
   requirements,
@@ -97,7 +172,7 @@ export function AwardCriteriaSummary({
         </p>
       ) : (
         <div className="mt-2 overflow-x-auto rounded-lg border border-border">
-          <table className="w-full min-w-[32rem] border-collapse text-left text-sm">
+          <table className="w-full min-w-[36rem] border-collapse text-left text-sm">
             <thead className="border-b border-border bg-muted/40 text-xs uppercase tracking-wide text-muted-foreground">
               <tr>
                 <th className="px-3 py-2 font-semibold">Criterio</th>
@@ -109,6 +184,9 @@ export function AwardCriteriaSummary({
                 </th>
                 <th className="whitespace-nowrap px-3 py-2 font-semibold">
                   Sobre
+                </th>
+                <th className="whitespace-nowrap px-3 py-2 font-semibold">
+                  Estimación
                 </th>
               </tr>
             </thead>
@@ -125,6 +203,12 @@ export function AwardCriteriaSummary({
                   <td className="whitespace-nowrap px-3 py-2.5 text-muted-foreground">
                     {row.envelopeLabel}
                   </td>
+                  <td className="whitespace-nowrap px-3 py-2">
+                    <EstimateCell
+                      requirementId={row.id}
+                      initial={row.estimate}
+                    />
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -133,7 +217,7 @@ export function AwardCriteriaSummary({
       )}
 
       <p className="mt-2 text-xs text-muted-foreground">
-        Detalle y preparación en la pestaña Requisitos.
+        Estimación = puntos que creéis obtener (editable). Detalle en Requisitos.
       </p>
     </div>
   );
