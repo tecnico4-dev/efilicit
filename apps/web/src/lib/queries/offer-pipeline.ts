@@ -563,6 +563,7 @@ export async function setOfferCaseOwner(
 }
 
 export const OFFER_LOG_EVENT_TYPES = [
+  "alta_expediente",
   "stage_change",
   "go_decision",
   "aclaracion",
@@ -589,6 +590,7 @@ export const OFFER_LOG_MANUAL_EVENT_TYPES = [
 ] as const satisfies readonly OfferLogEventType[];
 
 export const OFFER_LOG_EVENT_LABELS: Record<OfferLogEventType, string> = {
+  alta_expediente: "Alta del expediente",
   stage_change: "Cambio de etapa",
   go_decision: "Decisión GO / NO-GO",
   aclaracion: "Aclaración",
@@ -989,7 +991,7 @@ export async function createOfferCase(
 
   void insertOfferCaseLog(client, {
     offerCaseId: data.id,
-    eventType: "stage_change",
+    eventType: "alta_expediente",
     body: "Añadida a Mis licitaciones (etapa Interés).",
     createdBy: input.createdBy,
   });

@@ -32,11 +32,13 @@ function EventBadge({ type }: { type: OfferLogEventType }) {
   const tone =
     type === "go_decision"
       ? "border-emerald-600/30 bg-emerald-600/10 text-emerald-800 dark:text-emerald-200"
-      : type === "stage_change"
-        ? "border-primary/30 bg-primary/10 text-primary"
-        : type === "requerimiento" || type === "subsanacion"
-          ? "border-amber-500/35 bg-amber-500/10 text-amber-900 dark:text-amber-100"
-          : "border-border bg-muted/50 text-foreground";
+      : type === "alta_expediente"
+        ? "border-sky-500/35 bg-sky-500/10 text-sky-900 dark:text-sky-100"
+        : type === "stage_change"
+          ? "border-primary/30 bg-primary/10 text-primary"
+          : type === "requerimiento" || type === "subsanacion"
+            ? "border-amber-500/35 bg-amber-500/10 text-amber-900 dark:text-amber-100"
+            : "border-border bg-muted/50 text-foreground";
 
   return (
     <span
