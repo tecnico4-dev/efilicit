@@ -226,23 +226,39 @@ export function OfferCaseLogPanel({
       ) : (
         <div className="overflow-x-auto pt-1">
           {/*
-            Una sola silueta: toda la tabla (fecha | tipo | texto) dentro de un
-            marco primary con piquito arriba sobre la columna de fechas.
+            Estructura del boceto (idea.png): tabla unida con marco primary;
+            la columna de fechas es el fuste y arriba sale el piquito.
           */}
-          <div
-            className="min-w-[30rem] bg-primary p-px"
-            style={{
-              clipPath:
-                "polygon(0 14px, 2.55rem 14px, 3.9rem 0, 5.25rem 14px, 100% 14px, 100% 100%, 0 100%)",
-            }}
-          >
-            <div
-              className="bg-background"
-              style={{
-                clipPath:
-                  "polygon(1.5px 15.5px, calc(2.55rem + 0.5px) 15.5px, 3.9rem 2px, calc(5.25rem - 0.5px) 15.5px, calc(100% - 1.5px) 15.5px, calc(100% - 1.5px) calc(100% - 1.5px), 1.5px calc(100% - 1.5px))",
-              }}
+          <div className="relative min-w-[30rem]">
+            {/* Piquito (punta hacia arriba, centrado en la columna de fechas) */}
+            <svg
+              className="relative z-[1] block h-4 w-32 text-primary"
+              viewBox="0 0 128 16"
+              fill="none"
+              aria-hidden
             >
+              <path
+                d="M1 15.25 L64 1.25 L127 15.25"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinejoin="miter"
+                strokeLinecap="square"
+              />
+            </svg>
+
+            {/* Cuerpo: mismo trazo primary; fuste de fechas + resto de la tabla */}
+            <div className="relative -mt-px border border-primary">
+              {/* Quita el trazo superior bajo el piquito para que se una al triángulo */}
+              <span
+                className="absolute -top-px left-px z-[1] h-[2px] w-[calc(8rem-2px)] bg-background"
+                aria-hidden
+              />
+              {/* Separador vertical del fuste de fechas */}
+              <span
+                className="absolute bottom-0 left-32 top-0 w-px bg-primary"
+                aria-hidden
+              />
+
               <table className="w-full border-collapse text-sm">
                 <tbody>
                   {entries.map((entry, index) => {
@@ -255,28 +271,13 @@ export function OfferCaseLogPanel({
                         key={entry.id}
                         className={cn(!isLast && "border-b border-border")}
                       >
-                        <td
-                          className={cn(
-                            "w-[7.75rem] whitespace-nowrap px-3 pb-3 text-center align-top text-foreground tabular-nums",
-                            index === 0 ? "pt-6" : "pt-3",
-                          )}
-                        >
+                        <td className="w-32 whitespace-nowrap px-2 py-3 text-center align-top text-foreground tabular-nums">
                           {formatDateMadrid(entry.happened_on)}
                         </td>
-                        <td
-                          className={cn(
-                            "w-[10.5rem] px-3 align-top",
-                            index === 0 ? "pt-6 pb-3" : "py-3",
-                          )}
-                        >
+                        <td className="w-[10.5rem] px-3 py-3 align-top">
                           <EventBadge type={entry.event_type} />
                         </td>
-                        <td
-                          className={cn(
-                            "pr-3 align-top",
-                            index === 0 ? "pt-6 pb-3" : "py-3",
-                          )}
-                        >
+                        <td className="py-3 pr-3 align-top">
                           <p className="whitespace-pre-wrap text-foreground">
                             {entry.body}
                           </p>
