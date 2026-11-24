@@ -839,10 +839,13 @@ export function OfferRequirementsTable({
   offerCaseId,
   requirements,
   members,
+  /** Solo lectura operativa (p. ej. etapa Interés): filtrar sí; sin editar/crear/eliminar. */
+  actionsLocked = false,
 }: {
   offerCaseId: string;
   requirements: OfferRequirementDetail[];
   members: EficenMemberForTeam[];
+  actionsLocked?: boolean;
 }) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
@@ -1166,7 +1169,13 @@ export function OfferRequirementsTable({
         </p>
       ) : null}
       <div className="flex flex-wrap items-center justify-end gap-2">
-        {editing ? (
+        {actionsLocked ? (
+          <ToolbarButton
+            icon={<FiltersIcon />}
+            label={filterCount > 0 ? `Filtrar(${filterCount})` : "Filtrar"}
+            onClick={() => setFiltersOpen(true)}
+          />
+        ) : editing ? (
           <>
             <Button
               type="button"

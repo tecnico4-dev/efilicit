@@ -56,10 +56,13 @@ export function OfferCaseTeamPanel({
   offerCaseId,
   owner,
   team,
+  /** En Interés: solo responsable; sin bloque de trabajadores. */
+  workersEnabled = true,
 }: {
   offerCaseId: string;
   owner: OfferOwnerMember | null;
   team: OfferCaseTeamMember[];
+  workersEnabled?: boolean;
 }) {
   const router = useRouter();
   const [picker, setPicker] = useState<PickerMode>(null);
@@ -313,86 +316,88 @@ export function OfferCaseTeamPanel({
         </div>
       </section>
 
-      <section className="space-y-3">
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-          Trabajadores
-        </h3>
-        {workers.length === 0 ? (
-          <p className="text-muted-foreground">Nadie en el equipo aún.</p>
-        ) : (
-          <ul className="divide-y divide-border rounded-lg border border-border">
-            {workers.map((row) => (
-              <li
-                key={row.id}
-                className="flex flex-wrap items-center justify-between gap-2 px-3 py-2.5"
-              >
-                <div className="flex min-w-0 items-center gap-2.5">
-                  <MemberAvatar
-                    name={row.member.display_name}
-                    avatarUrl={row.member.avatar_url}
-                  />
-                  <div className="min-w-0">
-                    <p className="truncate font-medium text-foreground">
-                      {row.member.display_name}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {OFFER_MEMBER_ROLE_LABELS[row.member_role]}
-                    </p>
-                  </div>
-                </div>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  disabled={pending}
-                  aria-label={`Quitar a ${row.member.display_name}`}
-                  onClick={() => void onRemoveWorker(row.id)}
+      {workersEnabled ? (
+        <section className="space-y-3">
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            Trabajadores
+          </h3>
+          {workers.length === 0 ? (
+            <p className="text-muted-foreground">Nadie en el equipo aún.</p>
+          ) : (
+            <ul className="divide-y divide-border rounded-lg border border-border">
+              {workers.map((row) => (
+                <li
+                  key={row.id}
+                  className="flex flex-wrap items-center justify-between gap-2 px-3 py-2.5"
                 >
-                  Quitar
-                </Button>
-              </li>
-            ))}
-          </ul>
-        )}
-        <div
-          className={cn(
-            "rounded-lg",
-            picker === "worker"
-              ? "border border-primary/40"
-              : "border border-transparent",
+                  <div className="flex min-w-0 items-center gap-2.5">
+                    <MemberAvatar
+                      name={row.member.display_name}
+                      avatarUrl={row.member.avatar_url}
+                    />
+                    <div className="min-w-0">
+                      <p className="truncate font-medium text-foreground">
+                        {row.member.display_name}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {OFFER_MEMBER_ROLE_LABELS[row.member_role]}
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    disabled={pending}
+                    aria-label={`Quitar a ${row.member.display_name}`}
+                    onClick={() => void onRemoveWorker(row.id)}
+                  >
+                    Quitar
+                  </Button>
+                </li>
+              ))}
+            </ul>
           )}
-        >
-          <div className="flex flex-wrap items-center justify-between gap-2 px-0 py-0">
-            {picker === "worker" ? (
-              <div className="flex w-full flex-wrap items-center justify-between gap-2 px-3 py-2.5">
-                <p className="font-medium text-foreground">Añadir persona</p>
+          <div
+            className={cn(
+              "rounded-lg",
+              picker === "worker"
+                ? "border border-primary/40"
+                : "border border-transparent",
+            )}
+          >
+            <div className="flex flex-wrap items-center justify-between gap-2 px-0 py-0">
+              {picker === "worker" ? (
+                <div className="flex w-full flex-wrap items-center justify-between gap-2 px-3 py-2.5">
+                  <p className="font-medium text-foreground">Añadir persona</p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={pending}
+                    aria-expanded
+                    onClick={closePicker}
+                  >
+                    Cerrar
+                  </Button>
+                </div>
+              ) : (
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
                   disabled={pending}
-                  aria-expanded
-                  onClick={closePicker}
+                  aria-expanded={false}
+                  onClick={() => void openPicker("worker")}
                 >
-                  Cerrar
+                  Añadir persona
                 </Button>
-              </div>
-            ) : (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                disabled={pending}
-                aria-expanded={false}
-                onClick={() => void openPicker("worker")}
-              >
-                Añadir persona
-              </Button>
-            )}
+              )}
+            </div>
+            {picker === "worker" ? renderExpandedPicker("worker") : null}
           </div>
-          {picker === "worker" ? renderExpandedPicker("worker") : null}
-        </div>
-      </section>
+        </section>
+      ) : null}
 
       {error ? (
         <p className="text-sm text-destructive" role="alert">

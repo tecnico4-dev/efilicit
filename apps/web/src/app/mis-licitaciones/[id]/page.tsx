@@ -294,6 +294,7 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
                     offerCaseId={offerCase.id}
                     requirements={offerCase.requirements}
                     members={membersResult.data}
+                    actionsLocked={offerCase.stage === "interes"}
                   />
                 ),
               sobres: (
@@ -321,6 +322,7 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
                   offerCaseId={offerCase.id}
                   owner={offerCase.owner_member}
                   team={teamMembers}
+                  workersEnabled={offerCase.stage !== "interes"}
                 />
               ),
               calendario: (
