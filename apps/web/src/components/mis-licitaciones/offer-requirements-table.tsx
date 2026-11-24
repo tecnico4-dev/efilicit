@@ -70,12 +70,14 @@ function EnvelopeTextSelect({
   disabled,
   locked,
   readOnly,
+  alignStart,
   onChange,
 }: {
   value: OfferEnvelope;
   disabled?: boolean;
   locked?: boolean;
   readOnly?: boolean;
+  alignStart?: boolean;
   onChange: (next: OfferEnvelope) => void;
 }) {
   const [open, setOpen] = useState(false);
@@ -84,7 +86,12 @@ function EnvelopeTextSelect({
   const label = envelopeLabel(value);
 
   return (
-    <div className="relative flex justify-center">
+    <div
+      className={cn(
+        "relative flex",
+        alignStart ? "justify-start" : "justify-center",
+      )}
+    >
       <button
         ref={triggerRef}
         type="button"
@@ -343,6 +350,7 @@ function EditableChipSelect({
   disabled,
   locked,
   readOnly,
+  alignStart,
   ariaLabel,
   onChange,
 }: {
@@ -354,6 +362,7 @@ function EditableChipSelect({
   locked?: boolean;
   /** Vista: misma estética, sin abrir menú. */
   readOnly?: boolean;
+  alignStart?: boolean;
   ariaLabel: string;
   onChange: (next: string) => void;
 }) {
@@ -363,7 +372,12 @@ function EditableChipSelect({
   const inert = Boolean(disabled || locked || readOnly);
 
   return (
-    <div className="relative flex justify-center">
+    <div
+      className={cn(
+        "relative flex",
+        alignStart ? "justify-start" : "justify-center",
+      )}
+    >
       <button
         ref={triggerRef}
         type="button"
@@ -438,6 +452,7 @@ function MemberPicker({
   disabled,
   locked,
   readOnly,
+  alignStart,
   onChange,
 }: {
   value: string | null;
@@ -445,6 +460,7 @@ function MemberPicker({
   disabled?: boolean;
   locked?: boolean;
   readOnly?: boolean;
+  alignStart?: boolean;
   onChange: (next: string | null) => void;
 }) {
   const [open, setOpen] = useState(false);
@@ -453,7 +469,12 @@ function MemberPicker({
   const inert = Boolean(disabled || locked || readOnly);
 
   return (
-    <div className="relative flex justify-center">
+    <div
+      className={cn(
+        "relative flex",
+        alignStart ? "justify-start" : "justify-center",
+      )}
+    >
       <button
         ref={triggerRef}
         type="button"
@@ -944,7 +965,7 @@ export function OfferRequirementsTable({
           {error}
         </p>
       ) : null}
-      <div className="flex justify-end gap-1">
+      <div className="flex flex-wrap justify-end gap-1">
         <ToolbarButton
           icon={<FiltersIcon />}
           label={filterCount > 0 ? `Filtrar(${filterCount})` : "Filtrar"}
@@ -986,7 +1007,309 @@ export function OfferRequirementsTable({
         />
       </div>
 
-      <div className="overflow-x-auto">
+      {creating ? (
+        <div className="space-y-3 rounded-lg border border-primary/30 bg-primary/5 p-3">
+          <input
+            ref={createTitleRef}
+            type="text"
+            value={createDraft.title}
+            disabled={creatingBusy}
+            placeholder="Título del requisito…"
+            aria-label="Título del nuevo requisito"
+            className="w-full rounded-md border border-border bg-background px-2.5 py-2 text-sm font-medium text-foreground outline-none focus:ring-2 focus:ring-primary/40"
+            onChange={(e) =>
+              setCreateDraft((d) => ({ ...d, title: e.target.value }))
+            }
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                void submitCreate();
+              }
+              if (e.key === "Escape") {
+                e.preventDefault();
+                cancelCreating();
+              }
+            }}
+          />
+          <div className="flex flex-wrap items-center gap-2">
+            <EditableChipSelect
+              value={createDraft.requirement_type}
+              disabled={creatingBusy}
+              alignStart
+              tone={
+                createDraft.requirement_type === "excluyente"
+                  ? "bad"
+                  : createDraft.requirement_type === "puntuable"
+                    ? "warn"
+                    : "muted"
+              }
+              ariaLabel="Tipo"
+              options={OFFER_REQUIREMENT_TYPES.map((s) => ({
+                value: s,
+                label: TYPE_LABELS[s] ?? s,
+              }))}
+              onChange={(v) =>
+                setCreateDraft((d) => ({
+                  ...d,
+                  requirement_type: v as OfferRequirementType,
+                }))
+              }
+            />
+            <EditableChipSelect
+              value={createDraft.compliance_status}
+              disabled={creatingBusy}
+              alignStart
+              tone={complianceTone(createDraft.compliance_status)}
+              ariaLabel="Cumplimiento"
+              options={OFFER_COMPLIANCE_STATUSES.map((s) => ({
+                value: s,
+                label: OFFER_COMPLIANCE_LABELS[s],
+              }))}
+              onChange={(v) => {
+                const compliance = v as OfferComplianceStatus;
+                setCreateDraft((d) => ({
+                  ...d,
+                  compliance_status: compliance,
+                  ...(compliance === "cumple"
+                    ? { prep_status: "listo" as const }
+                    : {}),
+                }));
+              }}
+            />
+            <EditableChipSelect
+              value={createDraft.prep_status}
+              disabled={
+                creatingBusy || createDraft.compliance_status === "no_aplica"
+              }
+              locked={createDraft.compliance_status === "no_aplica"}
+              alignStart
+              tone={prepTone(createDraft.prep_status)}
+              ariaLabel="Preparación"
+              options={OFFER_PREP_STATUSES.map((s) => ({
+                value: s,
+                label: OFFER_PREP_LABELS[s],
+              }))}
+              onChange={(v) =>
+                setCreateDraft((d) => ({
+                  ...d,
+                  prep_status: v as OfferPrepStatus,
+                }))
+              }
+            />
+          </div>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+            <EnvelopeTextSelect
+              value={createDraft.envelope}
+              disabled={creatingBusy}
+              locked={createDraft.compliance_status === "no_aplica"}
+              alignStart
+              onChange={(v) =>
+                setCreateDraft((d) => ({ ...d, envelope: v }))
+              }
+            />
+            <MemberPicker
+              value={createDraft.owner_member_id}
+              members={members}
+              disabled={creatingBusy}
+              locked={createDraft.compliance_status === "no_aplica"}
+              alignStart
+              onChange={(v) =>
+                setCreateDraft((d) => ({ ...d, owner_member_id: v }))
+              }
+            />
+            <SingleDatePicker
+              value={
+                createDraft.internal_due_at
+                  ? calendarDayMadrid(createDraft.internal_due_at)
+                  : null
+              }
+              disabled={creatingBusy}
+              locked={createDraft.compliance_status === "no_aplica"}
+              alignStart
+              toneClassName={
+                createDraft.compliance_status === "cumple"
+                  ? "text-muted-foreground"
+                  : dueToneClass(createDraft.internal_due_at)
+              }
+              onChange={(day) =>
+                setCreateDraft((d) => ({
+                  ...d,
+                  internal_due_at: day ? `${day}T12:00:00.000Z` : null,
+                }))
+              }
+            />
+          </div>
+          <p className="text-[0.7rem] text-muted-foreground">
+            Enter para crear · Esc para cancelar
+          </p>
+        </div>
+      ) : null}
+
+      {/* Móvil: tarjetas */}
+      <div className="space-y-3 md:hidden">
+        {filteredRows.length === 0 && !creating ? (
+          <p className="rounded-lg border border-dashed border-border px-4 py-6 text-center text-sm text-muted-foreground">
+            Ningún requisito coincide con los filtros.
+          </p>
+        ) : (
+          filteredRows.map((item) => {
+            const naLocked = item.compliance_status === "no_aplica";
+            const dueDay = item.internal_due_at
+              ? calendarDayMadrid(item.internal_due_at)
+              : null;
+            const readOnly = !editing;
+            const envelopeValue = normalizeEnvelope(item.envelope);
+            return (
+              <article
+                key={item.id}
+                className={cn(
+                  "rounded-lg border border-border bg-surface p-3",
+                  naLocked && "opacity-80",
+                )}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <p
+                      className={cn(
+                        "line-clamp-2 text-sm font-medium leading-snug",
+                        naLocked
+                          ? "text-muted-foreground/55"
+                          : "text-foreground",
+                      )}
+                    >
+                      {item.title}
+                    </p>
+                    <p
+                      className={cn(
+                        "mt-0.5 line-clamp-2 text-xs",
+                        naLocked
+                          ? "text-muted-foreground/45"
+                          : "text-muted-foreground",
+                      )}
+                    >
+                      {[
+                        REQUIREMENT_CATEGORY_LABELS[item.category] ??
+                          item.category,
+                        item.required_value,
+                        item.source_kind === "legacy_checklist"
+                          ? "legacy"
+                          : null,
+                      ]
+                        .filter(Boolean)
+                        .join(" · ")}
+                      {item.source_kind === "pliego_xml" ? (
+                        <span
+                          className={cn(
+                            "ml-1.5 inline-flex rounded border px-1 text-[0.65rem] font-semibold",
+                            naLocked
+                              ? "border-border/40 bg-muted/40 text-muted-foreground/50"
+                              : "border-primary/30 bg-primary/5 text-primary",
+                          )}
+                        >
+                          Pliego
+                        </span>
+                      ) : null}
+                    </p>
+                  </div>
+                  <span
+                    className={cn(
+                      "shrink-0 text-xs font-semibold",
+                      naLocked
+                        ? "text-muted-foreground/45"
+                        : (TYPE_CLASS[item.requirement_type] ??
+                          "text-muted-foreground"),
+                    )}
+                  >
+                    {TYPE_LABELS[item.requirement_type] ??
+                      item.requirement_type}
+                  </span>
+                </div>
+
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  <EditableChipSelect
+                    value={item.compliance_status}
+                    disabled={saving}
+                    readOnly={readOnly}
+                    alignStart
+                    tone={complianceTone(item.compliance_status)}
+                    ariaLabel="Cumplimiento"
+                    options={OFFER_COMPLIANCE_STATUSES.map((s) => ({
+                      value: s,
+                      label: OFFER_COMPLIANCE_LABELS[s],
+                    }))}
+                    onChange={(v) => {
+                      const compliance = v as OfferComplianceStatus;
+                      setDraft(item.id, { compliance_status: compliance });
+                    }}
+                  />
+                  <EditableChipSelect
+                    value={item.prep_status}
+                    disabled={saving}
+                    locked={naLocked}
+                    readOnly={readOnly}
+                    alignStart
+                    tone={prepTone(item.prep_status)}
+                    ariaLabel="Preparación"
+                    options={OFFER_PREP_STATUSES.map((s) => ({
+                      value: s,
+                      label: OFFER_PREP_LABELS[s],
+                    }))}
+                    onChange={(v) =>
+                      setDraft(item.id, {
+                        prep_status: v as OfferPrepStatus,
+                      })
+                    }
+                  />
+                </div>
+
+                <div className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-2">
+                  <EnvelopeTextSelect
+                    value={envelopeValue}
+                    disabled={saving}
+                    locked={naLocked}
+                    readOnly={readOnly}
+                    alignStart
+                    onChange={(v) => setDraft(item.id, { envelope: v })}
+                  />
+                  <MemberPicker
+                    value={item.owner_member_id}
+                    members={members}
+                    disabled={saving}
+                    locked={naLocked}
+                    readOnly={readOnly}
+                    alignStart
+                    onChange={(v) =>
+                      setDraft(item.id, { owner_member_id: v })
+                    }
+                  />
+                  <SingleDatePicker
+                    value={dueDay}
+                    disabled={saving}
+                    locked={naLocked}
+                    readOnly={readOnly}
+                    alignStart
+                    toneClassName={
+                      item.compliance_status === "cumple"
+                        ? "text-muted-foreground"
+                        : dueToneClass(item.internal_due_at)
+                    }
+                    onChange={(day) =>
+                      setDraft(item.id, {
+                        internal_due_at: day
+                          ? `${day}T12:00:00.000Z`
+                          : null,
+                      })
+                    }
+                  />
+                </div>
+              </article>
+            );
+          })
+        )}
+      </div>
+
+      {/* Desktop / tablet: tabla */}
+      <div className="hidden overflow-x-auto md:block">
         <table className="w-full min-w-[820px] table-fixed border-collapse text-sm">
           <colgroup>
             <col className="w-[52%]" />
@@ -1009,148 +1332,6 @@ export function OfferRequirementsTable({
             </tr>
           </thead>
           <tbody>
-            {creating ? (
-              <tr className="border-b border-primary/30 bg-primary/5">
-                <td className="px-3 py-3 align-middle">
-                  <input
-                    ref={createTitleRef}
-                    type="text"
-                    value={createDraft.title}
-                    disabled={creatingBusy}
-                    placeholder="Título del requisito…"
-                    aria-label="Título del nuevo requisito"
-                    className="w-full rounded-md border border-border bg-background px-2 py-1.5 text-sm font-medium text-foreground outline-none focus:ring-2 focus:ring-primary/40"
-                    onChange={(e) =>
-                      setCreateDraft((d) => ({ ...d, title: e.target.value }))
-                    }
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        void submitCreate();
-                      }
-                      if (e.key === "Escape") {
-                        e.preventDefault();
-                        cancelCreating();
-                      }
-                    }}
-                  />
-                  <p className="mt-1 text-[0.7rem] text-muted-foreground">
-                    Enter para crear · Esc para cancelar
-                  </p>
-                </td>
-                <td className={tdCenter}>
-                  <EditableChipSelect
-                    value={createDraft.requirement_type}
-                    disabled={creatingBusy}
-                    tone={
-                      createDraft.requirement_type === "excluyente"
-                        ? "bad"
-                        : createDraft.requirement_type === "puntuable"
-                          ? "warn"
-                          : "muted"
-                    }
-                    ariaLabel="Tipo"
-                    options={OFFER_REQUIREMENT_TYPES.map((s) => ({
-                      value: s,
-                      label: TYPE_LABELS[s] ?? s,
-                    }))}
-                    onChange={(v) =>
-                      setCreateDraft((d) => ({
-                        ...d,
-                        requirement_type: v as OfferRequirementType,
-                      }))
-                    }
-                  />
-                </td>
-                <td className={tdCenter}>
-                  <EditableChipSelect
-                    value={createDraft.compliance_status}
-                    disabled={creatingBusy}
-                    tone={complianceTone(createDraft.compliance_status)}
-                    ariaLabel="Cumplimiento"
-                    options={OFFER_COMPLIANCE_STATUSES.map((s) => ({
-                      value: s,
-                      label: OFFER_COMPLIANCE_LABELS[s],
-                    }))}
-                    onChange={(v) => {
-                      const compliance = v as OfferComplianceStatus;
-                      setCreateDraft((d) => ({
-                        ...d,
-                        compliance_status: compliance,
-                        ...(compliance === "cumple"
-                          ? { prep_status: "listo" as const }
-                          : {}),
-                      }));
-                    }}
-                  />
-                </td>
-                <td className={tdCenter}>
-                  <EditableChipSelect
-                    value={createDraft.prep_status}
-                    disabled={
-                      creatingBusy ||
-                      createDraft.compliance_status === "no_aplica"
-                    }
-                    locked={createDraft.compliance_status === "no_aplica"}
-                    tone={prepTone(createDraft.prep_status)}
-                    ariaLabel="Preparación"
-                    options={OFFER_PREP_STATUSES.map((s) => ({
-                      value: s,
-                      label: OFFER_PREP_LABELS[s],
-                    }))}
-                    onChange={(v) =>
-                      setCreateDraft((d) => ({
-                        ...d,
-                        prep_status: v as OfferPrepStatus,
-                      }))
-                    }
-                  />
-                </td>
-                <td className={tdCenter}>
-                  <EnvelopeTextSelect
-                    value={createDraft.envelope}
-                    disabled={creatingBusy}
-                    locked={createDraft.compliance_status === "no_aplica"}
-                    onChange={(v) =>
-                      setCreateDraft((d) => ({ ...d, envelope: v }))
-                    }
-                  />
-                </td>
-                <td className={tdCenter}>
-                  <MemberPicker
-                    value={createDraft.owner_member_id}
-                    members={members}
-                    disabled={creatingBusy}
-                    locked={createDraft.compliance_status === "no_aplica"}
-                    onChange={(v) =>
-                      setCreateDraft((d) => ({ ...d, owner_member_id: v }))
-                    }
-                  />
-                </td>
-                <td className={tdCenter}>
-                  <SingleDatePicker
-                    value={
-                      createDraft.internal_due_at
-                        ? calendarDayMadrid(createDraft.internal_due_at)
-                        : null
-                    }
-                    disabled={creatingBusy}
-                    locked={createDraft.compliance_status === "no_aplica"}
-                    toneClassName={
-                      createDraft.compliance_status === "cumple"
-                        ? "text-muted-foreground"
-                        : dueToneClass(createDraft.internal_due_at)
-                    }
-                    onChange={(day) =>
-                      setCreateDraft((d) => ({
-                        ...d,
-                        internal_due_at: day ? `${day}T12:00:00.000Z` : null,
-                      }))
-                    }
-                  />
-                </td>
-              </tr>
-            ) : null}
             {filteredRows.length === 0 && !creating ? (
               <tr>
                 <td

@@ -70,6 +70,7 @@ export function SingleDatePicker({
   disabled,
   locked,
   readOnly,
+  alignStart,
   className,
   toneClassName,
   onChange,
@@ -81,6 +82,7 @@ export function SingleDatePicker({
   locked?: boolean;
   /** Vista: misma estética, sin abrir calendario. */
   readOnly?: boolean;
+  alignStart?: boolean;
   className?: string;
   toneClassName?: string;
   onChange: (next: string | null) => void;
@@ -94,7 +96,13 @@ export function SingleDatePicker({
   const inert = Boolean(disabled || locked || readOnly);
 
   return (
-    <div className={cn("relative inline-flex justify-center", className)}>
+    <div
+      className={cn(
+        "relative inline-flex",
+        alignStart ? "justify-start" : "justify-center",
+        className,
+      )}
+    >
       <button
         ref={triggerRef}
         type="button"
