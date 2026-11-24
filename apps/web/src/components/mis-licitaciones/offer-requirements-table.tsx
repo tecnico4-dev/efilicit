@@ -951,6 +951,9 @@ export function OfferRequirementsTable({
   async function submitCreate(
     values: OfferRequirementCreateValues,
   ): Promise<boolean> {
+    if (!values.requirement_type || !values.category.trim()) {
+      return false;
+    }
     setError(null);
     setCreatingBusy(true);
     const sortOrder =
