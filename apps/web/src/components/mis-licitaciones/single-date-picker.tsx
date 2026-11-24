@@ -254,10 +254,24 @@ export function SingleDatePicker({
         <div
           ref={triggerRef}
           className={cn(
-            "mt-1 flex w-full items-center gap-1 rounded-md border border-border bg-background px-2 py-1.5",
+            "mt-1 flex w-full items-center gap-1 rounded-md border border-border bg-background px-3 py-2",
             "focus-within:ring-2 focus-within:ring-ring",
+            !inert && "cursor-text",
             (disabled || locked) && "opacity-50",
           )}
+          onMouseDown={(e) => {
+            if (inert) return;
+            // Abrir calendario al clicar en cualquier punto del campo
+            // (salvo si ya está abierto y se está seleccionando texto).
+            if (e.button !== 0) return;
+            if (!open) {
+              e.preventDefault();
+              setViewMonth(startOfMonth(parseIso(value ?? "") ?? new Date()));
+              setOpen(true);
+              const input = triggerRef.current?.querySelector("input");
+              window.setTimeout(() => input?.focus(), 0);
+            }
+          }}
         >
           <input
             type="text"
@@ -270,7 +284,7 @@ export function SingleDatePicker({
             value={text}
             aria-label="Fecha interna"
             className={cn(
-              "min-w-0 flex-1 bg-transparent px-1 py-0.5 text-sm outline-none",
+              "min-w-0 flex-1 bg-transparent text-sm outline-none",
               text ? "text-foreground" : "text-muted-foreground",
               "placeholder:text-muted-foreground",
             )}
@@ -304,8 +318,12 @@ export function SingleDatePicker({
             aria-label="Abrir calendario"
             aria-expanded={open}
             aria-haspopup="dialog"
+            onMouseDown={(e) => {
+              // Evitar que el contenedor duplique el toggle
+              e.stopPropagation();
+            }}
             onClick={openCalendar}
-            className="inline-flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-50"
+            className="inline-flex size-5 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-50"
           >
             <CalendarIcon />
           </button>

@@ -258,6 +258,7 @@ export function OfferRequirementsCreateModal({
                 disabled={busy}
                 options={ENVELOPE_OPTIONS}
                 value={draft.envelope}
+                mutedValues={["ninguno"]}
                 onChange={(v) =>
                   setDraft((d) => ({
                     ...d,
@@ -275,7 +276,7 @@ export function OfferRequirementsCreateModal({
                   </label>
                   <ClickHint tip="Ejemplos: cifra, umbral o texto del pliego." />
                 </div>
-                <Input
+                <input
                   id="req-create-required-value"
                   value={draft.required_value}
                   disabled={busy}
@@ -449,6 +450,7 @@ function SingleSelect({
   value,
   disabled,
   placeholder = "Seleccionar",
+  mutedValues = [""],
   onChange,
 }: {
   id: string;
@@ -458,12 +460,14 @@ function SingleSelect({
   value: string;
   disabled?: boolean;
   placeholder?: string;
+  /** Valores que se muestran en gris (p. ej. «Sin sobre»). */
+  mutedValues?: string[];
   onChange: (next: string) => void;
 }) {
   const [open, setOpen] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const selected = options.find((o) => o.value === value);
-  const empty = value === "";
+  const empty = mutedValues.includes(value);
   const summary = selected?.label ?? placeholder;
 
   return (
