@@ -246,53 +246,6 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
                 <div className="space-y-5 text-sm">
                   <div>
                     <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                      Ficha condensada
-                    </h3>
-                    <dl className="mt-2 grid gap-2 sm:grid-cols-2">
-                      <Fact
-                        label="Objeto"
-                        value={tenderSummary?.title ?? "—"}
-                      />
-                      <Fact
-                        label="Estado publicación"
-                        value={
-                          tenderSummary?.status
-                            ? formatTenderStatus(tenderSummary.status)
-                            : "—"
-                        }
-                      />
-                      <Fact
-                        label="Importe estimado"
-                        value={
-                          tenderSummary
-                            ? formatMoney(
-                                tenderSummary.estimated_value,
-                                tenderSummary.currency,
-                              )
-                            : "—"
-                        }
-                      />
-                      <Fact
-                        label="Actualizado"
-                        value={
-                          tenderSummary?.publication_date
-                            ? formatDateMadrid(tenderSummary.publication_date)
-                            : "—"
-                        }
-                      />
-                      <Fact label="Etapa pipeline" value={stageLabel} />
-                      <Fact
-                        label="Responsable"
-                        value={
-                          offerCase.owner_member?.display_name?.trim() ||
-                          "Sin asignar"
-                        }
-                      />
-                    </dl>
-                  </div>
-
-                  <div>
-                    <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                       Decisión go / no-go
                     </h3>
                     <p className="mt-2 text-muted-foreground">
@@ -691,15 +644,6 @@ function OwnerTeamKpi({
         </div>
       ) : null}
     </OutlinedField>
-  );
-}
-
-function Fact({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-lg border border-border/80 bg-muted/30 px-3 py-2">
-      <dt className="text-xs text-muted-foreground">{label}</dt>
-      <dd className="mt-0.5 font-medium text-foreground">{value}</dd>
-    </div>
   );
 }
 
