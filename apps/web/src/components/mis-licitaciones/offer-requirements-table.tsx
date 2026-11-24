@@ -59,6 +59,93 @@ function normalizeEnvelope(value: string | null | undefined): OfferEnvelope {
   return "ninguno";
 }
 
+/** Sobre en texto gris (sin chip); menú solo en edición. */
+function EnvelopeTextSelect({
+  value,
+  disabled,
+  locked,
+  readOnly,
+  onChange,
+}: {
+  value: OfferEnvelope;
+  disabled?: boolean;
+  locked?: boolean;
+  readOnly?: boolean;
+  onChange: (next: OfferEnvelope) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const inert = Boolean(disabled || locked || readOnly);
+  const label = ENVELOPE_LABELS[value] ?? value;
+
+  return (
+    <div className="relative flex justify-center">
+      <button
+        ref={triggerRef}
+        type="button"
+        disabled={Boolean(disabled || locked)}
+        aria-disabled={inert}
+        aria-expanded={open}
+        aria-haspopup="listbox"
+        aria-label="Sobre"
+        onClick={() => !inert && setOpen((v) => !v)}
+        className={cn(
+          "rounded-sm text-xs font-medium outline-none",
+          "focus-visible:ring-2 focus-visible:ring-primary/40",
+          locked
+            ? "cursor-default text-muted-foreground/45"
+            : cn(
+                "text-muted-foreground",
+                readOnly ? "cursor-default" : "cursor-pointer hover:underline",
+                disabled && "cursor-wait opacity-60 no-underline",
+              ),
+        )}
+      >
+        {label}
+      </button>
+      <AnchoredPortal
+        open={open && !inert}
+        anchorRef={triggerRef}
+        onDismiss={() => setOpen(false)}
+        matchAnchorWidth={false}
+        align="center"
+        minWidth={140}
+        maxWidth={200}
+        maxHeight={260}
+        className="bg-background p-1"
+      >
+        <ul role="listbox" className="py-0.5">
+          {ENVELOPE_OPTIONS.map((opt) => {
+            const selected = opt.value === value;
+            return (
+              <li key={opt.value}>
+                <button
+                  type="button"
+                  role="option"
+                  aria-selected={selected}
+                  className={cn(
+                    "flex w-full items-center justify-center rounded-md px-2.5 py-1.5 text-center text-sm",
+                    "hover:bg-muted",
+                    selected
+                      ? "font-semibold text-foreground"
+                      : "text-foreground",
+                  )}
+                  onClick={() => {
+                    onChange(opt.value);
+                    setOpen(false);
+                  }}
+                >
+                  {opt.label}
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      </AnchoredPortal>
+    </div>
+  );
+}
+
 type ReqDraft = {
   compliance_status: OfferComplianceStatus;
   prep_status: OfferPrepStatus;
@@ -1015,21 +1102,12 @@ export function OfferRequirementsTable({
                   />
                 </td>
                 <td className={tdCenter}>
-                  <EditableChipSelect
+                  <EnvelopeTextSelect
                     value={createDraft.envelope}
-                    disabled={
-                      creatingBusy ||
-                      createDraft.compliance_status === "no_aplica"
-                    }
+                    disabled={creatingBusy}
                     locked={createDraft.compliance_status === "no_aplica"}
-                    tone="muted"
-                    ariaLabel="Sobre"
-                    options={ENVELOPE_OPTIONS}
                     onChange={(v) =>
-                      setCreateDraft((d) => ({
-                        ...d,
-                        envelope: v as OfferEnvelope,
-                      }))
+                      setCreateDraft((d) => ({ ...d, envelope: v }))
                     }
                   />
                 </td>
@@ -1179,18 +1257,13 @@ export function OfferRequirementsTable({
                       />
                     </td>
                     <td className={tdCenter}>
-                      <EditableChipSelect
+                      <EnvelopeTextSelect
                         value={envelopeValue}
                         disabled={saving}
                         locked={naLocked}
                         readOnly={readOnly}
-                        tone="muted"
-                        ariaLabel="Sobre"
-                        options={ENVELOPE_OPTIONS}
                         onChange={(v) =>
-                          setDraft(item.id, {
-                            envelope: v as OfferEnvelope,
-                          })
+                          setDraft(item.id, { envelope: v })
                         }
                       />
                     </td>
