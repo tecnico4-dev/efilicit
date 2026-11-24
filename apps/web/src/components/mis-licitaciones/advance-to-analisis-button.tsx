@@ -77,8 +77,9 @@ export function AdvanceToAnalisisButton({
             Interés
           </h3>
           <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
-            El expediente está parado aquí hasta que algún miembro del equipo
-            empiece a valorarlo.
+            El expediente está parado en este estado hasta que algún miembro del
+            equipo empiece a valorarlo y lo pase a{" "}
+            <span className="font-semibold text-foreground">Análisis</span>.
           </p>
         </div>
         <Button
