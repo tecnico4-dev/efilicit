@@ -41,6 +41,7 @@ import {
   AdvanceToAnalisisButton,
   AdvanceToAnalisisLink,
 } from "@/components/mis-licitaciones/advance-to-analisis-button";
+import { AwardCriteriaSummary } from "@/components/mis-licitaciones/award-criteria-summary";
 import { OfferGoDecisionCard } from "@/components/mis-licitaciones/offer-go-decision-card";
 import { TenderFichaModalButton } from "@/components/mis-licitaciones/tender-ficha-modal";
 import { cn } from "@/lib/cn";
@@ -273,6 +274,10 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
                       decidedByName={offerCase.go_decider_name}
                     />
                   ) : null}
+
+                  <AwardCriteriaSummary
+                    requirements={offerCase.requirements}
+                  />
 
                   <div>
                     <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
