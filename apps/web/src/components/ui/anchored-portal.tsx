@@ -81,8 +81,14 @@ export function AnchoredPortal({
     const spaceBelow = vh - r.bottom - gap - 8;
     const spaceAbove = r.top - gap - 8;
     const heightCap = maxHeight ?? 160;
+    // Preferir el lado con espacio real para el panel (p. ej. calendarios altos).
     const placeAbove =
-      spaceBelow < Math.min(heightCap, 160) && spaceAbove > spaceBelow;
+      spaceBelow < heightCap && spaceAbove > spaceBelow;
+    const available = placeAbove ? spaceAbove : spaceBelow;
+    const effectiveMaxHeight =
+      maxHeight == null
+        ? null
+        : Math.min(heightCap, Math.max(96, available));
 
     const next: CSSProperties = {
       position: "fixed",
@@ -92,7 +98,7 @@ export function AnchoredPortal({
       maxWidth: maxWidth,
       zIndex: 300,
     };
-    if (maxHeight != null) next.maxHeight = maxHeight;
+    if (effectiveMaxHeight != null) next.maxHeight = effectiveMaxHeight;
     // Un solo eje `hidden` + el otro `visible` → el visible pasa a `auto` (barra).
     if (overflowY === "hidden") next.overflow = "hidden";
     else if (overflowY === "visible") next.overflow = "visible";
@@ -124,7 +130,7 @@ export function AnchoredPortal({
       return;
     }
     updatePosition();
-  }, [open, updatePosition]);
+  }, [open, panelEl, updatePosition]);
 
   useEffect(() => {
     if (!open) return;

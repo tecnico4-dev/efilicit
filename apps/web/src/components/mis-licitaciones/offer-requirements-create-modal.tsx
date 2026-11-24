@@ -333,7 +333,7 @@ export function OfferRequirementsCreateModal({
                 label="Responsable"
                 disabled={busy}
                 options={[
-                  { value: "", label: "—" },
+                  { value: "", label: "Sin asignar" },
                   ...members.map((m) => ({
                     value: m.id,
                     label: m.displayName,
