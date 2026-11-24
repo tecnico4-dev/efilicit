@@ -47,9 +47,14 @@ import {
 } from "@/lib/queries";
 import { useUnsavedNavigationGuard } from "@/lib/use-unsaved-navigation-guard";
 
+function envelopeLabel(value: OfferEnvelope | string): string {
+  if (value === "ninguno") return "—";
+  return ENVELOPE_LABELS[value] ?? value;
+}
+
 const ENVELOPE_OPTIONS = OFFER_ENVELOPES.map((value) => ({
   value,
-  label: ENVELOPE_LABELS[value] ?? value,
+  label: envelopeLabel(value),
 }));
 
 function normalizeEnvelope(value: string | null | undefined): OfferEnvelope {
@@ -76,7 +81,7 @@ function EnvelopeTextSelect({
   const [open, setOpen] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const inert = Boolean(disabled || locked || readOnly);
-  const label = ENVELOPE_LABELS[value] ?? value;
+  const label = envelopeLabel(value);
 
   return (
     <div className="relative flex justify-center">
@@ -982,15 +987,15 @@ export function OfferRequirementsTable({
       </div>
 
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[860px] table-fixed border-collapse text-sm">
+        <table className="w-full min-w-[820px] table-fixed border-collapse text-sm">
           <colgroup>
-            <col className="w-[46%]" />
+            <col className="w-[52%]" />
+            <col className="w-[6%]" />
+            <col className="w-[8%]" />
+            <col className="w-[8%]" />
             <col className="w-[7%]" />
-            <col className="w-[9%]" />
-            <col className="w-[9%]" />
-            <col className="w-[9%]" />
             <col className="w-[11%]" />
-            <col className="w-[9%]" />
+            <col className="w-[8%]" />
           </colgroup>
           <thead>
             <tr className="border-b border-border text-[0.7rem] uppercase tracking-wide text-muted-foreground">

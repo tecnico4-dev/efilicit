@@ -54,7 +54,10 @@ const TYPE_OPTIONS = [
 ];
 
 const ENVELOPE_OPTIONS = Object.entries(ENVELOPE_LABELS).map(
-  ([value, label]) => ({ value, label }),
+  ([value, label]) => ({
+    value,
+    label: value === "ninguno" ? "—" : label,
+  }),
 );
 
 const DUE_OPTIONS: { value: OfferRequirementsFilters["due"]; label: string }[] =
