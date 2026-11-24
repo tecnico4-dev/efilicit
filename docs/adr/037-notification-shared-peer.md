@@ -16,30 +16,35 @@ Al compartir una licitación a personas concretas (`favorites_shared`) no había
 
 ## Decisión
 
-1. Tabla **`notification_shared`**:
+1. Tabla **`notification_shared`** (mínima):
    - `share_id` PK → `favorites_shared(id)` ON DELETE CASCADE
-   - `user_id` (= receptor / `to_user_id`) para RLS y badge
-   - `created_at`, `read_at`, `trashed_at` (papelera 30 días o purge → DELETE de la fila)
-2. Trigger **AFTER INSERT** en `favorites_shared` → inserta aviso para `to_user_id`.
-3. **`reactivate_favorite_share`**: al reactivar un share oculto, upsert del aviso (no leído, `created_at` ahora).
-4. `has_unread_notifications` / `count_unread_notifications` incluyen esta tabla.
-5. Sin aviso `_removed` en v1 (quitar share ≠ notificación al emisor).
-6. UI buzón (copy, listado, open) en incremento siguiente; este ADR fija el contrato de datos.
+   - `read_at`, `trashed_at` (papelera 30 días o purge → DELETE de la fila)
+   - Emisor, receptor, tender, kind y fecha salen del join a `favorites_shared`
+2. Trigger **AFTER INSERT** en `favorites_shared` → inserta `(share_id)`.
+3. **`reactivate_favorite_share`**: al reactivar un share oculto, upsert del aviso (no leído).
+4. `has_unread_notifications` / `count_unread_notifications` incluyen esta tabla (join a `to_user_id`).
+5. Sin aviso `_removed` en v1.
+6. UI buzón (copy, listado, open) en incremento siguiente.
+
+### Enmienda (mismo día)
+
+Se descartan `user_id` y `created_at` en la tabla: redundantes con `favorites_shared`. RLS y badge resuelven el receptor vía `favorites_shared.to_user_id`.
 
 ### Alternativas descartadas
 
 - Columnas `notification_*` en `favorites_shared` — mezclan share y buzón; purgar aviso no puede ser DELETE del share.
 - PK `(user_id, tender_id)` — dos emisores distintos al mismo tender colisionarían.
+- Denormalizar `user_id` / `created_at` en el aviso — innecesario en peer 1:1.
 
 ## Consecuencias
 
 ### Positivas
 
-- Mismo patrón mental que Común (fila de aviso independiente).
-- CASCADE limpia el buzón si desaparece el share.
+- Esquema mínimo; CASCADE limpia el buzón si desaparece el share.
 
 ### Negativas / riesgos
 
+- Badge/RLS hacen join a `favorites_shared` (aceptable con volumen peer).
 - Listado del buzón aún no consume la tabla hasta el incremento UI.
 
 ## Riesgos
@@ -51,4 +56,4 @@ Al compartir una licitación a personas concretas (`favorites_shared`) no había
 ## Referencias
 
 - [032](032-eficen-members-favorites-shared.md) · [029](029-shared-favorites-comun.md)
-- Migración `20261124120000_notification_shared.sql` (local primero)
+- Migraciones `20261124120000_notification_shared.sql`, `20261124130000_notification_shared_slim.sql` (local primero)

@@ -15,7 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Buzón · Licitaciones compartidas: tabla `notification_shared` + trigger al INSERT/reactivar `favorites_shared` (aviso solo al receptor; papelera vía `trashed_at`; CASCADE si desaparece el share) — [ADR 037](docs/adr/037-notification-shared-peer.md). Solo local/Studio (UI buzón pendiente).
+- Buzón · Licitaciones compartidas: tabla `notification_shared` (`share_id`, `read_at`, `trashed_at`) + trigger al INSERT/reactivar `favorites_shared` (aviso al receptor vía join; CASCADE si desaparece el share) — [ADR 037](docs/adr/037-notification-shared-peer.md). Solo local/Studio (UI buzón pendiente).
 - Mis licitaciones: `offer_cases.kind` obligatorio (`propia` | `subcontrata`); histórico = 3 estados; UI sin riesgo de plazo en histórico; semillas recomendaciones por kind — [ADR 036](docs/adr/036-offer-cases-kind-y-historico-tres-estados.md). Solo local/Studio.
 - Mis licitaciones · intake de pliegos PLACSP ([ADR 035](docs/adr/035-intake-pliegos-expediente.md)): al crear un expediente se encola `offer_case_intake`; el worker `run-offer-intake` (workflow `offer-intake.yml`, `workflow_dispatch`) lee el RAW CODICE y vuelca pliegos (PCAP/PPT/anexos descargados al bucket privado `offer-docs`; biblioteca solo enlace), requisitos (`source_kind = pliego_xml`), sobres A/B/C con puntos y hitos oficiales. Idempotente por `source_key`; no pisa ediciones. Pestañas Pliegos (estado + «Reprocesar pliegos» + abrir por signed URL), Sobres, Requisitos (origen/sobre/valor) y Calendario con datos reales. Solo local.
 - Mis licitaciones · cabecera: KPI «Responsable y equipo» con avatar del owner y fila de avatares del equipo.
