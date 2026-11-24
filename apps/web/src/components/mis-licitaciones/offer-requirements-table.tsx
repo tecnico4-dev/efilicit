@@ -2,7 +2,6 @@
 
 import {
   useCallback,
-  useEffect,
   useMemo,
   useRef,
   useState,
@@ -28,6 +27,10 @@ import {
   countOfferRequirementsFilters,
   type OfferRequirementsFilters,
 } from "@/components/mis-licitaciones/offer-requirements-filters-modal";
+import {
+  OfferRequirementsCreateModal,
+  type OfferRequirementCreateValues,
+} from "@/components/mis-licitaciones/offer-requirements-create-modal";
 import { SingleDatePicker } from "@/components/mis-licitaciones/single-date-picker";
 import {
   OFFER_COMPLIANCE_LABELS,
@@ -35,7 +38,6 @@ import {
   OFFER_ENVELOPES,
   OFFER_PREP_LABELS,
   OFFER_PREP_STATUSES,
-  OFFER_REQUIREMENT_TYPES,
   createOfferRequirement,
   updateOfferRequirement,
   type EficenMemberForTeam,
@@ -43,7 +45,6 @@ import {
   type OfferEnvelope,
   type OfferPrepStatus,
   type OfferRequirementDetail,
-  type OfferRequirementType,
 } from "@/lib/queries";
 import { useUnsavedNavigationGuard } from "@/lib/use-unsaved-navigation-guard";
 
@@ -165,38 +166,6 @@ type ReqDraft = {
   owner_member_id: string | null;
   internal_due_at: string | null;
 };
-
-type CreateDraft = {
-  title: string;
-  requirement_type: OfferRequirementType;
-  compliance_status: OfferComplianceStatus;
-  prep_status: OfferPrepStatus;
-  envelope: OfferEnvelope;
-  owner_member_id: string | null;
-  internal_due_at: string | null;
-};
-
-const EMPTY_CREATE_DRAFT: CreateDraft = {
-  title: "",
-  requirement_type: "informativo",
-  compliance_status: "sin_verificar",
-  prep_status: "pendiente",
-  envelope: "ninguno",
-  owner_member_id: null,
-  internal_due_at: null,
-};
-
-function createDraftHasContent(d: CreateDraft): boolean {
-  return (
-    d.title.trim() !== "" ||
-    d.requirement_type !== EMPTY_CREATE_DRAFT.requirement_type ||
-    d.compliance_status !== EMPTY_CREATE_DRAFT.compliance_status ||
-    d.prep_status !== EMPTY_CREATE_DRAFT.prep_status ||
-    d.envelope !== EMPTY_CREATE_DRAFT.envelope ||
-    d.owner_member_id != null ||
-    d.internal_due_at != null
-  );
-}
 
 function snapshotReq(item: OfferRequirementDetail): ReqDraft {
   return {
@@ -714,19 +683,12 @@ export function OfferRequirementsTable({
   const [editing, setEditing] = useState(false);
   const [drafts, setDrafts] = useState<Record<string, ReqDraft>>({});
   const [creating, setCreating] = useState(false);
-  const [createDraft, setCreateDraft] =
-    useState<CreateDraft>(EMPTY_CREATE_DRAFT);
+  const [createDirty, setCreateDirty] = useState(false);
   const [creatingBusy, setCreatingBusy] = useState(false);
-  const createTitleRef = useRef<HTMLInputElement>(null);
   const [leaveOpen, setLeaveOpen] = useState(false);
   const leaveResolverRef = useRef<((ok: boolean) => void) | null>(null);
 
   const filterCount = countOfferRequirementsFilters(filters);
-
-  useEffect(() => {
-    if (!creating) return;
-    createTitleRef.current?.focus();
-  }, [creating]);
 
   const ownerOptions = useMemo(
     () =>
@@ -761,8 +723,7 @@ export function OfferRequirementsTable({
     });
   }, [editing, drafts, requirements]);
 
-  const createDirty = creating && createDraftHasContent(createDraft);
-  const dirty = editDirty || createDirty;
+  const dirty = editDirty || (creating && createDirty);
 
   const filteredRows = useMemo(() => {
     const now = Date.now();
@@ -864,40 +825,38 @@ export function OfferRequirementsTable({
     setDrafts({});
     setEditing(false);
     setCreating(false);
-    setCreateDraft(EMPTY_CREATE_DRAFT);
+    setCreateDirty(false);
     setError(null);
   }
 
   function cancelCreating() {
     setCreating(false);
-    setCreateDraft(EMPTY_CREATE_DRAFT);
+    setCreateDirty(false);
     setError(null);
   }
 
-  async function submitCreate(): Promise<boolean> {
-    const title = createDraft.title.trim();
-    if (!title) {
-      setError("El título del requisito es obligatorio.");
-      createTitleRef.current?.focus();
-      return false;
-    }
+  async function submitCreate(
+    values: OfferRequirementCreateValues,
+  ): Promise<boolean> {
     setError(null);
     setCreatingBusy(true);
     const sortOrder =
       requirements.reduce((max, r) => Math.max(max, r.sort_order), 0) + 1;
     const client = createSupabaseBrowserClient();
-    let compliance = createDraft.compliance_status;
-    let prep = createDraft.prep_status;
+    let compliance = values.compliance_status;
+    let prep = values.prep_status;
     if (compliance === "cumple") prep = "listo";
     const result = await createOfferRequirement(client, {
       offerCaseId,
-      title,
-      requirement_type: createDraft.requirement_type,
+      title: values.title,
+      requirement_type: values.requirement_type,
+      category: values.category,
       compliance_status: compliance,
       prep_status: prep,
-      envelope: createDraft.envelope,
-      owner_member_id: createDraft.owner_member_id,
-      internal_due_at: createDraft.internal_due_at,
+      envelope: values.envelope,
+      owner_member_id: values.owner_member_id,
+      internal_due_at: values.internal_due_at,
+      required_value: values.required_value,
       sort_order: sortOrder,
     });
     setCreatingBusy(false);
@@ -906,7 +865,7 @@ export function OfferRequirementsTable({
       return false;
     }
     setCreating(false);
-    setCreateDraft(EMPTY_CREATE_DRAFT);
+    setCreateDirty(false);
     startTransition(() => router.refresh());
     return true;
   }
@@ -919,7 +878,7 @@ export function OfferRequirementsTable({
       }
       if (creating) {
         setCreating(false);
-        setCreateDraft(EMPTY_CREATE_DRAFT);
+        setCreateDirty(false);
       }
       return Promise.resolve(true);
     }
@@ -954,12 +913,17 @@ export function OfferRequirementsTable({
     }
     let ok = true;
     if (editDirty) ok = await flushDrafts();
-    if (ok && creating && createDraftHasContent(createDraft)) {
-      ok = await submitCreate();
-    } else if (ok && creating) {
-      cancelCreating();
+    if (!ok) {
+      resolve(false);
+      return;
     }
-    resolve(ok);
+    if (creating && createDirty) {
+      // El alta está en el modal: hay que Crearlo ahí; no forzamos la salida.
+      resolve(false);
+      return;
+    }
+    if (creating) cancelCreating();
+    resolve(true);
   }
 
   return (
@@ -1018,11 +982,6 @@ export function OfferRequirementsTable({
               disabled={saving || creatingBusy}
               onClick={() => {
                 setError(null);
-                if (creating) {
-                  createTitleRef.current?.focus();
-                  return;
-                }
-                setCreateDraft(EMPTY_CREATE_DRAFT);
                 setCreating(true);
               }}
             />
@@ -1035,147 +994,9 @@ export function OfferRequirementsTable({
         )}
       </div>
 
-      {creating ? (
-        <div className="space-y-3 rounded-lg border border-primary/30 bg-primary/5 p-3">
-          <input
-            ref={createTitleRef}
-            type="text"
-            value={createDraft.title}
-            disabled={creatingBusy}
-            placeholder="Título del requisito…"
-            aria-label="Título del nuevo requisito"
-            className="w-full rounded-md border border-border bg-background px-2.5 py-2 text-sm font-medium text-foreground outline-none focus:ring-2 focus:ring-primary/40"
-            onChange={(e) =>
-              setCreateDraft((d) => ({ ...d, title: e.target.value }))
-            }
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault();
-                void submitCreate();
-              }
-              if (e.key === "Escape") {
-                e.preventDefault();
-                cancelCreating();
-              }
-            }}
-          />
-          <div className="flex flex-wrap items-center gap-2">
-            <EditableChipSelect
-              value={createDraft.requirement_type}
-              disabled={creatingBusy}
-              alignStart
-              tone={
-                createDraft.requirement_type === "excluyente"
-                  ? "bad"
-                  : createDraft.requirement_type === "puntuable"
-                    ? "warn"
-                    : "muted"
-              }
-              ariaLabel="Tipo"
-              options={OFFER_REQUIREMENT_TYPES.map((s) => ({
-                value: s,
-                label: TYPE_LABELS[s] ?? s,
-              }))}
-              onChange={(v) =>
-                setCreateDraft((d) => ({
-                  ...d,
-                  requirement_type: v as OfferRequirementType,
-                }))
-              }
-            />
-            <EditableChipSelect
-              value={createDraft.compliance_status}
-              disabled={creatingBusy}
-              alignStart
-              tone={complianceTone(createDraft.compliance_status)}
-              ariaLabel="Cumplimiento"
-              options={OFFER_COMPLIANCE_STATUSES.map((s) => ({
-                value: s,
-                label: OFFER_COMPLIANCE_LABELS[s],
-              }))}
-              onChange={(v) => {
-                const compliance = v as OfferComplianceStatus;
-                setCreateDraft((d) => ({
-                  ...d,
-                  compliance_status: compliance,
-                  ...(compliance === "cumple"
-                    ? { prep_status: "listo" as const }
-                    : {}),
-                }));
-              }}
-            />
-            <EditableChipSelect
-              value={createDraft.prep_status}
-              disabled={
-                creatingBusy || createDraft.compliance_status === "no_aplica"
-              }
-              locked={createDraft.compliance_status === "no_aplica"}
-              alignStart
-              tone={prepTone(createDraft.prep_status)}
-              ariaLabel="Preparación"
-              options={OFFER_PREP_STATUSES.map((s) => ({
-                value: s,
-                label: OFFER_PREP_LABELS[s],
-              }))}
-              onChange={(v) =>
-                setCreateDraft((d) => ({
-                  ...d,
-                  prep_status: v as OfferPrepStatus,
-                }))
-              }
-            />
-          </div>
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-            <EnvelopeTextSelect
-              value={createDraft.envelope}
-              disabled={creatingBusy}
-              locked={createDraft.compliance_status === "no_aplica"}
-              alignStart
-              onChange={(v) =>
-                setCreateDraft((d) => ({ ...d, envelope: v }))
-              }
-            />
-            <MemberPicker
-              value={createDraft.owner_member_id}
-              members={members}
-              disabled={creatingBusy}
-              locked={createDraft.compliance_status === "no_aplica"}
-              alignStart
-              onChange={(v) =>
-                setCreateDraft((d) => ({ ...d, owner_member_id: v }))
-              }
-            />
-            <SingleDatePicker
-              value={
-                createDraft.internal_due_at
-                  ? calendarDayMadrid(createDraft.internal_due_at)
-                  : null
-              }
-              disabled={creatingBusy}
-              locked={createDraft.compliance_status === "no_aplica"}
-              alignStart
-              toneClassName={
-                createDraft.compliance_status === "cumple"
-                  ? "text-muted-foreground"
-                  : dueToneClass(createDraft.internal_due_at)
-              }
-              onChange={(day) =>
-                setCreateDraft((d) => ({
-                  ...d,
-                  internal_due_at: day ? `${day}T12:00:00.000Z` : null,
-                }))
-              }
-            />
-          </div>
-          <p className="text-[0.7rem] text-muted-foreground">
-            Enter para crear · Esc para cancelar
-          </p>
-        </div>
-      ) : null}
-
       {/* Móvil: tarjetas */}
       <div className="space-y-3 md:hidden">
-        {filteredRows.length === 0 && !creating ? (
+        {filteredRows.length === 0 ? (
           <p className="rounded-lg border border-dashed border-border px-4 py-6 text-center text-sm text-muted-foreground">
             Ningún requisito coincide con los filtros.
           </p>
@@ -1371,7 +1192,7 @@ export function OfferRequirementsTable({
             </tr>
           </thead>
           <tbody>
-            {filteredRows.length === 0 && !creating ? (
+            {filteredRows.length === 0 ? (
               <tr>
                 <td
                   colSpan={7}
@@ -1549,6 +1370,18 @@ export function OfferRequirementsTable({
         onClear={() => {
           setFilters(EMPTY_OFFER_REQUIREMENTS_FILTERS);
           setFiltersOpen(false);
+        }}
+      />
+
+      <OfferRequirementsCreateModal
+        open={creating}
+        busy={creatingBusy}
+        members={members}
+        onClose={cancelCreating}
+        onDirtyChange={setCreateDirty}
+        onSubmit={async (values) => {
+          const ok = await submitCreate(values);
+          if (!ok) return;
         }}
       />
 

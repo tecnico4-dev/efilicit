@@ -581,11 +581,13 @@ export async function createOfferRequirement(
     offerCaseId: string;
     title: string;
     requirement_type?: OfferRequirementType;
+    category?: string;
     compliance_status?: OfferComplianceStatus;
     prep_status?: OfferPrepStatus;
     envelope?: OfferEnvelope | null;
     owner_member_id?: string | null;
     internal_due_at?: string | null;
+    required_value?: string | null;
     sort_order?: number;
   },
 ): Promise<{ data: { id: string } | null; error: Error | null }> {
@@ -593,20 +595,29 @@ export async function createOfferRequirement(
   if (!title) {
     return { data: null, error: new Error("El título del requisito es obligatorio.") };
   }
+  if (!input.requirement_type) {
+    return { data: null, error: new Error("El tipo es obligatorio.") };
+  }
+  if (!input.category?.trim()) {
+    return { data: null, error: new Error("La categoría es obligatoria.") };
+  }
+
+  const requiredValue = input.required_value?.trim() || null;
 
   const { data, error } = await client
     .from("offer_requirements")
     .insert({
       offer_case_id: input.offerCaseId,
       title,
-      requirement_type: input.requirement_type ?? "informativo",
+      requirement_type: input.requirement_type,
+      category: input.category.trim(),
       compliance_status: input.compliance_status ?? "sin_verificar",
       prep_status: input.prep_status ?? "pendiente",
       envelope: input.envelope ?? "ninguno",
       owner_member_id: input.owner_member_id ?? null,
       internal_due_at: input.internal_due_at ?? null,
+      required_value: requiredValue,
       source_kind: "manual",
-      category: "otros",
       sort_order: input.sort_order ?? 0,
     })
     .select("id")
