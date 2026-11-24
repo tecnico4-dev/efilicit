@@ -225,16 +225,41 @@ export function OfferCaseLogPanel({
         </p>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[28rem] border-collapse text-sm">
+          <table className="w-full min-w-[30rem] border-collapse text-sm">
             <tbody>
-              {entries.map((entry) => {
+              {entries.map((entry, index) => {
                 const meta = entry.created_by_name
                   ? `Por ${shortName(entry.created_by_name)}`
                   : "Detectado automáticamente";
+                const isFirst = index === 0;
+                const isLast = index === entries.length - 1;
                 return (
                   <tr key={entry.id} className="border-b border-border">
-                    <td className="w-[7rem] whitespace-nowrap py-3 pr-3 align-top text-muted-foreground tabular-nums">
-                      {formatDateMadrid(entry.happened_on)}
+                    <td className="relative w-[8.5rem] whitespace-nowrap py-3 pl-1 pr-3 align-top">
+                      {/* Timeline: flecha ↑ en lo más reciente; línea primary entre fechas */}
+                      <span
+                        className="pointer-events-none absolute left-[0.7rem] top-0 bottom-0 w-px bg-primary"
+                        aria-hidden
+                        style={{
+                          top: isFirst ? "1.35rem" : 0,
+                          bottom: isLast ? "calc(100% - 1.55rem)" : 0,
+                        }}
+                      />
+                      {isFirst ? (
+                        <span
+                          className="pointer-events-none absolute left-[0.42rem] top-1 text-[0.55rem] leading-none text-primary"
+                          aria-hidden
+                        >
+                          ▲
+                        </span>
+                      ) : null}
+                      <span
+                        className="pointer-events-none absolute left-[0.48rem] top-[1.2rem] z-[1] size-2.5 rounded-full border-2 border-primary bg-background"
+                        aria-hidden
+                      />
+                      <span className="ml-5 inline-block pt-0.5 text-muted-foreground tabular-nums">
+                        {formatDateMadrid(entry.happened_on)}
+                      </span>
                     </td>
                     <td className="w-[10.5rem] py-3 pr-3 align-top">
                       <EventBadge type={entry.event_type} />
