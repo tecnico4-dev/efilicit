@@ -279,12 +279,14 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
                     requirements={offerCase.requirements}
                   />
 
-                  <div>
-                    <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  <div className="rounded-xl border border-border bg-muted/25 p-4 sm:p-5">
+                    <h3 className="text-sm font-semibold text-foreground">
                       Notas / estrategia
                     </h3>
-                    <p className="mt-2 whitespace-pre-wrap text-foreground">
-                      {offerCase.notes?.trim() || "Sin notas."}
+                    <p className="mt-3 whitespace-pre-wrap text-sm text-foreground">
+                      {offerCase.notes?.trim() || (
+                        <span className="text-muted-foreground">Sin notas.</span>
+                      )}
                     </p>
                   </div>
                 </div>
