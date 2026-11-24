@@ -969,46 +969,70 @@ export function OfferRequirementsTable({
           {error}
         </p>
       ) : null}
-      <div className="flex flex-wrap justify-end gap-1">
-        <ToolbarButton
-          icon={<FiltersIcon />}
-          label={filterCount > 0 ? `Filtrar(${filterCount})` : "Filtrar"}
-          onClick={() => setFiltersOpen(true)}
-          disabled={saving || creatingBusy}
-        />
-        <ToolbarButton
-          icon={<EditIcon />}
-          label={editing ? "Aplicar cambios" : "Editar"}
-          disabled={saving || creatingBusy}
-          onClick={() => {
-            if (!editing) {
-              setEditing(true);
-              setDrafts({});
-              setError(null);
-              return;
-            }
-            void flushDrafts();
-          }}
-        />
-        <ToolbarButton
-          icon={<PlusIcon />}
-          label="Crear"
-          disabled={saving || creatingBusy}
-          onClick={() => {
-            setError(null);
-            if (creating) {
-              createTitleRef.current?.focus();
-              return;
-            }
-            setCreateDraft(EMPTY_CREATE_DRAFT);
-            setCreating(true);
-          }}
-        />
-        <ToolbarButton
-          icon={<TrashIcon />}
-          label="Eliminar"
-          disabled={saving || creatingBusy}
-        />
+      <div className="flex flex-wrap items-center justify-end gap-2">
+        {editing ? (
+          <>
+            <Button
+              type="button"
+              size="sm"
+              disabled={saving || creatingBusy}
+              onClick={() => void flushDrafts()}
+            >
+              Aplicar cambios
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={saving || creatingBusy}
+              onClick={() => {
+                setDrafts({});
+                setEditing(false);
+                setError(null);
+              }}
+            >
+              Cancelar
+            </Button>
+          </>
+        ) : (
+          <>
+            <ToolbarButton
+              icon={<FiltersIcon />}
+              label={filterCount > 0 ? `Filtrar(${filterCount})` : "Filtrar"}
+              onClick={() => setFiltersOpen(true)}
+              disabled={saving || creatingBusy}
+            />
+            <ToolbarButton
+              icon={<EditIcon />}
+              label="Editar"
+              disabled={saving || creatingBusy}
+              onClick={() => {
+                setEditing(true);
+                setDrafts({});
+                setError(null);
+              }}
+            />
+            <ToolbarButton
+              icon={<PlusIcon />}
+              label="Crear"
+              disabled={saving || creatingBusy}
+              onClick={() => {
+                setError(null);
+                if (creating) {
+                  createTitleRef.current?.focus();
+                  return;
+                }
+                setCreateDraft(EMPTY_CREATE_DRAFT);
+                setCreating(true);
+              }}
+            />
+            <ToolbarButton
+              icon={<TrashIcon />}
+              label="Eliminar"
+              disabled={saving || creatingBusy}
+            />
+          </>
+        )}
       </div>
 
       {creating ? (
