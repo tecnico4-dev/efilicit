@@ -131,7 +131,8 @@ function SharedHeadline({ n }: { n: SharedInboxNotification }) {
   const forKind = favoriteKindLabel(n.kind);
   return (
     <>
-      {who} te ha compartido una licitación interesante para {forKind} en{" "}
+      {who} te ha compartido una licitación interesante para {forKind}. Puedes
+      revisarla en tu carpeta de{" "}
       <Link
         href="/favorites/shared"
         className="font-medium text-primary underline underline-offset-2 hover:text-primary-dark"
