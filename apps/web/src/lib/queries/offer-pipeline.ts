@@ -628,6 +628,24 @@ export async function createOfferRequirement(
   return { data: data ? { id: data.id } : null, error: null };
 }
 
+/** Baja de uno o varios requisitos del expediente. */
+export async function deleteOfferRequirements(
+  client: SupabaseClient<Database>,
+  input: { offerCaseId: string; ids: string[] },
+): Promise<{ error: Error | null }> {
+  const ids = [...new Set(input.ids.filter(Boolean))];
+  if (ids.length === 0) return { error: null };
+
+  const { error } = await client
+    .from("offer_requirements")
+    .delete()
+    .eq("offer_case_id", input.offerCaseId)
+    .in("id", ids);
+
+  if (error) return { error: new Error(error.message) };
+  return { error: null };
+}
+
 export async function addOfferCaseMember(
   client: SupabaseClient<Database>,
   input: {

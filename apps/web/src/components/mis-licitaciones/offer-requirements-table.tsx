@@ -40,6 +40,7 @@ import {
   OFFER_PREP_STATUSES,
   OFFER_REQUIREMENT_TYPES,
   createOfferRequirement,
+  deleteOfferRequirements,
   updateOfferRequirement,
   type EficenMemberForTeam,
   type OfferComplianceStatus,
@@ -665,11 +666,14 @@ const tdCenter = "px-2 py-3 text-center align-middle";
 function ToolbarButton({
   icon,
   label,
+  badge,
   onClick,
   disabled,
 }: {
-  icon: ReactNode;
+  icon?: ReactNode;
   label: string;
+  /** Contador en círculo (p. ej. filtros activos). */
+  badge?: number;
   onClick?: () => void;
   disabled?: boolean;
 }) {
@@ -685,11 +689,66 @@ function ToolbarButton({
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
         "disabled:pointer-events-none disabled:opacity-50",
       )}
-      aria-label={label}
+      aria-label={
+        badge != null && badge > 0 ? `${label} (${badge})` : label
+      }
     >
       {icon}
-      {label}
+      <span className="inline-flex items-center gap-1.5">
+        {label}
+        {badge != null && badge > 0 ? (
+          <span
+            aria-hidden
+            className="inline-flex size-4 items-center justify-center rounded-full bg-primary text-[0.65rem] font-semibold leading-none text-primary-foreground"
+          >
+            {badge > 9 ? "9+" : badge}
+          </span>
+        ) : null}
+      </span>
     </button>
+  );
+}
+
+function SelectAllIcon() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="size-4 shrink-0"
+      aria-hidden
+    >
+      <rect x="4" y="4" width="16" height="16" rx="2" />
+      <path d="m8 12 2.5 2.5L16 9" />
+    </svg>
+  );
+}
+
+function RequirementCheck({
+  checked,
+  disabled,
+  ariaLabel,
+  onChange,
+}: {
+  checked: boolean;
+  disabled?: boolean;
+  ariaLabel: string;
+  onChange: () => void;
+}) {
+  return (
+    <input
+      type="checkbox"
+      checked={checked}
+      disabled={disabled}
+      aria-label={ariaLabel}
+      className="size-4 accent-primary"
+      onClick={(e) => e.stopPropagation()}
+      onChange={onChange}
+    />
   );
 }
 
@@ -797,6 +856,11 @@ export function OfferRequirementsTable({
   const [creating, setCreating] = useState(false);
   const [createDirty, setCreateDirty] = useState(false);
   const [creatingBusy, setCreatingBusy] = useState(false);
+  const [selecting, setSelecting] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(
+    () => new Set(),
+  );
+  const [deletingBusy, setDeletingBusy] = useState(false);
   const [leaveOpen, setLeaveOpen] = useState(false);
   const leaveResolverRef = useRef<((ok: boolean) => void) | null>(null);
 
@@ -876,6 +940,55 @@ export function OfferRequirementsTable({
       return true;
     });
   }, [viewRows, filters]);
+
+  const selectedCount = selectedIds.size;
+  const allFilteredSelected =
+    filteredRows.length > 0 &&
+    filteredRows.every((r) => selectedIds.has(r.id));
+
+  function enterSelecting() {
+    setSelecting(true);
+    setSelectedIds(new Set());
+    setError(null);
+  }
+
+  function exitSelecting() {
+    setSelecting(false);
+    setSelectedIds(new Set());
+    setDeletingBusy(false);
+  }
+
+  function toggleSelected(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function selectAllFiltered() {
+    setSelectedIds(new Set(filteredRows.map((r) => r.id)));
+  }
+
+  async function deleteSelected() {
+    const ids = [...selectedIds];
+    if (ids.length === 0) return;
+    setError(null);
+    setDeletingBusy(true);
+    const client = createSupabaseBrowserClient();
+    const result = await deleteOfferRequirements(client, {
+      offerCaseId,
+      ids,
+    });
+    setDeletingBusy(false);
+    if (result.error) {
+      setError(result.error.message);
+      return;
+    }
+    exitSelecting();
+    startTransition(() => router.refresh());
+  }
 
   function setDraft(id: string, patch: Partial<ReqDraft>) {
     setDrafts((prev) => {
@@ -1055,7 +1168,7 @@ export function OfferRequirementsTable({
             <Button
               type="button"
               size="sm"
-              disabled={saving || creatingBusy || !editDirty}
+              disabled={saving || creatingBusy || deletingBusy || !editDirty}
               onClick={() => void flushDrafts()}
             >
               Aplicar cambios
@@ -1064,7 +1177,7 @@ export function OfferRequirementsTable({
               type="button"
               variant="outline"
               size="sm"
-              disabled={saving || creatingBusy}
+              disabled={saving || creatingBusy || deletingBusy}
               onClick={() => {
                 setDrafts({});
                 setEditing(false);
@@ -1074,18 +1187,47 @@ export function OfferRequirementsTable({
               Cancelar
             </Button>
           </>
+        ) : selecting ? (
+          <>
+            <ToolbarButton
+              icon={<SelectAllIcon />}
+              label="Seleccionar todos"
+              disabled={
+                deletingBusy ||
+                filteredRows.length === 0 ||
+                allFilteredSelected
+              }
+              onClick={selectAllFiltered}
+            />
+            <ToolbarButton
+              icon={<TrashIcon />}
+              label="Eliminar"
+              disabled={deletingBusy || selectedCount === 0}
+              onClick={() => void deleteSelected()}
+            />
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={deletingBusy}
+              onClick={exitSelecting}
+            >
+              Cancelar
+            </Button>
+          </>
         ) : (
           <>
             <ToolbarButton
               icon={<FiltersIcon />}
-              label={filterCount > 0 ? `Filtrar(${filterCount})` : "Filtrar"}
+              label="Filtrar"
+              badge={filterCount}
               onClick={() => setFiltersOpen(true)}
-              disabled={saving || creatingBusy}
+              disabled={saving || creatingBusy || deletingBusy}
             />
             <ToolbarButton
               icon={<EditIcon />}
               label="Editar"
-              disabled={saving || creatingBusy}
+              disabled={saving || creatingBusy || deletingBusy}
               onClick={() => {
                 setEditing(true);
                 setDrafts({});
@@ -1095,7 +1237,7 @@ export function OfferRequirementsTable({
             <ToolbarButton
               icon={<PlusIcon />}
               label="Crear"
-              disabled={saving || creatingBusy}
+              disabled={saving || creatingBusy || deletingBusy}
               onClick={() => {
                 setError(null);
                 setCreating(true);
@@ -1104,7 +1246,13 @@ export function OfferRequirementsTable({
             <ToolbarButton
               icon={<TrashIcon />}
               label="Eliminar"
-              disabled={saving || creatingBusy}
+              disabled={
+                saving ||
+                creatingBusy ||
+                deletingBusy ||
+                requirements.length === 0
+              }
+              onClick={enterSelecting}
             />
           </>
         )}
@@ -1122,17 +1270,37 @@ export function OfferRequirementsTable({
             const dueDay = item.internal_due_at
               ? calendarDayMadrid(item.internal_due_at)
               : null;
-            const readOnly = !editing;
+            const readOnly = !editing || selecting;
             const envelopeValue = normalizeEnvelope(item.envelope);
+            const isSelected = selectedIds.has(item.id);
             return (
               <article
                 key={item.id}
                 className={cn(
                   "rounded-lg border border-border bg-surface p-3",
-                  naLocked && "opacity-80",
+                  naLocked && !selecting && "opacity-80",
+                  selecting && isSelected && "border-primary/50 bg-primary/5",
+                  selecting && "cursor-pointer",
                 )}
+                onClick={
+                  selecting
+                    ? () => {
+                        if (!deletingBusy) toggleSelected(item.id);
+                      }
+                    : undefined
+                }
               >
                 <div className="flex items-start justify-between gap-2">
+                  {selecting ? (
+                    <span className="mt-0.5 shrink-0">
+                      <RequirementCheck
+                        checked={isSelected}
+                        disabled={deletingBusy}
+                        ariaLabel={`Seleccionar ${item.title}`}
+                        onChange={() => toggleSelected(item.id)}
+                      />
+                    </span>
+                  ) : null}
                   <div className="min-w-0 flex-1">
                     <p
                       className={cn(
@@ -1286,7 +1454,8 @@ export function OfferRequirementsTable({
       <div className="hidden overflow-x-auto md:block">
         <table className="w-full min-w-[820px] table-fixed border-collapse text-sm">
           <colgroup>
-            <col className="w-[52%]" />
+            {selecting ? <col className="w-[3rem]" /> : null}
+            <col className={selecting ? "w-[49%]" : "w-[52%]"} />
             <col className="w-[6%]" />
             <col className="w-[8%]" />
             <col className="w-[8%]" />
@@ -1296,6 +1465,11 @@ export function OfferRequirementsTable({
           </colgroup>
           <thead>
             <tr className="border-b border-border text-[0.7rem] uppercase tracking-wide text-muted-foreground">
+              {selecting ? (
+                <th className="px-2 py-2 text-center font-semibold">
+                  <span className="sr-only">Seleccionar</span>
+                </th>
+              ) : null}
               <th className="px-3 py-2 text-left font-semibold">Requisito</th>
               <th className={thCenter}>Tipo</th>
               <th className={thCenter}>¿Cumplimos?</th>
@@ -1309,7 +1483,7 @@ export function OfferRequirementsTable({
             {filteredRows.length === 0 ? (
               <tr>
                 <td
-                  colSpan={7}
+                  colSpan={selecting ? 8 : 7}
                   className="px-3 py-8 text-center text-sm text-muted-foreground"
                 >
                   Ningún requisito coincide con los filtros.
@@ -1321,10 +1495,35 @@ export function OfferRequirementsTable({
                 const dueDay = item.internal_due_at
                   ? calendarDayMadrid(item.internal_due_at)
                   : null;
-                const readOnly = !editing;
+                const readOnly = !editing || selecting;
                 const envelopeValue = normalizeEnvelope(item.envelope);
+                const isSelected = selectedIds.has(item.id);
                 return (
-                  <tr key={item.id} className="border-b border-border/80">
+                  <tr
+                    key={item.id}
+                    className={cn(
+                      "border-b border-border/80",
+                      selecting && isSelected && "bg-primary/5",
+                      selecting && "cursor-pointer",
+                    )}
+                    onClick={
+                      selecting
+                        ? () => {
+                            if (!deletingBusy) toggleSelected(item.id);
+                          }
+                        : undefined
+                    }
+                  >
+                    {selecting ? (
+                      <td className="px-2 py-3 text-center align-middle">
+                        <RequirementCheck
+                          checked={isSelected}
+                          disabled={deletingBusy}
+                          ariaLabel={`Seleccionar ${item.title}`}
+                          onChange={() => toggleSelected(item.id)}
+                        />
+                      </td>
+                    ) : null}
                     <td
                       className={cn(
                         "px-3 py-3 align-middle font-medium",

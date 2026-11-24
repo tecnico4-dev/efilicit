@@ -200,6 +200,7 @@ export {
   removeOfferCaseMember,
   setOfferCaseOwner,
   createOfferRequirement,
+  deleteOfferRequirements,
   updateOfferRequirement,
   OFFER_ENVELOPES,
   OFFER_REQUIREMENT_TYPES,
