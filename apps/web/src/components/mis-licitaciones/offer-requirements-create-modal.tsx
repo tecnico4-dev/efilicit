@@ -67,8 +67,11 @@ const ENVELOPE_OPTIONS = OFFER_ENVELOPES.map((value) => ({
   label: value === "ninguno" ? "Sin sobre" : (ENVELOPE_LABELS[value] ?? value),
 }));
 
-const inputClass =
-  "mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring";
+/** Misma cáscara visual que los desplegables (sin ▾). */
+const fieldControlClass =
+  "flex w-full items-center rounded-md border border-border bg-background px-3 py-2 text-left text-sm leading-5 text-foreground outline-none hover:bg-muted/40 focus:ring-2 focus:ring-ring disabled:opacity-50";
+
+const inputClass = cn("mt-1", fieldControlClass);
 
 type Props = {
   open: boolean;
@@ -275,18 +278,20 @@ export function OfferRequirementsCreateModal({
                   </label>
                   <ClickHint tip="Ejemplos: cifra, umbral o texto del pliego." />
                 </div>
-                <input
-                  id="req-create-required-value"
-                  value={draft.required_value}
-                  disabled={busy}
-                  className={inputClass}
-                  onChange={(e) =>
-                    setDraft((d) => ({
-                      ...d,
-                      required_value: e.target.value,
-                    }))
-                  }
-                />
+                <div className="relative mt-1">
+                  <input
+                    id="req-create-required-value"
+                    value={draft.required_value}
+                    disabled={busy}
+                    className={fieldControlClass}
+                    onChange={(e) =>
+                      setDraft((d) => ({
+                        ...d,
+                        required_value: e.target.value,
+                      }))
+                    }
+                  />
+                </div>
               </div>
             </div>
 
@@ -484,7 +489,7 @@ function SingleSelect({
           aria-expanded={open}
           aria-haspopup="listbox"
           onClick={() => !disabled && setOpen((v) => !v)}
-          className="flex w-full items-center justify-between gap-2 rounded-md border border-border bg-background px-3 py-2 text-left text-sm outline-none hover:bg-muted/40 focus:ring-2 focus:ring-ring disabled:opacity-50"
+          className={cn(fieldControlClass, "justify-between gap-2")}
         >
           <span
             className={cn(
