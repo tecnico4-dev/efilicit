@@ -87,7 +87,7 @@ function totalsByEnvelope(rows: CriterionRow[]): string | null {
   if (buckets.size === 0) return null;
   return [...buckets.entries()]
     .map(([env, pts]) => `${env} ${formatScore(pts)}`)
-    .join(" · ");
+    .join("\t");
 }
 
 function sumScores(
@@ -270,18 +270,13 @@ export function AwardCriteriaSummary({
   return (
     <div className="rounded-xl border border-border bg-muted/25 p-4 sm:p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h3 className="text-sm font-semibold text-foreground">
-            Criterios de adjudicación
-          </h3>
-          <p className="mt-1 text-xs text-muted-foreground">
-            {rows.length === 0
-              ? "Sin criterios en este expediente."
-              : "Puntos del pliego y vuestra estimación (0…máx. de cada fila)."}
-          </p>
-        </div>
+        <h3 className="text-sm font-semibold text-foreground">
+          Criterios de adjudicación
+        </h3>
         {totals ? (
-          <p className="shrink-0 text-xs text-muted-foreground">{totals}</p>
+          <p className="shrink-0 whitespace-pre text-xs text-muted-foreground">
+            {totals}
+          </p>
         ) : null}
       </div>
 
