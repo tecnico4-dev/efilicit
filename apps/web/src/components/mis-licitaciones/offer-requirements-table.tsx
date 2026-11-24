@@ -699,7 +699,7 @@ function ToolbarButton({
         {badge != null && badge > 0 ? (
           <span
             aria-hidden
-            className="inline-flex size-4 items-center justify-center rounded-full bg-primary text-[0.65rem] font-semibold leading-none text-primary-foreground"
+            className="inline-flex size-4 items-center justify-center rounded-full border border-primary bg-background text-[0.65rem] font-semibold leading-none text-primary"
           >
             {badge > 9 ? "9+" : badge}
           </span>
