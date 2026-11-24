@@ -987,6 +987,13 @@ export async function createOfferCase(
     return { data: null, error: new Error(error.message) };
   }
 
+  void insertOfferCaseLog(client, {
+    offerCaseId: data.id,
+    eventType: "stage_change",
+    body: "Añadida a Mis licitaciones (etapa Interés).",
+    createdBy: input.createdBy,
+  });
+
   // Best effort: si falla, el expediente existe y se puede reprocesar desde Pliegos.
   await requestOfferCaseIntake(client, {
     offerCaseId: data.id,
