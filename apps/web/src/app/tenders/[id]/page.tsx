@@ -96,6 +96,12 @@ function backLinkFromParams(
       label: "← Volver a la carpeta común",
     };
   }
+  if (from === "favorites-shared") {
+    return {
+      href: "/favorites/shared",
+      label: "← Volver a licitaciones compartidas",
+    };
+  }
   if (from === "favorites") {
     return {
       href: "/favorites/tenders",

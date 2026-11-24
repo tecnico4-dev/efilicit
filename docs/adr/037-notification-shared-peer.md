@@ -24,7 +24,7 @@ Al compartir una licitación a personas concretas (`favorites_shared`) no había
 3. **`reactivate_favorite_share`**: al reactivar un share oculto, upsert del aviso (no leído).
 4. `has_unread_notifications` / `count_unread_notifications` incluyen esta tabla (join a `to_user_id`).
 5. Sin aviso `_removed` en v1.
-6. UI buzón (copy, listado, open) en incremento siguiente.
+6. UI buzón: misma fila que Común (headline + título + fecha; papelera / restaurar / purge; open marca leído → ficha con `from=favorites-shared`).
 
 ### Enmienda (mismo día)
 
@@ -44,8 +44,7 @@ Se descartan `user_id` y `created_at` en la tabla: redundantes con `favorites_sh
 
 ### Negativas / riesgos
 
-- Badge/RLS hacen join a `favorites_shared` (aceptable con volumen peer).
-- Listado del buzón aún no consume la tabla hasta el incremento UI.
+- Badge/RLS/listado hacen join a `favorites_shared` (aceptable con volumen peer).
 
 ## Riesgos
 

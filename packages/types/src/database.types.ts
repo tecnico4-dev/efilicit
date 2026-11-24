@@ -359,6 +359,26 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"notification_shared": {
+                  Row: {
+                    "read_at": string | null,"share_id": string,"trashed_at": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "read_at"?: string | null,"share_id": string,"trashed_at"?: string | null
+                  }
+                  Update: {
+                    "read_at"?: string | null,"share_id"?: string,"trashed_at"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "notification_shared_share_id_fkey"
+      columns: ["share_id"]
+isOneToOne: true
+      referencedRelation: "favorites_shared"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"notification_common_removed": {
                   Row: {
                     "created_at": string,"read_at": string | null,"removed_by": string | null,"removed_by_display_name": string | null,"tender_id": string,"trashed_at": string | null,"user_id": string

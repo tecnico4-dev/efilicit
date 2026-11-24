@@ -154,6 +154,15 @@ export {
   type CommonRemovedInboxNotification,
 } from "./notification-common-removed";
 export {
+  listOwnSharedInboxNotifications,
+  markOwnSharedNotificationRead,
+  markOwnSharedNotificationUnread,
+  permanentlyDeleteOwnSharedNotification,
+  restoreOwnSharedNotificationFromTrash,
+  trashOwnSharedNotification,
+  type SharedInboxNotification,
+} from "./notification-shared";
+export {
   asTenderInterestKind,
   deleteOwnTenderRating,
   getOwnAlertInterestKindForTender,

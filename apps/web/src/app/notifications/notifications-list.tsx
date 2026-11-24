@@ -14,22 +14,27 @@ import {
   markOwnCommonRemovedNotificationUnread,
   markOwnDigestInboxUnread,
   markOwnNotificationUnread,
+  markOwnSharedNotificationUnread,
   permanentlyDeleteOwnCommonNotification,
   permanentlyDeleteOwnCommonRemovedNotification,
   permanentlyDeleteOwnDigestInboxNotification,
   permanentlyDeleteOwnFavoriteNotification,
+  permanentlyDeleteOwnSharedNotification,
   restoreOwnCommonNotificationFromTrash,
   restoreOwnCommonRemovedNotificationFromTrash,
   restoreOwnDigestInboxFromTrash,
   restoreOwnNotificationFromTrash,
+  restoreOwnSharedNotificationFromTrash,
   trashOwnCommonNotification,
   trashOwnCommonRemovedNotification,
   trashOwnDigestInboxNotification,
   trashOwnNotification,
+  trashOwnSharedNotification,
   type CommonInboxNotification,
   type CommonRemovedInboxNotification,
   type DigestInboxNotification,
   type FavoriteStatusNotification,
+  type SharedInboxNotification,
 } from "@/lib/queries";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { formatTenderStatus } from "@/lib/tender-labels";
@@ -45,12 +50,15 @@ import {
 import { PurgeCommonNotificationButton } from "./purge-common-notification-button";
 import { PurgeDigestNotificationButton } from "./purge-digest-notification-button";
 import { PurgeNotificationButton } from "./purge-notification-button";
+import { PurgeSharedNotificationButton } from "./purge-shared-notification-button";
 import { RestoreCommonNotificationButton } from "./restore-common-notification-button";
 import { RestoreDigestNotificationButton } from "./restore-digest-notification-button";
 import { RestoreNotificationButton } from "./restore-notification-button";
+import { RestoreSharedNotificationButton } from "./restore-shared-notification-button";
 import { TrashCommonNotificationButton } from "./trash-common-notification-button";
 import { TrashDigestNotificationButton } from "./trash-digest-notification-button";
 import { TrashNotificationButton } from "./trash-notification-button";
+import { TrashSharedNotificationButton } from "./trash-shared-notification-button";
 
 const destructiveOutlineBtn =
   "border-destructive text-destructive hover:bg-destructive/10 hover:text-destructive";
@@ -63,7 +71,8 @@ export type InboxItem =
       kind: "common_removed";
       sortAt: string;
       data: CommonRemovedInboxNotification;
-    };
+    }
+  | { kind: "shared"; sortAt: string; data: SharedInboxNotification };
 
 function formatWhen(iso: string): string {
   try {
@@ -111,6 +120,24 @@ function CommonHeadline({ n }: { n: CommonInboxNotification }) {
         onClick={(e) => e.stopPropagation()}
       >
         común
+      </Link>
+      .
+    </>
+  );
+}
+
+function SharedHeadline({ n }: { n: SharedInboxNotification }) {
+  const who = n.fromDisplayName?.trim() || "Alguien del equipo";
+  const forKind = favoriteKindLabel(n.kind);
+  return (
+    <>
+      {who} te ha compartido una licitación interesante para {forKind} en{" "}
+      <Link
+        href="/favorites/shared"
+        className="font-medium text-primary underline underline-offset-2 hover:text-primary-dark"
+        onClick={(e) => e.stopPropagation()}
+      >
+        Licitaciones compartidas
       </Link>
       .
     </>
@@ -174,6 +201,7 @@ export function NotificationsList({
     if (item.kind === "common_removed") {
       return `common-removed:${item.data.tenderId}`;
     }
+    if (item.kind === "shared") return `shared:${item.data.shareId}`;
     return `fav:${item.data.eventId}`;
   }
 
@@ -236,7 +264,7 @@ export function NotificationsList({
         userId,
         digestId: item.data.id,
       }));
-    } else if (item.kind === "common") {
+    } else     if (item.kind === "common") {
       ({ error } = await markOwnCommonNotificationUnread(client, {
         userId,
         tenderId: item.data.tenderId,
@@ -245,6 +273,10 @@ export function NotificationsList({
       ({ error } = await markOwnCommonRemovedNotificationUnread(client, {
         userId,
         tenderId: item.data.tenderId,
+      }));
+    } else if (item.kind === "shared") {
+      ({ error } = await markOwnSharedNotificationUnread(client, {
+        shareId: item.data.shareId,
       }));
     } else {
       ({ error } = await markOwnNotificationUnread(client, {
@@ -286,6 +318,11 @@ export function NotificationsList({
         tenderId: item.data.tenderId,
       });
     }
+    if (item.kind === "shared") {
+      return trashOwnSharedNotification(client, {
+        shareId: item.data.shareId,
+      });
+    }
     return trashOwnNotification(client, {
       userId,
       eventId: item.data.eventId,
@@ -312,6 +349,11 @@ export function NotificationsList({
       return restoreOwnCommonRemovedNotificationFromTrash(client, {
         userId,
         tenderId: item.data.tenderId,
+      });
+    }
+    if (item.kind === "shared") {
+      return restoreOwnSharedNotificationFromTrash(client, {
+        shareId: item.data.shareId,
       });
     }
     return restoreOwnNotificationFromTrash(client, {
@@ -388,6 +430,10 @@ export function NotificationsList({
               client,
               { userId, tenderId: item.data.tenderId },
             ));
+          } else if (item.kind === "shared") {
+            ({ error } = await permanentlyDeleteOwnSharedNotification(client, {
+              shareId: item.data.shareId,
+            }));
           } else {
             ({ error } = await permanentlyDeleteOwnFavoriteNotification(
               client,
@@ -494,6 +540,19 @@ export function NotificationsList({
                     key={key}
                     n={item.data}
                     userId={userId}
+                    inTrash={view === "trash"}
+                    unread={itemUnread(item)}
+                    onPurgeHide={onPurgeHide}
+                    onPurgeShow={onPurgeShow}
+                    onContextMenu={(e) => onRowContextMenu(e, item)}
+                  />
+                );
+              }
+              if (item.kind === "shared") {
+                return (
+                  <SharedRow
+                    key={key}
+                    n={item.data}
                     inTrash={view === "trash"}
                     unread={itemUnread(item)}
                     onPurgeHide={onPurgeHide}
@@ -714,6 +773,91 @@ function CommonRow({
             userId={userId}
             tenderId={n.tenderId}
           />
+        </div>
+      </div>
+    </li>
+  );
+}
+
+function SharedRow({
+  n,
+  inTrash,
+  unread,
+  onPurgeHide,
+  onPurgeShow,
+  onContextMenu,
+}: {
+  n: SharedInboxNotification;
+  inTrash: boolean;
+  unread: boolean;
+  onPurgeHide: () => void;
+  onPurgeShow: () => void;
+  onContextMenu: (e: React.MouseEvent) => void;
+}) {
+  const href = `/notifications/open?source=shared&shareId=${encodeURIComponent(n.shareId)}&tenderId=${encodeURIComponent(n.tenderId)}`;
+
+  if (inTrash && n.trashedAt) {
+    return (
+      <li>
+        <div className="flex items-center gap-3 px-4 py-3">
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-medium text-foreground">
+              <SharedHeadline n={n} />
+            </p>
+            <Link
+              href={href}
+              className="mt-1 block text-sm text-muted-foreground transition-colors hover:opacity-90"
+            >
+              {n.title}
+            </Link>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {formatWhen(n.sharedAt)}
+            </p>
+          </div>
+          <div className="flex shrink-0 flex-col items-end gap-1 self-center">
+            <p className="max-w-[11rem] text-right text-xs text-muted-foreground sm:max-w-[14rem]">
+              {formatNotificationTrashExpiry(n.trashedAt)}
+            </p>
+            <div className="flex items-center gap-0.5">
+              <RestoreSharedNotificationButton shareId={n.shareId} />
+              <PurgeSharedNotificationButton
+                shareId={n.shareId}
+                onHide={onPurgeHide}
+                onShow={onPurgeShow}
+              />
+            </div>
+          </div>
+        </div>
+      </li>
+    );
+  }
+
+  return (
+    <li onContextMenu={onContextMenu}>
+      <div className="flex items-stretch gap-1">
+        <div className="relative min-w-0 flex-1 px-4 py-3 transition-colors hover:bg-muted/60">
+          {unread ? (
+            <span
+              className="absolute right-2 top-1/2 size-2 -translate-y-1/2 rounded-full bg-primary shadow-sm ring-2 ring-background"
+              title="No leída"
+              aria-label="No leída"
+            />
+          ) : null}
+          <p className="pr-4 text-sm font-medium text-foreground">
+            <SharedHeadline n={n} />
+          </p>
+          <Link
+            href={href}
+            className="mt-1 block pr-4 text-sm text-muted-foreground transition-colors hover:text-foreground"
+          >
+            {n.title}
+          </Link>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {formatWhen(n.sharedAt)}
+          </p>
+        </div>
+        <div className="flex items-center pr-2">
+          <TrashSharedNotificationButton shareId={n.shareId} />
         </div>
       </div>
     </li>

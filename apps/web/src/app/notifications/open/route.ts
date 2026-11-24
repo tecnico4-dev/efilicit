@@ -7,6 +7,7 @@ import {
   markOwnCommonNotificationRead,
   markOwnCommonRemovedNotificationRead,
   markOwnNotificationRead,
+  markOwnSharedNotificationRead,
 } from "@/lib/queries";
 
 /**
@@ -14,11 +15,13 @@ import {
  * Favoritos-estado: /notifications/open?eventId=…&tenderId=…
  * Común alta: /notifications/open?source=common&tenderId=…
  * Común retirada: /notifications/open?source=common-removed&tenderId=…
+ * Peer share: /notifications/open?source=shared&shareId=…&tenderId=…
  * Auth: middleware (ruta bajo /notifications).
  */
 export async function GET(request: NextRequest) {
   const source = request.nextUrl.searchParams.get("source")?.trim() ?? "";
   const eventId = request.nextUrl.searchParams.get("eventId")?.trim() ?? "";
+  const shareId = request.nextUrl.searchParams.get("shareId")?.trim() ?? "";
   const tenderId = request.nextUrl.searchParams.get("tenderId")?.trim() ?? "";
 
   const fallback = new URL("/notifications", request.url);
@@ -27,7 +30,11 @@ export async function GET(request: NextRequest) {
   }
   const isCommonSource =
     source === "common" || source === "common-removed";
-  if (!isCommonSource && !eventId) {
+  const isSharedSource = source === "shared";
+  if (!isCommonSource && !isSharedSource && !eventId) {
+    return NextResponse.redirect(fallback);
+  }
+  if (isSharedSource && !shareId) {
     return NextResponse.redirect(fallback);
   }
 
@@ -45,6 +52,8 @@ export async function GET(request: NextRequest) {
         userId: profile.id,
         tenderId,
       });
+    } else if (source === "shared") {
+      await markOwnSharedNotificationRead(supabase, { shareId });
     } else {
       // Cambio de estado (favoritos/Común): marcar leído; sin valoración en ficha.
       await markOwnNotificationRead(supabase, {
@@ -56,14 +65,17 @@ export async function GET(request: NextRequest) {
 
   const target = new URL(`/tenders/${tenderId}`, request.url);
   // Alta Común → volver a Común, sin valoración.
+  // Peer → volver a Licitaciones compartidas.
   // Retirada Común → sin «volver» ni valoración.
   // Cambio de estado → sin valoración (valoración solo digest/alertas).
   const from =
     source === "common"
       ? "favorites-common"
-      : source === "common-removed"
-        ? "common-removed"
-        : "favorite-status";
+      : source === "shared"
+        ? "favorites-shared"
+        : source === "common-removed"
+          ? "common-removed"
+          : "favorite-status";
   target.searchParams.set("from", from);
   return NextResponse.redirect(target);
 }
