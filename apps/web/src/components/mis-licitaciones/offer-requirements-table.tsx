@@ -666,14 +666,11 @@ const tdCenter = "px-2 py-3 text-center align-middle";
 function ToolbarButton({
   icon,
   label,
-  badge,
   onClick,
   disabled,
 }: {
   icon?: ReactNode;
   label: string;
-  /** Contador en círculo (p. ej. filtros activos). */
-  badge?: number;
   onClick?: () => void;
   disabled?: boolean;
 }) {
@@ -689,22 +686,10 @@ function ToolbarButton({
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
         "disabled:pointer-events-none disabled:opacity-50",
       )}
-      aria-label={
-        badge != null && badge > 0 ? `${label} (${badge})` : label
-      }
+      aria-label={label}
     >
       {icon}
-      <span className="inline-flex items-center gap-1.5">
-        {label}
-        {badge != null && badge > 0 ? (
-          <span
-            aria-hidden
-            className="inline-flex size-4 items-center justify-center rounded-full border border-primary bg-background text-[0.65rem] font-semibold leading-none text-primary"
-          >
-            {badge > 9 ? "9+" : badge}
-          </span>
-        ) : null}
-      </span>
+      {label}
     </button>
   );
 }
@@ -1219,8 +1204,7 @@ export function OfferRequirementsTable({
           <>
             <ToolbarButton
               icon={<FiltersIcon />}
-              label="Filtrar"
-              badge={filterCount}
+              label={filterCount > 0 ? `Filtrar(${filterCount})` : "Filtrar"}
               onClick={() => setFiltersOpen(true)}
               disabled={saving || creatingBusy || deletingBusy}
             />
