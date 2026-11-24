@@ -67,11 +67,14 @@ const ENVELOPE_OPTIONS = OFFER_ENVELOPES.map((value) => ({
   label: value === "ninguno" ? "Sin sobre" : (ENVELOPE_LABELS[value] ?? value),
 }));
 
-/** Misma cáscara visual que los desplegables (sin ▾). */
+/** Cáscara compartida: altura fija para que input y desplegable midan igual. */
 const fieldControlClass =
-  "flex w-full items-center rounded-md border border-border bg-background px-3 py-2 text-left text-sm leading-5 text-foreground outline-none hover:bg-muted/40 focus:ring-2 focus:ring-ring disabled:opacity-50";
+  "box-border flex h-9 w-full items-center rounded-md border border-border bg-background px-3 text-left text-sm leading-none text-foreground outline-none hover:bg-muted/40 focus:ring-2 focus:ring-ring disabled:opacity-50";
 
-const inputClass = cn("mt-1", fieldControlClass);
+const fieldLabelRowClass =
+  "flex h-5 items-center gap-1.5 text-sm font-medium text-foreground";
+
+const inputClass = cn(fieldControlClass, "mt-1");
 
 type Props = {
   open: boolean;
@@ -269,28 +272,32 @@ export function OfferRequirementsCreateModal({
                 }
               />
               <div>
-                <div className="inline-flex items-center gap-1.5">
-                  <label
-                    htmlFor="req-create-required-value"
-                    className="text-sm font-medium text-foreground"
-                  >
+                <div className={fieldLabelRowClass}>
+                  <label htmlFor="req-create-required-value">
                     Valor requerido
                   </label>
                   <ClickHint tip="Ejemplos: cifra, umbral o texto del pliego." />
                 </div>
                 <div className="relative mt-1">
-                  <input
-                    id="req-create-required-value"
-                    value={draft.required_value}
-                    disabled={busy}
-                    className={fieldControlClass}
-                    onChange={(e) =>
-                      setDraft((d) => ({
-                        ...d,
-                        required_value: e.target.value,
-                      }))
-                    }
-                  />
+                  <div
+                    className={cn(
+                      fieldControlClass,
+                      "focus-within:ring-2 focus-within:ring-ring",
+                    )}
+                  >
+                    <input
+                      id="req-create-required-value"
+                      value={draft.required_value}
+                      disabled={busy}
+                      className="h-full min-w-0 flex-1 appearance-none border-0 bg-transparent p-0 text-sm leading-none text-foreground outline-none disabled:opacity-50"
+                      onChange={(e) =>
+                        setDraft((d) => ({
+                          ...d,
+                          required_value: e.target.value,
+                        }))
+                      }
+                    />
+                  </div>
                 </div>
               </div>
             </div>
@@ -476,10 +483,12 @@ function SingleSelect({
 
   return (
     <div>
-      <label htmlFor={id} className="block text-sm font-medium text-foreground">
-        {label}
-        {required ? <span className="text-destructive">*</span> : null}
-      </label>
+      <div className={fieldLabelRowClass}>
+        <label htmlFor={id}>
+          {label}
+          {required ? <span className="text-destructive">*</span> : null}
+        </label>
+      </div>
       <div className="relative mt-1">
         <button
           ref={triggerRef}

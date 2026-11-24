@@ -254,9 +254,9 @@ export function SingleDatePicker({
         <div
           ref={triggerRef}
           className={cn(
-            "mt-1 flex w-full items-center gap-1 rounded-md border border-border bg-background px-3 py-2",
+            "box-border mt-1 flex h-9 w-full items-center gap-1 rounded-md border border-border bg-background px-3",
             "focus-within:ring-2 focus-within:ring-ring",
-            !inert && "cursor-text",
+            !inert && "cursor-text hover:bg-muted/40",
             (disabled || locked) && "opacity-50",
           )}
           onMouseDown={(e) => {
