@@ -226,60 +226,70 @@ export function OfferCaseLogPanel({
       ) : (
         <div className="overflow-x-auto pt-1">
           {/*
-            Tabla fecha | tipo | texto.
-            La columna de fechas va envuelta en un trazo primary con piquito arriba
-            (flecha hacia lo más reciente), sin cabeceras ni líneas verticales.
+            Una sola silueta: toda la tabla (fecha | tipo | texto) dentro de un
+            marco primary con piquito arriba sobre la columna de fechas.
           */}
-          <div className="relative min-w-[30rem]">
-            <svg
-              className="pointer-events-none absolute left-0 top-0 z-0 h-full w-[7.75rem] text-primary"
-              viewBox="0 0 100 100"
-              preserveAspectRatio="none"
-              aria-hidden
+          <div
+            className="min-w-[30rem] bg-primary p-px"
+            style={{
+              clipPath:
+                "polygon(0 14px, 2.55rem 14px, 3.9rem 0, 5.25rem 14px, 100% 14px, 100% 100%, 0 100%)",
+            }}
+          >
+            <div
+              className="bg-background"
+              style={{
+                clipPath:
+                  "polygon(1.5px 15.5px, calc(2.55rem + 0.5px) 15.5px, 3.9rem 2px, calc(5.25rem - 0.5px) 15.5px, calc(100% - 1.5px) 15.5px, calc(100% - 1.5px) calc(100% - 1.5px), 1.5px calc(100% - 1.5px))",
+              }}
             >
-              {/* Cuerpo + piquito superior (flecha hacia arriba) */}
-              <path
-                d="M 50 1.5 L 92 14 L 78 14 L 78 98.5 L 22 98.5 L 22 14 L 8 14 Z"
-                fill="currentColor"
-                fillOpacity="0.06"
-                stroke="currentColor"
-                strokeWidth="1.4"
-                vectorEffect="non-scaling-stroke"
-              />
-            </svg>
-
-            <table className="relative z-[1] w-full border-collapse text-sm">
-              <tbody>
-                {entries.map((entry, index) => {
-                  const meta = entry.created_by_name
-                    ? `Por ${shortName(entry.created_by_name)}`
-                    : "Detectado automáticamente";
-                  return (
-                    <tr key={entry.id} className="border-b border-border">
-                      <td
-                        className={cn(
-                          "w-[7.75rem] whitespace-nowrap px-2 pb-3 text-center align-top text-foreground tabular-nums",
-                          index === 0 ? "pt-6" : "pt-3",
-                        )}
+              <table className="w-full border-collapse text-sm">
+                <tbody>
+                  {entries.map((entry, index) => {
+                    const meta = entry.created_by_name
+                      ? `Por ${shortName(entry.created_by_name)}`
+                      : "Detectado automáticamente";
+                    const isLast = index === entries.length - 1;
+                    return (
+                      <tr
+                        key={entry.id}
+                        className={cn(!isLast && "border-b border-border")}
                       >
-                        {formatDateMadrid(entry.happened_on)}
-                      </td>
-                      <td className="w-[10.5rem] py-3 pl-3 pr-3 align-top">
-                        <EventBadge type={entry.event_type} />
-                      </td>
-                      <td className="py-3 align-top">
-                        <p className="whitespace-pre-wrap text-foreground">
-                          {entry.body}
-                        </p>
-                        <p className="mt-1 text-xs text-muted-foreground">
-                          {meta}
-                        </p>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                        <td
+                          className={cn(
+                            "w-[7.75rem] whitespace-nowrap px-3 pb-3 text-center align-top text-foreground tabular-nums",
+                            index === 0 ? "pt-6" : "pt-3",
+                          )}
+                        >
+                          {formatDateMadrid(entry.happened_on)}
+                        </td>
+                        <td
+                          className={cn(
+                            "w-[10.5rem] px-3 align-top",
+                            index === 0 ? "pt-6 pb-3" : "py-3",
+                          )}
+                        >
+                          <EventBadge type={entry.event_type} />
+                        </td>
+                        <td
+                          className={cn(
+                            "pr-3 align-top",
+                            index === 0 ? "pt-6 pb-3" : "py-3",
+                          )}
+                        >
+                          <p className="whitespace-pre-wrap text-foreground">
+                            {entry.body}
+                          </p>
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            {meta}
+                          </p>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       )}
