@@ -224,24 +224,35 @@ export function OfferCaseLogPanel({
           registran solos; también puedes añadir notas manuales.
         </p>
       ) : (
-        <ul className="space-y-0 divide-y divide-border rounded-lg border border-border">
-          {entries.map((entry) => (
-            <li key={entry.id} className="px-3 py-3 sm:px-4">
-              <div className="flex flex-wrap items-center gap-2">
-                <EventBadge type={entry.event_type} />
-                <span className="text-xs text-muted-foreground">
-                  {formatDateMadrid(entry.happened_on)}
-                </span>
-                <span className="text-xs text-muted-foreground">
-                  · {shortName(entry.created_by_name)}
-                </span>
-              </div>
-              <p className="mt-1.5 whitespace-pre-wrap text-foreground">
-                {entry.body}
-              </p>
-            </li>
-          ))}
-        </ul>
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[28rem] border-collapse text-sm">
+            <tbody>
+              {entries.map((entry) => {
+                const meta = entry.created_by_name
+                  ? `Por ${shortName(entry.created_by_name)}`
+                  : "Detectado automáticamente";
+                return (
+                  <tr key={entry.id} className="border-b border-border">
+                    <td className="w-[7rem] whitespace-nowrap py-3 pr-3 align-top text-muted-foreground tabular-nums">
+                      {formatDateMadrid(entry.happened_on)}
+                    </td>
+                    <td className="w-[10.5rem] py-3 pr-3 align-top">
+                      <EventBadge type={entry.event_type} />
+                    </td>
+                    <td className="py-3 align-top">
+                      <p className="whitespace-pre-wrap text-foreground">
+                        {entry.body}
+                      </p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {meta}
+                      </p>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       )}
     </div>
   );
