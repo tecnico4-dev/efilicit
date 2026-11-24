@@ -307,9 +307,7 @@ export function SingleDatePicker({
             onClick={openCalendar}
             className="inline-flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-50"
           >
-            <span aria-hidden className="text-xs">
-              ▾
-            </span>
+            <CalendarIcon />
           </button>
         </div>
         {calendar}
@@ -351,6 +349,27 @@ export function SingleDatePicker({
       </button>
       {calendar}
     </div>
+  );
+}
+
+function CalendarIcon() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="size-4 shrink-0"
+      aria-hidden
+    >
+      <rect x="3.5" y="5" width="17" height="15.5" rx="2" />
+      <path d="M8 3.5v3" />
+      <path d="M16 3.5v3" />
+      <path d="M3.5 10h17" />
+    </svg>
   );
 }
 
