@@ -535,6 +535,16 @@ export async function setOfferCaseOwner(
   return { error: null };
 }
 
+export const OFFER_ENVELOPES = [
+  "A",
+  "B",
+  "C",
+  "requerimiento",
+  "ninguno",
+] as const;
+
+export type OfferEnvelope = (typeof OFFER_ENVELOPES)[number];
+
 export async function updateOfferRequirement(
   client: SupabaseClient<Database>,
   input: {
@@ -542,6 +552,7 @@ export async function updateOfferRequirement(
     patch: {
       compliance_status?: OfferComplianceStatus;
       prep_status?: OfferPrepStatus;
+      envelope?: OfferEnvelope | null;
       internal_due_at?: string | null;
       owner_member_id?: string | null;
     };
@@ -572,6 +583,7 @@ export async function createOfferRequirement(
     requirement_type?: OfferRequirementType;
     compliance_status?: OfferComplianceStatus;
     prep_status?: OfferPrepStatus;
+    envelope?: OfferEnvelope | null;
     owner_member_id?: string | null;
     internal_due_at?: string | null;
     sort_order?: number;
@@ -590,6 +602,7 @@ export async function createOfferRequirement(
       requirement_type: input.requirement_type ?? "informativo",
       compliance_status: input.compliance_status ?? "sin_verificar",
       prep_status: input.prep_status ?? "pendiente",
+      envelope: input.envelope ?? "ninguno",
       owner_member_id: input.owner_member_id ?? null,
       internal_due_at: input.internal_due_at ?? null,
       source_kind: "manual",

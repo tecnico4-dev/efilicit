@@ -32,6 +32,7 @@ import { SingleDatePicker } from "@/components/mis-licitaciones/single-date-pick
 import {
   OFFER_COMPLIANCE_LABELS,
   OFFER_COMPLIANCE_STATUSES,
+  OFFER_ENVELOPES,
   OFFER_PREP_LABELS,
   OFFER_PREP_STATUSES,
   OFFER_REQUIREMENT_TYPES,
@@ -39,15 +40,29 @@ import {
   updateOfferRequirement,
   type EficenMemberForTeam,
   type OfferComplianceStatus,
+  type OfferEnvelope,
   type OfferPrepStatus,
   type OfferRequirementDetail,
   type OfferRequirementType,
 } from "@/lib/queries";
 import { useUnsavedNavigationGuard } from "@/lib/use-unsaved-navigation-guard";
 
+const ENVELOPE_OPTIONS = OFFER_ENVELOPES.map((value) => ({
+  value,
+  label: ENVELOPE_LABELS[value] ?? value,
+}));
+
+function normalizeEnvelope(value: string | null | undefined): OfferEnvelope {
+  if (value && (OFFER_ENVELOPES as readonly string[]).includes(value)) {
+    return value as OfferEnvelope;
+  }
+  return "ninguno";
+}
+
 type ReqDraft = {
   compliance_status: OfferComplianceStatus;
   prep_status: OfferPrepStatus;
+  envelope: OfferEnvelope;
   owner_member_id: string | null;
   internal_due_at: string | null;
 };
@@ -57,6 +72,7 @@ type CreateDraft = {
   requirement_type: OfferRequirementType;
   compliance_status: OfferComplianceStatus;
   prep_status: OfferPrepStatus;
+  envelope: OfferEnvelope;
   owner_member_id: string | null;
   internal_due_at: string | null;
 };
@@ -66,6 +82,7 @@ const EMPTY_CREATE_DRAFT: CreateDraft = {
   requirement_type: "informativo",
   compliance_status: "sin_verificar",
   prep_status: "pendiente",
+  envelope: "ninguno",
   owner_member_id: null,
   internal_due_at: null,
 };
@@ -76,6 +93,7 @@ function createDraftHasContent(d: CreateDraft): boolean {
     d.requirement_type !== EMPTY_CREATE_DRAFT.requirement_type ||
     d.compliance_status !== EMPTY_CREATE_DRAFT.compliance_status ||
     d.prep_status !== EMPTY_CREATE_DRAFT.prep_status ||
+    d.envelope !== EMPTY_CREATE_DRAFT.envelope ||
     d.owner_member_id != null ||
     d.internal_due_at != null
   );
@@ -85,6 +103,7 @@ function snapshotReq(item: OfferRequirementDetail): ReqDraft {
   return {
     compliance_status: item.compliance_status as OfferComplianceStatus,
     prep_status: item.prep_status as OfferPrepStatus,
+    envelope: normalizeEnvelope(item.envelope),
     owner_member_id: item.owner_member_id,
     internal_due_at: item.internal_due_at,
   };
@@ -94,6 +113,7 @@ function draftsEqual(a: ReqDraft, b: ReqDraft): boolean {
   return (
     a.compliance_status === b.compliance_status &&
     a.prep_status === b.prep_status &&
+    a.envelope === b.envelope &&
     a.owner_member_id === b.owner_member_id &&
     a.internal_due_at === b.internal_due_at
   );
@@ -608,6 +628,7 @@ export function OfferRequirementsTable({
         ...item,
         compliance_status: draft.compliance_status,
         prep_status: draft.prep_status,
+        envelope: draft.envelope,
         owner_member_id: draft.owner_member_id,
         internal_due_at: draft.internal_due_at,
       };
@@ -757,6 +778,7 @@ export function OfferRequirementsTable({
       requirement_type: createDraft.requirement_type,
       compliance_status: compliance,
       prep_status: prep,
+      envelope: createDraft.envelope,
       owner_member_id: createDraft.owner_member_id,
       internal_due_at: createDraft.internal_due_at,
       sort_order: sortOrder,
@@ -873,14 +895,15 @@ export function OfferRequirementsTable({
       </div>
 
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[780px] table-fixed border-collapse text-sm">
+        <table className="w-full min-w-[860px] table-fixed border-collapse text-sm">
           <colgroup>
-            <col className="w-[54%]" />
-            <col className="w-[8%]" />
-            <col className="w-[10%]" />
-            <col className="w-[10%]" />
-            <col className="w-[10%]" />
-            <col className="w-[8%]" />
+            <col className="w-[46%]" />
+            <col className="w-[7%]" />
+            <col className="w-[9%]" />
+            <col className="w-[9%]" />
+            <col className="w-[9%]" />
+            <col className="w-[11%]" />
+            <col className="w-[9%]" />
           </colgroup>
           <thead>
             <tr className="border-b border-border text-[0.7rem] uppercase tracking-wide text-muted-foreground">
@@ -888,6 +911,7 @@ export function OfferRequirementsTable({
               <th className={thCenter}>Tipo</th>
               <th className={thCenter}>¿Cumplimos?</th>
               <th className={thCenter}>Preparación</th>
+              <th className={thCenter}>Sobre</th>
               <th className={thCenter}>Responsable</th>
               <th className={thCenter}>Fecha interna</th>
             </tr>
@@ -991,6 +1015,25 @@ export function OfferRequirementsTable({
                   />
                 </td>
                 <td className={tdCenter}>
+                  <EditableChipSelect
+                    value={createDraft.envelope}
+                    disabled={
+                      creatingBusy ||
+                      createDraft.compliance_status === "no_aplica"
+                    }
+                    locked={createDraft.compliance_status === "no_aplica"}
+                    tone="muted"
+                    ariaLabel="Sobre"
+                    options={ENVELOPE_OPTIONS}
+                    onChange={(v) =>
+                      setCreateDraft((d) => ({
+                        ...d,
+                        envelope: v as OfferEnvelope,
+                      }))
+                    }
+                  />
+                </td>
+                <td className={tdCenter}>
                   <MemberPicker
                     value={createDraft.owner_member_id}
                     members={members}
@@ -1028,7 +1071,7 @@ export function OfferRequirementsTable({
             {filteredRows.length === 0 && !creating ? (
               <tr>
                 <td
-                  colSpan={6}
+                  colSpan={7}
                   className="px-3 py-8 text-center text-sm text-muted-foreground"
                 >
                   Ningún requisito coincide con los filtros.
@@ -1041,6 +1084,7 @@ export function OfferRequirementsTable({
                   ? calendarDayMadrid(item.internal_due_at)
                   : null;
                 const readOnly = !editing;
+                const envelopeValue = normalizeEnvelope(item.envelope);
                 return (
                   <tr key={item.id} className="border-b border-border/80">
                     <td
@@ -1063,9 +1107,6 @@ export function OfferRequirementsTable({
                         {[
                           REQUIREMENT_CATEGORY_LABELS[item.category] ??
                             item.category,
-                          item.envelope
-                            ? (ENVELOPE_LABELS[item.envelope] ?? item.envelope)
-                            : null,
                           item.required_value,
                           item.source_kind === "legacy_checklist"
                             ? "legacy"
@@ -1133,6 +1174,22 @@ export function OfferRequirementsTable({
                         onChange={(v) =>
                           setDraft(item.id, {
                             prep_status: v as OfferPrepStatus,
+                          })
+                        }
+                      />
+                    </td>
+                    <td className={tdCenter}>
+                      <EditableChipSelect
+                        value={envelopeValue}
+                        disabled={saving}
+                        locked={naLocked}
+                        readOnly={readOnly}
+                        tone="muted"
+                        ariaLabel="Sobre"
+                        options={ENVELOPE_OPTIONS}
+                        onChange={(v) =>
+                          setDraft(item.id, {
+                            envelope: v as OfferEnvelope,
                           })
                         }
                       />
