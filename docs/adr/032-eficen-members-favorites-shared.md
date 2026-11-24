@@ -41,7 +41,7 @@ Además: compartir una licitación favorita a **personas concretas** (no solo a 
    - **Quitar por lado:** `hide_favorite_share(id)` pone el timestamp del caller; si ambos lados ocultos → `DELETE` de la fila. SELECT RLS solo filas con el lado propio visible (A puede quitar sin que B pierda el share).
    - Reenvío tras hide: `reactivate_favorite_share` limpia hides si la fila sigue existiendo; si ambos visibles → «ya enviado».
    - RLS: SELECT si soy `from`/`to` y mi `hidden_by_*` es null; DELETE si soy party (cleanup); INSERT solo como `from` + `is_app_user()`; `to_user_id` debe ser `eficen_members.user_id` activo (no subquery a `users`: RLS own-only impediría enviar a peers).
-   - UI: avión → Común | Personas (multi-select); ruta `/favorites/shared` (enviadas + recibidas). Sin avisos in-app peer ni papelera en este ADR.
+   - UI: avión → Común | Personas (multi-select); ruta `/favorites/shared` (enviadas + recibidas). Avisos in-app peer: ver [037](037-notification-shared-peer.md) (`notification_shared`).
 5. **`users` sigue own-only.** Nombres de compañeros vía `eficen_members` (o copia denormalizada ya existente en Común).
 
 ### Alternativas descartadas

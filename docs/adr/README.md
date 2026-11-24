@@ -48,3 +48,4 @@ No uses un ADR para el estado de una fuente o un parser: eso va en `docs/sources
 | [032](032-eficen-members-favorites-shared.md) | Directorio `eficen_members` + peer shares `favorites_shared` | Aceptado |
 | [033](033-placsp-commit-por-pagina-raw-sin-fecha.md) | PLACSP commit por página Atom + RAW path sin fecha | Aceptado |
 | [034](034-recomendaciones-desde-ratings-y-favoritos.md) | Recomendaciones batch (ratings, favoritos, perfil Eficen) | Aceptado |
+| [037](037-notification-shared-peer.md) | Aviso in-app al compartir peer (`notification_shared`) | Aceptado |
