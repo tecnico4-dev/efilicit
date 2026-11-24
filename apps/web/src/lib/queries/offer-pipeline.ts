@@ -552,6 +552,7 @@ export async function updateOfferRequirement(
     patch: {
       compliance_status?: OfferComplianceStatus;
       prep_status?: OfferPrepStatus;
+      requirement_type?: OfferRequirementType;
       envelope?: OfferEnvelope | null;
       internal_due_at?: string | null;
       owner_member_id?: string | null;

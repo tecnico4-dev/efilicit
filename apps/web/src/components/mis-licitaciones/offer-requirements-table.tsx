@@ -38,6 +38,7 @@ import {
   OFFER_ENVELOPES,
   OFFER_PREP_LABELS,
   OFFER_PREP_STATUSES,
+  OFFER_REQUIREMENT_TYPES,
   createOfferRequirement,
   updateOfferRequirement,
   type EficenMemberForTeam,
@@ -45,6 +46,7 @@ import {
   type OfferEnvelope,
   type OfferPrepStatus,
   type OfferRequirementDetail,
+  type OfferRequirementType,
 } from "@/lib/queries";
 import { useUnsavedNavigationGuard } from "@/lib/use-unsaved-navigation-guard";
 
@@ -63,6 +65,100 @@ function normalizeEnvelope(value: string | null | undefined): OfferEnvelope {
     return value as OfferEnvelope;
   }
   return "ninguno";
+}
+
+/** Tipo en texto coloreado; menú solo en edición. */
+function TypeTextSelect({
+  value,
+  disabled,
+  locked,
+  readOnly,
+  alignStart,
+  onChange,
+}: {
+  value: OfferRequirementType;
+  disabled?: boolean;
+  locked?: boolean;
+  readOnly?: boolean;
+  alignStart?: boolean;
+  onChange: (next: OfferRequirementType) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const inert = Boolean(disabled || locked || readOnly);
+  const label = TYPE_LABELS[value] ?? value;
+
+  return (
+    <div
+      className={cn(
+        "relative flex",
+        alignStart ? "justify-start" : "justify-center",
+      )}
+    >
+      <button
+        ref={triggerRef}
+        type="button"
+        disabled={Boolean(disabled || locked)}
+        aria-disabled={inert}
+        aria-expanded={open}
+        aria-haspopup="listbox"
+        aria-label="Tipo"
+        onClick={() => !inert && setOpen((v) => !v)}
+        className={cn(
+          "rounded-sm text-xs font-semibold outline-none",
+          "focus-visible:ring-2 focus-visible:ring-primary/40",
+          locked
+            ? "cursor-default text-muted-foreground/45"
+            : cn(
+                TYPE_CLASS[value] ?? "text-muted-foreground",
+                readOnly ? "cursor-default" : "cursor-pointer hover:underline",
+                disabled && "cursor-wait opacity-60 no-underline",
+              ),
+        )}
+      >
+        {label}
+      </button>
+      <AnchoredPortal
+        open={open && !inert}
+        anchorRef={triggerRef}
+        onDismiss={() => setOpen(false)}
+        matchAnchorWidth={false}
+        align="center"
+        minWidth={140}
+        maxWidth={200}
+        maxHeight={260}
+        className="bg-background p-1"
+      >
+        <ul role="listbox" className="py-0.5">
+          {TYPE_OPTIONS.map((opt) => {
+            const selected = opt.value === value;
+            return (
+              <li key={opt.value}>
+                <button
+                  type="button"
+                  role="option"
+                  aria-selected={selected}
+                  className={cn(
+                    "flex w-full items-center justify-center rounded-md px-2.5 py-1.5 text-center text-sm",
+                    "hover:bg-muted",
+                    selected
+                      ? "font-semibold text-foreground"
+                      : "text-foreground",
+                  )}
+                  onClick={() => {
+                    onChange(opt.value);
+                    setOpen(false);
+                  }}
+                >
+                  <span className={TYPE_CLASS[opt.value]}>{opt.label}</span>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      </AnchoredPortal>
+    </div>
+  );
 }
 
 /** Sobre en texto gris (sin chip); menú solo en edición. */
@@ -162,6 +258,7 @@ function EnvelopeTextSelect({
 type ReqDraft = {
   compliance_status: OfferComplianceStatus;
   prep_status: OfferPrepStatus;
+  requirement_type: OfferRequirementType;
   envelope: OfferEnvelope;
   owner_member_id: string | null;
   internal_due_at: string | null;
@@ -171,6 +268,7 @@ function snapshotReq(item: OfferRequirementDetail): ReqDraft {
   return {
     compliance_status: item.compliance_status as OfferComplianceStatus,
     prep_status: item.prep_status as OfferPrepStatus,
+    requirement_type: item.requirement_type as OfferRequirementType,
     envelope: normalizeEnvelope(item.envelope),
     owner_member_id: item.owner_member_id,
     internal_due_at: item.internal_due_at,
@@ -181,6 +279,7 @@ function draftsEqual(a: ReqDraft, b: ReqDraft): boolean {
   return (
     a.compliance_status === b.compliance_status &&
     a.prep_status === b.prep_status &&
+    a.requirement_type === b.requirement_type &&
     a.envelope === b.envelope &&
     a.owner_member_id === b.owner_member_id &&
     a.internal_due_at === b.internal_due_at
@@ -195,9 +294,14 @@ const TYPE_LABELS: Record<string, string> = {
 
 const TYPE_CLASS: Record<string, string> = {
   excluyente: "text-destructive",
-  puntuable: "text-amber-700",
+  puntuable: "text-yellow-600",
   informativo: "text-muted-foreground",
 };
+
+const TYPE_OPTIONS = OFFER_REQUIREMENT_TYPES.map((value) => ({
+  value,
+  label: TYPE_LABELS[value] ?? value,
+}));
 
 type ChipTone = "ok" | "warn" | "bad" | "muted" | "blue" | "purple" | "dim";
 
@@ -465,22 +569,30 @@ function MemberPicker({
               ),
         )}
       >
-        {selected?.avatarUrl ? (
-          <MemberAvatar
-            name={selected.displayName}
-            avatarUrl={selected.avatarUrl}
-            muted={locked}
-          />
+        {selected ? (
+          <>
+            {selected.avatarUrl ? (
+              <MemberAvatar
+                name={selected.displayName}
+                avatarUrl={selected.avatarUrl}
+                muted={locked}
+              />
+            ) : (
+              <PersonIcon
+                className={
+                  locked
+                    ? "text-muted-foreground/45"
+                    : "text-muted-foreground"
+                }
+              />
+            )}
+            <span className="truncate">
+              {shortMemberName(selected.displayName)}
+            </span>
+          </>
         ) : (
-          <PersonIcon
-            className={
-              locked ? "text-muted-foreground/45" : "text-muted-foreground"
-            }
-          />
+          <span className="truncate">—</span>
         )}
-        <span className="truncate">
-          {selected ? shortMemberName(selected.displayName) : "—"}
-        </span>
       </button>
 
       <AnchoredPortal
@@ -707,6 +819,7 @@ export function OfferRequirementsTable({
         ...item,
         compliance_status: draft.compliance_status,
         prep_status: draft.prep_status,
+        requirement_type: draft.requirement_type,
         envelope: draft.envelope,
         owner_member_id: draft.owner_member_id,
         internal_due_at: draft.internal_due_at,
@@ -1060,18 +1173,16 @@ export function OfferRequirementsTable({
                       ) : null}
                     </p>
                   </div>
-                  <span
-                    className={cn(
-                      "shrink-0 text-xs font-semibold",
-                      naLocked
-                        ? "text-muted-foreground/45"
-                        : (TYPE_CLASS[item.requirement_type] ??
-                          "text-muted-foreground"),
-                    )}
-                  >
-                    {TYPE_LABELS[item.requirement_type] ??
-                      item.requirement_type}
-                  </span>
+                  <TypeTextSelect
+                    value={item.requirement_type as OfferRequirementType}
+                    disabled={saving}
+                    locked={naLocked}
+                    readOnly={readOnly}
+                    alignStart
+                    onChange={(v) =>
+                      setDraft(item.id, { requirement_type: v })
+                    }
+                  />
                 </div>
 
                 <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -1253,18 +1364,15 @@ export function OfferRequirementsTable({
                       </p>
                     </td>
                     <td className={tdCenter}>
-                      <span
-                        className={cn(
-                          "text-xs font-semibold",
-                          naLocked
-                            ? "text-muted-foreground/45"
-                            : (TYPE_CLASS[item.requirement_type] ??
-                              "text-muted-foreground"),
-                        )}
-                      >
-                        {TYPE_LABELS[item.requirement_type] ??
-                          item.requirement_type}
-                      </span>
+                      <TypeTextSelect
+                        value={item.requirement_type as OfferRequirementType}
+                        disabled={saving}
+                        locked={naLocked}
+                        readOnly={readOnly}
+                        onChange={(v) =>
+                          setDraft(item.id, { requirement_type: v })
+                        }
+                      />
                     </td>
                     <td className={tdCenter}>
                       <EditableChipSelect
