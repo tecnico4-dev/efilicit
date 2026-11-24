@@ -280,9 +280,7 @@ export function AwardCriteriaSummary({
 
       {rows.length === 0 ? (
         <p className="mt-2 rounded-lg border border-dashed border-border px-3 py-4 text-sm text-muted-foreground">
-          Sin criterios extraídos del pliego. Si el intake ya corrió, puede que
-          el CODICE no trajera{" "}
-          <span className="font-medium text-foreground">AwardingCriteria</span>.
+          No hay criterios de adjudicación en este expediente.
         </p>
       ) : (
         <div className="mt-2 overflow-x-auto rounded-lg border border-border">
