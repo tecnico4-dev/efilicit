@@ -55,25 +55,49 @@ function mapCriteria(requirements: OfferRequirementDetail[]): CriterionRow[] {
     }));
 }
 
+function parseScore(raw: string | null | undefined): number | null {
+  if (!raw) return null;
+  const match = raw.trim().match(/([\d]+(?:[.,]\d+)?)/);
+  if (!match) return null;
+  const n = Number(match[1]!.replace(",", "."));
+  return Number.isFinite(n) ? n : null;
+}
+
+function formatScore(n: number | null, suffix = " pt"): string {
+  if (n == null) return "—";
+  const text = Number.isInteger(n)
+    ? String(n)
+    : n.toFixed(2).replace(".", ",");
+  return `${text}${suffix}`;
+}
+
 function totalsByEnvelope(rows: CriterionRow[]): string | null {
   const buckets = new Map<string, number>();
   for (const row of rows) {
-    const n = Number(
-      row.pointsLabel.replace(/\s*pt$/i, "").replace(",", "."),
-    );
-    if (!Number.isFinite(n)) continue;
+    const n = parseScore(row.pointsLabel);
+    if (n == null) continue;
     const key = row.envelopeLabel;
     buckets.set(key, (buckets.get(key) ?? 0) + n);
   }
   if (buckets.size === 0) return null;
   return [...buckets.entries()]
-    .map(([env, pts]) => {
-      const text = Number.isInteger(pts)
-        ? String(pts)
-        : pts.toFixed(2).replace(".", ",");
-      return `${env} ${text} pt`;
-    })
+    .map(([env, pts]) => `${env} ${formatScore(pts)}`)
     .join(" · ");
+}
+
+function sumScores(
+  rows: CriterionRow[],
+  pick: (row: CriterionRow) => string | null,
+): number | null {
+  let sum = 0;
+  let any = false;
+  for (const row of rows) {
+    const n = parseScore(pick(row));
+    if (n == null) continue;
+    sum += n;
+    any = true;
+  }
+  return any ? Math.round(sum * 100) / 100 : null;
 }
 
 function EstimateCell({
@@ -152,6 +176,8 @@ export function AwardCriteriaSummary({
 }) {
   const rows = mapCriteria(requirements);
   const totals = totalsByEnvelope(rows);
+  const pointsTotal = sumScores(rows, (r) => r.pointsLabel);
+  const estimateTotal = sumScores(rows, (r) => r.estimate);
 
   return (
     <div>
@@ -216,6 +242,21 @@ export function AwardCriteriaSummary({
                 </tr>
               ))}
             </tbody>
+            <tfoot>
+              <tr className="border-t-2 border-border bg-muted/50">
+                <td className="px-3 py-2.5 text-left text-sm font-semibold text-foreground">
+                  Total
+                </td>
+                <td className="px-3 py-2.5" />
+                <td className="whitespace-nowrap px-3 py-2.5 text-center text-sm font-semibold text-foreground">
+                  {formatScore(pointsTotal)}
+                </td>
+                <td className="px-3 py-2.5" />
+                <td className="whitespace-nowrap px-3 py-2.5 text-center text-sm font-semibold text-foreground">
+                  {formatScore(estimateTotal)}
+                </td>
+              </tr>
+            </tfoot>
           </table>
         </div>
       )}
