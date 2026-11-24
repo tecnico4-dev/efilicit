@@ -132,7 +132,7 @@ function EstimateCell({
             e.currentTarget.blur();
           }
         }}
-        className="w-full max-w-[5.5rem] rounded-md border border-transparent bg-transparent px-1.5 py-1 text-sm font-medium text-foreground outline-none placeholder:text-muted-foreground hover:border-border focus:border-border focus:bg-surface focus:ring-2 focus:ring-ring/40 disabled:opacity-60"
+        className="w-full max-w-[5.5rem] rounded-md border border-transparent bg-transparent px-1.5 py-1 text-center text-sm font-medium text-foreground outline-none placeholder:text-center placeholder:text-muted-foreground hover:border-border focus:border-border focus:bg-surface focus:ring-2 focus:ring-ring/40 disabled:opacity-60"
       />
       {error ? (
         <p className="mt-0.5 text-[10px] text-destructive">{error}</p>
@@ -175,17 +175,17 @@ export function AwardCriteriaSummary({
           <table className="w-full min-w-[36rem] border-collapse text-left text-sm">
             <thead className="border-b border-border bg-muted/40 text-xs uppercase tracking-wide text-muted-foreground">
               <tr>
-                <th className="px-3 py-2 font-semibold">Criterio</th>
-                <th className="whitespace-nowrap px-3 py-2 font-semibold">
+                <th className="px-3 py-2 text-left font-semibold">Criterio</th>
+                <th className="whitespace-nowrap px-3 py-2 text-center font-semibold">
                   Tipo
                 </th>
-                <th className="whitespace-nowrap px-3 py-2 font-semibold">
+                <th className="whitespace-nowrap px-3 py-2 text-center font-semibold">
                   Puntos
                 </th>
-                <th className="whitespace-nowrap px-3 py-2 font-semibold">
+                <th className="whitespace-nowrap px-3 py-2 text-center font-semibold">
                   Sobre
                 </th>
-                <th className="whitespace-nowrap px-3 py-2 font-semibold">
+                <th className="whitespace-nowrap px-3 py-2 text-center font-semibold">
                   Estimación
                 </th>
               </tr>
@@ -193,21 +193,25 @@ export function AwardCriteriaSummary({
             <tbody className="divide-y divide-border">
               {rows.map((row) => (
                 <tr key={row.id} className="align-top">
-                  <td className="px-3 py-2.5 text-foreground">{row.title}</td>
-                  <td className="whitespace-nowrap px-3 py-2.5 text-muted-foreground">
+                  <td className="px-3 py-2.5 text-left text-foreground">
+                    {row.title}
+                  </td>
+                  <td className="whitespace-nowrap px-3 py-2.5 text-center text-muted-foreground">
                     {row.typeLabel}
                   </td>
-                  <td className="whitespace-nowrap px-3 py-2.5 font-medium text-foreground">
+                  <td className="whitespace-nowrap px-3 py-2.5 text-center font-medium text-foreground">
                     {row.pointsLabel}
                   </td>
-                  <td className="whitespace-nowrap px-3 py-2.5 text-muted-foreground">
+                  <td className="whitespace-nowrap px-3 py-2.5 text-center text-muted-foreground">
                     {row.envelopeLabel}
                   </td>
-                  <td className="whitespace-nowrap px-3 py-2">
-                    <EstimateCell
-                      requirementId={row.id}
-                      initial={row.estimate}
-                    />
+                  <td className="whitespace-nowrap px-3 py-2 text-center">
+                    <div className="inline-flex justify-center">
+                      <EstimateCell
+                        requirementId={row.id}
+                        initial={row.estimate}
+                      />
+                    </div>
                   </td>
                 </tr>
               ))}
