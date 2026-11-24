@@ -496,7 +496,7 @@ function MemberPicker({
               ),
         )}
       >
-        {selected ? (
+        {selected?.avatarUrl ? (
           <MemberAvatar
             name={selected.displayName}
             avatarUrl={selected.avatarUrl}
@@ -510,7 +510,7 @@ function MemberPicker({
           />
         )}
         <span className="truncate">
-          {selected ? shortMemberName(selected.displayName) : "Sin asignar"}
+          {selected ? shortMemberName(selected.displayName) : "—"}
         </span>
       </button>
 
@@ -558,11 +558,15 @@ function MemberPicker({
                   setOpen(false);
                 }}
               >
-                <MemberAvatar
-                  name={m.displayName}
-                  avatarUrl={m.avatarUrl}
-                  className="size-5 text-[0.6rem]"
-                />
+                {m.avatarUrl ? (
+                  <MemberAvatar
+                    name={m.displayName}
+                    avatarUrl={m.avatarUrl}
+                    className="size-5 text-[0.6rem]"
+                  />
+                ) : (
+                  <PersonIcon />
+                )}
                 <span className="truncate">{m.displayName}</span>
               </button>
             </li>
@@ -1262,46 +1266,57 @@ export function OfferRequirementsTable({
                   />
                 </div>
 
-                <div className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-2">
-                  <EnvelopeTextSelect
-                    value={envelopeValue}
-                    disabled={saving}
-                    locked={naLocked}
-                    readOnly={readOnly}
-                    alignStart
-                    onChange={(v) => setDraft(item.id, { envelope: v })}
-                  />
-                  <MemberPicker
-                    value={item.owner_member_id}
-                    members={members}
-                    disabled={saving}
-                    locked={naLocked}
-                    readOnly={readOnly}
-                    alignStart
-                    onChange={(v) =>
-                      setDraft(item.id, { owner_member_id: v })
-                    }
-                  />
-                  <SingleDatePicker
-                    value={dueDay}
-                    disabled={saving}
-                    locked={naLocked}
-                    readOnly={readOnly}
-                    alignStart
-                    toneClassName={
-                      item.compliance_status === "cumple"
-                        ? "text-muted-foreground"
-                        : dueToneClass(item.internal_due_at)
-                    }
-                    onChange={(day) =>
-                      setDraft(item.id, {
-                        internal_due_at: day
-                          ? `${day}T12:00:00.000Z`
-                          : null,
-                      })
-                    }
-                  />
-                </div>
+                {(editing ||
+                  envelopeValue !== "ninguno" ||
+                  item.owner_member_id ||
+                  item.internal_due_at) && (
+                  <div className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-2">
+                    {(editing || envelopeValue !== "ninguno") && (
+                      <EnvelopeTextSelect
+                        value={envelopeValue}
+                        disabled={saving}
+                        locked={naLocked}
+                        readOnly={readOnly}
+                        alignStart
+                        onChange={(v) => setDraft(item.id, { envelope: v })}
+                      />
+                    )}
+                    {(editing || item.owner_member_id) && (
+                      <MemberPicker
+                        value={item.owner_member_id}
+                        members={members}
+                        disabled={saving}
+                        locked={naLocked}
+                        readOnly={readOnly}
+                        alignStart
+                        onChange={(v) =>
+                          setDraft(item.id, { owner_member_id: v })
+                        }
+                      />
+                    )}
+                    {(editing || item.internal_due_at) && (
+                      <SingleDatePicker
+                        value={dueDay}
+                        disabled={saving}
+                        locked={naLocked}
+                        readOnly={readOnly}
+                        alignStart
+                        toneClassName={
+                          item.compliance_status === "cumple"
+                            ? "text-muted-foreground"
+                            : dueToneClass(item.internal_due_at)
+                        }
+                        onChange={(day) =>
+                          setDraft(item.id, {
+                            internal_due_at: day
+                              ? `${day}T12:00:00.000Z`
+                              : null,
+                          })
+                        }
+                      />
+                    )}
+                  </div>
+                )}
               </article>
             );
           })
