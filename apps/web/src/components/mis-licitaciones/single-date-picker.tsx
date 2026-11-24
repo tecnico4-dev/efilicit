@@ -71,6 +71,8 @@ export function SingleDatePicker({
   locked,
   readOnly,
   alignStart,
+  boxed,
+  placeholder = "—",
   className,
   toneClassName,
   onChange,
@@ -83,6 +85,9 @@ export function SingleDatePicker({
   /** Vista: misma estética, sin abrir calendario. */
   readOnly?: boolean;
   alignStart?: boolean;
+  /** Trigger con borde/ancho de campo (formularios / modales). */
+  boxed?: boolean;
+  placeholder?: string;
   className?: string;
   toneClassName?: string;
   onChange: (next: string | null) => void;
@@ -98,8 +103,9 @@ export function SingleDatePicker({
   return (
     <div
       className={cn(
-        "relative inline-flex",
-        alignStart ? "justify-start" : "justify-center",
+        "relative",
+        boxed ? "block w-full" : "inline-flex",
+        !boxed && (alignStart ? "justify-start" : "justify-center"),
         className,
       )}
     >
@@ -116,18 +122,36 @@ export function SingleDatePicker({
           setOpen((v) => !v);
         }}
         className={cn(
-          "text-xs font-medium outline-none rounded-sm",
-          "focus-visible:ring-2 focus-visible:ring-primary/40",
-          locked
-            ? "cursor-default text-muted-foreground/45"
+          "outline-none",
+          boxed
+            ? cn(
+                "mt-1 flex w-full items-center justify-between gap-2 rounded-md border border-border bg-background px-3 py-2 text-left text-sm",
+                "hover:bg-muted/40 focus:ring-2 focus:ring-ring disabled:opacity-50",
+                value ? "text-foreground" : "text-muted-foreground",
+              )
             : cn(
-                readOnly ? "cursor-default" : "cursor-pointer hover:underline",
-                disabled && "cursor-wait opacity-60 no-underline",
-                value ? toneClassName : "text-muted-foreground",
+                "rounded-sm text-xs font-medium",
+                "focus-visible:ring-2 focus-visible:ring-primary/40",
+                locked
+                  ? "cursor-default text-muted-foreground/45"
+                  : cn(
+                      readOnly
+                        ? "cursor-default"
+                        : "cursor-pointer hover:underline",
+                      disabled && "cursor-wait opacity-60 no-underline",
+                      value ? toneClassName : "text-muted-foreground",
+                    ),
               ),
         )}
       >
-        {value ? formatEs(value) : "—"}
+        <span className={boxed ? "min-w-0 truncate" : undefined}>
+          {value ? formatEs(value) : placeholder}
+        </span>
+        {boxed ? (
+          <span aria-hidden className="shrink-0 text-xs text-muted-foreground">
+            ▾
+          </span>
+        ) : null}
       </button>
 
       <AnchoredPortal

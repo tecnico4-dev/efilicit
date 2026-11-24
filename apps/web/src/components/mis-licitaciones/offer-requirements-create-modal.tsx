@@ -27,7 +27,7 @@ import {
 
 export type OfferRequirementCreateValues = {
   title: string;
-  requirement_type: OfferRequirementType;
+  requirement_type: OfferRequirementType | "";
   category: string;
   envelope: OfferEnvelope;
   compliance_status: OfferComplianceStatus;
@@ -39,8 +39,8 @@ export type OfferRequirementCreateValues = {
 
 export const EMPTY_REQUIREMENT_CREATE: OfferRequirementCreateValues = {
   title: "",
-  requirement_type: "informativo",
-  category: "otros",
+  requirement_type: "",
+  category: "",
   envelope: "ninguno",
   compliance_status: "sin_verificar",
   prep_status: "pendiente",
@@ -83,8 +83,8 @@ type Props = {
 function isCreateDirty(d: OfferRequirementCreateValues): boolean {
   return (
     d.title.trim() !== "" ||
-    d.requirement_type !== EMPTY_REQUIREMENT_CREATE.requirement_type ||
-    d.category !== EMPTY_REQUIREMENT_CREATE.category ||
+    d.requirement_type !== "" ||
+    d.category !== "" ||
     d.envelope !== EMPTY_REQUIREMENT_CREATE.envelope ||
     d.compliance_status !== EMPTY_REQUIREMENT_CREATE.compliance_status ||
     d.prep_status !== EMPTY_REQUIREMENT_CREATE.prep_status ||
@@ -135,7 +135,9 @@ export function OfferRequirementsCreateModal({
   if (!mounted || !open) return null;
 
   const canSubmit =
-    draft.title.trim().length > 0 && Boolean(draft.requirement_type);
+    draft.title.trim().length > 0 &&
+    draft.requirement_type !== "" &&
+    draft.category !== "";
 
   async function handleSubmit() {
     if (!draft.title.trim()) {
@@ -145,6 +147,10 @@ export function OfferRequirementsCreateModal({
     }
     if (!draft.requirement_type) {
       setFormError("El tipo es obligatorio.");
+      return;
+    }
+    if (!draft.category) {
+      setFormError("La categoría es obligatoria.");
       return;
     }
     setFormError(null);
@@ -159,14 +165,12 @@ export function OfferRequirementsCreateModal({
     <div
       className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 p-3 sm:p-6"
       role="presentation"
-      onClick={busy ? undefined : onClose}
     >
       <div
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
         className="flex max-h-[min(92vh,48rem)] w-full max-w-3xl flex-col overflow-hidden rounded-xl border border-border bg-surface shadow-xl"
-        onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3 sm:px-5">
           <h2
@@ -225,6 +229,7 @@ export function OfferRequirementsCreateModal({
                 label="Tipo"
                 required
                 disabled={busy}
+                placeholder="Seleccionar"
                 options={TYPE_OPTIONS}
                 value={draft.requirement_type}
                 onChange={(v) =>
@@ -239,6 +244,7 @@ export function OfferRequirementsCreateModal({
                 label="Categoría"
                 required
                 disabled={busy}
+                placeholder="Seleccionar"
                 options={CATEGORY_OPTIONS}
                 value={draft.category}
                 onChange={(v) => setDraft((d) => ({ ...d, category: v }))}
@@ -345,23 +351,22 @@ export function OfferRequirementsCreateModal({
                 <p className="block text-sm font-medium text-foreground">
                   Fecha interna
                 </p>
-                <div className="mt-2">
-                  <SingleDatePicker
-                    value={
-                      draft.internal_due_at
-                        ? draft.internal_due_at.slice(0, 10)
-                        : null
-                    }
-                    disabled={busy}
-                    alignStart
-                    onChange={(day) =>
-                      setDraft((d) => ({
-                        ...d,
-                        internal_due_at: day ? `${day}T12:00:00.000Z` : null,
-                      }))
-                    }
-                  />
-                </div>
+                <SingleDatePicker
+                  value={
+                    draft.internal_due_at
+                      ? draft.internal_due_at.slice(0, 10)
+                      : null
+                  }
+                  disabled={busy}
+                  boxed
+                  placeholder="Elegir fecha"
+                  onChange={(day) =>
+                    setDraft((d) => ({
+                      ...d,
+                      internal_due_at: day ? `${day}T12:00:00.000Z` : null,
+                    }))
+                  }
+                />
               </div>
             </div>
 
@@ -404,6 +409,7 @@ function SingleSelect({
   options,
   value,
   disabled,
+  placeholder = "Seleccionar",
   onChange,
 }: {
   id: string;
@@ -412,12 +418,14 @@ function SingleSelect({
   options: { value: string; label: string }[];
   value: string;
   disabled?: boolean;
+  placeholder?: string;
   onChange: (next: string) => void;
 }) {
   const [open, setOpen] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
-  const summary =
-    options.find((o) => o.value === value)?.label ?? "Seleccionar";
+  const selected = options.find((o) => o.value === value);
+  const empty = value === "";
+  const summary = selected?.label ?? placeholder;
 
   return (
     <div>
@@ -434,9 +442,16 @@ function SingleSelect({
           aria-expanded={open}
           aria-haspopup="listbox"
           onClick={() => !disabled && setOpen((v) => !v)}
-          className="flex w-full items-center justify-between gap-2 rounded-md border border-border bg-background px-3 py-2 text-left text-sm text-foreground outline-none hover:bg-muted/40 focus:ring-2 focus:ring-ring disabled:opacity-50"
+          className="flex w-full items-center justify-between gap-2 rounded-md border border-border bg-background px-3 py-2 text-left text-sm outline-none hover:bg-muted/40 focus:ring-2 focus:ring-ring disabled:opacity-50"
         >
-          <span className="min-w-0 truncate">{summary}</span>
+          <span
+            className={cn(
+              "min-w-0 truncate",
+              empty ? "text-muted-foreground" : "text-foreground",
+            )}
+          >
+            {summary}
+          </span>
           <span aria-hidden className="shrink-0 text-xs text-muted-foreground">
             ▾
           </span>
