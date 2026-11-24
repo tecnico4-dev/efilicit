@@ -713,6 +713,24 @@ function SelectAllIcon() {
   );
 }
 
+function ClearSelectionIcon() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="size-4 shrink-0"
+      aria-hidden
+    >
+      <rect x="4" y="4" width="16" height="16" rx="2" />
+    </svg>
+  );
+}
+
 function RequirementCheck({
   checked,
   disabled,
@@ -1183,6 +1201,12 @@ export function OfferRequirementsTable({
                 allFilteredSelected
               }
               onClick={selectAllFiltered}
+            />
+            <ToolbarButton
+              icon={<ClearSelectionIcon />}
+              label="Desmarcar todos"
+              disabled={deletingBusy || selectedCount === 0}
+              onClick={() => setSelectedIds(new Set())}
             />
             <ToolbarButton
               icon={<TrashIcon />}
