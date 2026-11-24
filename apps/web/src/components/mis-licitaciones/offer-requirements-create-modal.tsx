@@ -268,16 +268,28 @@ export function OfferRequirementsCreateModal({
               <div>
                 <label
                   htmlFor="req-create-required-value"
-                  className="block text-sm font-medium text-foreground"
+                  className="inline-flex items-center gap-1.5 text-sm font-medium text-foreground"
                 >
                   Valor requerido
+                  <span
+                    className="group relative inline-flex size-3.5 shrink-0 cursor-help items-center justify-center rounded-full border border-muted-foreground/50 text-[0.625rem] font-semibold leading-none text-muted-foreground"
+                    tabIndex={0}
+                    aria-label="Cifra, umbral o texto del pliego (opcional)."
+                  >
+                    i
+                    <span
+                      role="tooltip"
+                      className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-1.5 w-max max-w-[14rem] -translate-x-1/2 rounded-md bg-foreground px-2 py-1 text-center text-xs font-normal text-background opacity-0 shadow-sm transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"
+                    >
+                      Cifra, umbral o texto del pliego (opcional).
+                    </span>
+                  </span>
                 </label>
                 <Input
                   id="req-create-required-value"
                   value={draft.required_value}
                   disabled={busy}
                   className={inputClass}
-                  placeholder="Opcional (p. ej. cifra, umbral…)"
                   onChange={(e) =>
                     setDraft((d) => ({
                       ...d,
