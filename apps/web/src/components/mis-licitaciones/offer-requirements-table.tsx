@@ -975,7 +975,7 @@ export function OfferRequirementsTable({
             <Button
               type="button"
               size="sm"
-              disabled={saving || creatingBusy}
+              disabled={saving || creatingBusy || !editDirty}
               onClick={() => void flushDrafts()}
             >
               Aplicar cambios
