@@ -121,7 +121,7 @@ export function SingleDatePicker({
   onChange: (next: string | null) => void;
 }) {
   const [open, setOpen] = useState(false);
-  const triggerRef = useRef<HTMLElement | null>(null);
+  const triggerRef = useRef<HTMLDivElement | null>(null);
   const [text, setText] = useState(() => (value ? formatEs(value) : ""));
   const [viewMonth, setViewMonth] = useState(() =>
     startOfMonth(parseIso(value ?? "") ?? new Date()),
