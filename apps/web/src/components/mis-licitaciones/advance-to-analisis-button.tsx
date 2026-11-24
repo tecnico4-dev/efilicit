@@ -78,9 +78,7 @@ export function AdvanceToAnalisisButton({
           </h3>
           <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
             El expediente está parado aquí hasta que algún miembro del equipo
-            empiece a valorarlo. En cuanto podáis mirarlo, pasadlo a{" "}
-            <span className="font-medium text-foreground">Análisis</span> para
-            decidir GO / NO-GO.
+            empiece a valorarlo.
           </p>
         </div>
         <Button
