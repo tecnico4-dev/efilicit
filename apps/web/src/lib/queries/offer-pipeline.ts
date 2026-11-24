@@ -121,11 +121,22 @@ export type OfferCaseListItem = OfferCaseRow & {
   next_due_at: string | null;
 };
 
+export type OfferGoDecision = "go" | "no_go" | "pending";
+
 export type OfferCaseDetail = OfferCaseRow & {
   tenders: OfferCaseTenderSummary | null;
   owner_member: OfferOwnerMember | null;
   requirements: OfferRequirementDetail[];
+  /** Nombre de quien registró go/no-go (si hay go_decided_by). */
+  go_decider_name: string | null;
 };
+
+export function asOfferGoDecision(
+  raw: string | null | undefined,
+): OfferGoDecision | null {
+  if (raw === "go" || raw === "no_go" || raw === "pending") return raw;
+  return null;
+}
 
 export const OFFER_MEMBER_ROLES = [
   "preparador",
@@ -365,6 +376,9 @@ export async function getOfferCaseById(
         role_title,
         avatar_url
       ),
+      go_decider:users!go_decided_by (
+        display_name
+      ),
       tenders (
         id,
         title,
@@ -417,6 +431,18 @@ export async function getOfferCaseById(
     data.tenders as OfferCaseTenderSummary | OfferCaseTenderSummary[] | null;
   const tenders = Array.isArray(tender) ? (tender[0] ?? null) : tender;
 
+  const goDeciderRaw = (
+    data as {
+      go_decider?:
+        | { display_name: string | null }
+        | { display_name: string | null }[]
+        | null;
+    }
+  ).go_decider;
+  const goDecider = Array.isArray(goDeciderRaw)
+    ? (goDeciderRaw[0] ?? null)
+    : (goDeciderRaw ?? null);
+
   const requirements = (
     (data.offer_requirements ?? []) as Array<
       OfferRequirementRow & {
@@ -466,6 +492,7 @@ export async function getOfferCaseById(
           | null
           | undefined,
       ),
+      go_decider_name: goDecider?.display_name?.trim() || null,
       tenders,
       requirements,
     },
@@ -530,6 +557,28 @@ export async function setOfferCaseOwner(
   const { error } = await client
     .from("offer_cases")
     .update({ owner_member_id: input.ownerMemberId })
+    .eq("id", input.offerCaseId);
+  if (error) return { error: new Error(error.message) };
+  return { error: null };
+}
+
+export async function setOfferCaseGoDecision(
+  client: SupabaseClient<Database>,
+  input: {
+    offerCaseId: string;
+    decision: "go" | "no_go";
+    reason: string | null;
+    decidedBy: string;
+  },
+): Promise<{ error: Error | null }> {
+  const { error } = await client
+    .from("offer_cases")
+    .update({
+      go_decision: input.decision,
+      go_reason: input.reason,
+      go_decided_at: new Date().toISOString(),
+      go_decided_by: input.decidedBy,
+    })
     .eq("id", input.offerCaseId);
   if (error) return { error: new Error(error.message) };
   return { error: null };

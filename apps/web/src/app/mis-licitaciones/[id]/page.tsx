@@ -37,6 +37,7 @@ import {
 } from "@/components/mis-licitaciones/offer-case-sections";
 import { OfferRequirementsTable } from "@/components/mis-licitaciones/offer-requirements-table";
 import { OfferCaseTeamPanel } from "@/components/mis-licitaciones/offer-case-team-panel";
+import { OfferGoDecisionCard } from "@/components/mis-licitaciones/offer-go-decision-card";
 import { TenderFichaModalButton } from "@/components/mis-licitaciones/tender-ficha-modal";
 import { cn } from "@/lib/cn";
 
@@ -244,20 +245,14 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
             panes={{
               resumen: (
                 <div className="space-y-5 text-sm">
-                  <div>
-                    <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                      Decisión go / no-go
-                    </h3>
-                    <p className="mt-2 text-muted-foreground">
-                      {offerCase.go_decision
-                        ? `${offerCase.go_decision}${
-                            offerCase.go_reason
-                              ? ` · ${offerCase.go_reason}`
-                              : ""
-                          }`
-                        : "Aún no hay decisión registrada."}
-                    </p>
-                  </div>
+                  <OfferGoDecisionCard
+                    offerCaseId={offerCase.id}
+                    userId={profile.data.id}
+                    decision={offerCase.go_decision}
+                    reason={offerCase.go_reason}
+                    decidedAt={offerCase.go_decided_at}
+                    decidedByName={offerCase.go_decider_name}
+                  />
 
                   <div>
                     <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
