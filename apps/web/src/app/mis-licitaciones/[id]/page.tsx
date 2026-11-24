@@ -37,7 +37,10 @@ import {
 } from "@/components/mis-licitaciones/offer-case-sections";
 import { OfferRequirementsTable } from "@/components/mis-licitaciones/offer-requirements-table";
 import { OfferCaseTeamPanel } from "@/components/mis-licitaciones/offer-case-team-panel";
-import { AdvanceToAnalisisButton } from "@/components/mis-licitaciones/advance-to-analisis-button";
+import {
+  AdvanceToAnalisisButton,
+  AdvanceToAnalisisLink,
+} from "@/components/mis-licitaciones/advance-to-analisis-button";
 import { OfferGoDecisionCard } from "@/components/mis-licitaciones/offer-go-decision-card";
 import { TenderFichaModalButton } from "@/components/mis-licitaciones/tender-ficha-modal";
 import { cn } from "@/lib/cn";
@@ -227,7 +230,16 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
             value={prepPct != null ? `${prepPct}%` : "—"}
             bar={prepPct}
           />
-          <Kpi label="Estado" value={stageLabel} valueSize="lg" />
+          {offerCase.stage === "interes" ? (
+            <OutlinedField label="Estado">
+              <p className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
+                {stageLabel}
+              </p>
+              <AdvanceToAnalisisLink offerCaseId={offerCase.id} />
+            </OutlinedField>
+          ) : (
+            <Kpi label="Estado" value={stageLabel} valueSize="lg" />
+          )}
           <DeadlineRiskKpi
             historic={historic}
             dueIso={due}
