@@ -37,6 +37,7 @@ import {
 } from "@/components/mis-licitaciones/offer-case-sections";
 import { OfferRequirementsTable } from "@/components/mis-licitaciones/offer-requirements-table";
 import { OfferCaseTeamPanel } from "@/components/mis-licitaciones/offer-case-team-panel";
+import { AdvanceToAnalisisButton } from "@/components/mis-licitaciones/advance-to-analisis-button";
 import { OfferGoDecisionCard } from "@/components/mis-licitaciones/offer-go-decision-card";
 import { TenderFichaModalButton } from "@/components/mis-licitaciones/tender-ficha-modal";
 import { cn } from "@/lib/cn";
@@ -245,14 +246,21 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
             panes={{
               resumen: (
                 <div className="space-y-5 text-sm">
-                  <OfferGoDecisionCard
-                    offerCaseId={offerCase.id}
-                    userId={profile.data.id}
-                    decision={offerCase.go_decision}
-                    reason={offerCase.go_reason}
-                    decidedAt={offerCase.go_decided_at}
-                    decidedByName={offerCase.go_decider_name}
-                  />
+                  {offerCase.stage === "interes" ? (
+                    <AdvanceToAnalisisButton offerCaseId={offerCase.id} />
+                  ) : null}
+                  {offerCase.stage === "analisis" ||
+                  offerCase.go_decision === "go" ||
+                  offerCase.go_decision === "no_go" ? (
+                    <OfferGoDecisionCard
+                      offerCaseId={offerCase.id}
+                      userId={profile.data.id}
+                      decision={offerCase.go_decision}
+                      reason={offerCase.go_reason}
+                      decidedAt={offerCase.go_decided_at}
+                      decidedByName={offerCase.go_decider_name}
+                    />
+                  ) : null}
 
                   <div>
                     <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">

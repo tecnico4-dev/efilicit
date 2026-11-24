@@ -562,6 +562,20 @@ export async function setOfferCaseOwner(
   return { error: null };
 }
 
+/** Interés → Análisis (ahí aparece el cuadro go/no-go). */
+export async function advanceOfferCaseToAnalisis(
+  client: SupabaseClient<Database>,
+  offerCaseId: string,
+): Promise<{ error: Error | null }> {
+  const { error } = await client
+    .from("offer_cases")
+    .update({ stage: "analisis" })
+    .eq("id", offerCaseId)
+    .eq("stage", "interes");
+  if (error) return { error: new Error(error.message) };
+  return { error: null };
+}
+
 export async function setOfferCaseGoDecision(
   client: SupabaseClient<Database>,
   input: {
@@ -571,14 +585,40 @@ export async function setOfferCaseGoDecision(
     decidedBy: string;
   },
 ): Promise<{ error: Error | null }> {
+  const { data: current, error: readError } = await client
+    .from("offer_cases")
+    .select("preparation_started_on, outcome_on")
+    .eq("id", input.offerCaseId)
+    .maybeSingle();
+  if (readError) return { error: new Error(readError.message) };
+
+  const today = new Date().toLocaleDateString("en-CA", {
+    timeZone: "Europe/Madrid",
+  });
+  // Go cierra Análisis → preparación; no-go → histórico descartada.
+  const patch =
+    input.decision === "go"
+      ? {
+          go_decision: input.decision,
+          go_reason: input.reason,
+          go_decided_at: new Date().toISOString(),
+          go_decided_by: input.decidedBy,
+          stage: "preparacion" as const,
+          preparation_started_on: current?.preparation_started_on ?? today,
+        }
+      : {
+          go_decision: input.decision,
+          go_reason: input.reason,
+          go_decided_at: new Date().toISOString(),
+          go_decided_by: input.decidedBy,
+          stage: "descartada" as const,
+          outcome_on: current?.outcome_on ?? today,
+          discard_reason: input.reason,
+        };
+
   const { error } = await client
     .from("offer_cases")
-    .update({
-      go_decision: input.decision,
-      go_reason: input.reason,
-      go_decided_at: new Date().toISOString(),
-      go_decided_by: input.decidedBy,
-    })
+    .update(patch)
     .eq("id", input.offerCaseId);
   if (error) return { error: new Error(error.message) };
   return { error: null };

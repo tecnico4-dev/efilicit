@@ -208,6 +208,7 @@ export {
   offerCaseHistoryYear,
   removeOfferCaseMember,
   setOfferCaseOwner,
+  advanceOfferCaseToAnalisis,
   setOfferCaseGoDecision,
   asOfferGoDecision,
   createOfferRequirement,
