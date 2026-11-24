@@ -12,6 +12,7 @@ import {
   PAGE_TITLE_RULE,
 } from "@/components/shell/page-width";
 import { ErrorState } from "@/components/ui/state-message";
+import { MisLicitacionesListRestore } from "@/components/mis-licitaciones/mis-licitaciones-list-restore";
 import { MisLicitacionesSection } from "@/components/mis-licitaciones/mis-licitaciones-section";
 
 export const dynamic = "force-dynamic";
@@ -80,6 +81,7 @@ export default async function MisLicitacionesPage({ searchParams }: PageProps) {
 
   return (
     <main className={PAGE_MAIN_FAVORITES_CLASS}>
+      <MisLicitacionesListRestore urlScope={tab} />
       <h1 className="text-2xl font-semibold tracking-tight text-foreground">
         Mis licitaciones
       </h1>

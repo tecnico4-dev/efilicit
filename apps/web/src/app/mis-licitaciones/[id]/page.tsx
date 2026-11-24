@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
   getSessionProfile,
@@ -177,13 +176,6 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
 
   return (
     <main className={PAGE_MAIN_WIDE_CLASS}>
-      <Link
-        href={historic ? "/mis-licitaciones?tab=historic" : "/mis-licitaciones"}
-        className="mb-4 inline-flex text-sm font-medium text-link hover:underline"
-      >
-        ← Volver al pipeline
-      </Link>
-
       <section className="rounded-xl border border-border bg-surface p-4 sm:p-5">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
