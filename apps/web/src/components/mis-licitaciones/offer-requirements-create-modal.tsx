@@ -65,7 +65,7 @@ const CATEGORY_OPTIONS = Object.entries(REQUIREMENT_CATEGORY_LABELS).map(
 
 const ENVELOPE_OPTIONS = OFFER_ENVELOPES.map((value) => ({
   value,
-  label: value === "ninguno" ? "—" : (ENVELOPE_LABELS[value] ?? value),
+  label: value === "ninguno" ? "Sin sobre" : (ENVELOPE_LABELS[value] ?? value),
 }));
 
 const inputClass =
@@ -266,25 +266,15 @@ export function OfferRequirementsCreateModal({
                 }
               />
               <div>
-                <label
-                  htmlFor="req-create-required-value"
-                  className="inline-flex items-center gap-1.5 text-sm font-medium text-foreground"
-                >
-                  Valor requerido
-                  <span
-                    className="group relative inline-flex size-3.5 shrink-0 cursor-help items-center justify-center rounded-full border border-muted-foreground/50 text-[0.625rem] font-semibold leading-none text-muted-foreground"
-                    tabIndex={0}
-                    aria-label="Cifra, umbral o texto del pliego (opcional)."
+                <div className="inline-flex items-center gap-1.5">
+                  <label
+                    htmlFor="req-create-required-value"
+                    className="text-sm font-medium text-foreground"
                   >
-                    i
-                    <span
-                      role="tooltip"
-                      className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-1.5 w-max max-w-[14rem] -translate-x-1/2 rounded-md bg-foreground px-2 py-1 text-center text-xs font-normal text-background opacity-0 shadow-sm transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"
-                    >
-                      Cifra, umbral o texto del pliego (opcional).
-                    </span>
-                  </span>
-                </label>
+                    Valor requerido
+                  </label>
+                  <ClickHint tip="Ejemplos: cifra, umbral o texto del pliego." />
+                </div>
                 <Input
                   id="req-create-required-value"
                   value={draft.required_value}
@@ -411,6 +401,43 @@ export function OfferRequirementsCreateModal({
       </div>
     </div>,
     document.body,
+  );
+}
+
+function ClickHint({ tip }: { tip: string }) {
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLSpanElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function onDoc(e: MouseEvent) {
+      if (rootRef.current?.contains(e.target as Node)) return;
+      setOpen(false);
+    }
+    document.addEventListener("mousedown", onDoc);
+    return () => document.removeEventListener("mousedown", onDoc);
+  }, [open]);
+
+  return (
+    <span ref={rootRef} className="relative inline-flex">
+      <button
+        type="button"
+        aria-label={tip}
+        aria-expanded={open}
+        onClick={() => setOpen((v) => !v)}
+        className="inline-flex size-3.5 shrink-0 items-center justify-center rounded-full border border-muted-foreground/50 text-[0.625rem] font-semibold leading-none text-muted-foreground hover:border-foreground hover:text-foreground"
+      >
+        i
+      </button>
+      {open ? (
+        <span
+          role="tooltip"
+          className="absolute bottom-full left-1/2 z-10 mb-1.5 w-max max-w-[14rem] -translate-x-1/2 rounded-md bg-foreground px-2 py-1 text-center text-xs font-normal text-background shadow-sm"
+        >
+          {tip}
+        </span>
+      ) : null}
+    </span>
   );
 }
 
