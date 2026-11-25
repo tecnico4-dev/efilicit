@@ -723,15 +723,42 @@ function TaskEditorModal({
           <p className="mt-2 text-xs text-destructive">{error}</p>
         ) : null}
 
-        <div
-          className={cn(
-            "mt-4 flex flex-wrap items-center gap-2",
-            editing ? "justify-end" : "justify-between",
-          )}
-        >
-          {!editing ? (
-            <div className="flex flex-wrap gap-2">
-              {mode === "edit" && onToggleDone ? (
+        <div className="mt-4 flex flex-wrap items-center justify-end gap-2">
+          {editing ? (
+            <>
+              <Button
+                type="button"
+                size="sm"
+                disabled={busy}
+                onClick={() => {
+                  void (async () => {
+                    const ok = await onSave();
+                    if (!ok) return;
+                    if (mode === "create") return;
+                    baselineRef.current = draft;
+                    setEditing(false);
+                  })();
+                }}
+              >
+                {busy
+                  ? "Guardando…"
+                  : mode === "create"
+                    ? "Crear"
+                    : "Guardar"}
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                disabled={busy}
+                onClick={mode === "create" ? requestClose : cancelEditing}
+              >
+                Cancelar
+              </Button>
+            </>
+          ) : (
+            <>
+              {onToggleDone ? (
                 <Button
                   type="button"
                   variant="outline"
@@ -743,7 +770,24 @@ function TaskEditorModal({
                   {draft.done ? "Reabrir" : "Marcar hecha"}
                 </Button>
               ) : null}
-              {mode === "edit" && onDelete ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                disabled={busy}
+                onClick={requestClose}
+              >
+                Descartar
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                disabled={busy}
+                onClick={startEditing}
+              >
+                Editar
+              </Button>
+              {onDelete ? (
                 <Button
                   type="button"
                   variant="ghost"
@@ -755,54 +799,8 @@ function TaskEditorModal({
                   Eliminar
                 </Button>
               ) : null}
-            </div>
-          ) : null}
-          <div className="flex gap-2">
-            {editing ? (
-              <>
-                <Button
-                  type="button"
-                  size="sm"
-                  disabled={busy}
-                  onClick={() => {
-                    void (async () => {
-                      const ok = await onSave();
-                      if (!ok) return;
-                      if (mode === "create") return;
-                      baselineRef.current = draft;
-                      setEditing(false);
-                    })();
-                  }}
-                >
-                  {busy
-                    ? "Guardando…"
-                    : mode === "create"
-                      ? "Crear"
-                      : "Guardar"}
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  disabled={busy}
-                  onClick={
-                    mode === "create" ? requestClose : cancelEditing
-                  }
-                >
-                  Cancelar
-                </Button>
-              </>
-            ) : (
-              <Button
-                type="button"
-                size="sm"
-                disabled={busy}
-                onClick={startEditing}
-              >
-                Editar
-              </Button>
-            )}
-          </div>
+            </>
+          )}
         </div>
       </div>
     </div>,
