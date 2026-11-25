@@ -271,7 +271,7 @@ export function OfferCaseLogPanel({
                       !isLast && "border-b-[1.5px] border-border",
                     )}
                   >
-                    <div className="flex justify-start">
+                    <div className="flex justify-center">
                       <EventBadge type={entry.event_type} />
                     </div>
                     <div className="min-w-0">
