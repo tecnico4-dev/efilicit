@@ -245,24 +245,24 @@ export function OfferCaseLogPanel({
                   style={{ zIndex: entries.length - index }}
                 >
                   <div
-                    className={cn(
-                      "flex w-[7.25rem] shrink-0 items-center justify-center px-2 text-center text-[0.8rem] font-semibold tabular-nums text-primary-foreground",
-                      index === 0
-                        ? "bg-primary"
-                        : index % 2 === 1
-                          ? "bg-primary-dark"
-                          : "bg-primary",
-                    )}
+                    className="w-[7.25rem] shrink-0 bg-primary p-px"
                     style={{
-                      // Flecha ↑: punta arriba; abajo muesca hacia dentro (piquito hacia arriba)
+                      // Flecha ↑: punta arriba; abajo muesca hacia dentro.
+                      // Trazo finito primary (1px, como border de tablas) sin relleno.
                       clipPath:
                         "polygon(50% 0%, 100% 14px, 100% 100%, 50% calc(100% - 14px), 0% 100%, 0% 14px)",
-                      paddingTop: "1.35rem",
-                      paddingBottom: "1.35rem",
                       minHeight: "4.25rem",
                     }}
                   >
-                    {formatDateMadrid(entry.happened_on)}
+                    <div
+                      className="flex h-full min-h-[calc(4.25rem-2px)] w-full items-center justify-center bg-background px-2 text-center text-[0.8rem] font-medium tabular-nums text-foreground"
+                      style={{
+                        paddingTop: "1.35rem",
+                        paddingBottom: "1.35rem",
+                      }}
+                    >
+                      {formatDateMadrid(entry.happened_on)}
+                    </div>
                   </div>
 
                   <div

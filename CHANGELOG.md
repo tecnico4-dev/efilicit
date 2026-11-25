@@ -24,7 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Mis licitaciones · Bitácora: fechas en chevrones verticales (punta arriba) con primary / primary-dark, encajados como timeline.
+- Mis licitaciones · Bitácora: fechas en chevrones verticales (punta arriba, muesca inferior hacia dentro); trazo primary 1px sin relleno.
 - Mis licitaciones · Resumen: tabla de criterios de adjudicación (tipo / puntos / sobre / estimación editable en `our_value`) desde el intake.
 - Mis licitaciones · go/no-go: en Interés no hay cuadro (CTA «Pasar a análisis»); en Análisis sí; al decidir → preparación (go) o descartada (no-go).
 - Mis licitaciones · Requisitos (UI): responsive (cards en móvil, tabla en `md+`); Crear + Enter; filtros; Editar→Aplicar con aviso al salir; columna Sobre; chips; responsable con avatar. Migración local (`prep_status` + `bloqueado`).
