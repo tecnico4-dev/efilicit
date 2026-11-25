@@ -1169,55 +1169,50 @@ export function OfferTasksPanel({
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-muted-foreground">
-          Tareas sueltas del expediente (no son requisitos).
-        </p>
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="relative">
-            <MisLicitacionesFiltersButton
-              ref={filterBtnRef}
-              activeCount={filterCount}
-              onClick={() => setPresetMenuOpen((v) => !v)}
-            />
-            <AnchoredPortal
-              open={presetMenuOpen}
-              anchorRef={filterBtnRef}
-              onDismiss={() => setPresetMenuOpen(false)}
-              className="bg-surface p-1"
-              matchAnchorWidth={false}
-              minWidth={180}
-              maxHeight={280}
-            >
-              <ul role="listbox" className="py-0.5">
-                {TASK_FILTER_PRESETS.map((opt) => {
-                  const selected = filterPreset === opt.id;
-                  return (
-                    <li key={opt.id}>
-                      <button
-                        type="button"
-                        role="option"
-                        aria-selected={selected}
-                        className={cn(
-                          "flex w-full rounded-md px-2.5 py-1.5 text-left text-sm hover:bg-muted",
-                          selected
-                            ? "font-semibold text-foreground"
-                            : "text-foreground",
-                        )}
-                        onClick={() => applyPreset(opt.id)}
-                      >
-                        {opt.label}
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
-            </AnchoredPortal>
-          </div>
-          <Button type="button" size="sm" onClick={openCreate}>
-            Añadir tarea
-          </Button>
+      <div className="flex flex-wrap items-center justify-end gap-3">
+        <div className="relative">
+          <MisLicitacionesFiltersButton
+            ref={filterBtnRef}
+            activeCount={filterCount}
+            onClick={() => setPresetMenuOpen((v) => !v)}
+          />
+          <AnchoredPortal
+            open={presetMenuOpen}
+            anchorRef={filterBtnRef}
+            onDismiss={() => setPresetMenuOpen(false)}
+            className="bg-surface p-1"
+            matchAnchorWidth={false}
+            minWidth={180}
+            maxHeight={280}
+          >
+            <ul role="listbox" className="py-0.5">
+              {TASK_FILTER_PRESETS.map((opt) => {
+                const selected = filterPreset === opt.id;
+                return (
+                  <li key={opt.id}>
+                    <button
+                      type="button"
+                      role="option"
+                      aria-selected={selected}
+                      className={cn(
+                        "flex w-full rounded-md px-2.5 py-1.5 text-left text-sm hover:bg-muted",
+                        selected
+                          ? "font-semibold text-foreground"
+                          : "text-foreground",
+                      )}
+                      onClick={() => applyPreset(opt.id)}
+                    >
+                      {opt.label}
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </AnchoredPortal>
         </div>
+        <Button type="button" size="sm" onClick={openCreate}>
+          Añadir tarea
+        </Button>
       </div>
 
       {error ? <p className="text-sm text-destructive">{error}</p> : null}
