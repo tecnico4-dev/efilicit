@@ -128,16 +128,31 @@ export function OfferMemberPicker({
             ) : (
               <PersonIcon className="text-muted-foreground" />
             )}
-            <span className="truncate">
+            <span className="min-w-0 flex-1 truncate">
               {boxed ? selected.displayName : shortMemberName(selected.displayName)}
             </span>
           </>
         ) : (
           <>
             <PersonIcon className="text-muted-foreground" />
-            <span className="truncate">{emptyLabel}</span>
+            <span className="min-w-0 flex-1 truncate">{emptyLabel}</span>
           </>
         )}
+        {boxed ? (
+          <svg
+            viewBox="0 0 12 12"
+            aria-hidden
+            className={cn(
+              "ml-auto size-3 shrink-0 text-muted-foreground transition-transform",
+              open && "rotate-180",
+            )}
+          >
+            <path
+              fill="currentColor"
+              d="M2.2 4.2a.75.75 0 0 1 1.06 0L6 6.94l2.74-2.74a.75.75 0 1 1 1.06 1.06l-3.27 3.27a.75.75 0 0 1-1.06 0L2.2 5.26a.75.75 0 0 1 0-1.06Z"
+            />
+          </svg>
+        ) : null}
       </button>
 
       <AnchoredPortal
