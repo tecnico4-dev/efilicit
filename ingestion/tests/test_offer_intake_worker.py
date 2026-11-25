@@ -120,7 +120,7 @@ def test_intake_populates_case_and_is_idempotent(case_ids) -> None:
     assert stats["documents_failed"] == 1
     counts = _counts(case_id)
     assert counts["offer_case_pliegos"] == 5
-    assert counts["offer_milestones"] == 2
+    assert counts["offer_milestones"] == 4
     assert counts["offer_deliverables"] >= 1
     assert len(storage.uploads) == 1  # PCAP y PPT comparten bytes → misma clave
 

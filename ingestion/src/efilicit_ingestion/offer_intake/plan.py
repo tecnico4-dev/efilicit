@@ -291,6 +291,16 @@ def _envelope_points(criteria: list[OfferAwardingCriterion]) -> float | None:
 
 def _milestones(extract: OfferIntakeExtract) -> list[MilestoneRow]:
     out: list[MilestoneRow] = []
+    if extract.questions_deadline_at is not None:
+        out.append(
+            MilestoneRow(
+                source_key="ms:preguntas",
+                code="preguntas",
+                title="Límite de preguntas / aclaraciones",
+                due_at=extract.questions_deadline_at,
+                sort_order=5,
+            )
+        )
     if extract.submission_deadline_at is not None:
         out.append(
             MilestoneRow(
@@ -312,6 +322,16 @@ def _milestones(extract: OfferIntakeExtract) -> list[MilestoneRow]:
                 title="Fin de disponibilidad de pliegos",
                 due_at=extract.documents_available_until,
                 sort_order=20,
+            )
+        )
+    if extract.tender_opening_at is not None:
+        out.append(
+            MilestoneRow(
+                source_key="ms:apertura_sobres",
+                code="apertura_sobres",
+                title="Apertura de sobres",
+                due_at=extract.tender_opening_at,
+                sort_order=30,
             )
         )
     return out

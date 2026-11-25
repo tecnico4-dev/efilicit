@@ -77,6 +77,10 @@ def test_qualifications_guarantees_and_periods() -> None:
 
     assert extract.submission_deadline_at is not None
     assert extract.submission_deadline_at.isoformat() == "2026-12-09T10:00:00+01:00"
+    assert extract.questions_deadline_at is not None
+    assert extract.questions_deadline_at.isoformat() == "2026-12-05T14:00:00+01:00"
+    assert extract.tender_opening_at is not None
+    assert extract.tender_opening_at.isoformat() == "2026-12-11T12:00:00+01:00"
     assert extract.documents_available_until is not None
     assert extract.documents_available_until.isoformat() == "2026-12-07T10:00:00+01:00"
 

@@ -119,6 +119,33 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
     (m) => m.code === "presentacion",
   );
   const tenderSummary = offerCase.tenders;
+  const publicationLabel = tenderSummary?.publication_date
+    ? formatDateMadrid(tenderSummary.publication_date)
+    : null;
+  const presentationFallbackLabel =
+    !hasPresentationMilestone && tenderSummary?.deadline_at
+      ? formatDateTimeMadrid(tenderSummary.deadline_at)
+      : null;
+  const internalDeadlineLabel = offerCase.internal_deadline_at
+    ? formatDateTimeMadrid(offerCase.internal_deadline_at)
+    : null;
+  const prepStartedLabel = offerCase.preparation_started_on
+    ? formatDateMadrid(offerCase.preparation_started_on)
+    : null;
+  const presentedLabel = offerCase.presented_on
+    ? formatDateMadrid(offerCase.presented_on)
+    : null;
+  const outcomeLabel = offerCase.outcome_on
+    ? formatDateMadrid(offerCase.outcome_on)
+    : null;
+  const showCalendarTab =
+    milestones.length > 0 ||
+    publicationLabel != null ||
+    presentationFallbackLabel != null ||
+    internalDeadlineLabel != null ||
+    prepStartedLabel != null ||
+    presentedLabel != null ||
+    outcomeLabel != null;
   const tenderDetailResult = tenderSummary
     ? await getTenderById(supabase, tenderSummary.id)
     : { data: null, error: null };
@@ -357,67 +384,53 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
                   team={teamMembers}
                 />
               ),
-              calendario: (
+              calendario: showCalendarTab ? (
                 <ul className="space-y-0 text-sm">
-                  <CalRow
-                    label="Actualizado"
-                    value={
-                      tenderSummary?.publication_date
-                        ? formatDateMadrid(tenderSummary.publication_date)
-                        : "—"
-                    }
-                    kind="Oficial"
-                  />
-                  <MilestoneRows milestones={milestones} />
-                  {hasPresentationMilestone ? null : (
+                  {publicationLabel ? (
                     <CalRow
-                      label="Plazo de presentación"
-                      value={
-                        tenderSummary?.deadline_at
-                          ? formatDateTimeMadrid(tenderSummary.deadline_at)
-                          : "—"
-                      }
+                      label="Publicación"
+                      value={publicationLabel}
                       kind="Oficial"
                     />
-                  )}
-                  <CalRow
-                    label="Cierre interno"
-                    value={
-                      offerCase.internal_deadline_at
-                        ? formatDateTimeMadrid(offerCase.internal_deadline_at)
-                        : "—"
-                    }
-                    kind="Interno"
-                  />
-                  <CalRow
-                    label="Inicio preparación"
-                    value={
-                      offerCase.preparation_started_on
-                        ? formatDateMadrid(offerCase.preparation_started_on)
-                        : "—"
-                    }
-                    kind="Interno"
-                  />
-                  <CalRow
-                    label="Presentada"
-                    value={
-                      offerCase.presented_on
-                        ? formatDateMadrid(offerCase.presented_on)
-                        : "—"
-                    }
-                    kind="Interno"
-                  />
-                  <CalRow
-                    label="Outcome"
-                    value={
-                      offerCase.outcome_on
-                        ? formatDateMadrid(offerCase.outcome_on)
-                        : "—"
-                    }
-                    kind="Oficial"
-                  />
+                  ) : null}
+                  <MilestoneRows milestones={milestones} />
+                  {presentationFallbackLabel ? (
+                    <CalRow
+                      label="Plazo de presentación"
+                      value={presentationFallbackLabel}
+                      kind="Oficial"
+                    />
+                  ) : null}
+                  {internalDeadlineLabel ? (
+                    <CalRow
+                      label="Cierre interno"
+                      value={internalDeadlineLabel}
+                      kind="Interno"
+                    />
+                  ) : null}
+                  {prepStartedLabel ? (
+                    <CalRow
+                      label="Inicio preparación"
+                      value={prepStartedLabel}
+                      kind="Interno"
+                    />
+                  ) : null}
+                  {presentedLabel ? (
+                    <CalRow
+                      label="Presentada"
+                      value={presentedLabel}
+                      kind="Interno"
+                    />
+                  ) : null}
+                  {outcomeLabel ? (
+                    <CalRow
+                      label="Resolución / desenlace"
+                      value={outcomeLabel}
+                      kind="Oficial"
+                    />
+                  ) : null}
                 </ul>
-              ),
+              ) : null,
               bitacora: (
                 <OfferCaseLogPanel
                   offerCaseId={offerCase.id}

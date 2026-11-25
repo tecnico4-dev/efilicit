@@ -89,8 +89,10 @@ def test_milestones_from_deadlines() -> None:
     plan = _plan()
 
     assert [(m.code, m.due_at.isoformat()) for m in plan.milestones] == [
+        ("preguntas", "2026-12-05T14:00:00+01:00"),
         ("presentacion", "2026-12-09T10:00:00+01:00"),
         ("disponibilidad_pliegos", "2026-12-07T10:00:00+01:00"),
+        ("apertura_sobres", "2026-12-11T12:00:00+01:00"),
     ]
 
 

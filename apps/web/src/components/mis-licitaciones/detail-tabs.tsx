@@ -65,8 +65,10 @@ export function useDetailTabsLeaveGuard(
 export function DetailTabs({
   panes,
 }: {
-  panes: Record<TabId, ReactNode>;
+  /** `null` = pestaña oculta en el mininav (p. ej. Calendario sin plazos). */
+  panes: Record<TabId, ReactNode | null>;
 }) {
+  const visibleTabs = TABS.filter((t) => panes[t.id] != null);
   const [tab, setTab] = useState<TabId>("resumen");
   const leaveGuardRef = useRef<DetailTabLeaveGuard | null>(null);
 
@@ -74,13 +76,23 @@ export function DetailTabs({
     leaveGuardRef.current = guard;
   }, []);
 
+  const tabAvailable = panes[tab] != null;
+
   useEffect(() => {
     const saved = sessionStorage.getItem(TAB_STORAGE_KEY);
-    if (isTabId(saved)) setTab(saved);
+    if (isTabId(saved) && panes[saved] != null) {
+      setTab(saved);
+    }
+    // panes del RSC ya están en el primer render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  useEffect(() => {
+    if (!tabAvailable) setTab("resumen");
+  }, [tabAvailable]);
+
   async function selectTab(next: TabId) {
-    if (next === tab) return;
+    if (next === tab || panes[next] == null) return;
     const guard = leaveGuardRef.current;
     if (guard) {
       const ok = await guard(next);
@@ -90,18 +102,20 @@ export function DetailTabs({
     sessionStorage.setItem(TAB_STORAGE_KEY, next);
   }
 
+  const activeTab: TabId = tabAvailable ? tab : "resumen";
+
   return (
     <DetailTabsGuardContext.Provider value={{ setLeaveGuard }}>
       <div>
         <div className="flex flex-wrap gap-1 border-b border-border pb-1">
-          {TABS.map((t) => (
+          {visibleTabs.map((t) => (
             <button
               key={t.id}
               type="button"
               onClick={() => void selectTab(t.id)}
               className={cn(
                 "rounded-t-md px-3 py-1.5 text-sm transition-colors",
-                tab === t.id
+                activeTab === t.id
                   ? "border-b-2 border-primary font-semibold text-primary-dark"
                   : "text-muted-foreground hover:bg-muted hover:text-foreground",
               )}
@@ -110,7 +124,7 @@ export function DetailTabs({
             </button>
           ))}
         </div>
-        <div className="mt-4">{panes[tab]}</div>
+        <div className="mt-4">{panes[activeTab]}</div>
       </div>
     </DetailTabsGuardContext.Provider>
   );

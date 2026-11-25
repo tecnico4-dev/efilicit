@@ -136,6 +136,10 @@ class OfferIntakeExtract(BaseModel):
     )
     submission_deadline_at: datetime | None = None
     documents_available_until: datetime | None = None
+    # Límite para solicitar aclaraciones / información adicional.
+    questions_deadline_at: datetime | None = None
+    # Apertura pública de ofertas (primer OpenTenderEvent por fecha).
+    tender_opening_at: datetime | None = None
 
 
 class OfferTermsParseError(Exception):
@@ -167,6 +171,13 @@ def parse_offer_terms(raw: bytes) -> OfferIntakeExtract:
         documents_available_until=_period_end(
             status.find("cac:TenderingProcess/cac:DocumentAvailabilityPeriod", NS)
         ),
+        questions_deadline_at=_period_end(
+            status.find(
+                "cac:TenderingProcess/cac:AdditionalInformationRequestPeriod",
+                NS,
+            )
+        ),
+        tender_opening_at=_earliest_open_tender_event(status),
     )
 
 
@@ -395,6 +406,29 @@ def _period_end(period: etree._Element | None) -> datetime | None:
     except ValueError:
         return None
     return naive.replace(tzinfo=MADRID)
+
+
+def _occurrence_at(event: etree._Element | None) -> datetime | None:
+    if event is None:
+        return None
+    occ_date = _text(event.find("cbc:OccurrenceDate", NS))
+    if not occ_date:
+        return None
+    occ_time = _text(event.find("cbc:OccurrenceTime", NS)) or "00:00:00"
+    try:
+        naive = datetime.fromisoformat(f"{occ_date}T{occ_time}")
+    except ValueError:
+        return None
+    return naive.replace(tzinfo=MADRID)
+
+
+def _earliest_open_tender_event(status: etree._Element) -> datetime | None:
+    times: list[datetime] = []
+    for event in status.findall("cac:TenderingProcess/cac:OpenTenderEvent", NS):
+        at = _occurrence_at(event)
+        if at is not None:
+            times.append(at)
+    return min(times) if times else None
 
 
 def _number(node: etree._Element | None) -> float | None:

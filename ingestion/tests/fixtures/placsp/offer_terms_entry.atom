@@ -137,10 +137,18 @@ Importe anual acumulado igual o superior al 70% del valor estimado.</cbc:Descrip
           <cbc:EndDate>2026-12-07</cbc:EndDate>
           <cbc:EndTime>10:00:00</cbc:EndTime>
         </cac:DocumentAvailabilityPeriod>
+        <cac:AdditionalInformationRequestPeriod>
+          <cbc:EndDate>2026-12-05</cbc:EndDate>
+          <cbc:EndTime>14:00:00</cbc:EndTime>
+        </cac:AdditionalInformationRequestPeriod>
         <cac:TenderSubmissionDeadlinePeriod>
           <cbc:EndDate>2026-12-09</cbc:EndDate>
           <cbc:EndTime>10:00:00</cbc:EndTime>
         </cac:TenderSubmissionDeadlinePeriod>
+        <cac:OpenTenderEvent>
+          <cbc:OccurrenceDate>2026-12-11</cbc:OccurrenceDate>
+          <cbc:OccurrenceTime>12:00:00</cbc:OccurrenceTime>
+        </cac:OpenTenderEvent>
       </cac:TenderingProcess>
       <cac:LegalDocumentReference>
         <cbc:ID>PCAP alumbrado.pdf</cbc:ID>

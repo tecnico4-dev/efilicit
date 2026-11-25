@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Mis licitaciones · Calendario: hitos intake de preguntas/aclaraciones y apertura de sobres; «Publicación» / «Resolución / desenlace»; pestaña oculta si no hay plazos.
 - Mis licitaciones · criterios de adjudicación: dejan de ser filas de Requisitos; viven en `offer_deliverables` (Resumen + Sobres). Intake ya no crea `criterio_adjudicacion`. Migración local limpia filas antiguas.
 - Ingesta PLACSP: si la plataforma no sirve el ZIP (WAF/HTML sin ``PK``, HTTP 403/404), el job sale en verde con ``::warning::`` y `source_sync` ``success`` + motivo; errores propios (DB, Storage, tamaño…) siguen en rojo.
 - `offer_tasks`: `status` pendiente|hecha|descartada (sustituye `done_at`); asignado = `owner_member_id` → `eficen_members`; se quitan `owner_user_id` / `owner_name` / `created_at` / `updated_at`; se añade `created_by` → `users`. Migración local — enmienda [ADR 026](docs/adr/026-mis-licitaciones-offer-cases.md).
