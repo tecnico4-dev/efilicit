@@ -381,10 +381,29 @@ function TaskFiltersModal({
   );
 }
 
-function notesTextareaRows(notes: string): number {
-  const lines = notes.split("\n").length;
-  const approx = Math.ceil(Math.max(notes.length, 1) / 52);
-  return Math.min(14, Math.max(3, lines, approx));
+/** Ancho/alto de la nota ampliada: más texto → más ancha (evita columna estrecha y alta). */
+function noteExpandedMetrics(title: string, notes: string): {
+  widthRem: number;
+  rows: number;
+} {
+  const text = `${title.trim()}\n${notes.trim()}`.trim();
+  const chars = Math.max(text.length, 24);
+  const hardLines = Math.max(1, text.split("\n").length);
+
+  // Preferimos un ancho que deje ~8–12 líneas a ~45–55 chars/línea.
+  let widthRem = 22 + chars / 36;
+  widthRem = Math.min(40, Math.max(20, widthRem));
+
+  const charsPerLine = Math.max(28, Math.floor(widthRem * 2.35));
+  const wrapped = Math.ceil(chars / charsPerLine);
+  const rows = Math.min(12, Math.max(3, hardLines, wrapped));
+
+  // Si aún quedaría muy alta, ensancha un poco más.
+  if (rows >= 9 && widthRem < 36) {
+    widthRem = Math.min(40, widthRem + 4);
+  }
+
+  return { widthRem, rows };
 }
 
 function TaskEditorModal({
@@ -518,7 +537,10 @@ function TaskEditorModal({
   if (!mounted || !open) return null;
 
   const tone = NOTE_TONES[toneIndex % NOTE_TONES.length]!;
-  const noteRows = notesTextareaRows(draft.notes);
+  const { widthRem, rows: noteRows } = noteExpandedMetrics(
+    draft.title,
+    draft.notes,
+  );
 
   return createPortal(
     <div
@@ -537,8 +559,9 @@ function TaskEditorModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
+        style={{ width: `min(${widthRem}rem, calc(100vw - 2rem))` }}
         className={cn(
-          "relative flex w-[min(28rem,calc(100vw-2rem))] flex-col rounded-md border p-5 shadow-2xl sm:p-6",
+          "relative flex max-h-[min(85vh,40rem)] flex-col rounded-md border p-5 shadow-2xl sm:p-6",
           "will-change-transform",
           tone,
           draft.done && "opacity-90",
@@ -578,7 +601,7 @@ function TaskEditorModal({
           disabled={busy}
           aria-label="Descripción"
           rows={noteRows}
-          className="mt-2 w-full resize-none overflow-hidden bg-transparent text-sm leading-relaxed outline-none disabled:opacity-50"
+          className="mt-2 max-h-[min(50vh,22rem)] w-full resize-none overflow-y-auto bg-transparent text-sm leading-relaxed outline-none disabled:opacity-50"
           onChange={(e) => onChange({ notes: e.target.value })}
         />
 
