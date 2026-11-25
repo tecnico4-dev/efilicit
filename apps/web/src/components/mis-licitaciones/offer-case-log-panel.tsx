@@ -245,32 +245,24 @@ export function OfferCaseLogPanel({
                   style={{ zIndex: entries.length - index }}
                 >
                   <div
-                    className="relative flex w-[7.25rem] shrink-0 items-center justify-center self-stretch px-2 text-center text-[0.8rem] font-medium tabular-nums text-foreground"
+                    className={cn(
+                      "flex w-[7.25rem] shrink-0 items-center justify-center px-2 text-center text-[0.8rem] font-semibold tabular-nums text-primary-foreground",
+                      index === 0
+                        ? "bg-primary"
+                        : index % 2 === 1
+                          ? "bg-primary-dark"
+                          : "bg-primary",
+                    )}
                     style={{
-                      minHeight: "4.25rem",
+                      // Flecha ↑: punta arriba; abajo muesca hacia dentro (piquito hacia arriba)
+                      clipPath:
+                        "polygon(50% 0%, 100% 14px, 100% 100%, 50% calc(100% - 14px), 0% 100%, 0% 14px)",
                       paddingTop: "1.35rem",
                       paddingBottom: "1.35rem",
+                      minHeight: "4.25rem",
                     }}
                   >
-                    {/* Contorno completo (clip-path no pinta bien los biseles) */}
-                    <svg
-                      className="pointer-events-none absolute inset-0 h-full w-full text-primary"
-                      viewBox="0 0 100 100"
-                      preserveAspectRatio="none"
-                      aria-hidden
-                    >
-                      <path
-                        d="M 50 1.2 L 98.8 12 L 98.8 98.8 L 50 87.5 L 1.2 98.8 L 1.2 12 Z"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="1"
-                        strokeLinejoin="miter"
-                        vectorEffect="non-scaling-stroke"
-                      />
-                    </svg>
-                    <span className="relative z-[1]">
-                      {formatDateMadrid(entry.happened_on)}
-                    </span>
+                    {formatDateMadrid(entry.happened_on)}
                   </div>
 
                   <div
