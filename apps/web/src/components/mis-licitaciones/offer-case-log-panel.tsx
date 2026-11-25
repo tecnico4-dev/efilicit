@@ -254,9 +254,9 @@ export function OfferCaseLogPanel({
                           : "bg-primary",
                     )}
                     style={{
-                      // Chevron hacia arriba: punta arriba, encaje abajo
+                      // Flecha ↑: punta arriba; abajo muesca hacia dentro (piquito hacia arriba)
                       clipPath:
-                        "polygon(50% 0%, 100% 14px, 100% calc(100% - 14px), 50% 100%, 0% calc(100% - 14px), 0% 14px)",
+                        "polygon(50% 0%, 100% 14px, 100% 100%, 50% calc(100% - 14px), 0% 100%, 0% 14px)",
                       paddingTop: "1.35rem",
                       paddingBottom: "1.35rem",
                       minHeight: "4.25rem",
