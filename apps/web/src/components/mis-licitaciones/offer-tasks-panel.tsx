@@ -701,13 +701,7 @@ function TaskEditorModal({
         ) : null}
 
         <span
-          className={cn(
-            "mb-3 size-3 self-center rounded-full bg-black/20 shadow-inner dark:bg-white/25",
-            !editing &&
-              mode === "edit" &&
-              draft.status === "hecha" &&
-              "mt-5",
-          )}
+          className="mb-3 size-3 self-center rounded-full bg-black/20 shadow-inner dark:bg-white/25"
           aria-hidden
         />
 
