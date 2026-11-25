@@ -31,7 +31,6 @@ import { FavoriteKindBubble } from "@/components/favorites/favorite-kind-bubble"
 import { DetailTabs } from "@/components/mis-licitaciones/detail-tabs";
 import { OfferCaseIntakeStatus } from "@/components/mis-licitaciones/offer-case-intake-status";
 import {
-  MilestoneRows,
   PliegosList,
   SobresList,
 } from "@/components/mis-licitaciones/offer-case-sections";
@@ -42,6 +41,10 @@ import {
   AdvanceToAnalisisLink,
 } from "@/components/mis-licitaciones/advance-to-analisis-button";
 import { AwardCriteriaSummary } from "@/components/mis-licitaciones/award-criteria-summary";
+import {
+  OfferCalendarTimeline,
+  type OfferCalendarEvent,
+} from "@/components/mis-licitaciones/offer-calendar-timeline";
 import { OfferCaseLogPanel } from "@/components/mis-licitaciones/offer-case-log-panel";
 import { OfferGoDecisionCard } from "@/components/mis-licitaciones/offer-go-decision-card";
 import { OfferTasksPanel } from "@/components/mis-licitaciones/offer-tasks-panel";
@@ -119,33 +122,65 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
     (m) => m.code === "presentacion",
   );
   const tenderSummary = offerCase.tenders;
-  const publicationLabel = tenderSummary?.publication_date
-    ? formatDateMadrid(tenderSummary.publication_date)
-    : null;
-  const presentationFallbackLabel =
-    !hasPresentationMilestone && tenderSummary?.deadline_at
-      ? formatDateTimeMadrid(tenderSummary.deadline_at)
-      : null;
-  const internalDeadlineLabel = offerCase.internal_deadline_at
-    ? formatDateTimeMadrid(offerCase.internal_deadline_at)
-    : null;
-  const prepStartedLabel = offerCase.preparation_started_on
-    ? formatDateMadrid(offerCase.preparation_started_on)
-    : null;
-  const presentedLabel = offerCase.presented_on
-    ? formatDateMadrid(offerCase.presented_on)
-    : null;
-  const outcomeLabel = offerCase.outcome_on
-    ? formatDateMadrid(offerCase.outcome_on)
-    : null;
-  const showCalendarTab =
-    milestones.length > 0 ||
-    publicationLabel != null ||
-    presentationFallbackLabel != null ||
-    internalDeadlineLabel != null ||
-    prepStartedLabel != null ||
-    presentedLabel != null ||
-    outcomeLabel != null;
+  const calendarEvents: OfferCalendarEvent[] = [];
+  if (tenderSummary?.publication_date) {
+    calendarEvents.push({
+      id: "pub",
+      title: "Publicación",
+      dueAt: tenderSummary.publication_date,
+      kind: "oficial",
+    });
+  }
+  for (const m of milestones) {
+    if (!m.due_at) continue;
+    calendarEvents.push({
+      id: `ms:${m.id}`,
+      title: m.title,
+      dueAt: m.due_at,
+      kind: m.kind === "interno" ? "interno" : "oficial",
+    });
+  }
+  if (!hasPresentationMilestone && tenderSummary?.deadline_at) {
+    calendarEvents.push({
+      id: "deadline",
+      title: "Plazo de presentación",
+      dueAt: tenderSummary.deadline_at,
+      kind: "oficial",
+    });
+  }
+  if (offerCase.internal_deadline_at) {
+    calendarEvents.push({
+      id: "internal",
+      title: "Cierre interno",
+      dueAt: offerCase.internal_deadline_at,
+      kind: "interno",
+    });
+  }
+  if (offerCase.preparation_started_on) {
+    calendarEvents.push({
+      id: "prep",
+      title: "Inicio preparación",
+      dueAt: offerCase.preparation_started_on,
+      kind: "interno",
+    });
+  }
+  if (offerCase.presented_on) {
+    calendarEvents.push({
+      id: "presented",
+      title: "Presentada",
+      dueAt: offerCase.presented_on,
+      kind: "interno",
+    });
+  }
+  if (offerCase.outcome_on) {
+    calendarEvents.push({
+      id: "outcome",
+      title: "Resolución / desenlace",
+      dueAt: offerCase.outcome_on,
+      kind: "oficial",
+    });
+  }
+  const showCalendarTab = calendarEvents.length > 0;
   const tenderDetailResult = tenderSummary
     ? await getTenderById(supabase, tenderSummary.id)
     : { data: null, error: null };
@@ -385,51 +420,7 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
                 />
               ),
               calendario: showCalendarTab ? (
-                <ul className="space-y-0 text-sm">
-                  {publicationLabel ? (
-                    <CalRow
-                      label="Publicación"
-                      value={publicationLabel}
-                      kind="Oficial"
-                    />
-                  ) : null}
-                  <MilestoneRows milestones={milestones} />
-                  {presentationFallbackLabel ? (
-                    <CalRow
-                      label="Plazo de presentación"
-                      value={presentationFallbackLabel}
-                      kind="Oficial"
-                    />
-                  ) : null}
-                  {internalDeadlineLabel ? (
-                    <CalRow
-                      label="Cierre interno"
-                      value={internalDeadlineLabel}
-                      kind="Interno"
-                    />
-                  ) : null}
-                  {prepStartedLabel ? (
-                    <CalRow
-                      label="Inicio preparación"
-                      value={prepStartedLabel}
-                      kind="Interno"
-                    />
-                  ) : null}
-                  {presentedLabel ? (
-                    <CalRow
-                      label="Presentada"
-                      value={presentedLabel}
-                      kind="Interno"
-                    />
-                  ) : null}
-                  {outcomeLabel ? (
-                    <CalRow
-                      label="Resolución / desenlace"
-                      value={outcomeLabel}
-                      kind="Oficial"
-                    />
-                  ) : null}
-                </ul>
+                <OfferCalendarTimeline events={calendarEvents} />
               ) : null,
               bitacora: (
                 <OfferCaseLogPanel
@@ -707,22 +698,3 @@ function OwnerTeamKpi({
   );
 }
 
-function CalRow({
-  label,
-  value,
-  kind,
-}: {
-  label: string;
-  value: string;
-  kind: string;
-}) {
-  return (
-    <li className="flex flex-wrap items-baseline justify-between gap-2 border-b border-border py-2.5">
-      <div>
-        <p className="font-medium text-foreground">{label}</p>
-        <p className="text-xs text-muted-foreground">{kind}</p>
-      </div>
-      <span className="text-foreground">{value}</span>
-    </li>
-  );
-}
