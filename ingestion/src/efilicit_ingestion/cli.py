@@ -358,6 +358,20 @@ def _cmd_run_placsp(args: argparse.Namespace) -> int:
     try:
         result = run_placsp(config)
     except Exception as exc:  # noqa: BLE001 — superficie al CLI
+        from efilicit_ingestion.pipeline.runner import SourceUnavailableError
+
+        if isinstance(exc, SourceUnavailableError):
+            # Actions: warning visible, job verde (fuente no sirvió el ZIP).
+            print(
+                "::warning::PLACSP no sirvió el ZIP (WAF/HTML o aún no publicado). "
+                "Ingesta omitida; el próximo cron reintentará. "
+                f"Detalle: {exc.reason}",
+                file=sys.stderr,
+            )
+            print(f"status=success source_unavailable=1 run_id={exc.sync.run_id}")
+            if exc.sync.error_message:
+                print(f"error_message={exc.sync.error_message}")
+            return 0
         _print_cli_error(exc)
         return 1
 

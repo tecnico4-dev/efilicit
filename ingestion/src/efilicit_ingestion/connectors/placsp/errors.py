@@ -30,3 +30,28 @@ class InvalidZipPayloadError(PlacspFetchError):
     Suele ser HTML/error intermitente de Hacienda; el fetch puede reintentar
     unas pocas veces antes de fallar el job.
     """
+
+
+def placsp_source_unavailable_reason(exc: BaseException) -> str | None:
+    """Si el fallo es de la plataforma (ZIP ausente/WAF), devuelve explicación.
+
+    ``None`` = error nuestro u operativo (DB, Storage, parse…): debe seguir
+    fallando el job en rojo.
+    """
+    if isinstance(exc, InvalidZipPayloadError):
+        return (
+            "PLACSP did not serve a valid ZIP (WAF/HTML or non-ZIP body after "
+            "retries). Ingest skipped; next cron will retry."
+        )
+    if isinstance(exc, PlacspHttpError) and exc.status_code in {403, 404}:
+        return (
+            f"PLACSP package not available yet (HTTP {exc.status_code}). "
+            "Ingest skipped; next cron will retry."
+        )
+    message = str(exc)
+    if "missing PK header" in message:
+        return (
+            "PLACSP did not serve a valid ZIP (missing PK header). "
+            "Ingest skipped; next cron will retry."
+        )
+    return None

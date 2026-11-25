@@ -33,6 +33,19 @@ class PipelineRunError(Exception):
         super().__init__(str(cause))
 
 
+class SourceUnavailableError(Exception):
+    """La fuente no sirvió el artefacto; ``source_sync`` queda ``success`` + motivo.
+
+    No es bug del pipeline: CLI/Actions deben salir 0 con ``::warning::``.
+    """
+
+    def __init__(self, sync: SyncRun, cause: BaseException, *, reason: str) -> None:
+        self.sync = sync
+        self.cause = cause
+        self.reason = reason
+        super().__init__(reason)
+
+
 def mark_run_failed(
     sync_repo: SyncRepository,
     run: SyncRun,

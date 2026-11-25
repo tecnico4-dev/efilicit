@@ -8,8 +8,10 @@ Tras cada fichero ``.atom`` del ZIP se invoca ``on_page_committed`` (p. ej.
 
 from __future__ import annotations
 
+import sys
 from collections.abc import Callable
 
+from efilicit_ingestion.connectors.placsp.errors import placsp_source_unavailable_reason
 from efilicit_ingestion.connectors.placsp.expand_entries import (
     ExpandedPlacspEntry,
     expand_placsp_pages,
@@ -23,7 +25,11 @@ from efilicit_ingestion.models import RemoteArtifact, SourceRecord, SyncContext
 from efilicit_ingestion.pipeline import stages
 from efilicit_ingestion.pipeline.canonical_repo import CanonicalRepository
 from efilicit_ingestion.pipeline.ports import ArtifactStore, SyncRepository
-from efilicit_ingestion.pipeline.runner import PipelineRunError, mark_run_failed
+from efilicit_ingestion.pipeline.runner import (
+    PipelineRunError,
+    SourceUnavailableError,
+    mark_run_failed,
+)
 from efilicit_ingestion.pipeline.types import PipelineResult, StoredArtifact
 
 
@@ -177,7 +183,14 @@ def run_pipeline_placsp_incremental(
         sync_repo.finish_run(run, status="success")
     except PipelineRunError:
         raise
+    except SourceUnavailableError:
+        raise
     except Exception as exc:  # noqa: BLE001
+        unavailable = placsp_source_unavailable_reason(exc)
+        if unavailable is not None:
+            print(f"pipeline source unavailable: {unavailable}", file=sys.stderr)
+            sync_repo.finish_run(run, status="success", error_message=unavailable)
+            raise SourceUnavailableError(run, exc, reason=unavailable) from exc
         mark_run_failed(sync_repo, run, exc)
         raise PipelineRunError(run, exc) from exc
 
@@ -214,6 +227,10 @@ def run_pipeline_placsp_incremental_postgres(
             )
             conn.commit()
             return result
+        except SourceUnavailableError:
+            # source_sync ya quedó success + error_message; no marcar failed.
+            conn.commit()
+            raise
         except PipelineRunError as exc:
             conn.rollback()
             persist_failed_sync_run(exc.sync)
