@@ -268,7 +268,7 @@ export function OfferCaseLogPanel({
                   <div
                     className={cn(
                       "grid min-w-0 flex-1 grid-cols-[10.5rem_minmax(0,1fr)] items-center gap-x-4 py-5 pl-1",
-                      !isLast && "border-b border-border",
+                      !isLast && "border-b-[1.5px] border-border",
                     )}
                   >
                     <div className="flex justify-start">
