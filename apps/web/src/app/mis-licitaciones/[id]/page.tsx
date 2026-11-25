@@ -11,7 +11,6 @@ import {
   getLatestOfferCaseIntake,
   getOfferCaseById,
   getTenderById,
-  listEficenMembersForTeam,
   listOfferCaseMembers,
   listOfferCasePliegos,
   listOfferDeliverables,
@@ -104,7 +103,6 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
     pliegosResult,
     deliverablesResult,
     milestonesResult,
-    membersResult,
     viewerMemberResult,
   ] = await Promise.all([
     listOfferCaseMembers(supabase, offerCase.id),
@@ -112,7 +110,6 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
     listOfferCasePliegos(supabase, offerCase.id),
     listOfferDeliverables(supabase, offerCase.id),
     listOfferMilestones(supabase, offerCase.id),
-    listEficenMembersForTeam(supabase),
     getEficenMemberIdByUserId(supabase, profile.data.id),
   ]);
   const teamMembers = teamResult.data;
@@ -315,7 +312,8 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
                   <OfferRequirementsTable
                     offerCaseId={offerCase.id}
                     requirements={matrixReqs}
-                    members={membersResult.data}
+                    owner={offerCase.owner_member}
+                    team={teamMembers}
                     actionsLocked={offerCase.stage === "interes"}
                   />
                 );

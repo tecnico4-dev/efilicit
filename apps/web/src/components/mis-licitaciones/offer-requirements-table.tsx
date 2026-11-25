@@ -43,13 +43,53 @@ import {
   deleteOfferRequirements,
   updateOfferRequirement,
   type EficenMemberForTeam,
+  type OfferCaseTeamMember,
   type OfferComplianceStatus,
   type OfferEnvelope,
+  type OfferOwnerMember,
   type OfferPrepStatus,
   type OfferRequirementDetail,
   type OfferRequirementType,
 } from "@/lib/queries";
 import { useUnsavedNavigationGuard } from "@/lib/use-unsaved-navigation-guard";
+
+function toAssignableMember(m: OfferOwnerMember): EficenMemberForTeam {
+  return {
+    id: m.id,
+    displayName: m.display_name,
+    roleTitle: m.role_title,
+    avatarUrl: m.avatar_url,
+  };
+}
+
+/** Responsable + trabajadores del expediente (sin directorio completo). */
+function caseTeamAssignable(
+  owner: OfferOwnerMember | null,
+  team: OfferCaseTeamMember[],
+): EficenMemberForTeam[] {
+  const byId = new Map<string, EficenMemberForTeam>();
+  if (owner) byId.set(owner.id, toAssignableMember(owner));
+  for (const row of team) {
+    byId.set(row.member.id, toAssignableMember(row.member));
+  }
+  return [...byId.values()].sort((a, b) =>
+    a.displayName.localeCompare(b.displayName, "es"),
+  );
+}
+
+/** Si el requisito ya tiene asignado fuera del equipo, lo dejamos visible al editar. */
+function membersForRequirement(
+  assignable: EficenMemberForTeam[],
+  item: OfferRequirementDetail,
+): EficenMemberForTeam[] {
+  if (!item.owner_member) return assignable;
+  if (assignable.some((m) => m.id === item.owner_member!.id)) {
+    return assignable;
+  }
+  return [...assignable, toAssignableMember(item.owner_member)].sort((a, b) =>
+    a.displayName.localeCompare(b.displayName, "es"),
+  );
+}
 
 function envelopeLabel(value: OfferEnvelope | string): string {
   if (value === "ninguno") return "—";
@@ -838,13 +878,15 @@ function PlusIcon() {
 export function OfferRequirementsTable({
   offerCaseId,
   requirements,
-  members,
+  owner,
+  team,
   /** Solo lectura operativa (p. ej. etapa Interés): filtrar sí; sin editar/crear/eliminar. */
   actionsLocked = false,
 }: {
   offerCaseId: string;
   requirements: OfferRequirementDetail[];
-  members: EficenMemberForTeam[];
+  owner: OfferOwnerMember | null;
+  team: OfferCaseTeamMember[];
   actionsLocked?: boolean;
 }) {
   const router = useRouter();
@@ -872,14 +914,24 @@ export function OfferRequirementsTable({
 
   const filterCount = countOfferRequirementsFilters(filters);
 
-  const ownerOptions = useMemo(
-    () =>
-      members.map((m) => ({
-        value: m.id,
-        label: m.displayName,
-      })),
-    [members],
+  const assignable = useMemo(
+    () => caseTeamAssignable(owner, team),
+    [owner, team],
   );
+
+  const ownerOptions = useMemo(() => {
+    const byId = new Map(
+      assignable.map((m) => [m.id, m.displayName] as const),
+    );
+    for (const item of requirements) {
+      if (item.owner_member && !byId.has(item.owner_member.id)) {
+        byId.set(item.owner_member.id, item.owner_member.display_name);
+      }
+    }
+    return [...byId.entries()]
+      .map(([value, label]) => ({ value, label }))
+      .sort((a, b) => a.label.localeCompare(b.label, "es"));
+  }, [assignable, requirements]);
 
   const viewRows = useMemo(() => {
     return requirements.map((item) => {
@@ -1428,7 +1480,7 @@ export function OfferRequirementsTable({
                     {(editing || item.owner_member_id) && (
                       <MemberPicker
                         value={item.owner_member_id}
-                        members={members}
+                        members={membersForRequirement(assignable, item)}
                         disabled={saving}
                         locked={naLocked}
                         readOnly={readOnly}
@@ -1643,7 +1695,7 @@ export function OfferRequirementsTable({
                     <td className={tdCenter}>
                       <MemberPicker
                         value={item.owner_member_id}
-                        members={members}
+                        members={membersForRequirement(assignable, item)}
                         disabled={saving}
                         locked={naLocked}
                         readOnly={readOnly}
@@ -1703,7 +1755,7 @@ export function OfferRequirementsTable({
       <OfferRequirementsCreateModal
         open={creating}
         busy={creatingBusy}
-        members={members}
+        members={assignable}
         onClose={cancelCreating}
         onDirtyChange={setCreateDirty}
         onSubmit={async (values) => {
