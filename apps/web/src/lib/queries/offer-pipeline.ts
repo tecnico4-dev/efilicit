@@ -1004,3 +1004,159 @@ export async function createOfferCase(
 
   return { data: { id: data.id }, error: null };
 }
+
+export type OfferTaskItem = {
+  id: string;
+  offer_case_id: string;
+  title: string;
+  owner_member_id: string | null;
+  owner_member: OfferOwnerMember | null;
+  due_at: string | null;
+  done_at: string | null;
+  notes: string | null;
+  created_by: string | null;
+};
+
+export async function listOfferTasks(
+  client: SupabaseClient<Database>,
+  offerCaseId: string,
+): Promise<{ data: OfferTaskItem[]; error: Error | null }> {
+  const { data, error } = await client
+    .from("offer_tasks")
+    .select(
+      `
+      id,
+      offer_case_id,
+      title,
+      owner_member_id,
+      due_at,
+      done_at,
+      notes,
+      created_by,
+      owner_member:eficen_members!owner_member_id (
+        id,
+        display_name,
+        role_title,
+        avatar_url
+      )
+    `,
+    )
+    .eq("offer_case_id", offerCaseId);
+
+  if (error) return { data: [], error: new Error(error.message) };
+
+  const rows: OfferTaskItem[] = (data ?? []).map((row) => ({
+    id: row.id,
+    offer_case_id: row.offer_case_id,
+    title: row.title,
+    owner_member_id: row.owner_member_id,
+    owner_member: asOwnerMember(
+      row.owner_member as
+        | OfferOwnerMember
+        | OfferOwnerMember[]
+        | null
+        | undefined,
+    ),
+    due_at: row.due_at,
+    done_at: row.done_at,
+    notes: row.notes,
+    created_by: row.created_by,
+  }));
+
+  rows.sort((a, b) => {
+    const aDone = a.done_at != null ? 1 : 0;
+    const bDone = b.done_at != null ? 1 : 0;
+    if (aDone !== bDone) return aDone - bDone;
+    const aDue = a.due_at
+      ? new Date(a.due_at).getTime()
+      : Number.POSITIVE_INFINITY;
+    const bDue = b.due_at
+      ? new Date(b.due_at).getTime()
+      : Number.POSITIVE_INFINITY;
+    if (aDue !== bDue) return aDue - bDue;
+    return a.title.localeCompare(b.title, "es");
+  });
+
+  return { data: rows, error: null };
+}
+
+export async function createOfferTask(
+  client: SupabaseClient<Database>,
+  input: {
+    offerCaseId: string;
+    title: string;
+    ownerMemberId: string | null;
+    dueAt: string | null;
+    notes: string | null;
+    createdBy: string;
+  },
+): Promise<{ data: { id: string } | null; error: Error | null }> {
+  const title = input.title.trim();
+  if (!title) {
+    return {
+      data: null,
+      error: new Error("El título de la tarea es obligatorio."),
+    };
+  }
+  const { data, error } = await client
+    .from("offer_tasks")
+    .insert({
+      offer_case_id: input.offerCaseId,
+      title,
+      owner_member_id: input.ownerMemberId,
+      due_at: input.dueAt,
+      notes: input.notes?.trim() || null,
+      created_by: input.createdBy,
+    })
+    .select("id")
+    .single();
+  if (error) return { data: null, error: new Error(error.message) };
+  return { data: { id: data.id }, error: null };
+}
+
+export async function updateOfferTask(
+  client: SupabaseClient<Database>,
+  input: {
+    id: string;
+    patch: {
+      title?: string;
+      owner_member_id?: string | null;
+      due_at?: string | null;
+      notes?: string | null;
+      done_at?: string | null;
+    };
+  },
+): Promise<{ error: Error | null }> {
+  const patch: {
+    title?: string;
+    owner_member_id?: string | null;
+    due_at?: string | null;
+    notes?: string | null;
+    done_at?: string | null;
+  } = { ...input.patch };
+  if (patch.title != null) {
+    const title = patch.title.trim();
+    if (!title) {
+      return { error: new Error("El título de la tarea es obligatorio.") };
+    }
+    patch.title = title;
+  }
+  if (patch.notes != null) {
+    patch.notes = patch.notes.trim() || null;
+  }
+  const { error } = await client
+    .from("offer_tasks")
+    .update(patch)
+    .eq("id", input.id);
+  if (error) return { error: new Error(error.message) };
+  return { error: null };
+}
+
+export async function deleteOfferTask(
+  client: SupabaseClient<Database>,
+  id: string,
+): Promise<{ error: Error | null }> {
+  const { error } = await client.from("offer_tasks").delete().eq("id", id);
+  if (error) return { error: new Error(error.message) };
+  return { error: null };
+}

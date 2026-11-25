@@ -44,6 +44,7 @@ import {
 import { AwardCriteriaSummary } from "@/components/mis-licitaciones/award-criteria-summary";
 import { OfferCaseLogPanel } from "@/components/mis-licitaciones/offer-case-log-panel";
 import { OfferGoDecisionCard } from "@/components/mis-licitaciones/offer-go-decision-card";
+import { OfferTasksPanel } from "@/components/mis-licitaciones/offer-tasks-panel";
 import { TenderFichaModalButton } from "@/components/mis-licitaciones/tender-ficha-modal";
 import { cn } from "@/lib/cn";
 
@@ -340,9 +341,11 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
                 />
               ),
               tareas: (
-                <p className="rounded-lg border border-dashed border-border px-4 py-6 text-center text-sm text-muted-foreground">
-                  Aún no hay tareas en este expediente.
-                </p>
+                <OfferTasksPanel
+                  offerCaseId={offerCase.id}
+                  userId={profile.data.id}
+                  members={membersResult.data}
+                />
               ),
               calendario: (
                 <ul className="space-y-0 text-sm">
