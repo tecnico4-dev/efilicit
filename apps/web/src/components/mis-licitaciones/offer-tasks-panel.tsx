@@ -196,6 +196,63 @@ function dueToneClass(
   return "text-muted-foreground";
 }
 
+function PersonIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 20 20"
+      fill="currentColor"
+      aria-hidden
+      className={cn("size-3.5 shrink-0", className)}
+    >
+      <path d="M10 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" />
+      <path
+        fillRule="evenodd"
+        d="M10 11c-3.3 0-6 1.8-6 4v.5c0 .3.2.5.5.5h11c.3 0 .5-.2.5-.5V15c0-2.2-2.7-4-6-4Z"
+        clipRule="evenodd"
+      />
+    </svg>
+  );
+}
+
+function MemberAvatar({
+  avatarUrl,
+  className,
+}: {
+  avatarUrl: string;
+  className?: string;
+}) {
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={avatarUrl}
+      alt=""
+      className={cn("size-4 shrink-0 rounded-full object-cover", className)}
+    />
+  );
+}
+
+function AssigneeLabel({
+  name,
+  avatarUrl,
+  className,
+}: {
+  name: string | null;
+  avatarUrl: string | null;
+  className?: string;
+}) {
+  const label = name?.trim() || "Sin asignar";
+  return (
+    <span className={cn("inline-flex min-w-0 items-center gap-1.5", className)}>
+      {avatarUrl ? (
+        <MemberAvatar avatarUrl={avatarUrl} />
+      ) : (
+        <PersonIcon className="text-current opacity-70" />
+      )}
+      <span className="min-w-0 truncate">{label}</span>
+    </span>
+  );
+}
+
 function PencilIcon({ className }: { className?: string }) {
   return (
     <svg
@@ -343,9 +400,10 @@ function TaskNoteCard({
         </p>
       </div>
       <div className="mt-3 space-y-0.5 text-xs opacity-80">
-        <p className="truncate">
-          {task.owner_member?.display_name?.trim() || "Sin asignar"}
-        </p>
+        <AssigneeLabel
+          name={task.owner_member?.display_name ?? null}
+          avatarUrl={task.owner_member?.avatar_url ?? null}
+        />
         <p className={cn(dueToneClass(task.due_at, task.status))}>
           {task.due_at ? `Para ${formatDateMadrid(task.due_at)}` : "Sin plazo"}
         </p>
@@ -676,8 +734,8 @@ function TaskEditorModal({
     draft.title,
     draft.notes,
   );
-  const assigneeName =
-    members.find((m) => m.id === draft.owner_member_id)?.displayName ?? null;
+  const assignee =
+    members.find((m) => m.id === draft.owner_member_id) ?? null;
   const dueLabel = draft.due_day
     ? formatDateMadrid(`${draft.due_day}T12:00:00.000Z`)
     : "Sin plazo";
@@ -838,9 +896,11 @@ function TaskEditorModal({
                 <p className="text-[0.7rem] font-medium uppercase tracking-wide opacity-70">
                   Asignada a
                 </p>
-                <p className="mt-1 font-medium">
-                  {assigneeName ?? "Sin asignar"}
-                </p>
+                <AssigneeLabel
+                  className="mt-1 font-medium"
+                  name={assignee?.displayName ?? null}
+                  avatarUrl={assignee?.avatarUrl ?? null}
+                />
               </div>
               <div>
                 <p className="text-[0.7rem] font-medium uppercase tracking-wide opacity-70">
