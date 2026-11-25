@@ -257,9 +257,9 @@ export function OfferCaseLogPanel({
                       // Flecha ↑: punta arriba; abajo muesca hacia dentro (piquito hacia arriba)
                       clipPath:
                         "polygon(50% 0%, 100% 14px, 100% 100%, 50% calc(100% - 14px), 0% 100%, 0% 14px)",
-                      paddingTop: "1.35rem",
-                      paddingBottom: "1.35rem",
-                      minHeight: "4.25rem",
+                      paddingTop: "1.75rem",
+                      paddingBottom: "1.75rem",
+                      minHeight: "5.25rem",
                     }}
                   >
                     {formatDateMadrid(entry.happened_on)}
@@ -267,7 +267,7 @@ export function OfferCaseLogPanel({
 
                   <div
                     className={cn(
-                      "grid min-w-0 flex-1 grid-cols-[10.5rem_minmax(0,1fr)] items-center gap-x-4 py-3 pl-1",
+                      "grid min-w-0 flex-1 grid-cols-[10.5rem_minmax(0,1fr)] items-center gap-x-4 py-5 pl-1",
                       !isLast && "border-b border-border",
                     )}
                   >
