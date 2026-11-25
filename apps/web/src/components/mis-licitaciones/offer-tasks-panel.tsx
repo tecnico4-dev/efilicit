@@ -11,6 +11,10 @@ import {
   useState,
 } from "react";
 import { Button } from "@/components/ui/button";
+import {
+  FilterMultiSelect,
+  FilterSingleSelect,
+} from "@/components/mis-licitaciones/offer-filter-selects";
 import { MisLicitacionesFiltersButton } from "@/components/mis-licitaciones/mis-licitaciones-filters-modal";
 import { OfferMemberPicker } from "@/components/mis-licitaciones/offer-member-picker";
 import { SingleDatePicker } from "@/components/mis-licitaciones/single-date-picker";
@@ -30,8 +34,8 @@ import {
 const OWNER_UNASSIGNED = "__none__";
 
 type TaskFilters = {
-  /** "" = todas · por defecto solo pendientes */
-  status: "" | OfferTaskStatus;
+  /** vacío = todas; por defecto solo pendientes */
+  status: OfferTaskStatus[];
   owners: string[];
   /** "" = todas · con · sin · vencida */
   due: "" | "con" | "sin" | "vencida";
@@ -39,21 +43,25 @@ type TaskFilters = {
 
 /** Bandeja principal: solo pendientes. Hechas/descartadas vía filtro. */
 const EMPTY_TASK_FILTERS: TaskFilters = {
-  status: "pendiente",
+  status: ["pendiente"],
   owners: [],
   due: "",
 };
 
+function isDefaultTaskStatusFilter(status: OfferTaskStatus[]): boolean {
+  return status.length === 1 && status[0] === "pendiente";
+}
+
 function countTaskFilters(f: TaskFilters): number {
   return (
-    (f.status !== "pendiente" ? 1 : 0) +
+    (isDefaultTaskStatusFilter(f.status) ? 0 : 1) +
     (f.owners.length > 0 ? 1 : 0) +
     (f.due ? 1 : 0)
   );
 }
 
 function taskMatchesFilters(task: OfferTaskItem, f: TaskFilters): boolean {
-  if (f.status && task.status !== f.status) return false;
+  if (f.status.length > 0 && !f.status.includes(task.status)) return false;
 
   if (f.owners.length > 0) {
     const key = task.owner_member_id ?? OWNER_UNASSIGNED;
@@ -69,6 +77,19 @@ function taskMatchesFilters(task: OfferTaskItem, f: TaskFilters): boolean {
 
   return true;
 }
+
+const TASK_STATUS_OPTIONS: { value: OfferTaskStatus; label: string }[] = [
+  { value: "pendiente", label: "Pendientes" },
+  { value: "hecha", label: "Hechas" },
+  { value: "descartada", label: "Descartadas" },
+];
+
+const TASK_DUE_OPTIONS = [
+  { value: "", label: "Todas" },
+  { value: "con", label: "Con fecha" },
+  { value: "sin", label: "Sin fecha" },
+  { value: "vencida", label: "Vencida" },
+];
 
 const NOTE_TONES = [
   "border-amber-300/70 bg-amber-50 text-amber-950 shadow-amber-900/5 dark:border-amber-500/30 dark:bg-amber-950/40 dark:text-amber-50",
@@ -257,26 +278,21 @@ function TaskFiltersModal({
   const titleId = useId();
   const [mounted, setMounted] = useState(false);
   const [draft, setDraft] = useState<TaskFilters>(applied);
+  const [formKey, setFormKey] = useState(0);
 
   useEffect(() => setMounted(true), []);
   useEffect(() => {
     if (!open) return;
     setDraft(applied);
+    setFormKey((k) => k + 1);
   }, [open, applied]);
 
   if (!mounted || !open) return null;
 
-  function toggleOwner(id: string) {
-    setDraft((prev) => {
-      const has = prev.owners.includes(id);
-      return {
-        ...prev,
-        owners: has
-          ? prev.owners.filter((x) => x !== id)
-          : [...prev.owners, id],
-      };
-    });
-  }
+  const ownerOpts = [
+    { value: OWNER_UNASSIGNED, label: "Sin asignar" },
+    ...members.map((m) => ({ value: m.id, label: m.displayName })),
+  ];
 
   return createPortal(
     <div
@@ -288,144 +304,92 @@ function TaskFiltersModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className="flex w-full max-w-lg flex-col overflow-hidden rounded-xl border border-border bg-surface shadow-xl"
+        className="flex max-h-[min(92vh,48rem)] w-full max-w-2xl flex-col overflow-hidden rounded-xl border border-border bg-surface shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3 sm:px-5">
           <h2
             id={titleId}
-            className="text-lg font-semibold tracking-tight text-foreground"
+            className="text-lg font-semibold leading-none tracking-tight text-foreground"
           >
             Filtrar tareas
           </h2>
           <button
             type="button"
             onClick={onClose}
-            className="inline-flex size-8 items-center justify-center rounded-lg border border-destructive bg-surface text-destructive hover:bg-destructive/10"
+            className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-destructive bg-surface text-destructive transition-colors hover:bg-destructive/10 hover:text-destructive"
             aria-label="Cerrar"
           >
-            ×
+            <span aria-hidden className="text-xl leading-none">
+              ×
+            </span>
           </button>
         </div>
 
-        <div className="space-y-4 px-4 py-4 sm:px-5">
-          <div>
-            <p className="text-sm font-medium text-foreground">Estado</p>
-            <div className="mt-2 flex flex-wrap gap-2">
-              {(
-                [
-                  { value: "", label: "Todas" },
-                  { value: "pendiente", label: "Pendientes" },
-                  { value: "hecha", label: "Hechas" },
-                  { value: "descartada", label: "Descartadas" },
-                ] as const
-              ).map((opt) => (
-                <button
-                  key={opt.value || "all"}
-                  type="button"
-                  onClick={() => setDraft((p) => ({ ...p, status: opt.value }))}
-                  className={cn(
-                    "rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors",
-                    draft.status === opt.value
-                      ? "border-primary bg-primary/10 text-primary"
-                      : "border-border bg-surface text-muted-foreground hover:bg-muted",
-                  )}
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <p className="text-sm font-medium text-foreground">Plazo</p>
-            <div className="mt-2 flex flex-wrap gap-2">
-              {(
-                [
-                  { value: "", label: "Todas" },
-                  { value: "con", label: "Con fecha" },
-                  { value: "sin", label: "Sin fecha" },
-                  { value: "vencida", label: "Vencida" },
-                ] as const
-              ).map((opt) => (
-                <button
-                  key={opt.value || "due-all"}
-                  type="button"
-                  onClick={() => setDraft((p) => ({ ...p, due: opt.value }))}
-                  className={cn(
-                    "rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors",
-                    draft.due === opt.value
-                      ? "border-primary bg-primary/10 text-primary"
-                      : "border-border bg-surface text-muted-foreground hover:bg-muted",
-                  )}
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <p className="text-sm font-medium text-foreground">Asignada a</p>
-            <div className="mt-2 flex max-h-40 flex-wrap gap-2 overflow-y-auto">
-              <button
-                type="button"
-                onClick={() => toggleOwner(OWNER_UNASSIGNED)}
-                className={cn(
-                  "rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors",
-                  draft.owners.includes(OWNER_UNASSIGNED)
-                    ? "border-primary bg-primary/10 text-primary"
-                    : "border-border bg-surface text-muted-foreground hover:bg-muted",
-                )}
-              >
-                Sin asignar
-              </button>
-              {members.map((m) => (
-                <button
-                  key={m.id}
-                  type="button"
-                  onClick={() => toggleOwner(m.id)}
-                  className={cn(
-                    "rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors",
-                    draft.owners.includes(m.id)
-                      ? "border-primary bg-primary/10 text-primary"
-                      : "border-border bg-surface text-muted-foreground hover:bg-muted",
-                  )}
-                >
-                  {m.displayName}
-                </button>
-              ))}
-            </div>
+        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-5">
+          <div key={formKey} className="grid gap-4 sm:grid-cols-3">
+            <FilterMultiSelect
+              id="task-filter-status"
+              label="Estado"
+              options={TASK_STATUS_OPTIONS}
+              selected={draft.status}
+              onChange={(status) =>
+                setDraft((p) => ({
+                  ...p,
+                  status: status as OfferTaskStatus[],
+                }))
+              }
+            />
+            <FilterMultiSelect
+              id="task-filter-owner"
+              label="Asignada a"
+              options={ownerOpts}
+              selected={draft.owners}
+              onChange={(owners) => setDraft((p) => ({ ...p, owners }))}
+            />
+            <FilterSingleSelect
+              id="task-filter-due"
+              label="Plazo"
+              options={TASK_DUE_OPTIONS}
+              value={draft.due}
+              onChange={(due) =>
+                setDraft((p) => ({
+                  ...p,
+                  due: due as TaskFilters["due"],
+                }))
+              }
+            />
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border px-4 py-3 sm:px-5">
+        <div className="flex flex-wrap items-center justify-end gap-2 border-t border-border px-4 py-3 sm:px-5">
           <Button
             type="button"
-            variant="ghost"
-            size="sm"
             onClick={() => {
-              onClear();
+              onApply(draft);
               onClose();
+            }}
+          >
+            Aplicar
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => {
+              setDraft(EMPTY_TASK_FILTERS);
+              onClear();
             }}
           >
             Limpiar
           </Button>
-          <div className="flex gap-2">
-            <Button type="button" variant="ghost" size="sm" onClick={onClose}>
-              Cancelar
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              onClick={() => {
-                onApply(draft);
-                onClose();
-              }}
-            >
-              Aplicar
-            </Button>
-          </div>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onClose}
+            className="border-destructive text-destructive hover:bg-destructive/10 hover:text-destructive"
+          >
+            Cancelar
+          </Button>
         </div>
       </div>
     </div>,

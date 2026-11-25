@@ -1,11 +1,13 @@
 "use client";
 
 import { createPortal } from "react-dom";
-import { useEffect, useId, useMemo, useRef, useState } from "react";
-import { AnchoredPortal } from "@/components/ui/anchored-portal";
+import { useEffect, useId, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/cn";
 import { ENVELOPE_LABELS } from "@/components/mis-licitaciones/offer-case-sections";
+import {
+  FilterMultiSelect,
+  FilterSingleSelect,
+} from "@/components/mis-licitaciones/offer-filter-selects";
 import {
   OFFER_COMPLIANCE_LABELS,
   OFFER_COMPLIANCE_STATUSES,
@@ -60,13 +62,12 @@ const ENVELOPE_OPTIONS = Object.entries(ENVELOPE_LABELS).map(
   }),
 );
 
-const DUE_OPTIONS: { value: OfferRequirementsFilters["due"]; label: string }[] =
-  [
-    { value: "", label: "Todas" },
-    { value: "con", label: "Con fecha" },
-    { value: "sin", label: "Sin fecha" },
-    { value: "vencida", label: "Vencida" },
-  ];
+const DUE_OPTIONS = [
+  { value: "", label: "Todas" },
+  { value: "con", label: "Con fecha" },
+  { value: "sin", label: "Sin fecha" },
+  { value: "vencida", label: "Vencida" },
+];
 
 type Props = {
   open: boolean;
@@ -144,6 +145,7 @@ export function OfferRequirementsFiltersModal({
               <FilterMultiSelect
                 id="req-filter-type"
                 label="Tipo"
+                allLabel="Todos"
                 options={TYPE_OPTIONS}
                 selected={draft.types}
                 onChange={(types) => setDraft((p) => ({ ...p, types }))}
@@ -151,6 +153,7 @@ export function OfferRequirementsFiltersModal({
               <FilterMultiSelect
                 id="req-filter-compliance"
                 label="¿Cumplimos?"
+                allLabel="Todos"
                 options={OFFER_COMPLIANCE_STATUSES.map((s) => ({
                   value: s,
                   label: OFFER_COMPLIANCE_LABELS[s],
@@ -163,6 +166,7 @@ export function OfferRequirementsFiltersModal({
               <FilterMultiSelect
                 id="req-filter-prep"
                 label="Preparación"
+                allLabel="Todos"
                 options={OFFER_PREP_STATUSES.map((s) => ({
                   value: s,
                   label: OFFER_PREP_LABELS[s],
@@ -176,6 +180,7 @@ export function OfferRequirementsFiltersModal({
               <FilterMultiSelect
                 id="req-filter-owner"
                 label="Responsable"
+                allLabel="Todos"
                 options={ownerOpts}
                 selected={draft.owners}
                 onChange={(owners) => setDraft((p) => ({ ...p, owners }))}
@@ -183,6 +188,7 @@ export function OfferRequirementsFiltersModal({
               <FilterMultiSelect
                 id="req-filter-envelope"
                 label="Sobre"
+                allLabel="Todos"
                 options={ENVELOPE_OPTIONS}
                 selected={draft.envelopes}
                 onChange={(envelopes) =>
@@ -194,7 +200,12 @@ export function OfferRequirementsFiltersModal({
                 label="Fecha interna"
                 options={DUE_OPTIONS}
                 value={draft.due}
-                onChange={(due) => setDraft((p) => ({ ...p, due }))}
+                onChange={(due) =>
+                  setDraft((p) => ({
+                    ...p,
+                    due: due as OfferRequirementsFilters["due"],
+                  }))
+                }
               />
             </div>
           </div>
@@ -226,232 +237,5 @@ export function OfferRequirementsFiltersModal({
       </div>
     </div>,
     document.body,
-  );
-}
-
-/**
- * Desplegable multi-valor (estilo CriteriaMultiSelect).
- * `selected` vacío en el padre = «Todos» (sin filtrar).
- * «Limpiar» vacía casillas; si cierras con 0 ticks, se restaura lo anterior.
- */
-function FilterMultiSelect({
-  id,
-  label,
-  options,
-  selected,
-  onChange,
-  allLabel = "Todos",
-}: {
-  id: string;
-  label: string;
-  options: { value: string; label: string }[];
-  selected: string[];
-  onChange: (next: string[]) => void;
-  allLabel?: string;
-}) {
-  const [open, setOpen] = useState(false);
-  const triggerRef = useRef<HTMLButtonElement>(null);
-  const allValues = useMemo(() => options.map((o) => o.value), [options]);
-  const labelByValue = useMemo(() => {
-    const m = new Map<string, string>();
-    for (const o of options) m.set(o.value, o.label);
-    return m;
-  }, [options]);
-
-  /** Selección en UI mientras el menú está abierto (puede ser []). */
-  const [draft, setDraft] = useState<string[]>([]);
-
-  function toUiSelection(values: string[]): string[] {
-    return values.length === 0 ? [...allValues] : [...values];
-  }
-
-  function commitFromUi(ui: string[]) {
-    if (ui.length === 0 || ui.length === allValues.length) {
-      onChange([]);
-      return;
-    }
-    onChange(ui);
-  }
-
-  function openMenu() {
-    setDraft(toUiSelection(selected));
-    setOpen(true);
-  }
-
-  function closeMenu() {
-    // Limpiar + cerrar (0 casillas) → se mantiene lo que había en el modal.
-    if (draft.length > 0) {
-      commitFromUi(draft);
-    }
-    setOpen(false);
-  }
-
-  const isAll = open
-    ? draft.length === allValues.length && allValues.length > 0
-    : selected.length === 0;
-  const uiSelected = open ? draft : toUiSelection(selected);
-
-  const summary =
-    selected.length === 0
-      ? allLabel
-      : selected.length <= 2
-        ? selected.map((v) => labelByValue.get(v) ?? v).join(", ")
-        : `${selected.length} seleccionados`;
-
-  function toggle(value: string) {
-    setDraft((prev) => {
-      if (prev.includes(value)) return prev.filter((v) => v !== value);
-      return [...prev, value];
-    });
-  }
-
-  return (
-    <div>
-      <label htmlFor={id} className="block text-sm font-medium text-foreground">
-        {label}
-      </label>
-      <div className="relative mt-1">
-        <button
-          ref={triggerRef}
-          type="button"
-          id={id}
-          aria-expanded={open}
-          aria-haspopup="listbox"
-          onClick={() => (open ? closeMenu() : openMenu())}
-          className="flex w-full items-center justify-between gap-2 rounded-md border border-border bg-background px-3 py-2 text-left text-sm text-foreground outline-none hover:bg-muted/40 focus:ring-2 focus:ring-ring"
-        >
-          <span className="min-w-0 truncate">{summary}</span>
-          <span aria-hidden className="shrink-0 text-xs text-muted-foreground">
-            ▾
-          </span>
-        </button>
-        <AnchoredPortal
-          open={open}
-          anchorRef={triggerRef}
-          onDismiss={closeMenu}
-          className="flex flex-col overflow-hidden bg-surface p-0"
-          maxHeight={224}
-          overflowY="hidden"
-        >
-          <div className="flex shrink-0 border-b border-border bg-surface">
-            <button
-              type="button"
-              className={cn(
-                "flex-1 px-3 py-1.5 text-left text-xs font-medium transition-colors",
-                isAll
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground",
-              )}
-              onClick={() => setDraft([...allValues])}
-            >
-              {allLabel}
-            </button>
-            <button
-              type="button"
-              className="flex-1 border-l border-border px-3 py-1.5 text-left text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-              onClick={() => setDraft([])}
-            >
-              Limpiar
-            </button>
-          </div>
-          <ul
-            role="listbox"
-            aria-multiselectable
-            className="min-h-0 flex-1 overflow-y-auto py-1"
-          >
-            {options.map((opt) => {
-              const checked = uiSelected.includes(opt.value);
-              return (
-                <li key={opt.value} role="option" aria-selected={checked}>
-                  <label className="flex cursor-pointer items-center gap-2 px-3 py-1.5 text-sm text-foreground hover:bg-muted">
-                    <input
-                      type="checkbox"
-                      className="ef-checkbox"
-                      checked={checked}
-                      onChange={() => toggle(opt.value)}
-                    />
-                    <span className="min-w-0 truncate">{opt.label}</span>
-                  </label>
-                </li>
-              );
-            })}
-          </ul>
-        </AnchoredPortal>
-      </div>
-    </div>
-  );
-}
-
-function FilterSingleSelect({
-  id,
-  label,
-  options,
-  value,
-  onChange,
-}: {
-  id: string;
-  label: string;
-  options: { value: OfferRequirementsFilters["due"]; label: string }[];
-  value: OfferRequirementsFilters["due"];
-  onChange: (next: OfferRequirementsFilters["due"]) => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const triggerRef = useRef<HTMLButtonElement>(null);
-  const summary =
-    options.find((o) => o.value === value)?.label ?? "Todas";
-
-  return (
-    <div>
-      <label htmlFor={id} className="block text-sm font-medium text-foreground">
-        {label}
-      </label>
-      <div className="relative mt-1">
-        <button
-          ref={triggerRef}
-          type="button"
-          id={id}
-          aria-expanded={open}
-          aria-haspopup="listbox"
-          onClick={() => setOpen((v) => !v)}
-          className="flex w-full items-center justify-between gap-2 rounded-md border border-border bg-background px-3 py-2 text-left text-sm text-foreground outline-none hover:bg-muted/40 focus:ring-2 focus:ring-ring"
-        >
-          <span className="min-w-0 truncate">{summary}</span>
-          <span aria-hidden className="shrink-0 text-xs text-muted-foreground">
-            ▾
-          </span>
-        </button>
-        <AnchoredPortal
-          open={open}
-          anchorRef={triggerRef}
-          onDismiss={() => setOpen(false)}
-          className="bg-surface p-1"
-          maxHeight={220}
-        >
-          <ul role="listbox" className="py-0.5">
-            {options.map((opt) => (
-              <li key={opt.value || "all"}>
-                <button
-                  type="button"
-                  role="option"
-                  aria-selected={opt.value === value}
-                  className={cn(
-                    "flex w-full rounded-md px-2.5 py-1.5 text-left text-sm hover:bg-muted",
-                    opt.value === value
-                      ? "font-semibold text-foreground"
-                      : "text-foreground",
-                  )}
-                  onClick={() => {
-                    onChange(opt.value);
-                    setOpen(false);
-                  }}
-                >
-                  {opt.label}
-                </button>
-              </li>
-            ))}
-          </ul>
-        </AnchoredPortal>
-      </div>
-    </div>
   );
 }
