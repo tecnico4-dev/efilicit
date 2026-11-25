@@ -679,6 +679,11 @@ function TaskEditorModal({
             </span>
           </div>
         ) : null}
+        {!editing && mode === "edit" && draft.status === "descartada" ? (
+          <span className="absolute left-3 top-3 text-[0.65rem] font-semibold uppercase tracking-wider opacity-80">
+            Descartada
+          </span>
+        ) : null}
 
         {!editing && mode === "edit" ? (
           <div className="absolute right-2 top-2 flex items-center gap-0.5">
