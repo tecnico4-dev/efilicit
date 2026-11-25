@@ -18,19 +18,21 @@ import { cn } from "@/lib/cn";
 import { calendarDayMadrid, formatDateMadrid } from "@/lib/datetime";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import {
+  OFFER_TASK_STATUS_LABELS,
   createOfferTask,
   deleteOfferTask,
   listOfferTasks,
   updateOfferTask,
   type EficenMemberForTeam,
   type OfferTaskItem,
+  type OfferTaskStatus,
 } from "@/lib/queries";
 
 const OWNER_UNASSIGNED = "__none__";
 
 type TaskFilters = {
-  /** "" = todas · open · done */
-  status: "" | "open" | "done";
+  /** "" = todas */
+  status: "" | OfferTaskStatus;
   owners: string[];
   /** "" = todas · con · sin · vencida */
   due: "" | "con" | "sin" | "vencida";
@@ -47,8 +49,7 @@ function countTaskFilters(f: TaskFilters): number {
 }
 
 function taskMatchesFilters(task: OfferTaskItem, f: TaskFilters): boolean {
-  if (f.status === "open" && task.done_at != null) return false;
-  if (f.status === "done" && task.done_at == null) return false;
+  if (f.status && task.status !== f.status) return false;
 
   if (f.owners.length > 0) {
     const key = task.owner_member_id ?? OWNER_UNASSIGNED;
@@ -58,7 +59,7 @@ function taskMatchesFilters(task: OfferTaskItem, f: TaskFilters): boolean {
   if (f.due === "con" && !task.due_at) return false;
   if (f.due === "sin" && task.due_at) return false;
   if (f.due === "vencida") {
-    if (!task.due_at || task.done_at != null) return false;
+    if (!task.due_at || task.status !== "pendiente") return false;
     if (new Date(task.due_at).getTime() >= Date.now()) return false;
   }
 
@@ -86,7 +87,7 @@ type Draft = {
   owner_member_id: string | null;
   due_day: string | null;
   notes: string;
-  done: boolean;
+  status: OfferTaskStatus;
 };
 
 const EMPTY_DRAFT: Draft = {
@@ -94,11 +95,14 @@ const EMPTY_DRAFT: Draft = {
   owner_member_id: null,
   due_day: null,
   notes: "",
-  done: false,
+  status: "pendiente",
 };
 
-function dueToneClass(dueIso: string | null, done: boolean): string {
-  if (done || !dueIso) return "text-muted-foreground";
+function dueToneClass(
+  dueIso: string | null,
+  status: OfferTaskStatus,
+): string {
+  if (status !== "pendiente" || !dueIso) return "text-muted-foreground";
   const due = new Date(dueIso).getTime();
   if (Number.isNaN(due)) return "text-muted-foreground";
   const days = (due - Date.now()) / (24 * 60 * 60 * 1000);
@@ -168,7 +172,7 @@ function TaskNoteCard({
   hidden?: boolean;
   onOpen: (origin: NoteOrigin) => void;
 }) {
-  const done = task.done_at != null;
+  const closed = task.status !== "pendiente";
   const tone = NOTE_TONES[index % NOTE_TONES.length]!;
   const tilt = NOTE_TILTS[index % NOTE_TILTS.length]!;
 
@@ -189,7 +193,7 @@ function TaskNoteCard({
         "hover:-translate-y-0.5 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
         tone,
         tilt,
-        done && "opacity-65",
+        closed && "opacity-65",
         hidden && "invisible pointer-events-none",
       )}
     >
@@ -200,7 +204,9 @@ function TaskNoteCard({
       <div
         className={cn(
           "flex-1 space-y-1",
-          done && "opacity-90 [&_*]:line-through [&_*]:decoration-black/40",
+          task.status === "hecha" &&
+            "opacity-90 [&_*]:line-through [&_*]:decoration-black/40",
+          task.status === "descartada" && "opacity-80",
         )}
       >
         {task.title?.trim() ? (
@@ -218,10 +224,11 @@ function TaskNoteCard({
         </p>
       </div>
       <div className="mt-3 space-y-0.5 text-xs opacity-80">
+        <p className="font-medium">{OFFER_TASK_STATUS_LABELS[task.status]}</p>
         <p className="truncate">
           {task.owner_member?.display_name?.trim() || "Sin asignar"}
         </p>
-        <p className={cn(dueToneClass(task.due_at, done))}>
+        <p className={cn(dueToneClass(task.due_at, task.status))}>
           {task.due_at ? `Para ${formatDateMadrid(task.due_at)}` : "Sin plazo"}
         </p>
       </div>
@@ -305,8 +312,9 @@ function TaskFiltersModal({
               {(
                 [
                   { value: "", label: "Todas" },
-                  { value: "open", label: "Abiertas" },
-                  { value: "done", label: "Hechas" },
+                  { value: "pendiente", label: "Pendientes" },
+                  { value: "hecha", label: "Hechas" },
+                  { value: "descartada", label: "Descartadas" },
                 ] as const
               ).map((opt) => (
                 <button
@@ -461,7 +469,7 @@ function TaskEditorModal({
   onClosed,
   onSave,
   onDelete,
-  onToggleDone,
+  onSetStatus,
 }: {
   open: boolean;
   mode: "create" | "edit";
@@ -476,7 +484,7 @@ function TaskEditorModal({
   onClosed: () => void;
   onSave: () => Promise<boolean>;
   onDelete?: () => void;
-  onToggleDone?: () => void;
+  onSetStatus?: (status: OfferTaskStatus) => void;
 }) {
   const titleId = useId();
   const noteRef = useRef<HTMLDivElement>(null);
@@ -583,6 +591,11 @@ function TaskEditorModal({
     ta.style.height = `${ta.scrollHeight}px`;
   }, [open, phase, editing, draft.notes]);
 
+  // En lectura, el baseline sigue el draft (p. ej. tras Marcar hecha / Descartar).
+  useEffect(() => {
+    if (!editing) baselineRef.current = draft;
+  }, [draft, editing]);
+
   function startEditing() {
     baselineRef.current = draft;
     setEditing(true);
@@ -628,7 +641,7 @@ function TaskEditorModal({
           "relative flex max-h-[min(85vh,40rem)] flex-col rounded-md border p-5 shadow-2xl sm:p-6",
           "will-change-transform",
           tone,
-          draft.done && "opacity-90",
+          draft.status !== "pendiente" && "opacity-90",
         )}
       >
         {!editing && mode === "edit" ? (
@@ -726,8 +739,9 @@ function TaskEditorModal({
             <div
               className={cn(
                 "space-y-1",
-                draft.done &&
+                draft.status === "hecha" &&
                   "opacity-90 [&_*]:line-through [&_*]:decoration-black/40",
+                draft.status === "descartada" && "opacity-80",
               )}
             >
               {draft.title.trim() ? (
@@ -744,7 +758,15 @@ function TaskEditorModal({
                 {draft.notes}
               </p>
             </div>
-            <div className="mt-4 grid gap-3 border-t border-black/10 pt-3 text-sm dark:border-white/15 sm:grid-cols-2">
+            <div className="mt-4 grid gap-3 border-t border-black/10 pt-3 text-sm dark:border-white/15 sm:grid-cols-3">
+              <div>
+                <p className="text-[0.7rem] font-medium uppercase tracking-wide opacity-70">
+                  Estado
+                </p>
+                <p className="mt-1 font-medium">
+                  {OFFER_TASK_STATUS_LABELS[draft.status]}
+                </p>
+              </div>
               <div>
                 <p className="text-[0.7rem] font-medium uppercase tracking-wide opacity-70">
                   Asignada a
@@ -764,7 +786,7 @@ function TaskEditorModal({
                       draft.due_day
                         ? `${draft.due_day}T12:00:00.000Z`
                         : null,
-                      draft.done,
+                      draft.status,
                     ),
                   )}
                 >
@@ -814,27 +836,39 @@ function TaskEditorModal({
             </>
           ) : (
             <>
-              {onToggleDone ? (
+              {onSetStatus ? (
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
                   disabled={busy}
                   className="border-black/15 bg-white/40 dark:border-white/20 dark:bg-black/20"
-                  onClick={onToggleDone}
+                  onClick={() =>
+                    onSetStatus(
+                      draft.status === "hecha" ? "pendiente" : "hecha",
+                    )
+                  }
                 >
-                  {draft.done ? "Reabrir" : "Marcar hecha"}
+                  {draft.status === "hecha" ? "Reabrir" : "Marcar hecha"}
                 </Button>
               ) : null}
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                disabled={busy}
-                onClick={requestClose}
-              >
-                Descartar
-              </Button>
+              {onSetStatus ? (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  disabled={busy || draft.status === "descartada"}
+                  onClick={() =>
+                    onSetStatus(
+                      draft.status === "descartada"
+                        ? "pendiente"
+                        : "descartada",
+                    )
+                  }
+                >
+                  {draft.status === "descartada" ? "Reabrir" : "Descartar"}
+                </Button>
+              ) : null}
             </>
           )}
         </div>
@@ -915,7 +949,7 @@ export function OfferTasksPanel({
       owner_member_id: task.owner_member_id,
       due_day: task.due_at ? calendarDayMadrid(task.due_at) : null,
       notes: task.notes,
-      done: task.done_at != null,
+      status: task.status,
     });
     setFormError(null);
     setEditorTone(toneIndex);
@@ -967,9 +1001,7 @@ export function OfferTasksPanel({
           owner_member_id: draft.owner_member_id,
           due_at: dueAt,
           notes: draft.notes,
-          done_at: draft.done
-            ? (editor.done_at ?? new Date().toISOString())
-            : null,
+          status: draft.status,
         },
       });
       setSaving(false);
@@ -985,24 +1017,24 @@ export function OfferTasksPanel({
     return false;
   }
 
-  async function toggleDone() {
+  async function setTaskStatus(status: OfferTaskStatus) {
     if (!editor || editor === "create") return;
-    const nextDone = !draft.done;
     setSaving(true);
     setFormError(null);
     const client = createSupabaseBrowserClient();
     const result = await updateOfferTask(client, {
       id: editor.id,
-      patch: {
-        done_at: nextDone ? new Date().toISOString() : null,
-      },
+      patch: { status },
     });
     setSaving(false);
     if (result.error) {
       setFormError(result.error.message);
       return;
     }
-    setDraft((d) => ({ ...d, done: nextDone }));
+    setDraft((d) => {
+      const next = { ...d, status };
+      return next;
+    });
     await reload();
   }
 
@@ -1092,8 +1124,10 @@ export function OfferTasksPanel({
         onClosed={finishEditor}
         onSave={save}
         onDelete={editor && editor !== "create" ? () => void remove() : undefined}
-        onToggleDone={
-          editor && editor !== "create" ? () => void toggleDone() : undefined
+        onSetStatus={
+          editor && editor !== "create"
+            ? (status) => void setTaskStatus(status)
+            : undefined
         }
       />
     </div>

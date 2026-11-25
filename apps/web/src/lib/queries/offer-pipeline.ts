@@ -1005,6 +1005,29 @@ export async function createOfferCase(
   return { data: { id: data.id }, error: null };
 }
 
+export const OFFER_TASK_STATUSES = [
+  "pendiente",
+  "hecha",
+  "descartada",
+] as const;
+
+export type OfferTaskStatus = (typeof OFFER_TASK_STATUSES)[number];
+
+export const OFFER_TASK_STATUS_LABELS: Record<OfferTaskStatus, string> = {
+  pendiente: "Pendiente",
+  hecha: "Hecha",
+  descartada: "Descartada",
+};
+
+export function asOfferTaskStatus(
+  raw: string | null | undefined,
+): OfferTaskStatus {
+  if (raw === "hecha" || raw === "descartada" || raw === "pendiente") {
+    return raw;
+  }
+  return "pendiente";
+}
+
 export type OfferTaskItem = {
   id: string;
   offer_case_id: string;
@@ -1012,7 +1035,7 @@ export type OfferTaskItem = {
   owner_member_id: string | null;
   owner_member: OfferOwnerMember | null;
   due_at: string | null;
-  done_at: string | null;
+  status: OfferTaskStatus;
   notes: string;
   created_by: string | null;
 };
@@ -1030,7 +1053,7 @@ export async function listOfferTasks(
       title,
       owner_member_id,
       due_at,
-      done_at,
+      status,
       notes,
       created_by,
       owner_member:eficen_members!owner_member_id (
@@ -1045,6 +1068,12 @@ export async function listOfferTasks(
 
   if (error) return { data: [], error: new Error(error.message) };
 
+  const statusRank: Record<OfferTaskStatus, number> = {
+    pendiente: 0,
+    hecha: 1,
+    descartada: 2,
+  };
+
   const rows: OfferTaskItem[] = (data ?? []).map((row) => ({
     id: row.id,
     offer_case_id: row.offer_case_id,
@@ -1058,15 +1087,14 @@ export async function listOfferTasks(
         | undefined,
     ),
     due_at: row.due_at,
-    done_at: row.done_at,
+    status: asOfferTaskStatus(row.status),
     notes: row.notes ?? "",
     created_by: row.created_by,
   }));
 
   rows.sort((a, b) => {
-    const aDone = a.done_at != null ? 1 : 0;
-    const bDone = b.done_at != null ? 1 : 0;
-    if (aDone !== bDone) return aDone - bDone;
+    const byStatus = statusRank[a.status] - statusRank[b.status];
+    if (byStatus !== 0) return byStatus;
     const aDue = a.due_at
       ? new Date(a.due_at).getTime()
       : Number.POSITIVE_INFINITY;
@@ -1109,6 +1137,7 @@ export async function createOfferTask(
       owner_member_id: input.ownerMemberId,
       due_at: input.dueAt,
       notes,
+      status: "pendiente",
       created_by: input.createdBy,
     })
     .select("id")
@@ -1126,7 +1155,7 @@ export async function updateOfferTask(
       owner_member_id?: string | null;
       due_at?: string | null;
       notes?: string;
-      done_at?: string | null;
+      status?: OfferTaskStatus;
     };
   },
 ): Promise<{ error: Error | null }> {
@@ -1135,7 +1164,7 @@ export async function updateOfferTask(
     owner_member_id?: string | null;
     due_at?: string | null;
     notes?: string;
-    done_at?: string | null;
+    status?: OfferTaskStatus;
   } = { ...input.patch };
   if (patch.title !== undefined) {
     patch.title = patch.title?.trim() || null;
