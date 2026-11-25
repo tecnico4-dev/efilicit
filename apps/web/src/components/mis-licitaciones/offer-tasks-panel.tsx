@@ -1323,6 +1323,7 @@ export function OfferTasksPanel({
                       onClick={() => applyPreset(opt.id)}
                       onContextMenu={(e) => {
                         if (!canSetDefault || !isDefaultable) return;
+                        if (opt.id === "personalizado") return;
                         e.preventDefault();
                         e.stopPropagation();
                         setCtxMenu({
