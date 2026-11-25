@@ -666,6 +666,15 @@ function TaskEditorModal({
           draft.status !== "pendiente" && "opacity-90",
         )}
       >
+        {!editing && mode === "edit" && draft.status === "hecha" ? (
+          <div className="absolute left-3 top-3 flex items-center gap-2">
+            <DoneTick />
+            <span className="text-xs font-medium tracking-wide">
+              Tarea completada
+            </span>
+          </div>
+        ) : null}
+
         {!editing && mode === "edit" ? (
           <div className="absolute right-2 top-2 flex items-center gap-0.5">
             <button
@@ -692,7 +701,13 @@ function TaskEditorModal({
         ) : null}
 
         <span
-          className="mb-3 size-3 self-center rounded-full bg-black/20 shadow-inner dark:bg-white/25"
+          className={cn(
+            "mb-3 size-3 self-center rounded-full bg-black/20 shadow-inner dark:bg-white/25",
+            !editing &&
+              mode === "edit" &&
+              draft.status === "hecha" &&
+              "mt-5",
+          )}
           aria-hidden
         />
 
@@ -761,8 +776,6 @@ function TaskEditorModal({
             <div
               className={cn(
                 "space-y-1",
-                draft.status === "hecha" &&
-                  "opacity-90 [&_*]:line-through [&_*]:decoration-black/40",
                 draft.status === "descartada" && "opacity-80",
               )}
             >
@@ -850,7 +863,7 @@ function TaskEditorModal({
             </>
           ) : (
             <>
-              {onSetStatus ? (
+              {onSetStatus && draft.status !== "descartada" ? (
                 <Button
                   type="button"
                   variant="outline"
@@ -863,15 +876,17 @@ function TaskEditorModal({
                     )
                   }
                 >
-                  {draft.status === "hecha" ? "Reabrir" : "Marcar hecha"}
+                  {draft.status === "hecha"
+                    ? "Marcar como no hecha"
+                    : "Marcar hecha"}
                 </Button>
               ) : null}
-              {onSetStatus ? (
+              {onSetStatus && draft.status !== "hecha" ? (
                 <Button
                   type="button"
                   variant="ghost"
                   size="sm"
-                  disabled={busy || draft.status === "descartada"}
+                  disabled={busy}
                   onClick={() =>
                     onSetStatus(
                       draft.status === "descartada"
