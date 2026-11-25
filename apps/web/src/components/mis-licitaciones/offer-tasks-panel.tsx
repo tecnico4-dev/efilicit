@@ -411,7 +411,9 @@ function TaskNoteCard({
           avatarUrl={task.owner_member?.avatar_url ?? null}
         />
         <p className={cn(dueToneClass(task.due_at, task.status))}>
-          {task.due_at ? `Para ${formatDateMadrid(task.due_at)}` : "Sin plazo"}
+          {task.due_at
+            ? `Para el ${formatDateMadrid(task.due_at)}`
+            : "Sin plazo"}
         </p>
       </div>
     </button>
