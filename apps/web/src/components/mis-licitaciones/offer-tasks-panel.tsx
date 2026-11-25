@@ -277,6 +277,11 @@ function TaskNoteCard({
       {task.status === "hecha" ? (
         <DoneTick className="absolute right-2.5 top-2.5 opacity-90" />
       ) : null}
+      {task.status === "descartada" ? (
+        <span className="absolute right-2 top-2 text-[0.6rem] font-semibold uppercase tracking-wider opacity-80">
+          Descartada
+        </span>
+      ) : null}
       <span
         className="mb-2 size-2.5 self-center rounded-full bg-black/20 shadow-inner dark:bg-white/25"
         aria-hidden
