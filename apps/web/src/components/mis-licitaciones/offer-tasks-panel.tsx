@@ -422,7 +422,7 @@ function TaskEditorModal({
             <input
               value={draft.title}
               disabled={busy}
-              placeholder="Opcional · cabecera corta"
+              autoFocus
               className="mt-1.5 w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring/50 disabled:opacity-50"
               onChange={(e) => onChange({ title: e.target.value })}
             />
@@ -435,9 +435,7 @@ function TaskEditorModal({
             <textarea
               value={draft.notes}
               disabled={busy}
-              autoFocus
               rows={3}
-              placeholder="Qué hay que hacer…"
               className="mt-1.5 w-full resize-y rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring/50 disabled:opacity-50"
               onChange={(e) => onChange({ notes: e.target.value })}
             />
