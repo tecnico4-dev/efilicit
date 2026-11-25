@@ -1,0 +1,44 @@
+---
+description: Diseño aprobado de timeline Bitácora (chevrones ↑) y cómo volver a él
+globs: apps/web/src/components/mis-licitaciones/offer-case-log-panel.tsx
+alwaysApply: false
+---
+
+# Bitácora · baseline visual aprobado (2026-11-25)
+
+El usuario marcó como **bueno** el estado del timeline de fechas en Bitácora.
+Ante cambios posteriores, si pide «volver a como estaba» / «deshacer el diseño» /
+«como el de ayer que me gustaba», restaura este baseline.
+
+## Commit de referencia
+
+- Rama: `tecnico4/mis-licitaciones`
+- Commit: `42895e5f036e27f04630db9b213ae1cc48f3055c`
+- Mensaje: `fix(web): muesca inferior hacia dentro en chevrones de bitácora`
+- Archivo clave: `apps/web/src/components/mis-licitaciones/offer-case-log-panel.tsx`
+
+Restaurar solo ese archivo (sin tocar el resto del trabajo):
+
+```bash
+git checkout 42895e5f036e27f04630db9b213ae1cc48f3055c -- apps/web/src/components/mis-licitaciones/offer-case-log-panel.tsx
+```
+
+## Forma aprobada
+
+- Columna de fechas = **flechas / chevrones verticales** (no hexágono simétrico).
+- **Punta superior hacia arriba** (más reciente arriba).
+- **Piquito inferior hacia dentro** (muesca cóncava hacia arriba), no punta saliente hacia abajo.
+- `clipPath` de referencia:
+
+```text
+polygon(50% 0%, 100% 14px, 100% 100%, 50% calc(100% - 14px), 0% 100%, 0% 14px)
+```
+
+- Colores de plataforma: `bg-primary` / `bg-primary-dark` alternados, texto `text-primary-foreground`.
+- Contenido (badge + texto + meta) a la derecha; filas solapadas con `-mt-3` y `zIndex` decreciente.
+- No volver a timeline de puntos/▲ sueltos ni a un marco SVG solo alrededor de la columna.
+
+## Al iterar
+
+- Cambios pequeños de forma/color/solape: OK si el usuario lo pide.
+- Si no le gusta un experimento: restaurar el commit de referencia arriba y confirmar.
