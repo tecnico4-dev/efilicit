@@ -1,7 +1,15 @@
 "use client";
 
 import { createPortal } from "react-dom";
-import { useCallback, useEffect, useId, useMemo, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { Button } from "@/components/ui/button";
 import { MisLicitacionesFiltersButton } from "@/components/mis-licitaciones/mis-licitaciones-filters-modal";
 import { OfferMemberPicker } from "@/components/mis-licitaciones/offer-member-picker";
@@ -99,14 +107,25 @@ function dueToneClass(dueIso: string | null, done: boolean): string {
   return "text-muted-foreground";
 }
 
+type NoteOrigin = {
+  top: number;
+  left: number;
+  width: number;
+  height: number;
+};
+
+const NOTE_MOTION_MS = 240;
+
 function TaskNoteCard({
   task,
   index,
+  hidden,
   onOpen,
 }: {
   task: OfferTaskItem;
   index: number;
-  onOpen: () => void;
+  hidden?: boolean;
+  onOpen: (origin: NoteOrigin) => void;
 }) {
   const done = task.done_at != null;
   const tone = NOTE_TONES[index % NOTE_TONES.length]!;
@@ -115,13 +134,22 @@ function TaskNoteCard({
   return (
     <button
       type="button"
-      onClick={onOpen}
+      onClick={(e) => {
+        const r = e.currentTarget.getBoundingClientRect();
+        onOpen({
+          top: r.top,
+          left: r.left,
+          width: r.width,
+          height: r.height,
+        });
+      }}
       className={cn(
         "group flex min-h-[9.5rem] flex-col rounded-md border p-3.5 text-left shadow-md transition",
         "hover:-translate-y-0.5 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
         tone,
         tilt,
         done && "opacity-65",
+        hidden && "invisible pointer-events-none",
       )}
     >
       <span
@@ -353,6 +381,12 @@ function TaskFiltersModal({
   );
 }
 
+function notesTextareaRows(notes: string): number {
+  const lines = notes.split("\n").length;
+  const approx = Math.ceil(Math.max(notes.length, 1) / 52);
+  return Math.min(14, Math.max(3, lines, approx));
+}
+
 function TaskEditorModal({
   open,
   mode,
@@ -361,8 +395,9 @@ function TaskEditorModal({
   draft,
   error,
   toneIndex,
+  origin,
   onChange,
-  onClose,
+  onClosed,
   onSave,
   onDelete,
   onToggleDone,
@@ -374,41 +409,144 @@ function TaskEditorModal({
   draft: Draft;
   error: string | null;
   toneIndex: number;
+  origin: NoteOrigin | null;
   onChange: (patch: Partial<Draft>) => void;
-  onClose: () => void;
+  onClosed: () => void;
   onSave: () => void;
   onDelete?: () => void;
   onToggleDone?: () => void;
 }) {
   const titleId = useId();
+  const noteRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [mounted, setMounted] = useState(false);
+  const [phase, setPhase] = useState<"enter" | "open" | "leave">("enter");
+  const closingRef = useRef(false);
+  const originRef = useRef(origin);
+  const busyRef = useRef(busy);
+  const onClosedRef = useRef(onClosed);
+  originRef.current = origin;
+  busyRef.current = busy;
+  onClosedRef.current = onClosed;
+
+  const requestClose = useCallback(() => {
+    if (busyRef.current || closingRef.current) return;
+    closingRef.current = true;
+    setPhase("leave");
+    const el = noteRef.current;
+    const from = originRef.current;
+    if (!el) {
+      onClosedRef.current();
+      return;
+    }
+
+    if (!from) {
+      el.style.transition = `transform ${NOTE_MOTION_MS}ms ease-in, opacity ${NOTE_MOTION_MS}ms ease-in`;
+      el.style.transform = "scale(0.92)";
+      el.style.opacity = "0";
+      window.setTimeout(() => onClosedRef.current(), NOTE_MOTION_MS);
+      return;
+    }
+
+    const last = el.getBoundingClientRect();
+    const dx = from.left - last.left;
+    const dy = from.top - last.top;
+    const sx = from.width / Math.max(last.width, 1);
+    const sy = from.height / Math.max(last.height, 1);
+    el.style.transformOrigin = "top left";
+    el.style.transition = `transform ${NOTE_MOTION_MS}ms ease-in, opacity ${NOTE_MOTION_MS}ms ease-in`;
+    el.style.transform = `translate(${dx}px, ${dy}px) scale(${sx}, ${sy})`;
+    window.setTimeout(() => onClosedRef.current(), NOTE_MOTION_MS);
+  }, []);
+
   useEffect(() => setMounted(true), []);
+
+  useEffect(() => {
+    if (!open) return;
+    closingRef.current = false;
+    setPhase("enter");
+  }, [open]);
+
+  useLayoutEffect(() => {
+    if (!open || !noteRef.current) return;
+    const el = noteRef.current;
+    const from = originRef.current;
+
+    if (!from) {
+      el.style.transformOrigin = "center center";
+      el.style.transform = "scale(0.92)";
+      el.style.opacity = "0.4";
+      el.style.transition = "none";
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          el.style.transition = `transform ${NOTE_MOTION_MS}ms ease-out, opacity ${NOTE_MOTION_MS}ms ease-out`;
+          el.style.transform = "none";
+          el.style.opacity = "1";
+          setPhase("open");
+        });
+      });
+      return;
+    }
+
+    const last = el.getBoundingClientRect();
+    const dx = from.left - last.left;
+    const dy = from.top - last.top;
+    const sx = from.width / Math.max(last.width, 1);
+    const sy = from.height / Math.max(last.height, 1);
+    el.style.transformOrigin = "top left";
+    el.style.transition = "none";
+    el.style.transform = `translate(${dx}px, ${dy}px) scale(${sx}, ${sy})`;
+    el.style.opacity = "1";
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        el.style.transition = `transform ${NOTE_MOTION_MS}ms ease-out, opacity ${NOTE_MOTION_MS}ms ease-out`;
+        el.style.transform = "none";
+        setPhase("open");
+      });
+    });
+  }, [open]);
+
+  useEffect(() => {
+    if (!open || phase !== "open") return;
+    const ta = textareaRef.current;
+    if (!ta) return;
+    ta.style.height = "auto";
+    ta.style.height = `${ta.scrollHeight}px`;
+  }, [open, phase, draft.notes]);
+
   if (!mounted || !open) return null;
 
   const tone = NOTE_TONES[toneIndex % NOTE_TONES.length]!;
+  const noteRows = notesTextareaRows(draft.notes);
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[200] flex items-center justify-center bg-black/45 p-4 sm:p-8"
+      className={cn(
+        "fixed inset-0 z-[200] flex items-center justify-center p-4 sm:p-8",
+        "transition-colors duration-200",
+        phase === "leave" ? "bg-black/0" : "bg-black/45",
+      )}
       role="presentation"
       onClick={(e) => {
-        if (e.target === e.currentTarget && !busy) onClose();
+        if (e.target === e.currentTarget && !busy) requestClose();
       }}
     >
       <div
+        ref={noteRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
         className={cn(
-          "relative flex min-h-[22rem] w-full max-w-md flex-col rounded-md border p-5 shadow-2xl sm:max-w-lg sm:p-6",
-          "scale-100 transition-transform",
+          "relative flex w-[min(28rem,calc(100vw-2rem))] flex-col rounded-md border p-5 shadow-2xl sm:p-6",
+          "will-change-transform",
           tone,
           draft.done && "opacity-90",
         )}
       >
         <button
           type="button"
-          onClick={onClose}
+          onClick={requestClose}
           disabled={busy}
           className="absolute right-2.5 top-2.5 inline-flex size-7 items-center justify-center rounded-md text-current/60 hover:bg-black/10 hover:text-current disabled:opacity-50"
           aria-label="Cerrar"
@@ -430,16 +568,17 @@ function TaskEditorModal({
           disabled={busy}
           autoFocus
           aria-label="Título"
-          className="w-full bg-transparent text-base font-semibold leading-snug outline-none placeholder:opacity-40 disabled:opacity-50"
+          className="w-full bg-transparent text-base font-semibold leading-snug outline-none disabled:opacity-50"
           onChange={(e) => onChange({ title: e.target.value })}
         />
 
         <textarea
+          ref={textareaRef}
           value={draft.notes}
           disabled={busy}
           aria-label="Descripción"
-          rows={6}
-          className="mt-2 min-h-[8rem] flex-1 resize-none bg-transparent text-sm leading-relaxed outline-none placeholder:opacity-40 disabled:opacity-50"
+          rows={noteRows}
+          className="mt-2 w-full resize-none overflow-hidden bg-transparent text-sm leading-relaxed outline-none disabled:opacity-50"
           onChange={(e) => onChange({ notes: e.target.value })}
         />
 
@@ -511,7 +650,7 @@ function TaskEditorModal({
               variant="ghost"
               size="sm"
               disabled={busy}
-              onClick={onClose}
+              onClick={requestClose}
             >
               Cancelar
             </Button>
@@ -540,6 +679,7 @@ export function OfferTasksPanel({
   const [error, setError] = useState<string | null>(null);
   const [editor, setEditor] = useState<"create" | OfferTaskItem | null>(null);
   const [editorTone, setEditorTone] = useState(0);
+  const [editorOrigin, setEditorOrigin] = useState<NoteOrigin | null>(null);
   const [draft, setDraft] = useState<Draft>(EMPTY_DRAFT);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
@@ -582,10 +722,15 @@ export function OfferTasksPanel({
     setDraft(EMPTY_DRAFT);
     setFormError(null);
     setEditorTone(0);
+    setEditorOrigin(null);
     setEditor("create");
   }
 
-  function openEdit(task: OfferTaskItem, toneIndex: number) {
+  function openEdit(
+    task: OfferTaskItem,
+    toneIndex: number,
+    origin: NoteOrigin,
+  ) {
     setDraft({
       title: task.title ?? "",
       owner_member_id: task.owner_member_id,
@@ -595,12 +740,13 @@ export function OfferTasksPanel({
     });
     setFormError(null);
     setEditorTone(toneIndex);
+    setEditorOrigin(origin);
     setEditor(task);
   }
 
-  function closeEditor() {
-    if (saving) return;
+  function finishEditor() {
     setEditor(null);
+    setEditorOrigin(null);
     setFormError(null);
   }
 
@@ -646,7 +792,7 @@ export function OfferTasksPanel({
         return;
       }
     }
-    setEditor(null);
+    finishEditor();
     await reload();
   }
 
@@ -683,7 +829,7 @@ export function OfferTasksPanel({
       setFormError(result.error.message);
       return;
     }
-    setEditor(null);
+    finishEditor();
     await reload();
   }
 
@@ -723,7 +869,12 @@ export function OfferTasksPanel({
               key={task.id}
               task={task}
               index={index}
-              onOpen={() => openEdit(task, index)}
+              hidden={
+                editor != null &&
+                editor !== "create" &&
+                editor.id === task.id
+              }
+              onOpen={(origin) => openEdit(task, index, origin)}
             />
           ))}
         </div>
@@ -746,8 +897,9 @@ export function OfferTasksPanel({
         draft={draft}
         error={formError}
         toneIndex={editorTone}
+        origin={editorOrigin}
         onChange={(patch) => setDraft((d) => ({ ...d, ...patch }))}
-        onClose={closeEditor}
+        onClosed={finishEditor}
         onSave={() => void save()}
         onDelete={editor && editor !== "create" ? () => void remove() : undefined}
         onToggleDone={
