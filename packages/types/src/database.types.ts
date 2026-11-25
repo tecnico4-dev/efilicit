@@ -811,14 +811,14 @@ isOneToOne: false
                   ]
                 },"offer_tasks": {
                   Row: {
-                    "created_by": string | null,"done_at": string | null,"due_at": string | null,"id": string,"notes": string | null,"offer_case_id": string,"owner_member_id": string | null,"title": string
+                    "created_by": string | null,"done_at": string | null,"due_at": string | null,"id": string,"notes": string,"offer_case_id": string,"owner_member_id": string | null,"title": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "created_by"?: string | null,"done_at"?: string | null,"due_at"?: string | null,"id"?: string,"notes"?: string | null,"offer_case_id": string,"owner_member_id"?: string | null,"title": string
+                    "created_by"?: string | null,"done_at"?: string | null,"due_at"?: string | null,"id"?: string,"notes": string,"offer_case_id": string,"owner_member_id"?: string | null,"title"?: string | null
                   }
                   Update: {
-                    "created_by"?: string | null,"done_at"?: string | null,"due_at"?: string | null,"id"?: string,"notes"?: string | null,"offer_case_id"?: string,"owner_member_id"?: string | null,"title"?: string
+                    "created_by"?: string | null,"done_at"?: string | null,"due_at"?: string | null,"id"?: string,"notes"?: string,"offer_case_id"?: string,"owner_member_id"?: string | null,"title"?: string | null
                   }
                   Relationships: [
                     {

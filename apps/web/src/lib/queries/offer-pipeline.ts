@@ -1008,12 +1008,12 @@ export async function createOfferCase(
 export type OfferTaskItem = {
   id: string;
   offer_case_id: string;
-  title: string;
+  title: string | null;
   owner_member_id: string | null;
   owner_member: OfferOwnerMember | null;
   due_at: string | null;
   done_at: string | null;
-  notes: string | null;
+  notes: string;
   created_by: string | null;
 };
 
@@ -1059,7 +1059,7 @@ export async function listOfferTasks(
     ),
     due_at: row.due_at,
     done_at: row.done_at,
-    notes: row.notes,
+    notes: row.notes ?? "",
     created_by: row.created_by,
   }));
 
@@ -1074,7 +1074,9 @@ export async function listOfferTasks(
       ? new Date(b.due_at).getTime()
       : Number.POSITIVE_INFINITY;
     if (aDue !== bDue) return aDue - bDue;
-    return a.title.localeCompare(b.title, "es");
+    const aLabel = (a.title?.trim() || a.notes).toLocaleLowerCase("es");
+    const bLabel = (b.title?.trim() || b.notes).toLocaleLowerCase("es");
+    return aLabel.localeCompare(bLabel, "es");
   });
 
   return { data: rows, error: null };
@@ -1084,20 +1086,21 @@ export async function createOfferTask(
   client: SupabaseClient<Database>,
   input: {
     offerCaseId: string;
-    title: string;
+    title: string | null;
     ownerMemberId: string | null;
     dueAt: string | null;
-    notes: string | null;
+    notes: string;
     createdBy: string;
   },
 ): Promise<{ data: { id: string } | null; error: Error | null }> {
-  const title = input.title.trim();
-  if (!title) {
+  const notes = input.notes.trim();
+  if (!notes) {
     return {
       data: null,
-      error: new Error("El título de la tarea es obligatorio."),
+      error: new Error("La descripción de la tarea es obligatoria."),
     };
   }
+  const title = input.title?.trim() || null;
   const { data, error } = await client
     .from("offer_tasks")
     .insert({
@@ -1105,7 +1108,7 @@ export async function createOfferTask(
       title,
       owner_member_id: input.ownerMemberId,
       due_at: input.dueAt,
-      notes: input.notes?.trim() || null,
+      notes,
       created_by: input.createdBy,
     })
     .select("id")
@@ -1119,30 +1122,30 @@ export async function updateOfferTask(
   input: {
     id: string;
     patch: {
-      title?: string;
+      title?: string | null;
       owner_member_id?: string | null;
       due_at?: string | null;
-      notes?: string | null;
+      notes?: string;
       done_at?: string | null;
     };
   },
 ): Promise<{ error: Error | null }> {
   const patch: {
-    title?: string;
+    title?: string | null;
     owner_member_id?: string | null;
     due_at?: string | null;
-    notes?: string | null;
+    notes?: string;
     done_at?: string | null;
   } = { ...input.patch };
-  if (patch.title != null) {
-    const title = patch.title.trim();
-    if (!title) {
-      return { error: new Error("El título de la tarea es obligatorio.") };
-    }
-    patch.title = title;
+  if (patch.title !== undefined) {
+    patch.title = patch.title?.trim() || null;
   }
-  if (patch.notes != null) {
-    patch.notes = patch.notes.trim() || null;
+  if (patch.notes !== undefined) {
+    const notes = patch.notes.trim();
+    if (!notes) {
+      return { error: new Error("La descripción de la tarea es obligatoria.") };
+    }
+    patch.notes = notes;
   }
   const { error } = await client
     .from("offer_tasks")

@@ -127,14 +127,26 @@ function TaskNoteCard({
         className="mb-2 size-2.5 self-center rounded-full bg-black/20 shadow-inner dark:bg-white/25"
         aria-hidden
       />
-      <p
+      <div
         className={cn(
-          "flex-1 text-sm font-semibold leading-snug",
-          done && "line-through decoration-black/40",
+          "flex-1 space-y-1",
+          done && "opacity-90 [&_*]:line-through [&_*]:decoration-black/40",
         )}
       >
-        {task.title}
-      </p>
+        {task.title?.trim() ? (
+          <p className="text-sm font-semibold leading-snug">{task.title}</p>
+        ) : null}
+        <p
+          className={cn(
+            "text-sm leading-snug",
+            task.title?.trim()
+              ? "line-clamp-3 opacity-90"
+              : "font-semibold",
+          )}
+        >
+          {task.notes}
+        </p>
+      </div>
       <div className="mt-3 space-y-0.5 text-xs opacity-80">
         <p className="truncate">
           {task.owner_member?.display_name?.trim() || "Sin asignar"}
@@ -405,15 +417,29 @@ function TaskEditorModal({
         <div className="space-y-4 px-4 py-4 sm:px-5">
           <div>
             <label className="text-sm font-medium text-foreground">
-              Título<span className="text-destructive">*</span>
+              Título
             </label>
             <input
               value={draft.title}
               disabled={busy}
-              autoFocus
-              placeholder="Qué hay que hacer"
+              placeholder="Opcional · cabecera corta"
               className="mt-1.5 w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring/50 disabled:opacity-50"
               onChange={(e) => onChange({ title: e.target.value })}
+            />
+          </div>
+
+          <div>
+            <label className="text-sm font-medium text-foreground">
+              Descripción<span className="text-destructive">*</span>
+            </label>
+            <textarea
+              value={draft.notes}
+              disabled={busy}
+              autoFocus
+              rows={3}
+              placeholder="Qué hay que hacer…"
+              className="mt-1.5 w-full resize-y rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring/50 disabled:opacity-50"
+              onChange={(e) => onChange({ notes: e.target.value })}
             />
           </div>
 
@@ -453,20 +479,6 @@ function TaskEditorModal({
                 />
               </div>
             </div>
-          </div>
-
-          <div>
-            <label className="text-sm font-medium text-foreground">
-              Notas
-            </label>
-            <textarea
-              value={draft.notes}
-              disabled={busy}
-              rows={3}
-              placeholder="Detalle opcional…"
-              className="mt-1.5 w-full resize-y rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring/50 disabled:opacity-50"
-              onChange={(e) => onChange({ notes: e.target.value })}
-            />
           </div>
 
           {error ? <p className="text-xs text-destructive">{error}</p> : null}
@@ -578,10 +590,10 @@ export function OfferTasksPanel({
 
   function openEdit(task: OfferTaskItem) {
     setDraft({
-      title: task.title,
+      title: task.title ?? "",
       owner_member_id: task.owner_member_id,
       due_day: task.due_at ? calendarDayMadrid(task.due_at) : null,
-      notes: task.notes ?? "",
+      notes: task.notes,
       done: task.done_at != null,
     });
     setFormError(null);
@@ -595,19 +607,20 @@ export function OfferTasksPanel({
   }
 
   async function save() {
-    if (!draft.title.trim()) {
-      setFormError("El título es obligatorio.");
+    if (!draft.notes.trim()) {
+      setFormError("La descripción es obligatoria.");
       return;
     }
     setSaving(true);
     setFormError(null);
     const client = createSupabaseBrowserClient();
     const dueAt = draft.due_day ? `${draft.due_day}T12:00:00.000Z` : null;
+    const title = draft.title.trim() || null;
 
     if (editor === "create") {
       const result = await createOfferTask(client, {
         offerCaseId,
-        title: draft.title,
+        title,
         ownerMemberId: draft.owner_member_id,
         dueAt,
         notes: draft.notes,
@@ -622,7 +635,7 @@ export function OfferTasksPanel({
       const result = await updateOfferTask(client, {
         id: editor.id,
         patch: {
-          title: draft.title,
+          title,
           owner_member_id: draft.owner_member_id,
           due_at: dueAt,
           notes: draft.notes,
