@@ -723,47 +723,43 @@ function TaskEditorModal({
           <p className="mt-2 text-xs text-destructive">{error}</p>
         ) : null}
 
-        <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
-          <div className="flex flex-wrap gap-2">
-            {mode === "edit" && onToggleDone ? (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                disabled={busy}
-                className="border-black/15 bg-white/40 dark:border-white/20 dark:bg-black/20"
-                onClick={onToggleDone}
-              >
-                {draft.done ? "Reabrir" : "Marcar hecha"}
-              </Button>
-            ) : null}
-            {mode === "edit" && onDelete ? (
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                disabled={busy}
-                className="text-destructive hover:bg-destructive/10"
-                onClick={onDelete}
-              >
-                Eliminar
-              </Button>
-            ) : null}
-          </div>
-          <div className="flex gap-2">
-            {editing ? (
-              <>
+        <div
+          className={cn(
+            "mt-4 flex flex-wrap items-center gap-2",
+            editing ? "justify-end" : "justify-between",
+          )}
+        >
+          {!editing ? (
+            <div className="flex flex-wrap gap-2">
+              {mode === "edit" && onToggleDone ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={busy}
+                  className="border-black/15 bg-white/40 dark:border-white/20 dark:bg-black/20"
+                  onClick={onToggleDone}
+                >
+                  {draft.done ? "Reabrir" : "Marcar hecha"}
+                </Button>
+              ) : null}
+              {mode === "edit" && onDelete ? (
                 <Button
                   type="button"
                   variant="ghost"
                   size="sm"
                   disabled={busy}
-                  onClick={
-                    mode === "create" ? requestClose : cancelEditing
-                  }
+                  className="text-destructive hover:bg-destructive/10"
+                  onClick={onDelete}
                 >
-                  Cancelar
+                  Eliminar
                 </Button>
+              ) : null}
+            </div>
+          ) : null}
+          <div className="flex gap-2">
+            {editing ? (
+              <>
                 <Button
                   type="button"
                   size="sm"
@@ -783,6 +779,17 @@ function TaskEditorModal({
                     : mode === "create"
                       ? "Crear"
                       : "Guardar"}
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  disabled={busy}
+                  onClick={
+                    mode === "create" ? requestClose : cancelEditing
+                  }
+                >
+                  Cancelar
                 </Button>
               </>
             ) : (
