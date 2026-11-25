@@ -18,7 +18,6 @@ import { cn } from "@/lib/cn";
 import { calendarDayMadrid, formatDateMadrid } from "@/lib/datetime";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import {
-  OFFER_TASK_STATUS_LABELS,
   createOfferTask,
   deleteOfferTask,
   listOfferTasks,
@@ -224,7 +223,6 @@ function TaskNoteCard({
         </p>
       </div>
       <div className="mt-3 space-y-0.5 text-xs opacity-80">
-        <p className="font-medium">{OFFER_TASK_STATUS_LABELS[task.status]}</p>
         <p className="truncate">
           {task.owner_member?.display_name?.trim() || "Sin asignar"}
         </p>
@@ -758,15 +756,7 @@ function TaskEditorModal({
                 {draft.notes}
               </p>
             </div>
-            <div className="mt-4 grid gap-3 border-t border-black/10 pt-3 text-sm dark:border-white/15 sm:grid-cols-3">
-              <div>
-                <p className="text-[0.7rem] font-medium uppercase tracking-wide opacity-70">
-                  Estado
-                </p>
-                <p className="mt-1 font-medium">
-                  {OFFER_TASK_STATUS_LABELS[draft.status]}
-                </p>
-              </div>
+            <div className="mt-4 grid gap-3 border-t border-black/10 pt-3 text-sm dark:border-white/15 sm:grid-cols-2">
               <div>
                 <p className="text-[0.7rem] font-medium uppercase tracking-wide opacity-70">
                   Asignada a
