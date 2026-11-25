@@ -46,6 +46,7 @@ export type OfferDeliverableRow = Pick<
   | "title"
   | "status"
   | "points_max"
+  | "our_estimate"
   | "due_at"
   | "sort_order"
   | "source_key"
@@ -140,12 +141,32 @@ export async function listOfferDeliverables(
 ): Promise<{ data: OfferDeliverableRow[]; error: Error | null }> {
   const { data, error } = await client
     .from("offer_deliverables")
-    .select("id, parent_id, envelope, title, status, points_max, due_at, sort_order, source_key")
+    .select(
+      "id, parent_id, envelope, title, status, points_max, our_estimate, due_at, sort_order, source_key",
+    )
     .eq("offer_case_id", offerCaseId)
     .order("sort_order", { ascending: true })
     .order("created_at", { ascending: true });
   if (error) return { data: [], error: new Error(error.message) };
   return { data: data ?? [], error: null };
+}
+
+export async function updateOfferDeliverable(
+  client: SupabaseClient<Database>,
+  input: {
+    id: string;
+    patch: {
+      our_estimate?: string | null;
+      status?: string;
+    };
+  },
+): Promise<{ error: Error | null }> {
+  const { error } = await client
+    .from("offer_deliverables")
+    .update(input.patch)
+    .eq("id", input.id);
+  if (error) return { error: new Error(error.message) };
+  return { error: null };
 }
 
 export async function listOfferMilestones(

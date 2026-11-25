@@ -16,11 +16,12 @@ export const REQUIREMENT_CATEGORY_LABELS: Record<string, string> = {
   solvencia_tecnica: "Solvencia técnica",
   clasificacion: "Clasificación",
   adscripcion_medios: "Adscripción de medios",
-  criterio_adjudicacion: "Criterio de adjudicación",
   garantias: "Garantías",
   administrativo: "Administrativo",
   condiciones_ejecucion: "Condiciones de ejecución",
   otros: "Otros",
+  // Legacy (ya no se crean en intake; criterios viven en Sobres)
+  criterio_adjudicacion: "Criterio de adjudicación",
 };
 
 export const ENVELOPE_LABELS: Record<string, string> = {

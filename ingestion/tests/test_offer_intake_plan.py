@@ -50,13 +50,8 @@ def test_requirements_categories_envelopes_and_values() -> None:
     assert all(r.envelope == "ninguno" for r in executions)
     assert by_key["exec:-:social:1"].literal_text is not None
 
-    subj = next(r for r in plan.requirements if r.envelope == "B")
-    assert subj.requirement_type == "puntuable"
-    assert subj.required_value == "25 puntos"
-
-    lot_crit = by_key["crit:1:1"]
-    assert lot_crit.title == "Lote 1 · Precio lote 1"
-    assert lot_crit.envelope == "C"
+    assert not any(r.category == "criterio_adjudicacion" for r in plan.requirements)
+    assert not any(r.source_key.startswith("crit:") for r in plan.requirements)
 
     assert len(by_key) == len(plan.requirements)
     assert [r.sort_order for r in plan.requirements] == list(range(1, len(plan.requirements) + 1))
@@ -84,8 +79,10 @@ def test_deliverables_group_criteria_by_envelope() -> None:
 def test_target_lots_filter_lot_scoped_items() -> None:
     plan = _plan({"2"})
 
-    assert "crit:1:1" not in {r.source_key for r in plan.requirements}
-    assert any(r.source_key.startswith("crit:-:") for r in plan.requirements)
+    deliverable_keys = {d.source_key for d in plan.deliverables}
+    assert "env:C:crit:1:1" not in deliverable_keys
+    assert any(k.startswith("env:C:crit:-:") for k in deliverable_keys)
+    assert any(k.startswith("env:B:crit:-:") for k in deliverable_keys)
 
 
 def test_milestones_from_deadlines() -> None:

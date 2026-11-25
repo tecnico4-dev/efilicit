@@ -153,9 +153,7 @@ def build_intake_plan(
     for execution in executions:
         order += 1
         plan.requirements.append(_execution_row(execution, order))
-    for criterion in criteria:
-        order += 1
-        plan.requirements.append(_criterion_row(criterion, order))
+    # Criterios de adjudicación → solo entregables (Sobres / Resumen), no matriz.
 
     plan.deliverables = _deliverables(plan.requirements, criteria)
     plan.milestones = _milestones(extract)
@@ -228,23 +226,6 @@ def _execution_row(
     )
 
 
-def _criterion_row(
-    c: OfferAwardingCriterion,
-    order: int,
-) -> RequirementRow:
-    literal = c.description if not c.note else f"{c.description}\n\n{c.note}"
-    return RequirementRow(
-        source_key=c.source_key,
-        title=_short(_lot_prefix(c.lot_id) + c.description),
-        literal_text=literal,
-        category="criterio_adjudicacion",
-        requirement_type="puntuable",
-        envelope=_criterion_envelope(c),
-        required_value=f"{format_number(c.weight)} puntos" if c.weight is not None else None,
-        sort_order=order,
-    )
-
-
 def _criterion_envelope(c: OfferAwardingCriterion) -> str:
     return "B" if c.kind == "subjetivo" else "C"
 
@@ -253,11 +234,17 @@ def _deliverables(
     requirements: list[RequirementRow],
     criteria: list[OfferAwardingCriterion],
 ) -> list[DeliverableRow]:
+    """Sobres A/B/C: A por requisitos admin; B/C por criterios (hijos = cada criterio)."""
     out: list[DeliverableRow] = []
-    envelopes_used = {r.envelope for r in requirements}
+    envelopes_needed: set[str] = {
+        r.envelope for r in requirements if r.envelope in ("A", "B", "C")
+    }
+    for criterion in criteria:
+        envelopes_needed.add(_criterion_envelope(criterion))
+
     order = 0
     for envelope in ("A", "B", "C"):
-        if envelope not in envelopes_used:
+        if envelope not in envelopes_needed:
             continue
         order += 1
         own = [c for c in criteria if _criterion_envelope(c) == envelope]
@@ -271,10 +258,13 @@ def _deliverables(
             )
         )
         for child_order, criterion in enumerate(own, start=1):
+            title = criterion.description
+            if criterion.note:
+                title = f"{criterion.description} — {criterion.note}"
             out.append(
                 DeliverableRow(
                     source_key=f"env:{envelope}:{criterion.source_key}",
-                    title=_short(_lot_prefix(criterion.lot_id) + criterion.description),
+                    title=_short(_lot_prefix(criterion.lot_id) + title),
                     envelope=envelope,
                     points_max=criterion.weight,
                     sort_order=order * 100 + child_order,

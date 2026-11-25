@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Mis licitaciones · intake PLACSP: condiciones de ejecución (`ContractExecutionRequirement` social/ambiental) → `offer_requirements` con `category = condiciones_ejecucion`. Migración local del CHECK.
+- Mis licitaciones · entregables: `our_estimate` (estimación de puntos en criterios B/C). Migración local + backfill desde requisitos criterio.
 - Mis licitaciones · pestaña Tareas: notas clicables (`offer_tasks`) con descripción obligatoria, título opcional, asignado (`eficen_members`), plazo y estado hecha; botón «Añadir tarea».
 - Mis licitaciones · Bitácora: timeline sobre `offer_case_log`; altas manuales; auto-registro al crear expediente (`alta_expediente`), al pasar a Análisis y al decidir GO/NO-GO. Migración local del CHECK de `event_type`.
 - Buzón · Licitaciones compartidas: tabla `notification_shared` (`share_id`, `read_at`, `trashed_at`) + trigger al INSERT/reactivar `favorites_shared` + UI en el buzón (copy tipo Común; open/papelera) — [ADR 037](docs/adr/037-notification-shared-peer.md). Solo local/Studio.
@@ -26,10 +27,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Mis licitaciones · criterios de adjudicación: dejan de ser filas de Requisitos; viven en `offer_deliverables` (Resumen + Sobres). Intake ya no crea `criterio_adjudicacion`. Migración local limpia filas antiguas.
 - Ingesta PLACSP: si la plataforma no sirve el ZIP (WAF/HTML sin ``PK``, HTTP 403/404), el job sale en verde con ``::warning::`` y `source_sync` ``success`` + motivo; errores propios (DB, Storage, tamaño…) siguen en rojo.
 - `offer_tasks`: `status` pendiente|hecha|descartada (sustituye `done_at`); asignado = `owner_member_id` → `eficen_members`; se quitan `owner_user_id` / `owner_name` / `created_at` / `updated_at`; se añade `created_by` → `users`. Migración local — enmienda [ADR 026](docs/adr/026-mis-licitaciones-offer-cases.md).
 - Mis licitaciones · Bitácora: fechas en chevrones verticales (punta arriba, muesca inferior hacia dentro) rellenos primary / primary-dark.
-- Mis licitaciones · Resumen: tabla de criterios de adjudicación (tipo / puntos / sobre / estimación editable en `our_value`) desde el intake.
+- Mis licitaciones · Resumen: tabla de criterios desde entregables B/C; estimación editable en `our_estimate`.
 - Mis licitaciones · go/no-go: en Interés no hay cuadro (CTA «Pasar a análisis»); en Análisis sí; al decidir → preparación (go) o descartada (no-go).
 - Mis licitaciones · Requisitos (UI): responsive (cards en móvil, tabla en `md+`); Crear + Enter; filtros; Editar→Aplicar con aviso al salir; columna Sobre; chips; responsable con avatar. Migración local (`prep_status` + `bloqueado`).
 - Mis licitaciones · Requisitos: columnas Cumplimos / Preparación / Fecha interna / Responsable editables; responsable = `eficen_members` (`owner_member_id`). Migración local.

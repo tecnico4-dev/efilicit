@@ -5,8 +5,8 @@ import { useRouter } from "next/navigation";
 import { ENVELOPE_LABELS } from "@/components/mis-licitaciones/offer-case-sections";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import {
-  updateOfferRequirement,
-  type OfferRequirementDetail,
+  updateOfferDeliverable,
+  type OfferDeliverableRow,
 } from "@/lib/queries";
 
 type CriterionRow = {
@@ -25,39 +25,40 @@ function criterionTypeLabel(envelope: string | null): string {
   return "—";
 }
 
-function pointsLabel(requiredValue: string | null): string {
-  const raw = requiredValue?.trim() ?? "";
-  if (!raw) return "—";
-  // Intake suele dejar "12 puntos"; acortar a "12 pt".
-  const match = raw.match(/^([\d.,]+)\s*puntos?$/i);
-  if (match) return `${match[1]} pt`;
-  return raw;
+function pointsLabel(pointsMax: number | null): string {
+  if (pointsMax == null) return "—";
+  const text = Number.isInteger(pointsMax)
+    ? String(pointsMax)
+    : String(pointsMax).replace(".", ",");
+  return `${text} pt`;
 }
 
-function mapCriteria(requirements: OfferRequirementDetail[]): CriterionRow[] {
-  return requirements
-    .filter((r) => r.category === "criterio_adjudicacion")
+function mapCriteria(deliverables: OfferDeliverableRow[]): CriterionRow[] {
+  return deliverables
+    .filter(
+      (d) =>
+        d.parent_id != null &&
+        (d.envelope === "B" || d.envelope === "C") &&
+        (d.source_key?.includes(":crit:") ?? true),
+    )
     .slice()
     .sort((a, b) => {
       const env = (a.envelope ?? "").localeCompare(b.envelope ?? "", "es");
       if (env !== 0) return env;
       return (a.sort_order ?? 0) - (b.sort_order ?? 0);
     })
-    .map((r) => {
-      const label = pointsLabel(r.required_value);
-      return {
-        id: r.id,
-        title: r.title?.trim() || "Criterio",
-        typeLabel: criterionTypeLabel(r.envelope),
-        pointsLabel: label,
-        pointsMax: parseScore(r.required_value) ?? parseScore(label),
-        envelopeLabel:
-          r.envelope && r.envelope in ENVELOPE_LABELS
-            ? ENVELOPE_LABELS[r.envelope]!
-            : r.envelope ?? "—",
-        estimate: r.our_value?.trim() || null,
-      };
-    });
+    .map((d) => ({
+      id: d.id,
+      title: d.title?.trim() || "Criterio",
+      typeLabel: criterionTypeLabel(d.envelope),
+      pointsLabel: pointsLabel(d.points_max),
+      pointsMax: d.points_max,
+      envelopeLabel:
+        d.envelope && d.envelope in ENVELOPE_LABELS
+          ? ENVELOPE_LABELS[d.envelope]!
+          : d.envelope ?? "—",
+      estimate: d.our_estimate?.trim() || null,
+    }));
 }
 
 function parseScore(raw: string | null | undefined): number | null {
@@ -127,11 +128,11 @@ function formatEstimateStored(n: number): string {
 }
 
 function EstimateCell({
-  requirementId,
+  deliverableId,
   initial,
   pointsMax,
 }: {
-  requirementId: string;
+  deliverableId: string;
   initial: string | null;
   pointsMax: number | null;
 }) {
@@ -157,9 +158,9 @@ function EstimateCell({
       setPending(true);
       setError(null);
       const client = createSupabaseBrowserClient();
-      const { error: err } = await updateOfferRequirement(client, {
-        id: requirementId,
-        patch: { our_value: null },
+      const { error: err } = await updateOfferDeliverable(client, {
+        id: deliverableId,
+        patch: { our_estimate: null },
       });
       setPending(false);
       if (err) {
@@ -171,31 +172,31 @@ function EstimateCell({
       return;
     }
 
-    const n = parseScore(nextRaw);
-    if (n == null || n < 0) {
-      setError("Solo un número ≥ 0");
+    const sanitized = sanitizeEstimateInput(nextRaw);
+    const n = parseScore(sanitized);
+    if (n == null) {
+      setError("Número no válido");
       setValue(initial ?? "");
       return;
     }
-    if (pointsMax != null && n > pointsMax) {
-      setError(`Máx. ${formatEstimateStored(pointsMax)}`);
+    if (pointsMax != null && n > pointsMax + 1e-9) {
+      setError(`Máx. ${formatScore(pointsMax, "")}`);
+      setValue(initial ?? "");
+      return;
+    }
+    if (n < 0) {
+      setError("≥ 0");
       setValue(initial ?? "");
       return;
     }
 
     const stored = formatEstimateStored(n);
-    if (stored === prev) {
-      setValue(stored);
-      setError(null);
-      return;
-    }
-
     setPending(true);
     setError(null);
     const client = createSupabaseBrowserClient();
-    const { error: err } = await updateOfferRequirement(client, {
-      id: requirementId,
-      patch: { our_value: stored },
+    const { error: err } = await updateOfferDeliverable(client, {
+      id: deliverableId,
+      patch: { our_estimate: stored },
     });
     setPending(false);
     if (err) {
@@ -207,31 +208,18 @@ function EstimateCell({
     router.refresh();
   }
 
-  const maxAttr =
-    pointsMax != null ? String(pointsMax).replace(".", ",") : undefined;
-
   return (
     <div className="min-w-[4.5rem]">
       <input
         type="text"
         inputMode="decimal"
-        value={value}
-        placeholder="—"
-        aria-label={
-          pointsMax != null
-            ? `Estimación de puntos (máximo ${formatEstimateStored(pointsMax)})`
-            : "Estimación de puntos"
-        }
-        title={
-          pointsMax != null
-            ? `Entre 0 y ${formatEstimateStored(pointsMax)}`
-            : undefined
-        }
-        max={maxAttr}
+        aria-label="Estimación de puntos"
         disabled={pending}
+        placeholder="—"
+        value={value}
         onChange={(e) => {
-          setError(null);
           setValue(sanitizeEstimateInput(e.target.value));
+          setError(null);
         }}
         onBlur={() => void save()}
         onKeyDown={(e) => {
@@ -254,15 +242,15 @@ function EstimateCell({
 }
 
 /**
- * Vista resumida de criterios de adjudicación (intake → offer_requirements).
- * Estimación propia = `our_value` (editable).
+ * Criterios de adjudicación desde entregables B/C (intake → offer_deliverables).
+ * Estimación propia = `our_estimate` (editable).
  */
 export function AwardCriteriaSummary({
-  requirements,
+  deliverables,
 }: {
-  requirements: OfferRequirementDetail[];
+  deliverables: OfferDeliverableRow[];
 }) {
-  const rows = mapCriteria(requirements);
+  const rows = mapCriteria(deliverables);
   const totals = totalsByEnvelope(rows);
   const pointsTotal = sumScores(rows, (r) => r.pointsLabel);
   const estimateTotal = sumScores(rows, (r) => r.estimate);
@@ -323,7 +311,7 @@ export function AwardCriteriaSummary({
                     <td className="whitespace-nowrap px-3 py-2 text-center">
                       <div className="inline-flex justify-center">
                         <EstimateCell
-                          requirementId={row.id}
+                          deliverableId={row.id}
                           initial={row.estimate}
                           pointsMax={row.pointsMax}
                         />
@@ -350,7 +338,7 @@ export function AwardCriteriaSummary({
             </table>
           </div>
           <p className="mt-3 text-xs text-muted-foreground">
-            Detalle y preparación en la pestaña Requisitos.
+            Detalle y adjuntos en la pestaña Sobres.
           </p>
         </>
       )}

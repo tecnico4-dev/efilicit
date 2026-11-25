@@ -254,6 +254,7 @@ export {
   listOfferDeliverables,
   listOfferMilestones,
   requestOfferCaseIntake,
+  updateOfferDeliverable,
   type OfferCaseIntakeRow,
   type OfferCasePliego,
   type OfferDeliverableRow,

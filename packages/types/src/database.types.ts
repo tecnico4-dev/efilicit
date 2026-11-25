@@ -671,14 +671,14 @@ isOneToOne: true
                   ]
                 },"offer_deliverables": {
                   Row: {
-                    "created_at": string,"due_at": string | null,"envelope": string | null,"final_copy_url": string | null,"id": string,"notes": string | null,"offer_case_id": string,"owner_name": string | null,"owner_user_id": string | null,"page_limit": number | null,"parent_id": string | null,"points_max": number | null,"sort_order": number,"source_key": string | null,"status": string,"title": string,"updated_at": string
+                    "created_at": string,"due_at": string | null,"envelope": string | null,"final_copy_url": string | null,"id": string,"notes": string | null,"offer_case_id": string,"our_estimate": string | null,"owner_name": string | null,"owner_user_id": string | null,"page_limit": number | null,"parent_id": string | null,"points_max": number | null,"sort_order": number,"source_key": string | null,"status": string,"title": string,"updated_at": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "created_at"?: string,"due_at"?: string | null,"envelope"?: string | null,"final_copy_url"?: string | null,"id"?: string,"notes"?: string | null,"offer_case_id": string,"owner_name"?: string | null,"owner_user_id"?: string | null,"page_limit"?: number | null,"parent_id"?: string | null,"points_max"?: number | null,"sort_order"?: number,"source_key"?: string | null,"status"?: string,"title": string,"updated_at"?: string
+                    "created_at"?: string,"due_at"?: string | null,"envelope"?: string | null,"final_copy_url"?: string | null,"id"?: string,"notes"?: string | null,"offer_case_id": string,"our_estimate"?: string | null,"owner_name"?: string | null,"owner_user_id"?: string | null,"page_limit"?: number | null,"parent_id"?: string | null,"points_max"?: number | null,"sort_order"?: number,"source_key"?: string | null,"status"?: string,"title": string,"updated_at"?: string
                   }
                   Update: {
-                    "created_at"?: string,"due_at"?: string | null,"envelope"?: string | null,"final_copy_url"?: string | null,"id"?: string,"notes"?: string | null,"offer_case_id"?: string,"owner_name"?: string | null,"owner_user_id"?: string | null,"page_limit"?: number | null,"parent_id"?: string | null,"points_max"?: number | null,"sort_order"?: number,"source_key"?: string | null,"status"?: string,"title"?: string,"updated_at"?: string
+                    "created_at"?: string,"due_at"?: string | null,"envelope"?: string | null,"final_copy_url"?: string | null,"id"?: string,"notes"?: string | null,"offer_case_id"?: string,"our_estimate"?: string | null,"owner_name"?: string | null,"owner_user_id"?: string | null,"page_limit"?: number | null,"parent_id"?: string | null,"points_max"?: number | null,"sort_order"?: number,"source_key"?: string | null,"status"?: string,"title"?: string,"updated_at"?: string
                   }
                   Relationships: [
                     {

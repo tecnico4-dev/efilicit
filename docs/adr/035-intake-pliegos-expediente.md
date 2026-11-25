@@ -16,7 +16,8 @@ Al añadir una licitación a Mis licitaciones solo se creaba `offer_cases`; requ
 
 - `LegalDocumentReference` (PCAP), `TechnicalDocumentReference` (PPT), `AdditionalDocumentReference` (anexos) con URI + hash; descarga directa por el servlet `FileSystem` (PDF/DOCX).
 - `GeneralDocument` (biblioteca `wcm/connect`: memoria, modelos, actas…). Esas URLs devuelven *Request Rejected* del WAF a clientes no navegador → **no se descargan**; solo enlace oficial.
-- `TenderingTerms`: criterios de adjudicación (`OBJ`/`SUBJ` + peso), solvencia técnica/económica (texto + umbral), clasificación, declaraciones, garantías, condiciones de ejecución (`ContractExecutionRequirement` social/ambiental → `offer_requirements.category = condiciones_ejecucion`); lotes con términos propios; plazos de ofertas y de disponibilidad de documentos.
+- `TenderingTerms`: criterios de adjudicación (`OBJ`/`SUBJ` + peso → `offer_deliverables` hijos B/C, no matriz), solvencia técnica/económica (texto + umbral), clasificación, declaraciones, garantías, condiciones de ejecución (`ContractExecutionRequirement` social/ambiental → `offer_requirements.category = condiciones_ejecucion`); lotes con términos propios; plazos de ofertas y de disponibilidad de documentos.
+- **Separación matriz / sobres (2026-11-25):** `offer_requirements` = pass/fail (solvencia, declaraciones, garantías, ejecución). Criterios de adjudicación solo en `offer_deliverables` (Resumen + Sobres; estimación `our_estimate`). Evita duplicar criterios en la matriz.
 
 El RAW por entry se localiza desde la licitación: `tender_sources.artifact_id` → `source_artifacts.storage_path` (ADR 022/033).
 

@@ -288,7 +288,7 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
                   ) : null}
 
                   <AwardCriteriaSummary
-                    requirements={offerCase.requirements}
+                    deliverables={deliverablesResult.data}
                   />
 
                   <div className="rounded-xl border border-border bg-muted/25 p-4 sm:p-5">
@@ -303,23 +303,29 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
                   </div>
                 </div>
               ),
-              requisitos:
-                offerCase.requirements.length === 0 ? (
+              requisitos: (() => {
+                const matrixReqs = offerCase.requirements.filter(
+                  (r) => r.category !== "criterio_adjudicacion",
+                );
+                return matrixReqs.length === 0 ? (
                   <p className="rounded-lg border border-dashed border-border px-4 py-6 text-center text-sm text-muted-foreground">
                     Sin requisitos en este expediente.
                   </p>
                 ) : (
                   <OfferRequirementsTable
                     offerCaseId={offerCase.id}
-                    requirements={offerCase.requirements}
+                    requirements={matrixReqs}
                     members={membersResult.data}
                     actionsLocked={offerCase.stage === "interes"}
                   />
-                ),
+                );
+              })(),
               sobres: (
                 <SobresList
                   deliverables={deliverablesResult.data}
-                  requirements={offerCase.requirements}
+                  requirements={offerCase.requirements.filter(
+                    (r) => r.category !== "criterio_adjudicacion",
+                  )}
                 />
               ),
               pliegos: (
