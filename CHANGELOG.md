@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- `offer_tasks`: asignado = `owner_member_id` → `eficen_members`; se quitan `owner_user_id` / `owner_name`; se añade `created_by` → `users`. Migración local — enmienda [ADR 026](docs/adr/026-mis-licitaciones-offer-cases.md).
 - Mis licitaciones · Bitácora: fechas en chevrones verticales (punta arriba, muesca inferior hacia dentro) rellenos primary / primary-dark.
 - Mis licitaciones · Resumen: tabla de criterios de adjudicación (tipo / puntos / sobre / estimación editable en `our_value`) desde el intake.
 - Mis licitaciones · go/no-go: en Interés no hay cuadro (CTA «Pasar a análisis»); en Análisis sí; al decidir → preparación (go) o descartada (no-go).

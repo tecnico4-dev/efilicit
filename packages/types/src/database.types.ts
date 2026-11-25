@@ -359,26 +359,6 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
-                },"notification_shared": {
-                  Row: {
-                    "read_at": string | null,"share_id": string,"trashed_at": string | null
-                  }
-                  ComputedFields: never
-                  Insert: {
-                    "read_at"?: string | null,"share_id": string,"trashed_at"?: string | null
-                  }
-                  Update: {
-                    "read_at"?: string | null,"share_id"?: string,"trashed_at"?: string | null
-                  }
-                  Relationships: [
-                    {
-      foreignKeyName: "notification_shared_share_id_fkey"
-      columns: ["share_id"]
-isOneToOne: true
-      referencedRelation: "favorites_shared"
-      referencedColumns: ["id"]
-    }
-                  ]
                 },"notification_common_removed": {
                   Row: {
                     "created_at": string,"read_at": string | null,"removed_by": string | null,"removed_by_display_name": string | null,"tender_id": string,"trashed_at": string | null,"user_id": string
@@ -486,6 +466,26 @@ isOneToOne: false
       columns: ["user_id"]
 isOneToOne: false
       referencedRelation: "users"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"notification_shared": {
+                  Row: {
+                    "read_at": string | null,"share_id": string,"trashed_at": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "read_at"?: string | null,"share_id": string,"trashed_at"?: string | null
+                  }
+                  Update: {
+                    "read_at"?: string | null,"share_id"?: string,"trashed_at"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "notification_shared_share_id_fkey"
+      columns: ["share_id"]
+isOneToOne: true
+      referencedRelation: "favorites_shared"
       referencedColumns: ["id"]
     }
                   ]
@@ -811,27 +811,33 @@ isOneToOne: false
                   ]
                 },"offer_tasks": {
                   Row: {
-                    "created_at": string,"done_at": string | null,"due_at": string | null,"id": string,"notes": string | null,"offer_case_id": string,"owner_name": string | null,"owner_user_id": string | null,"title": string,"updated_at": string
+                    "created_at": string,"created_by": string | null,"done_at": string | null,"due_at": string | null,"id": string,"notes": string | null,"offer_case_id": string,"owner_member_id": string | null,"title": string,"updated_at": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "created_at"?: string,"done_at"?: string | null,"due_at"?: string | null,"id"?: string,"notes"?: string | null,"offer_case_id": string,"owner_name"?: string | null,"owner_user_id"?: string | null,"title": string,"updated_at"?: string
+                    "created_at"?: string,"created_by"?: string | null,"done_at"?: string | null,"due_at"?: string | null,"id"?: string,"notes"?: string | null,"offer_case_id": string,"owner_member_id"?: string | null,"title": string,"updated_at"?: string
                   }
                   Update: {
-                    "created_at"?: string,"done_at"?: string | null,"due_at"?: string | null,"id"?: string,"notes"?: string | null,"offer_case_id"?: string,"owner_name"?: string | null,"owner_user_id"?: string | null,"title"?: string,"updated_at"?: string
+                    "created_at"?: string,"created_by"?: string | null,"done_at"?: string | null,"due_at"?: string | null,"id"?: string,"notes"?: string | null,"offer_case_id"?: string,"owner_member_id"?: string | null,"title"?: string,"updated_at"?: string
                   }
                   Relationships: [
                     {
+      foreignKeyName: "offer_tasks_created_by_fkey"
+      columns: ["created_by"]
+isOneToOne: false
+      referencedRelation: "users"
+      referencedColumns: ["id"]
+    },{
       foreignKeyName: "offer_tasks_offer_case_id_fkey"
       columns: ["offer_case_id"]
 isOneToOne: false
       referencedRelation: "offer_cases"
       referencedColumns: ["id"]
     },{
-      foreignKeyName: "offer_tasks_owner_user_id_fkey"
-      columns: ["owner_user_id"]
+      foreignKeyName: "offer_tasks_owner_member_id_fkey"
+      columns: ["owner_member_id"]
 isOneToOne: false
-      referencedRelation: "users"
+      referencedRelation: "eficen_members"
       referencedColumns: ["id"]
     }
                   ]
