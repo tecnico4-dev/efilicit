@@ -267,11 +267,11 @@ export function OfferCaseLogPanel({
 
                   <div
                     className={cn(
-                      "grid min-w-0 flex-1 grid-cols-[10.5rem_minmax(0,1fr)] items-start gap-x-4 py-3 pl-1",
+                      "grid min-w-0 flex-1 grid-cols-[10.5rem_minmax(0,1fr)] items-center gap-x-4 py-3 pl-1",
                       !isLast && "border-b border-border",
                     )}
                   >
-                    <div className="pt-0.5">
+                    <div className="flex justify-start">
                       <EventBadge type={entry.event_type} />
                     </div>
                     <div className="min-w-0">
