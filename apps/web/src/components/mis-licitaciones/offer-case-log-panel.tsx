@@ -245,24 +245,32 @@ export function OfferCaseLogPanel({
                   style={{ zIndex: entries.length - index }}
                 >
                   <div
-                    className="w-[7.25rem] shrink-0 bg-primary p-px"
+                    className="relative flex w-[7.25rem] shrink-0 items-center justify-center self-stretch px-2 text-center text-[0.8rem] font-medium tabular-nums text-foreground"
                     style={{
-                      // Flecha ↑: punta arriba; abajo muesca hacia dentro.
-                      // Trazo finito primary (1px, como border de tablas) sin relleno.
-                      clipPath:
-                        "polygon(50% 0%, 100% 14px, 100% 100%, 50% calc(100% - 14px), 0% 100%, 0% 14px)",
                       minHeight: "4.25rem",
+                      paddingTop: "1.35rem",
+                      paddingBottom: "1.35rem",
                     }}
                   >
-                    <div
-                      className="flex h-full min-h-[calc(4.25rem-2px)] w-full items-center justify-center bg-background px-2 text-center text-[0.8rem] font-medium tabular-nums text-foreground"
-                      style={{
-                        paddingTop: "1.35rem",
-                        paddingBottom: "1.35rem",
-                      }}
+                    {/* Contorno completo (clip-path no pinta bien los biseles) */}
+                    <svg
+                      className="pointer-events-none absolute inset-0 h-full w-full text-primary"
+                      viewBox="0 0 100 100"
+                      preserveAspectRatio="none"
+                      aria-hidden
                     >
+                      <path
+                        d="M 50 1.2 L 98.8 12 L 98.8 98.8 L 50 87.5 L 1.2 98.8 L 1.2 12 Z"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1"
+                        strokeLinejoin="miter"
+                        vectorEffect="non-scaling-stroke"
+                      />
+                    </svg>
+                    <span className="relative z-[1]">
                       {formatDateMadrid(entry.happened_on)}
-                    </div>
+                    </span>
                   </div>
 
                   <div
