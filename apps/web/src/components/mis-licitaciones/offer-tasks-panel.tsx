@@ -1344,12 +1344,18 @@ export function OfferTasksPanel({
                   role="menu"
                   className="fixed z-[310] min-w-[10rem] rounded-md border border-border bg-surface p-1 shadow-lg"
                   style={{ left: ctxMenu.x, top: ctxMenu.y }}
+                  onMouseDown={(e) => e.stopPropagation()}
                 >
                   <button
                     type="button"
                     role="menuitem"
                     className="flex w-full rounded-md px-2.5 py-1.5 text-left text-sm text-foreground hover:bg-muted"
-                    onClick={() => setAsDefaultView(ctxMenu.preset)}
+                    onMouseDown={(e) => {
+                      // Antes del dismiss del AnchoredPortal (mousedown), o el click no llega.
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setAsDefaultView(ctxMenu.preset);
+                    }}
                   >
                     Vista por defecto
                   </button>
