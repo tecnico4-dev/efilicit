@@ -1052,6 +1052,7 @@ export function OfferTasksPanel({
     preset: TaskDefaultFilterPreset;
   } | null>(null);
   const filterBtnRef = useRef<HTMLButtonElement>(null);
+  const ctxMenuRef = useRef<HTMLDivElement>(null);
   const prefsAppliedRef = useRef(false);
 
   const assignable = useMemo(
@@ -1090,6 +1091,25 @@ export function OfferTasksPanel({
     setFilterPreset(preferred);
     setFilters(filtersForDefaultPreset(preferred, viewerMemberId));
   }, [userId, viewerMemberId]);
+
+  /** Cierra solo el menú contextual; el desplegable de filtros sigue abierto. */
+  useEffect(() => {
+    if (!ctxMenu) return;
+    function onDown(e: MouseEvent) {
+      const t = e.target as Node;
+      if (ctxMenuRef.current?.contains(t)) return;
+      setCtxMenu(null);
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setCtxMenu(null);
+    }
+    document.addEventListener("mousedown", onDown, true);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDown, true);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [ctxMenu]);
 
   function applyPreset(next: TaskFilterPreset) {
     setPresetMenuOpen(false);
@@ -1320,29 +1340,19 @@ export function OfferTasksPanel({
           {ctxMenu
             ? createPortal(
                 <div
-                  className="fixed inset-0 z-[310]"
-                  role="presentation"
-                  onClick={() => setCtxMenu(null)}
-                  onContextMenu={(e) => {
-                    e.preventDefault();
-                    setCtxMenu(null);
-                  }}
+                  ref={ctxMenuRef}
+                  role="menu"
+                  className="fixed z-[310] min-w-[10rem] rounded-md border border-border bg-surface p-1 shadow-lg"
+                  style={{ left: ctxMenu.x, top: ctxMenu.y }}
                 >
-                  <div
-                    role="menu"
-                    className="absolute min-w-[10rem] rounded-md border border-border bg-surface p-1 shadow-lg"
-                    style={{ left: ctxMenu.x, top: ctxMenu.y }}
-                    onClick={(e) => e.stopPropagation()}
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className="flex w-full rounded-md px-2.5 py-1.5 text-left text-sm text-foreground hover:bg-muted"
+                    onClick={() => setAsDefaultView(ctxMenu.preset)}
                   >
-                    <button
-                      type="button"
-                      role="menuitem"
-                      className="flex w-full rounded-md px-2.5 py-1.5 text-left text-sm text-foreground hover:bg-muted"
-                      onClick={() => setAsDefaultView(ctxMenu.preset)}
-                    >
-                      Vista por defecto
-                    </button>
-                  </div>
+                    Vista por defecto
+                  </button>
                 </div>,
                 document.body,
               )
