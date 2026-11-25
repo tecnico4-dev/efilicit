@@ -124,9 +124,6 @@ export function OfferCalendarTimeline({
           <h3 className="text-sm font-semibold text-foreground">
             Calendario y plazos
           </h3>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Días hábiles sin fines de semana (festivos nacionales, más adelante).
-          </p>
         </div>
         <div className="flex shrink-0 items-center gap-4 text-xs text-muted-foreground">
           <span className="inline-flex items-center gap-1.5">
