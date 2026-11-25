@@ -1293,7 +1293,7 @@ export function OfferTasksPanel({
                       role="option"
                       aria-selected={selected}
                       className={cn(
-                        "flex w-full items-center rounded-md px-2.5 py-1.5 text-left text-sm hover:bg-muted",
+                        "flex w-full rounded-md px-2.5 py-1.5 text-left text-sm hover:bg-muted",
                         selected
                           ? "font-semibold text-foreground"
                           : "text-foreground",
@@ -1310,14 +1310,7 @@ export function OfferTasksPanel({
                         });
                       }}
                     >
-                      <span className="min-w-0 flex-1 truncate">
-                        {opt.label}
-                      </span>
-                      {opt.id === preferredDefault ? (
-                        <span className="shrink-0 pl-3 text-[0.65rem] font-normal text-muted-foreground">
-                          por defecto
-                        </span>
-                      ) : null}
+                      {opt.label}
                     </button>
                   </li>
                 );
@@ -1327,7 +1320,7 @@ export function OfferTasksPanel({
           {ctxMenu
             ? createPortal(
                 <div
-                  className="fixed inset-0 z-[220]"
+                  className="fixed inset-0 z-[310]"
                   role="presentation"
                   onClick={() => setCtxMenu(null)}
                   onContextMenu={(e) => {
