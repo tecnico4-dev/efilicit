@@ -150,18 +150,14 @@ export function OfferCalendarTimeline({
         {rows.map((row) => {
           if (row.type === "today") {
             return (
-              <li
-                key="today"
-                className="flex items-center gap-3 border-t border-primary/50 py-3"
-              >
-                <p className="w-[4.75rem] shrink-0 text-sm font-semibold text-primary sm:w-[5.5rem]">
-                  HOY {shortCivilDay(row.day)}
-                </p>
-                <span
-                  className="size-2.5 shrink-0 rounded-full bg-primary"
-                  aria-hidden
-                />
-                <span className="sr-only">Hoy</span>
+              <li key="today" className="py-3" aria-label="Hoy">
+                <div className="flex items-center gap-3">
+                  <div className="h-1 min-w-0 flex-1 rounded-full bg-primary" aria-hidden />
+                  <p className="shrink-0 text-center text-[11px] font-semibold tracking-wide text-primary">
+                    HOY {shortCivilDay(row.day)}
+                  </p>
+                  <div className="h-1 min-w-0 flex-1 rounded-full bg-primary" aria-hidden />
+                </div>
               </li>
             );
           }
