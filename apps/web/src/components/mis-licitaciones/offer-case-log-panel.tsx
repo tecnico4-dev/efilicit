@@ -267,20 +267,20 @@ export function OfferCaseLogPanel({
 
                   <div
                     className={cn(
-                      "min-w-0 flex-1 py-3 pl-1",
+                      "grid min-w-0 flex-1 grid-cols-[10.5rem_minmax(0,1fr)] items-start gap-x-4 py-3 pl-1",
                       !isLast && "border-b border-border",
                     )}
                   >
-                    <div className="flex flex-wrap items-start gap-2 sm:gap-3">
+                    <div className="pt-0.5">
                       <EventBadge type={entry.event_type} />
-                      <div className="min-w-0 flex-1">
-                        <p className="whitespace-pre-wrap text-foreground">
-                          {entry.body}
-                        </p>
-                        <p className="mt-1 text-xs text-muted-foreground">
-                          {meta}
-                        </p>
-                      </div>
+                    </div>
+                    <div className="min-w-0">
+                      <p className="whitespace-pre-wrap text-foreground">
+                        {entry.body}
+                      </p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {meta}
+                      </p>
                     </div>
                   </div>
                 </li>
