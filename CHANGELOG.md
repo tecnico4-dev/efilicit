@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Home · carrusel «Tus favoritos»: solo se muestra si hay plazos próximos (`attentionFavorites`) o cambios de estado; columnas solo con contenido (sin vacío «Ninguna con plazo…»).
 - Mis licitaciones · Calendario: timeline (fecha · Oficial/Interno · countdown / hecho · marca HOY); hitos intake preguntas/apertura; pestaña oculta si no hay plazos.
 - Mis licitaciones · criterios de adjudicación: dejan de ser filas de Requisitos; viven en `offer_deliverables` (Resumen + Sobres). Intake ya no crea `criterio_adjudicacion`. Migración local limpia filas antiguas.
 - Ingesta PLACSP: si la plataforma no sirve el ZIP (WAF/HTML sin ``PK``, HTTP 403/404), el job sale en verde con ``::warning::`` y `source_sync` ``success`` + motivo; errores propios (DB, Storage, tamaño…) siguen en rojo.
