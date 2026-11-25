@@ -958,6 +958,76 @@ export async function removeOfferCaseMember(
   return { error: null };
 }
 
+/** Tareas / requisitos del expediente asignados a un miembro del directorio. */
+export async function countOfferCaseMemberAssignments(
+  client: SupabaseClient<Database>,
+  input: { offerCaseId: string; memberId: string },
+): Promise<{
+  data: { tasks: number; requirements: number };
+  error: Error | null;
+}> {
+  const [tasksResult, reqsResult] = await Promise.all([
+    client
+      .from("offer_tasks")
+      .select("id", { count: "exact", head: true })
+      .eq("offer_case_id", input.offerCaseId)
+      .eq("owner_member_id", input.memberId),
+    client
+      .from("offer_requirements")
+      .select("id", { count: "exact", head: true })
+      .eq("offer_case_id", input.offerCaseId)
+      .eq("owner_member_id", input.memberId),
+  ]);
+
+  if (tasksResult.error) {
+    return {
+      data: { tasks: 0, requirements: 0 },
+      error: new Error(tasksResult.error.message),
+    };
+  }
+  if (reqsResult.error) {
+    return {
+      data: { tasks: 0, requirements: 0 },
+      error: new Error(reqsResult.error.message),
+    };
+  }
+
+  return {
+    data: {
+      tasks: tasksResult.count ?? 0,
+      requirements: reqsResult.count ?? 0,
+    },
+    error: null,
+  };
+}
+
+/** Pone a sin asignar tareas y requisitos del miembro en ese expediente. */
+export async function clearOfferCaseMemberAssignments(
+  client: SupabaseClient<Database>,
+  input: { offerCaseId: string; memberId: string },
+): Promise<{ error: Error | null }> {
+  const [tasksResult, reqsResult] = await Promise.all([
+    client
+      .from("offer_tasks")
+      .update({ owner_member_id: null })
+      .eq("offer_case_id", input.offerCaseId)
+      .eq("owner_member_id", input.memberId),
+    client
+      .from("offer_requirements")
+      .update({ owner_member_id: null })
+      .eq("offer_case_id", input.offerCaseId)
+      .eq("owner_member_id", input.memberId),
+  ]);
+
+  if (tasksResult.error) {
+    return { error: new Error(tasksResult.error.message) };
+  }
+  if (reqsResult.error) {
+    return { error: new Error(reqsResult.error.message) };
+  }
+  return { error: null };
+}
+
 export async function createOfferCase(
   client: SupabaseClient<Database>,
   input: {

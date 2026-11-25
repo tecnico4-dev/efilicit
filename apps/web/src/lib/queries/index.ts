@@ -208,6 +208,8 @@ export {
   listOfferCases,
   offerCaseHistoryYear,
   removeOfferCaseMember,
+  countOfferCaseMemberAssignments,
+  clearOfferCaseMemberAssignments,
   setOfferCaseOwner,
   advanceOfferCaseToAnalisis,
   setOfferCaseGoDecision,

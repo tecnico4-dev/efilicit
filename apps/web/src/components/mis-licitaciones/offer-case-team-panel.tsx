@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/cn";
@@ -8,6 +9,8 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import {
   OFFER_MEMBER_ROLE_LABELS,
   addOfferCaseMember,
+  clearOfferCaseMemberAssignments,
+  countOfferCaseMemberAssignments,
   listEficenMembersForTeam,
   removeOfferCaseMember,
   setOfferCaseOwner,
@@ -72,6 +75,13 @@ export function OfferCaseTeamPanel({
   const [query, setQuery] = useState("");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [removeConfirm, setRemoveConfirm] = useState<{
+    membershipId: string;
+    memberId: string;
+    displayName: string;
+    tasks: number;
+    requirements: number;
+  } | null>(null);
 
   /** Trabajadores sin el responsable (por si quedó huérfano en datos). */
   const workers = useMemo(
@@ -185,18 +195,70 @@ export function OfferCaseTeamPanel({
     router.refresh();
   }
 
-  async function onRemoveWorker(membershipId: string) {
+  async function requestRemoveWorker(row: OfferCaseTeamMember) {
     if (pending) return;
     setPending(true);
     setError(null);
     const client = createSupabaseBrowserClient();
-    const result = await removeOfferCaseMember(client, membershipId);
+    const counts = await countOfferCaseMemberAssignments(client, {
+      offerCaseId,
+      memberId: row.member_id,
+    });
+    if (counts.error) {
+      setPending(false);
+      setError(counts.error.message);
+      return;
+    }
+    if (counts.data.tasks > 0 || counts.data.requirements > 0) {
+      setPending(false);
+      setRemoveConfirm({
+        membershipId: row.id,
+        memberId: row.member_id,
+        displayName: row.member.display_name,
+        tasks: counts.data.tasks,
+        requirements: counts.data.requirements,
+      });
+      return;
+    }
+    const result = await removeOfferCaseMember(client, row.id);
     setPending(false);
     if (result.error) {
       setError(result.error.message);
       return;
     }
     router.refresh();
+  }
+
+  async function confirmRemoveWorker() {
+    if (!removeConfirm || pending) return;
+    setPending(true);
+    setError(null);
+    const client = createSupabaseBrowserClient();
+    const cleared = await clearOfferCaseMemberAssignments(client, {
+      offerCaseId,
+      memberId: removeConfirm.memberId,
+    });
+    if (cleared.error) {
+      setPending(false);
+      setError(cleared.error.message);
+      return;
+    }
+    const result = await removeOfferCaseMember(
+      client,
+      removeConfirm.membershipId,
+    );
+    setPending(false);
+    if (result.error) {
+      setError(result.error.message);
+      return;
+    }
+    setRemoveConfirm(null);
+    router.refresh();
+  }
+
+  function dismissRemoveConfirm() {
+    if (pending) return;
+    setRemoveConfirm(null);
   }
 
   function renderExpandedPicker(mode: "owner" | "worker") {
@@ -350,7 +412,7 @@ export function OfferCaseTeamPanel({
                     size="sm"
                     disabled={pending}
                     aria-label={`Quitar a ${row.member.display_name}`}
-                    onClick={() => void onRemoveWorker(row.id)}
+                    onClick={() => void requestRemoveWorker(row)}
                   >
                     Quitar
                   </Button>
@@ -404,6 +466,107 @@ export function OfferCaseTeamPanel({
           {error}
         </p>
       ) : null}
+
+      <RemoveWorkerConfirmModal
+        open={removeConfirm != null}
+        busy={pending}
+        displayName={removeConfirm?.displayName ?? ""}
+        tasks={removeConfirm?.tasks ?? 0}
+        requirements={removeConfirm?.requirements ?? 0}
+        onConfirm={() => void confirmRemoveWorker()}
+        onCancel={dismissRemoveConfirm}
+      />
     </div>
+  );
+}
+
+function RemoveWorkerConfirmModal({
+  open,
+  busy,
+  displayName,
+  tasks,
+  requirements,
+  onConfirm,
+  onCancel,
+}: {
+  open: boolean;
+  busy: boolean;
+  displayName: string;
+  tasks: number;
+  requirements: number;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  if (typeof document === "undefined" || !open) return null;
+
+  const parts: string[] = [];
+  if (tasks > 0) {
+    parts.push(tasks === 1 ? "1 tarea" : `${tasks} tareas`);
+  }
+  if (requirements > 0) {
+    parts.push(
+      requirements === 1 ? "1 requisito" : `${requirements} requisitos`,
+    );
+  }
+  const assignedLabel = parts.join(" y ");
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[210] flex items-center justify-center bg-black/50 p-3"
+      role="presentation"
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="team-remove-title"
+        className="w-full max-w-md rounded-xl border border-border bg-surface p-5 shadow-xl"
+      >
+        <div className="flex items-start justify-between gap-3">
+          <h2
+            id="team-remove-title"
+            className="text-base font-semibold text-foreground"
+          >
+            ¿Eliminar del equipo?
+          </h2>
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={busy}
+            className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-destructive bg-surface text-destructive transition-colors hover:bg-destructive/10 disabled:opacity-50"
+            aria-label="Cerrar"
+          >
+            <span aria-hidden className="text-xl leading-none">
+              ×
+            </span>
+          </button>
+        </div>
+        <p className="mt-3 text-sm text-muted-foreground">
+          {displayName.trim() || "Este usuario"} tiene {assignedLabel}{" "}
+          asignados. Si lo eliminas del equipo, pasarán a sin asignar. ¿Seguro
+          que quieres continuar?
+        </p>
+        <div className="mt-5 flex flex-wrap justify-end gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={busy}
+            onClick={onCancel}
+          >
+            Cancelar
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            disabled={busy}
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            onClick={onConfirm}
+          >
+            Eliminar
+          </Button>
+        </div>
+      </div>
+    </div>,
+    document.body,
   );
 }
