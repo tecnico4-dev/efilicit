@@ -3,6 +3,7 @@
 import { createPortal } from "react-dom";
 import { useCallback, useEffect, useId, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { MisLicitacionesFiltersButton } from "@/components/mis-licitaciones/mis-licitaciones-filters-modal";
 import { SingleDatePicker } from "@/components/mis-licitaciones/single-date-picker";
 import { cn } from "@/lib/cn";
 import { calendarDayMadrid, formatDateMadrid } from "@/lib/datetime";
@@ -15,6 +16,45 @@ import {
   type EficenMemberForTeam,
   type OfferTaskItem,
 } from "@/lib/queries";
+
+const OWNER_UNASSIGNED = "__none__";
+
+type TaskFilters = {
+  /** "" = todas · open · done */
+  status: "" | "open" | "done";
+  owners: string[];
+  /** "" = todas · con · sin · vencida */
+  due: "" | "con" | "sin" | "vencida";
+};
+
+const EMPTY_TASK_FILTERS: TaskFilters = {
+  status: "",
+  owners: [],
+  due: "",
+};
+
+function countTaskFilters(f: TaskFilters): number {
+  return (f.status ? 1 : 0) + (f.owners.length > 0 ? 1 : 0) + (f.due ? 1 : 0);
+}
+
+function taskMatchesFilters(task: OfferTaskItem, f: TaskFilters): boolean {
+  if (f.status === "open" && task.done_at != null) return false;
+  if (f.status === "done" && task.done_at == null) return false;
+
+  if (f.owners.length > 0) {
+    const key = task.owner_member_id ?? OWNER_UNASSIGNED;
+    if (!f.owners.includes(key)) return false;
+  }
+
+  if (f.due === "con" && !task.due_at) return false;
+  if (f.due === "sin" && task.due_at) return false;
+  if (f.due === "vencida") {
+    if (!task.due_at || task.done_at != null) return false;
+    if (new Date(task.due_at).getTime() >= Date.now()) return false;
+  }
+
+  return true;
+}
 
 const NOTE_TONES = [
   "border-amber-300/70 bg-amber-50 text-amber-950 shadow-amber-900/5 dark:border-amber-500/30 dark:bg-amber-950/40 dark:text-amber-50",
@@ -104,6 +144,199 @@ function TaskNoteCard({
         </p>
       </div>
     </button>
+  );
+}
+
+function TaskFiltersModal({
+  open,
+  members,
+  applied,
+  onClose,
+  onApply,
+  onClear,
+}: {
+  open: boolean;
+  members: EficenMemberForTeam[];
+  applied: TaskFilters;
+  onClose: () => void;
+  onApply: (next: TaskFilters) => void;
+  onClear: () => void;
+}) {
+  const titleId = useId();
+  const [mounted, setMounted] = useState(false);
+  const [draft, setDraft] = useState<TaskFilters>(applied);
+
+  useEffect(() => setMounted(true), []);
+  useEffect(() => {
+    if (!open) return;
+    setDraft(applied);
+  }, [open, applied]);
+
+  if (!mounted || !open) return null;
+
+  function toggleOwner(id: string) {
+    setDraft((prev) => {
+      const has = prev.owners.includes(id);
+      return {
+        ...prev,
+        owners: has
+          ? prev.owners.filter((x) => x !== id)
+          : [...prev.owners, id],
+      };
+    });
+  }
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 p-3 sm:p-6"
+      role="presentation"
+      onClick={onClose}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        className="flex w-full max-w-lg flex-col overflow-hidden rounded-xl border border-border bg-surface shadow-xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3 sm:px-5">
+          <h2
+            id={titleId}
+            className="text-lg font-semibold tracking-tight text-foreground"
+          >
+            Filtrar tareas
+          </h2>
+          <button
+            type="button"
+            onClick={onClose}
+            className="inline-flex size-8 items-center justify-center rounded-lg border border-destructive bg-surface text-destructive hover:bg-destructive/10"
+            aria-label="Cerrar"
+          >
+            ×
+          </button>
+        </div>
+
+        <div className="space-y-4 px-4 py-4 sm:px-5">
+          <div>
+            <p className="text-sm font-medium text-foreground">Estado</p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {(
+                [
+                  { value: "", label: "Todas" },
+                  { value: "open", label: "Abiertas" },
+                  { value: "done", label: "Hechas" },
+                ] as const
+              ).map((opt) => (
+                <button
+                  key={opt.value || "all"}
+                  type="button"
+                  onClick={() => setDraft((p) => ({ ...p, status: opt.value }))}
+                  className={cn(
+                    "rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors",
+                    draft.status === opt.value
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border bg-surface text-muted-foreground hover:bg-muted",
+                  )}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <p className="text-sm font-medium text-foreground">Plazo</p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {(
+                [
+                  { value: "", label: "Todas" },
+                  { value: "con", label: "Con fecha" },
+                  { value: "sin", label: "Sin fecha" },
+                  { value: "vencida", label: "Vencida" },
+                ] as const
+              ).map((opt) => (
+                <button
+                  key={opt.value || "due-all"}
+                  type="button"
+                  onClick={() => setDraft((p) => ({ ...p, due: opt.value }))}
+                  className={cn(
+                    "rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors",
+                    draft.due === opt.value
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border bg-surface text-muted-foreground hover:bg-muted",
+                  )}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <p className="text-sm font-medium text-foreground">Asignada a</p>
+            <div className="mt-2 flex max-h-40 flex-wrap gap-2 overflow-y-auto">
+              <button
+                type="button"
+                onClick={() => toggleOwner(OWNER_UNASSIGNED)}
+                className={cn(
+                  "rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors",
+                  draft.owners.includes(OWNER_UNASSIGNED)
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-border bg-surface text-muted-foreground hover:bg-muted",
+                )}
+              >
+                Sin asignar
+              </button>
+              {members.map((m) => (
+                <button
+                  key={m.id}
+                  type="button"
+                  onClick={() => toggleOwner(m.id)}
+                  className={cn(
+                    "rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors",
+                    draft.owners.includes(m.id)
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border bg-surface text-muted-foreground hover:bg-muted",
+                  )}
+                >
+                  {m.displayName}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border px-4 py-3 sm:px-5">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              onClear();
+              onClose();
+            }}
+          >
+            Limpiar
+          </Button>
+          <div className="flex gap-2">
+            <Button type="button" variant="ghost" size="sm" onClick={onClose}>
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              onClick={() => {
+                onApply(draft);
+                onClose();
+              }}
+            >
+              Aplicar
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>,
+    document.body,
   );
 }
 
@@ -302,6 +535,8 @@ export function OfferTasksPanel({
   const [draft, setDraft] = useState<Draft>(EMPTY_DRAFT);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [filters, setFilters] = useState<TaskFilters>(EMPTY_TASK_FILTERS);
 
   const assignable = useMemo(
     () =>
@@ -309,6 +544,12 @@ export function OfferTasksPanel({
         a.displayName.localeCompare(b.displayName, "es"),
       ),
     [members],
+  );
+
+  const filterCount = countTaskFilters(filters);
+  const visibleTasks = useMemo(
+    () => tasks.filter((t) => taskMatchesFilters(t, filters)),
+    [tasks, filters],
   );
 
   const reload = useCallback(async () => {
@@ -441,9 +682,15 @@ export function OfferTasksPanel({
         <p className="text-sm text-muted-foreground">
           Tareas sueltas del expediente (no son requisitos).
         </p>
-        <Button type="button" size="sm" onClick={openCreate}>
-          Añadir tarea
-        </Button>
+        <div className="flex flex-wrap items-center gap-3">
+          <MisLicitacionesFiltersButton
+            activeCount={filterCount}
+            onClick={() => setFiltersOpen(true)}
+          />
+          <Button type="button" size="sm" onClick={openCreate}>
+            Añadir tarea
+          </Button>
+        </div>
       </div>
 
       {error ? <p className="text-sm text-destructive">{error}</p> : null}
@@ -454,9 +701,13 @@ export function OfferTasksPanel({
         <p className="rounded-lg border border-dashed border-border px-4 py-8 text-center text-sm text-muted-foreground">
           Aún no hay tareas. Pulsa «Añadir tarea» para crear la primera.
         </p>
+      ) : visibleTasks.length === 0 ? (
+        <p className="rounded-lg border border-dashed border-border px-4 py-8 text-center text-sm text-muted-foreground">
+          Ninguna tarea coincide con el filtro.
+        </p>
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {tasks.map((task, index) => (
+          {visibleTasks.map((task, index) => (
             <TaskNoteCard
               key={task.id}
               task={task}
@@ -466,6 +717,15 @@ export function OfferTasksPanel({
           ))}
         </div>
       )}
+
+      <TaskFiltersModal
+        open={filtersOpen}
+        members={assignable}
+        applied={filters}
+        onClose={() => setFiltersOpen(false)}
+        onApply={setFilters}
+        onClear={() => setFilters(EMPTY_TASK_FILTERS)}
+      />
 
       <TaskEditorModal
         open={editor != null}
