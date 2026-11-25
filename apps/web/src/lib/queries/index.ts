@@ -64,6 +64,7 @@ export {
 } from "./favorite-kind";
 export {
   getEficenMemberDisplayNameByUserId,
+  getEficenMemberIdByUserId,
   listEficenMembersForShare,
   listEficenMembersForTeam,
   type EficenMemberForShare,

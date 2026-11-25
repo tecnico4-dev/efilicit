@@ -90,3 +90,18 @@ export async function getEficenMemberDisplayNameByUserId(
   if (error) return { data: null, error: new Error(error.message) };
   return { data: data?.display_name ?? null, error: null };
 }
+
+/** `eficen_members.id` del usuario (o null si no hay ficha enlazada). */
+export async function getEficenMemberIdByUserId(
+  client: SupabaseClient<Database>,
+  userId: string,
+): Promise<{ data: string | null; error: Error | null }> {
+  const { data, error } = await client
+    .from("eficen_members")
+    .select("id")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (error) return { data: null, error: new Error(error.message) };
+  return { data: data?.id ?? null, error: null };
+}

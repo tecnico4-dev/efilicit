@@ -1,7 +1,7 @@
 "use client";
 
 import { createPortal } from "react-dom";
-import { useEffect, useId, useState } from "react";
+import { forwardRef, useEffect, useId, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { OFFER_STAGE_LABELS, type OfferStage } from "@/lib/queries";
 import { cn } from "@/lib/cn";
@@ -278,15 +278,16 @@ export function MisLicitacionesFiltersModal({
   );
 }
 
-export function MisLicitacionesFiltersButton({
-  activeCount,
-  onClick,
-}: {
-  activeCount: number;
-  onClick: () => void;
-}) {
+export const MisLicitacionesFiltersButton = forwardRef<
+  HTMLButtonElement,
+  {
+    activeCount: number;
+    onClick: () => void;
+  }
+>(function MisLicitacionesFiltersButton({ activeCount, onClick }, ref) {
   return (
     <button
+      ref={ref}
       type="button"
       onClick={onClick}
       className={cn(
@@ -296,12 +297,13 @@ export function MisLicitacionesFiltersButton({
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
       )}
       aria-label="Filtrar"
+      aria-haspopup="listbox"
     >
       <FiltersIcon />
       {activeCount > 0 ? `Filtrar(${activeCount})` : "Filtrar"}
     </button>
   );
-}
+});
 
 function FiltersIcon() {
   return (

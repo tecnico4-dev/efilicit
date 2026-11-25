@@ -7,6 +7,7 @@ import {
   HISTORIC_OFFER_STAGES,
   OFFER_STAGE_LABELS,
   asOfferCaseKind,
+  getEficenMemberIdByUserId,
   getLatestOfferCaseIntake,
   getOfferCaseById,
   getTenderById,
@@ -104,6 +105,7 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
     deliverablesResult,
     milestonesResult,
     membersResult,
+    viewerMemberResult,
   ] = await Promise.all([
     listOfferCaseMembers(supabase, offerCase.id),
     getLatestOfferCaseIntake(supabase, offerCase.id),
@@ -111,8 +113,10 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
     listOfferDeliverables(supabase, offerCase.id),
     listOfferMilestones(supabase, offerCase.id),
     listEficenMembersForTeam(supabase),
+    getEficenMemberIdByUserId(supabase, profile.data.id),
   ]);
   const teamMembers = teamResult.data;
+  const viewerMemberId = viewerMemberResult.data;
   const milestones = milestonesResult.data;
   const hasPresentationMilestone = milestones.some(
     (m) => m.code === "presentacion",
@@ -344,6 +348,7 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
                 <OfferTasksPanel
                   offerCaseId={offerCase.id}
                   userId={profile.data.id}
+                  viewerMemberId={viewerMemberId}
                   owner={offerCase.owner_member}
                   team={teamMembers}
                 />

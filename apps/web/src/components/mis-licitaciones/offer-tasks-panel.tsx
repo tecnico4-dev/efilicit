@@ -18,6 +18,7 @@ import {
 import { MisLicitacionesFiltersButton } from "@/components/mis-licitaciones/mis-licitaciones-filters-modal";
 import { OfferMemberPicker } from "@/components/mis-licitaciones/offer-member-picker";
 import { SingleDatePicker } from "@/components/mis-licitaciones/single-date-picker";
+import { AnchoredPortal } from "@/components/ui/anchored-portal";
 import { cn } from "@/lib/cn";
 import { calendarDayMadrid, formatDateMadrid } from "@/lib/datetime";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
@@ -60,27 +61,60 @@ function caseTeamAssignable(
 const OWNER_UNASSIGNED = "__none__";
 
 type TaskFilters = {
-  /** vacío = todas; por defecto solo pendientes */
+  /** vacío = todas */
   status: OfferTaskStatus[];
   owners: string[];
   /** "" = todas · con · sin · vencida */
   due: "" | "con" | "sin" | "vencida";
 };
 
-/** Bandeja principal: solo pendientes. Hechas/descartadas vía filtro. */
-const EMPTY_TASK_FILTERS: TaskFilters = {
-  status: ["pendiente"],
-  owners: [],
-  due: "",
-};
+type TaskFilterPreset =
+  | "todas"
+  | "pendientes"
+  | "mis_pendientes"
+  | "personalizado";
 
-function isDefaultTaskStatusFilter(status: OfferTaskStatus[]): boolean {
-  return status.length === 1 && status[0] === "pendiente";
+const TASK_FILTER_PRESETS: {
+  id: TaskFilterPreset;
+  label: string;
+}[] = [
+  { id: "todas", label: "Todas" },
+  { id: "pendientes", label: "Pendientes" },
+  { id: "mis_pendientes", label: "Mis pendientes" },
+  { id: "personalizado", label: "Personalizado" },
+];
+
+function filtersForPreset(
+  preset: Exclude<TaskFilterPreset, "personalizado">,
+  viewerMemberId: string | null,
+): TaskFilters {
+  if (preset === "todas") return { status: [], owners: [], due: "" };
+  if (preset === "pendientes") {
+    return { status: ["pendiente"], owners: [], due: "" };
+  }
+  return {
+    status: ["pendiente"],
+    owners: viewerMemberId ? [viewerMemberId] : [],
+    due: "",
+  };
 }
 
-function countTaskFilters(f: TaskFilters): number {
+/** Por defecto: mis pendientes (o pendientes de equipo si no hay ficha). */
+function defaultTaskFilters(viewerMemberId: string | null): TaskFilters {
+  return filtersForPreset(
+    viewerMemberId ? "mis_pendientes" : "pendientes",
+    viewerMemberId,
+  );
+}
+
+function countTaskFilters(
+  f: TaskFilters,
+  preset: TaskFilterPreset,
+): number {
+  if (preset === "mis_pendientes") return 0;
+  if (preset !== "personalizado") return 1;
   return (
-    (isDefaultTaskStatusFilter(f.status) ? 0 : 1) +
+    (f.status.length > 0 ? 1 : 0) +
     (f.owners.length > 0 ? 1 : 0) +
     (f.due ? 1 : 0)
   );
@@ -324,6 +358,7 @@ function TaskFiltersModal({
   open,
   members,
   applied,
+  clearTo,
   onClose,
   onApply,
   onClear,
@@ -331,6 +366,7 @@ function TaskFiltersModal({
   open: boolean;
   members: EficenMemberForTeam[];
   applied: TaskFilters;
+  clearTo: TaskFilters;
   onClose: () => void;
   onApply: (next: TaskFilters) => void;
   onClear: () => void;
@@ -436,7 +472,7 @@ function TaskFiltersModal({
             type="button"
             variant="outline"
             onClick={() => {
-              setDraft(EMPTY_TASK_FILTERS);
+              setDraft(clearTo);
               onClear();
             }}
           >
@@ -914,14 +950,21 @@ function TaskEditorModal({
 export function OfferTasksPanel({
   offerCaseId,
   userId,
+  viewerMemberId,
   owner,
   team,
 }: {
   offerCaseId: string;
   userId: string;
+  viewerMemberId: string | null;
   owner: OfferOwnerMember | null;
   team: OfferCaseTeamMember[];
 }) {
+  const initialPreset: TaskFilterPreset = viewerMemberId
+    ? "mis_pendientes"
+    : "pendientes";
+  const initialFilters = defaultTaskFilters(viewerMemberId);
+
   const [tasks, setTasks] = useState<OfferTaskItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -932,7 +975,11 @@ export function OfferTasksPanel({
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
-  const [filters, setFilters] = useState<TaskFilters>(EMPTY_TASK_FILTERS);
+  const [presetMenuOpen, setPresetMenuOpen] = useState(false);
+  const [filterPreset, setFilterPreset] =
+    useState<TaskFilterPreset>(initialPreset);
+  const [filters, setFilters] = useState<TaskFilters>(initialFilters);
+  const filterBtnRef = useRef<HTMLButtonElement>(null);
 
   const assignable = useMemo(
     () => caseTeamAssignable(owner, team),
@@ -952,11 +999,32 @@ export function OfferTasksPanel({
     );
   }, [assignable, editor]);
 
-  const filterCount = countTaskFilters(filters);
+  const filterCount = countTaskFilters(filters, filterPreset);
   const visibleTasks = useMemo(
     () => tasks.filter((t) => taskMatchesFilters(t, filters)),
     [tasks, filters],
   );
+
+  function applyPreset(next: TaskFilterPreset) {
+    setPresetMenuOpen(false);
+    if (next === "personalizado") {
+      setFiltersOpen(true);
+      return;
+    }
+    setFilterPreset(next);
+    setFilters(filtersForPreset(next, viewerMemberId));
+  }
+
+  function applyCustomFilters(next: TaskFilters) {
+    setFilters(next);
+    setFilterPreset("personalizado");
+  }
+
+  function clearToDefault() {
+    const preset = viewerMemberId ? "mis_pendientes" : "pendientes";
+    setFilterPreset(preset);
+    setFilters(defaultTaskFilters(viewerMemberId));
+  }
 
   const reload = useCallback(async () => {
     setLoading(true);
@@ -1106,10 +1174,46 @@ export function OfferTasksPanel({
           Tareas sueltas del expediente (no son requisitos).
         </p>
         <div className="flex flex-wrap items-center gap-3">
-          <MisLicitacionesFiltersButton
-            activeCount={filterCount}
-            onClick={() => setFiltersOpen(true)}
-          />
+          <div className="relative">
+            <MisLicitacionesFiltersButton
+              ref={filterBtnRef}
+              activeCount={filterCount}
+              onClick={() => setPresetMenuOpen((v) => !v)}
+            />
+            <AnchoredPortal
+              open={presetMenuOpen}
+              anchorRef={filterBtnRef}
+              onDismiss={() => setPresetMenuOpen(false)}
+              className="bg-surface p-1"
+              matchAnchorWidth={false}
+              minWidth={180}
+              maxHeight={280}
+            >
+              <ul role="listbox" className="py-0.5">
+                {TASK_FILTER_PRESETS.map((opt) => {
+                  const selected = filterPreset === opt.id;
+                  return (
+                    <li key={opt.id}>
+                      <button
+                        type="button"
+                        role="option"
+                        aria-selected={selected}
+                        className={cn(
+                          "flex w-full rounded-md px-2.5 py-1.5 text-left text-sm hover:bg-muted",
+                          selected
+                            ? "font-semibold text-foreground"
+                            : "text-foreground",
+                        )}
+                        onClick={() => applyPreset(opt.id)}
+                      >
+                        {opt.label}
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </AnchoredPortal>
+          </div>
           <Button type="button" size="sm" onClick={openCreate}>
             Añadir tarea
           </Button>
@@ -1150,9 +1254,10 @@ export function OfferTasksPanel({
         open={filtersOpen}
         members={assignable}
         applied={filters}
+        clearTo={defaultTaskFilters(viewerMemberId)}
         onClose={() => setFiltersOpen(false)}
-        onApply={setFilters}
-        onClear={() => setFilters(EMPTY_TASK_FILTERS)}
+        onApply={applyCustomFilters}
+        onClear={clearToDefault}
       />
 
       <TaskEditorModal
