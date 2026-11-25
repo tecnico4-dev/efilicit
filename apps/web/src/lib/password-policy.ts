@@ -43,3 +43,21 @@ export function mapAuthPasswordError(message: string): string {
   }
   return message;
 }
+
+/** Traduce errores de inicio de sesión (GoTrue) a mensajes en español. */
+export function mapAuthLoginError(message: string): string {
+  const m = message.toLowerCase();
+  if (
+    m.includes("invalid login credentials") ||
+    m.includes("invalid_credentials")
+  ) {
+    return "Usuario o contraseña incorrectos.";
+  }
+  if (m.includes("email not confirmed")) {
+    return "Confirma tu correo antes de iniciar sesión.";
+  }
+  if (m.includes("too many requests") || m.includes("rate limit")) {
+    return "Demasiados intentos. Espera un momento e inténtalo de nuevo.";
+  }
+  return "No se pudo iniciar sesión. Inténtalo de nuevo.";
+}

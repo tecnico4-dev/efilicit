@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  mapAuthLoginError,
   mapAuthPasswordError,
   PASSWORD_CHARSET_ERROR,
   passwordCharsetErrorMessage,
@@ -34,5 +35,18 @@ describe("mapAuthPasswordError", () => {
       "requisitos de seguridad",
     );
     expect(mapAuthPasswordError("otro error")).toBe("otro error");
+  });
+});
+
+describe("mapAuthLoginError", () => {
+  it("traduce credenciales inválidas y otros errores de login", () => {
+    expect(mapAuthLoginError("Invalid login credentials")).toBe(
+      "Usuario o contraseña incorrectos.",
+    );
+    expect(mapAuthLoginError("Email not confirmed")).toContain("Confirma tu correo");
+    expect(mapAuthLoginError("Too many requests")).toContain("Demasiados intentos");
+    expect(mapAuthLoginError("something else")).toBe(
+      "No se pudo iniciar sesión. Inténtalo de nuevo.",
+    );
   });
 });

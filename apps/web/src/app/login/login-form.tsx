@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { safeRedirectPath } from "@/lib/safe-redirect";
+import { mapAuthLoginError } from "@/lib/password-policy";
 import {
   ChangePasswordForm,
   markPasswordOfferSeen,
@@ -71,7 +72,7 @@ export function LoginForm({ nextPath }: { nextPath: string }) {
     setPending(false);
 
     if (signInError) {
-      setError(signInError.message);
+      setError(mapAuthLoginError(signInError.message));
       return;
     }
 
