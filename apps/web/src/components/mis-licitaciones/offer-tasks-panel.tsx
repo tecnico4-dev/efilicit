@@ -30,21 +30,26 @@ import {
 const OWNER_UNASSIGNED = "__none__";
 
 type TaskFilters = {
-  /** "" = todas */
+  /** "" = todas · por defecto solo pendientes */
   status: "" | OfferTaskStatus;
   owners: string[];
   /** "" = todas · con · sin · vencida */
   due: "" | "con" | "sin" | "vencida";
 };
 
+/** Bandeja principal: solo pendientes. Hechas/descartadas vía filtro. */
 const EMPTY_TASK_FILTERS: TaskFilters = {
-  status: "",
+  status: "pendiente",
   owners: [],
   due: "",
 };
 
 function countTaskFilters(f: TaskFilters): number {
-  return (f.status ? 1 : 0) + (f.owners.length > 0 ? 1 : 0) + (f.due ? 1 : 0);
+  return (
+    (f.status !== "pendiente" ? 1 : 0) +
+    (f.owners.length > 0 ? 1 : 0) +
+    (f.due ? 1 : 0)
+  );
 }
 
 function taskMatchesFilters(task: OfferTaskItem, f: TaskFilters): boolean {
