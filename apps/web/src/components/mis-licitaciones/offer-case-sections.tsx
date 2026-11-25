@@ -19,6 +19,7 @@ export const REQUIREMENT_CATEGORY_LABELS: Record<string, string> = {
   criterio_adjudicacion: "Criterio de adjudicación",
   garantias: "Garantías",
   administrativo: "Administrativo",
+  condiciones_ejecucion: "Condiciones de ejecución",
   otros: "Otros",
 };
 

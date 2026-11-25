@@ -100,6 +100,16 @@ Importe anual acumulado igual o superior al 70% del valor estimado.</cbc:Descrip
             <cbc:Description>No prohibición para contratar</cbc:Description>
           </cac:SpecificTendererRequirement>
         </cac:TendererQualificationRequest>
+        <cac:ContractExecutionRequirement>
+          <cbc:Name>Consideraciones de tipo social</cbc:Name>
+          <cbc:ExecutionRequirementCode>2</cbc:ExecutionRequirementCode>
+          <cbc:Description>Formación en PRL y cumplimiento de convenios colectivos aplicables.</cbc:Description>
+        </cac:ContractExecutionRequirement>
+        <cac:ContractExecutionRequirement>
+          <cbc:Name>Consideraciones de tipo medioambiental</cbc:Name>
+          <cbc:ExecutionRequirementCode>1</cbc:ExecutionRequirementCode>
+          <cbc:Description>Reciclado y separación de residuos generados durante la obra.</cbc:Description>
+        </cac:ContractExecutionRequirement>
         <cac:AwardingTerms>
           <cac:AwardingCriteria>
             <cbc:AwardingCriteriaTypeCode>OBJ</cbc:AwardingCriteriaTypeCode>

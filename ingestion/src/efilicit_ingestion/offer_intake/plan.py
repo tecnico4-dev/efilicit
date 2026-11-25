@@ -14,6 +14,7 @@ from typing import Any
 from efilicit_ingestion.offer_intake.placsp_terms import (
     OfferAwardingCriterion,
     OfferDocumentRef,
+    OfferExecutionRequirement,
     OfferGuarantee,
     OfferIntakeExtract,
     OfferQualification,
@@ -40,6 +41,12 @@ _GUARANTEE_LABEL = {
     "definitiva": "Garantía definitiva",
     "complementaria": "Garantía complementaria",
     "otra": "Garantía",
+}
+
+_EXECUTION_LABEL = {
+    "social": "Condición de ejecución · social",
+    "medioambiental": "Condición de ejecución · medioambiental",
+    "otra": "Condición de ejecución",
 }
 
 ENVELOPE_TITLES = {
@@ -134,6 +141,7 @@ def build_intake_plan(
 
     qualifications = [q for q in extract.qualifications if in_scope(q.lot_id)]
     criteria = [c for c in extract.criteria if in_scope(c.lot_id)]
+    executions = [e for e in extract.execution_requirements if in_scope(e.lot_id)]
 
     order = 0
     for qualification in qualifications:
@@ -142,6 +150,9 @@ def build_intake_plan(
     for guarantee in extract.guarantees:
         order += 1
         plan.requirements.append(_guarantee_row(guarantee, order))
+    for execution in executions:
+        order += 1
+        plan.requirements.append(_execution_row(execution, order))
     for criterion in criteria:
         order += 1
         plan.requirements.append(_criterion_row(criterion, order))
@@ -196,6 +207,23 @@ def _guarantee_row(g: OfferGuarantee, order: int) -> RequirementRow:
         requirement_type="excluyente",
         envelope="A" if g.kind == "provisional" else "requerimiento",
         required_value=value,
+        sort_order=order,
+    )
+
+
+def _execution_row(
+    e: OfferExecutionRequirement,
+    order: int,
+) -> RequirementRow:
+    label = e.name.strip() if e.name and e.name.strip() else _EXECUTION_LABEL[e.kind]
+    return RequirementRow(
+        source_key=e.source_key,
+        title=_short(_lot_prefix(e.lot_id) + label),
+        literal_text=e.description,
+        category="condiciones_ejecucion",
+        requirement_type="excluyente",
+        envelope="ninguno",
+        required_value=None,
         sort_order=order,
     )
 

@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Mis licitaciones · intake PLACSP: condiciones de ejecución (`ContractExecutionRequirement` social/ambiental) → `offer_requirements` con `category = condiciones_ejecucion`. Migración local del CHECK.
 - Mis licitaciones · pestaña Tareas: notas clicables (`offer_tasks`) con descripción obligatoria, título opcional, asignado (`eficen_members`), plazo y estado hecha; botón «Añadir tarea».
 - Mis licitaciones · Bitácora: timeline sobre `offer_case_log`; altas manuales; auto-registro al crear expediente (`alta_expediente`), al pasar a Análisis y al decidir GO/NO-GO. Migración local del CHECK de `event_type`.
 - Buzón · Licitaciones compartidas: tabla `notification_shared` (`share_id`, `read_at`, `trashed_at`) + trigger al INSERT/reactivar `favorites_shared` + UI en el buzón (copy tipo Común; open/papelera) — [ADR 037](docs/adr/037-notification-shared-peer.md). Solo local/Studio.

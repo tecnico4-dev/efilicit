@@ -1,7 +1,8 @@
 """Términos estructurados de una entry PLACSP (CODICE) para el expediente.
 
 Solo lee XML: documentos (PCAP/PPT/anexos/biblioteca), lotes, criterios de
-adjudicación, solvencia/clasificación/declaraciones, garantías y plazos.
+adjudicación, solvencia/clasificación/declaraciones, garantías, condiciones
+de ejecución (social/ambiental) y plazos.
 Sin DB ni red. Los textos libres de solvencia se copian tal cual; interpretar
 el PDF queda fuera (fase IA, ADR aparte).
 """
@@ -29,12 +30,19 @@ QualificationKind = Literal[
     "declaracion",
 ]
 GuaranteeKind = Literal["provisional", "definitiva", "complementaria", "otra"]
+ExecutionKind = Literal["social", "medioambiental", "otra"]
 
 # GuaranteeTypeCode-1.04
 _GUARANTEE_KINDS: dict[str, GuaranteeKind] = {
     "1": "provisional",
     "2": "definitiva",
     "3": "complementaria",
+}
+
+# ExecutionRequirementCode-2.08 (códigos habituales en perfiles PLACSP)
+_EXECUTION_KINDS: dict[str, ExecutionKind] = {
+    "1": "medioambiental",
+    "2": "social",
 }
 
 
@@ -101,6 +109,21 @@ class OfferGuarantee(BaseModel):
         return f"guar:{self.kind}:{self.position}"
 
 
+class OfferExecutionRequirement(BaseModel):
+    """Condición de ejecución del contrato (social, ambiental, etc.)."""
+
+    lot_id: str | None = None
+    kind: ExecutionKind
+    type_code: str | None = None
+    name: str | None = None
+    description: str
+    position: int
+
+    @property
+    def source_key(self) -> str:
+        return f"exec:{self.lot_id or '-'}:{self.kind}:{self.position}"
+
+
 class OfferIntakeExtract(BaseModel):
     contract_folder_id: str | None = None
     documents: list[OfferDocumentRef] = Field(default_factory=list)
@@ -108,6 +131,9 @@ class OfferIntakeExtract(BaseModel):
     criteria: list[OfferAwardingCriterion] = Field(default_factory=list)
     qualifications: list[OfferQualification] = Field(default_factory=list)
     guarantees: list[OfferGuarantee] = Field(default_factory=list)
+    execution_requirements: list[OfferExecutionRequirement] = Field(
+        default_factory=list
+    )
     submission_deadline_at: datetime | None = None
     documents_available_until: datetime | None = None
 
@@ -134,6 +160,7 @@ def parse_offer_terms(raw: bytes) -> OfferIntakeExtract:
         criteria=_criteria(status),
         qualifications=_qualifications(status),
         guarantees=_guarantees(status),
+        execution_requirements=_execution_requirements(status),
         submission_deadline_at=_period_end(
             status.find("cac:TenderingProcess/cac:TenderSubmissionDeadlinePeriod", NS)
         ),
@@ -299,6 +326,32 @@ def _qualifications(status: etree._Element) -> list[OfferQualification]:
                     lot_id=lot_id,
                     kind="clasificacion",
                     description=f"Clasificación empresarial: {', '.join(codes)}",
+                    position=position,
+                )
+            )
+    return out
+
+
+def _execution_requirements(
+    status: etree._Element,
+) -> list[OfferExecutionRequirement]:
+    out: list[OfferExecutionRequirement] = []
+    for lot_id, terms in _terms_scopes(status):
+        for position, node in enumerate(
+            terms.findall("cac:ContractExecutionRequirement", NS), start=1
+        ):
+            description = _text(node.find("cbc:Description", NS))
+            if not description:
+                continue
+            code = _text(node.find("cbc:ExecutionRequirementCode", NS))
+            kind = _EXECUTION_KINDS.get(code or "", "otra")
+            out.append(
+                OfferExecutionRequirement(
+                    lot_id=lot_id,
+                    kind=kind,
+                    type_code=code,
+                    name=_text(node.find("cbc:Name", NS)),
+                    description=description,
                     position=position,
                 )
             )

@@ -68,6 +68,13 @@ def test_qualifications_guarantees_and_periods() -> None:
     # Provisional con importe 0 se ignora; queda la definitiva al 5 %.
     assert [(g.kind, g.rate_percent) for g in extract.guarantees] == [("definitiva", 5.0)]
 
+    assert [(e.kind, e.name) for e in extract.execution_requirements] == [
+        ("social", "Consideraciones de tipo social"),
+        ("medioambiental", "Consideraciones de tipo medioambiental"),
+    ]
+    assert extract.execution_requirements[0].description.startswith("Formación en PRL")
+    assert len({e.source_key for e in extract.execution_requirements}) == 2
+
     assert extract.submission_deadline_at is not None
     assert extract.submission_deadline_at.isoformat() == "2026-12-09T10:00:00+01:00"
     assert extract.documents_available_until is not None

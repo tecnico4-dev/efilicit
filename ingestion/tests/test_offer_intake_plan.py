@@ -40,6 +40,16 @@ def test_requirements_categories_envelopes_and_values() -> None:
     assert guarantee.envelope == "requerimiento"
     assert guarantee.required_value == "5 %"
 
+    executions = [r for r in plan.requirements if r.category == "condiciones_ejecucion"]
+    assert len(executions) == 2
+    assert {r.title for r in executions} == {
+        "Consideraciones de tipo social",
+        "Consideraciones de tipo medioambiental",
+    }
+    assert all(r.requirement_type == "excluyente" for r in executions)
+    assert all(r.envelope == "ninguno" for r in executions)
+    assert by_key["exec:-:social:1"].literal_text is not None
+
     subj = next(r for r in plan.requirements if r.envelope == "B")
     assert subj.requirement_type == "puntuable"
     assert subj.required_value == "25 puntos"
