@@ -27,9 +27,35 @@ import {
   listOfferTasks,
   updateOfferTask,
   type EficenMemberForTeam,
+  type OfferCaseTeamMember,
+  type OfferOwnerMember,
   type OfferTaskItem,
   type OfferTaskStatus,
 } from "@/lib/queries";
+
+function toAssignableMember(m: OfferOwnerMember): EficenMemberForTeam {
+  return {
+    id: m.id,
+    displayName: m.display_name,
+    roleTitle: m.role_title,
+    avatarUrl: m.avatar_url,
+  };
+}
+
+/** Responsable + trabajadores del expediente (sin directorio completo). */
+function caseTeamAssignable(
+  owner: OfferOwnerMember | null,
+  team: OfferCaseTeamMember[],
+): EficenMemberForTeam[] {
+  const byId = new Map<string, EficenMemberForTeam>();
+  if (owner) byId.set(owner.id, toAssignableMember(owner));
+  for (const row of team) {
+    byId.set(row.member.id, toAssignableMember(row.member));
+  }
+  return [...byId.values()].sort((a, b) =>
+    a.displayName.localeCompare(b.displayName, "es"),
+  );
+}
 
 const OWNER_UNASSIGNED = "__none__";
 
@@ -840,11 +866,13 @@ function TaskEditorModal({
 export function OfferTasksPanel({
   offerCaseId,
   userId,
-  members,
+  owner,
+  team,
 }: {
   offerCaseId: string;
   userId: string;
-  members: EficenMemberForTeam[];
+  owner: OfferOwnerMember | null;
+  team: OfferCaseTeamMember[];
 }) {
   const [tasks, setTasks] = useState<OfferTaskItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -859,12 +887,22 @@ export function OfferTasksPanel({
   const [filters, setFilters] = useState<TaskFilters>(EMPTY_TASK_FILTERS);
 
   const assignable = useMemo(
-    () =>
-      [...members].sort((a, b) =>
-        a.displayName.localeCompare(b.displayName, "es"),
-      ),
-    [members],
+    () => caseTeamAssignable(owner, team),
+    [owner, team],
   );
+
+  /** Si la tarea ya tiene un asignado fuera del equipo, lo dejamos visible al editar. */
+  const editorMembers = useMemo(() => {
+    if (!editor || editor === "create" || !editor.owner_member) {
+      return assignable;
+    }
+    if (assignable.some((m) => m.id === editor.owner_member!.id)) {
+      return assignable;
+    }
+    return [...assignable, toAssignableMember(editor.owner_member)].sort(
+      (a, b) => a.displayName.localeCompare(b.displayName, "es"),
+    );
+  }, [assignable, editor]);
 
   const filterCount = countTaskFilters(filters);
   const visibleTasks = useMemo(
@@ -1073,7 +1111,7 @@ export function OfferTasksPanel({
         open={editor != null}
         mode={editor === "create" ? "create" : "edit"}
         busy={saving}
-        members={assignable}
+        members={editorMembers}
         draft={draft}
         error={formError}
         toneIndex={editorTone}

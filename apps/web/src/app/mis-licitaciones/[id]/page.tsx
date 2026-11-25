@@ -344,7 +344,8 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
                 <OfferTasksPanel
                   offerCaseId={offerCase.id}
                   userId={profile.data.id}
-                  members={membersResult.data}
+                  owner={offerCase.owner_member}
+                  team={teamMembers}
                 />
               ),
               calendario: (
