@@ -27,7 +27,7 @@ El espacio de oferta acordado (matriz requisito→evidencia, sobres, go/no-go, K
    - `offer_requirement_evidence` — evidencias (doc / persona / referencia / financiero / URL).
 3. **Equipo y tareas**
    - `offer_case_members` — roles preparador/revisor/aprobador (`member_id` → `eficen_members`; enmienda [032](032-eficen-members-favorites-shared.md)).
-   - `offer_tasks` — tareas sueltas del expediente (`title`, `owner_member_id` → `eficen_members`, `due_at`, `done_at`, `notes`, `created_by` → `users`). Sin `owner_user_id` / `owner_name`.
+   - `offer_tasks` — tareas sueltas del expediente (`title`, `owner_member_id` → `eficen_members`, `due_at`, `done_at`, `notes`, `created_by` → `users`). Sin `owner_user_id` / `owner_name` / `created_at` / `updated_at`.
    - `offer_assigned_people` — adscripción de medios (≠ equipo preparador).
 4. **Plazos y bitácora**
    - `offer_milestones` — hitos oficiales/internos.
@@ -75,7 +75,8 @@ El espacio de oferta acordado (matriz requisito→evidencia, sobres, go/no-go, K
 - Asignado: `owner_member_id` → `eficen_members` (nullable). Se eliminan `owner_user_id` / `owner_name` (misma razón que responsable del expediente y de requisitos).
 - Auditoría de alta: `created_by` → `users` (quién creó la tarea; distinto del asignado).
 - `done_at` null = abierta; valor = hecha. Sin enum de estado multi-paso de primeras.
-- Migración: `20261125120000_offer_tasks_owner_member_id.sql` (local/Studio).
+- Sin `created_at` / `updated_at` (ni trigger): no hay uso de producto; plazos = `due_at` / `done_at`.
+- Migraciones: `20261125120000_offer_tasks_owner_member_id.sql`, `20261125130000_offer_tasks_drop_timestamps.sql` (local/Studio).
 
 ## Referencias
 
