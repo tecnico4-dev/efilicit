@@ -15,6 +15,12 @@ import {
   FilterMultiSelect,
   FilterSingleSelect,
 } from "@/components/mis-licitaciones/offer-filter-selects";
+import {
+  fallbackTaskDefaultPreset,
+  readTaskDefaultFilterPreset,
+  writeTaskDefaultFilterPreset,
+  type TaskDefaultFilterPreset,
+} from "@/components/mis-licitaciones/offer-tasks-filter-default";
 import { MisLicitacionesFiltersButton } from "@/components/mis-licitaciones/mis-licitaciones-filters-modal";
 import { OfferMemberPicker } from "@/components/mis-licitaciones/offer-member-picker";
 import { SingleDatePicker } from "@/components/mis-licitaciones/single-date-picker";
@@ -99,19 +105,19 @@ function filtersForPreset(
   };
 }
 
-/** Por defecto: mis pendientes (o pendientes de equipo si no hay ficha). */
-function defaultTaskFilters(viewerMemberId: string | null): TaskFilters {
-  return filtersForPreset(
-    viewerMemberId ? "mis_pendientes" : "pendientes",
-    viewerMemberId,
-  );
+function filtersForDefaultPreset(
+  preferred: TaskDefaultFilterPreset,
+  viewerMemberId: string | null,
+): TaskFilters {
+  return filtersForPreset(preferred, viewerMemberId);
 }
 
 function countTaskFilters(
   f: TaskFilters,
   preset: TaskFilterPreset,
+  preferredDefault: TaskDefaultFilterPreset,
 ): number {
-  if (preset === "mis_pendientes") return 0;
+  if (preset === preferredDefault) return 0;
   if (preset !== "personalizado") return 1;
   return (
     (f.status.length > 0 ? 1 : 0) +
@@ -1020,10 +1026,7 @@ export function OfferTasksPanel({
   owner: OfferOwnerMember | null;
   team: OfferCaseTeamMember[];
 }) {
-  const initialPreset: TaskFilterPreset = viewerMemberId
-    ? "mis_pendientes"
-    : "pendientes";
-  const initialFilters = defaultTaskFilters(viewerMemberId);
+  const bootDefault = fallbackTaskDefaultPreset(viewerMemberId);
 
   const [tasks, setTasks] = useState<OfferTaskItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -1036,10 +1039,20 @@ export function OfferTasksPanel({
   const [formError, setFormError] = useState<string | null>(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [presetMenuOpen, setPresetMenuOpen] = useState(false);
+  const [preferredDefault, setPreferredDefault] =
+    useState<TaskDefaultFilterPreset>(bootDefault);
   const [filterPreset, setFilterPreset] =
-    useState<TaskFilterPreset>(initialPreset);
-  const [filters, setFilters] = useState<TaskFilters>(initialFilters);
+    useState<TaskFilterPreset>(bootDefault);
+  const [filters, setFilters] = useState<TaskFilters>(() =>
+    filtersForDefaultPreset(bootDefault, viewerMemberId),
+  );
+  const [ctxMenu, setCtxMenu] = useState<{
+    x: number;
+    y: number;
+    preset: TaskDefaultFilterPreset;
+  } | null>(null);
   const filterBtnRef = useRef<HTMLButtonElement>(null);
+  const prefsAppliedRef = useRef(false);
 
   const assignable = useMemo(
     () => caseTeamAssignable(owner, team),
@@ -1059,14 +1072,28 @@ export function OfferTasksPanel({
     );
   }, [assignable, editor]);
 
-  const filterCount = countTaskFilters(filters, filterPreset);
+  const filterCount = countTaskFilters(
+    filters,
+    filterPreset,
+    preferredDefault,
+  );
   const visibleTasks = useMemo(
     () => tasks.filter((t) => taskMatchesFilters(t, filters)),
     [tasks, filters],
   );
 
+  useLayoutEffect(() => {
+    if (prefsAppliedRef.current) return;
+    prefsAppliedRef.current = true;
+    const preferred = readTaskDefaultFilterPreset(userId, viewerMemberId);
+    setPreferredDefault(preferred);
+    setFilterPreset(preferred);
+    setFilters(filtersForDefaultPreset(preferred, viewerMemberId));
+  }, [userId, viewerMemberId]);
+
   function applyPreset(next: TaskFilterPreset) {
     setPresetMenuOpen(false);
+    setCtxMenu(null);
     if (next === "personalizado") {
       setFiltersOpen(true);
       return;
@@ -1081,9 +1108,14 @@ export function OfferTasksPanel({
   }
 
   function clearToDefault() {
-    const preset = viewerMemberId ? "mis_pendientes" : "pendientes";
-    setFilterPreset(preset);
-    setFilters(defaultTaskFilters(viewerMemberId));
+    setFilterPreset(preferredDefault);
+    setFilters(filtersForDefaultPreset(preferredDefault, viewerMemberId));
+  }
+
+  function setAsDefaultView(preset: TaskDefaultFilterPreset) {
+    writeTaskDefaultFilterPreset(userId, preset);
+    setPreferredDefault(preset);
+    setCtxMenu(null);
   }
 
   const reload = useCallback(async () => {
@@ -1239,7 +1271,10 @@ export function OfferTasksPanel({
           <AnchoredPortal
             open={presetMenuOpen}
             anchorRef={filterBtnRef}
-            onDismiss={() => setPresetMenuOpen(false)}
+            onDismiss={() => {
+              setPresetMenuOpen(false);
+              setCtxMenu(null);
+            }}
             className="bg-surface p-1"
             matchAnchorWidth={false}
             minWidth={180}
@@ -1248,6 +1283,9 @@ export function OfferTasksPanel({
             <ul role="listbox" className="py-0.5">
               {TASK_FILTER_PRESETS.map((opt) => {
                 const selected = filterPreset === opt.id;
+                const isDefaultable = opt.id !== "personalizado";
+                const canSetDefault =
+                  isDefaultable && opt.id !== preferredDefault;
                 return (
                   <li key={opt.id}>
                     <button
@@ -1255,20 +1293,67 @@ export function OfferTasksPanel({
                       role="option"
                       aria-selected={selected}
                       className={cn(
-                        "flex w-full rounded-md px-2.5 py-1.5 text-left text-sm hover:bg-muted",
+                        "flex w-full items-center rounded-md px-2.5 py-1.5 text-left text-sm hover:bg-muted",
                         selected
                           ? "font-semibold text-foreground"
                           : "text-foreground",
                       )}
                       onClick={() => applyPreset(opt.id)}
+                      onContextMenu={(e) => {
+                        if (!canSetDefault || !isDefaultable) return;
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setCtxMenu({
+                          x: e.clientX,
+                          y: e.clientY,
+                          preset: opt.id,
+                        });
+                      }}
                     >
-                      {opt.label}
+                      <span className="min-w-0 flex-1 truncate">
+                        {opt.label}
+                      </span>
+                      {opt.id === preferredDefault ? (
+                        <span className="shrink-0 pl-3 text-[0.65rem] font-normal text-muted-foreground">
+                          por defecto
+                        </span>
+                      ) : null}
                     </button>
                   </li>
                 );
               })}
             </ul>
           </AnchoredPortal>
+          {ctxMenu
+            ? createPortal(
+                <div
+                  className="fixed inset-0 z-[220]"
+                  role="presentation"
+                  onClick={() => setCtxMenu(null)}
+                  onContextMenu={(e) => {
+                    e.preventDefault();
+                    setCtxMenu(null);
+                  }}
+                >
+                  <div
+                    role="menu"
+                    className="absolute min-w-[10rem] rounded-md border border-border bg-surface p-1 shadow-lg"
+                    style={{ left: ctxMenu.x, top: ctxMenu.y }}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <button
+                      type="button"
+                      role="menuitem"
+                      className="flex w-full rounded-md px-2.5 py-1.5 text-left text-sm text-foreground hover:bg-muted"
+                      onClick={() => setAsDefaultView(ctxMenu.preset)}
+                    >
+                      Vista por defecto
+                    </button>
+                  </div>
+                </div>,
+                document.body,
+              )
+            : null}
         </div>
         <Button type="button" size="sm" onClick={openCreate}>
           Añadir tarea
@@ -1309,7 +1394,7 @@ export function OfferTasksPanel({
         open={filtersOpen}
         members={assignable}
         applied={filters}
-        clearTo={defaultTaskFilters(viewerMemberId)}
+        clearTo={filtersForDefaultPreset(preferredDefault, viewerMemberId)}
         onClose={() => setFiltersOpen(false)}
         onApply={applyCustomFilters}
         onClear={clearToDefault}
