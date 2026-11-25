@@ -138,7 +138,7 @@ export function OfferCalendarTimeline({
           </span>
           <span className="inline-flex items-center gap-1.5">
             <span
-              className="size-2.5 rounded-full border-2 border-muted-foreground/70 bg-transparent"
+              className="size-2.5 rounded-full border-2 border-primary bg-transparent"
               aria-hidden
             />
             Interno
@@ -189,8 +189,8 @@ export function OfferCalendarTimeline({
                       ? "bg-primary/40"
                       : "bg-primary"
                     : faded
-                      ? "border-2 border-muted-foreground/40 bg-transparent"
-                      : "border-2 border-muted-foreground/70 bg-transparent",
+                      ? "border-2 border-primary/40 bg-transparent"
+                      : "border-2 border-primary bg-transparent",
                 )}
                 title={event.kind === "oficial" ? "Oficial" : "Interno"}
                 aria-label={event.kind === "oficial" ? "Oficial" : "Interno"}
