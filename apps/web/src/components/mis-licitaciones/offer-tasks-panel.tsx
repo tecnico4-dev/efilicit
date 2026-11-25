@@ -416,6 +416,7 @@ function TaskEditorModal({
   toneIndex,
   origin,
   onChange,
+  onReplaceDraft,
   onClosed,
   onSave,
   onDelete,
@@ -430,8 +431,9 @@ function TaskEditorModal({
   toneIndex: number;
   origin: NoteOrigin | null;
   onChange: (patch: Partial<Draft>) => void;
+  onReplaceDraft: (next: Draft) => void;
   onClosed: () => void;
-  onSave: () => void;
+  onSave: () => Promise<boolean>;
   onDelete?: () => void;
   onToggleDone?: () => void;
 }) {
@@ -440,6 +442,8 @@ function TaskEditorModal({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [mounted, setMounted] = useState(false);
   const [phase, setPhase] = useState<"enter" | "open" | "leave">("enter");
+  const [editing, setEditing] = useState(mode === "create");
+  const baselineRef = useRef<Draft>(draft);
   const closingRef = useRef(false);
   const originRef = useRef(origin);
   const busyRef = useRef(busy);
@@ -484,7 +488,11 @@ function TaskEditorModal({
     if (!open) return;
     closingRef.current = false;
     setPhase("enter");
-  }, [open]);
+    setEditing(mode === "create");
+    baselineRef.current = draft;
+    // Solo al abrir: no re-sincronizar draft en cada tecla.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, mode]);
 
   useLayoutEffect(() => {
     if (!open || !noteRef.current) return;
@@ -527,12 +535,22 @@ function TaskEditorModal({
   }, [open]);
 
   useEffect(() => {
-    if (!open || phase !== "open") return;
+    if (!open || phase !== "open" || !editing) return;
     const ta = textareaRef.current;
     if (!ta) return;
     ta.style.height = "auto";
     ta.style.height = `${ta.scrollHeight}px`;
-  }, [open, phase, draft.notes]);
+  }, [open, phase, editing, draft.notes]);
+
+  function startEditing() {
+    baselineRef.current = draft;
+    setEditing(true);
+  }
+
+  function cancelEditing() {
+    onReplaceDraft(baselineRef.current);
+    setEditing(false);
+  }
 
   if (!mounted || !open) return null;
 
@@ -541,6 +559,11 @@ function TaskEditorModal({
     draft.title,
     draft.notes,
   );
+  const assigneeName =
+    members.find((m) => m.id === draft.owner_member_id)?.displayName ?? null;
+  const dueLabel = draft.due_day
+    ? formatDateMadrid(`${draft.due_day}T12:00:00.000Z`)
+    : "Sin plazo";
 
   return createPortal(
     <div
@@ -583,58 +606,118 @@ function TaskEditorModal({
         />
 
         <h2 id={titleId} className="sr-only">
-          {mode === "create" ? "Añadir tarea" : "Editar tarea"}
+          {mode === "create"
+            ? "Añadir tarea"
+            : editing
+              ? "Editar tarea"
+              : "Detalle de tarea"}
         </h2>
 
-        <input
-          value={draft.title}
-          disabled={busy}
-          autoFocus
-          aria-label="Título"
-          className="w-full bg-transparent text-base font-semibold leading-snug outline-none disabled:opacity-50"
-          onChange={(e) => onChange({ title: e.target.value })}
-        />
-
-        <textarea
-          ref={textareaRef}
-          value={draft.notes}
-          disabled={busy}
-          aria-label="Descripción"
-          rows={noteRows}
-          className="mt-2 max-h-[min(50vh,22rem)] w-full resize-none overflow-y-auto bg-transparent text-sm leading-relaxed outline-none disabled:opacity-50"
-          onChange={(e) => onChange({ notes: e.target.value })}
-        />
-
-        <div className="mt-4 grid gap-3 border-t border-black/10 pt-3 dark:border-white/15 sm:grid-cols-2">
-          <div>
-            <p className="text-[0.7rem] font-medium uppercase tracking-wide opacity-70">
-              Asignada a
-            </p>
-            <div className="mt-1">
-              <OfferMemberPicker
-                value={draft.owner_member_id}
-                members={members}
-                disabled={busy}
-                boxed
-                ariaLabel="Asignada a"
-                onChange={(owner_member_id) => onChange({ owner_member_id })}
-              />
+        {editing ? (
+          <>
+            <input
+              value={draft.title}
+              disabled={busy}
+              autoFocus
+              aria-label="Título"
+              className="w-full bg-transparent text-base font-semibold leading-snug outline-none disabled:opacity-50"
+              onChange={(e) => onChange({ title: e.target.value })}
+            />
+            <textarea
+              ref={textareaRef}
+              value={draft.notes}
+              disabled={busy}
+              aria-label="Descripción"
+              rows={noteRows}
+              className="mt-2 max-h-[min(50vh,22rem)] w-full resize-none overflow-y-auto bg-transparent text-sm leading-relaxed outline-none disabled:opacity-50"
+              onChange={(e) => onChange({ notes: e.target.value })}
+            />
+            <div className="mt-4 grid gap-3 border-t border-black/10 pt-3 dark:border-white/15 sm:grid-cols-2">
+              <div>
+                <p className="text-[0.7rem] font-medium uppercase tracking-wide opacity-70">
+                  Asignada a
+                </p>
+                <div className="mt-1">
+                  <OfferMemberPicker
+                    value={draft.owner_member_id}
+                    members={members}
+                    disabled={busy}
+                    boxed
+                    ariaLabel="Asignada a"
+                    onChange={(owner_member_id) =>
+                      onChange({ owner_member_id })
+                    }
+                  />
+                </div>
+              </div>
+              <div>
+                <p className="text-[0.7rem] font-medium uppercase tracking-wide opacity-70">
+                  Para cuándo
+                </p>
+                <div className="mt-1">
+                  <SingleDatePicker
+                    value={draft.due_day}
+                    disabled={busy}
+                    boxed
+                    onChange={(day) => onChange({ due_day: day })}
+                  />
+                </div>
+              </div>
             </div>
-          </div>
-          <div>
-            <p className="text-[0.7rem] font-medium uppercase tracking-wide opacity-70">
-              Para cuándo
-            </p>
-            <div className="mt-1">
-              <SingleDatePicker
-                value={draft.due_day}
-                disabled={busy}
-                boxed
-                onChange={(day) => onChange({ due_day: day })}
-              />
+          </>
+        ) : (
+          <>
+            <div
+              className={cn(
+                "space-y-1",
+                draft.done &&
+                  "opacity-90 [&_*]:line-through [&_*]:decoration-black/40",
+              )}
+            >
+              {draft.title.trim() ? (
+                <p className="text-base font-semibold leading-snug">
+                  {draft.title}
+                </p>
+              ) : null}
+              <p
+                className={cn(
+                  "max-h-[min(50vh,22rem)] overflow-y-auto whitespace-pre-wrap text-sm leading-relaxed",
+                  draft.title.trim() ? "opacity-90" : "font-semibold",
+                )}
+              >
+                {draft.notes}
+              </p>
             </div>
-          </div>
-        </div>
+            <div className="mt-4 grid gap-3 border-t border-black/10 pt-3 text-sm dark:border-white/15 sm:grid-cols-2">
+              <div>
+                <p className="text-[0.7rem] font-medium uppercase tracking-wide opacity-70">
+                  Asignada a
+                </p>
+                <p className="mt-1 font-medium">
+                  {assigneeName ?? "Sin asignar"}
+                </p>
+              </div>
+              <div>
+                <p className="text-[0.7rem] font-medium uppercase tracking-wide opacity-70">
+                  Para cuándo
+                </p>
+                <p
+                  className={cn(
+                    "mt-1 font-medium",
+                    dueToneClass(
+                      draft.due_day
+                        ? `${draft.due_day}T12:00:00.000Z`
+                        : null,
+                      draft.done,
+                    ),
+                  )}
+                >
+                  {dueLabel}
+                </p>
+              </div>
+            </div>
+          </>
+        )}
 
         {error ? (
           <p className="mt-2 text-xs text-destructive">{error}</p>
@@ -668,18 +751,50 @@ function TaskEditorModal({
             ) : null}
           </div>
           <div className="flex gap-2">
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              disabled={busy}
-              onClick={requestClose}
-            >
-              Cancelar
-            </Button>
-            <Button type="button" size="sm" disabled={busy} onClick={onSave}>
-              {busy ? "Guardando…" : mode === "create" ? "Crear" : "Guardar"}
-            </Button>
+            {editing ? (
+              <>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  disabled={busy}
+                  onClick={
+                    mode === "create" ? requestClose : cancelEditing
+                  }
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  disabled={busy}
+                  onClick={() => {
+                    void (async () => {
+                      const ok = await onSave();
+                      if (!ok) return;
+                      if (mode === "create") return;
+                      baselineRef.current = draft;
+                      setEditing(false);
+                    })();
+                  }}
+                >
+                  {busy
+                    ? "Guardando…"
+                    : mode === "create"
+                      ? "Crear"
+                      : "Guardar"}
+                </Button>
+              </>
+            ) : (
+              <Button
+                type="button"
+                size="sm"
+                disabled={busy}
+                onClick={startEditing}
+              >
+                Editar
+              </Button>
+            )}
           </div>
         </div>
       </div>
@@ -773,10 +888,10 @@ export function OfferTasksPanel({
     setFormError(null);
   }
 
-  async function save() {
+  async function save(): Promise<boolean> {
     if (!draft.notes.trim()) {
       setFormError("La descripción es obligatoria.");
-      return;
+      return false;
     }
     setSaving(true);
     setFormError(null);
@@ -796,9 +911,14 @@ export function OfferTasksPanel({
       setSaving(false);
       if (result.error) {
         setFormError(result.error.message);
-        return;
+        return false;
       }
-    } else if (editor) {
+      finishEditor();
+      await reload();
+      return true;
+    }
+
+    if (editor) {
       const result = await updateOfferTask(client, {
         id: editor.id,
         patch: {
@@ -806,17 +926,22 @@ export function OfferTasksPanel({
           owner_member_id: draft.owner_member_id,
           due_at: dueAt,
           notes: draft.notes,
-          done_at: draft.done ? (editor.done_at ?? new Date().toISOString()) : null,
+          done_at: draft.done
+            ? (editor.done_at ?? new Date().toISOString())
+            : null,
         },
       });
       setSaving(false);
       if (result.error) {
         setFormError(result.error.message);
-        return;
+        return false;
       }
+      await reload();
+      return true;
     }
-    finishEditor();
-    await reload();
+
+    setSaving(false);
+    return false;
   }
 
   async function toggleDone() {
@@ -922,8 +1047,9 @@ export function OfferTasksPanel({
         toneIndex={editorTone}
         origin={editorOrigin}
         onChange={(patch) => setDraft((d) => ({ ...d, ...patch }))}
+        onReplaceDraft={setDraft}
         onClosed={finishEditor}
-        onSave={() => void save()}
+        onSave={save}
         onDelete={editor && editor !== "create" ? () => void remove() : undefined}
         onToggleDone={
           editor && editor !== "create" ? () => void toggleDone() : undefined
