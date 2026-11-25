@@ -360,6 +360,7 @@ function TaskEditorModal({
   members,
   draft,
   error,
+  toneIndex,
   onChange,
   onClose,
   onSave,
@@ -372,6 +373,7 @@ function TaskEditorModal({
   members: EficenMemberForTeam[];
   draft: Draft;
   error: string | null;
+  toneIndex: number;
   onChange: (patch: Partial<Draft>) => void;
   onClose: () => void;
   onSave: () => void;
@@ -383,9 +385,11 @@ function TaskEditorModal({
   useEffect(() => setMounted(true), []);
   if (!mounted || !open) return null;
 
+  const tone = NOTE_TONES[toneIndex % NOTE_TONES.length]!;
+
   return createPortal(
     <div
-      className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 p-3 sm:p-6"
+      className="fixed inset-0 z-[200] flex items-center justify-center bg-black/45 p-4 sm:p-8"
       role="presentation"
       onClick={(e) => {
         if (e.target === e.currentTarget && !busy) onClose();
@@ -395,86 +399,86 @@ function TaskEditorModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className="flex w-full max-w-lg flex-col overflow-hidden rounded-xl border border-border bg-surface shadow-xl"
+        className={cn(
+          "relative flex min-h-[22rem] w-full max-w-md flex-col rounded-md border p-5 shadow-2xl sm:max-w-lg sm:p-6",
+          "scale-100 transition-transform",
+          tone,
+          draft.done && "opacity-90",
+        )}
       >
-        <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3 sm:px-5">
-          <h2
-            id={titleId}
-            className="text-lg font-semibold tracking-tight text-foreground"
-          >
-            {mode === "create" ? "Añadir tarea" : "Editar tarea"}
-          </h2>
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={busy}
-            className="inline-flex size-8 items-center justify-center rounded-lg border border-destructive bg-surface text-destructive hover:bg-destructive/10 disabled:opacity-50"
-            aria-label="Cerrar"
-          >
-            ×
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          disabled={busy}
+          className="absolute right-2.5 top-2.5 inline-flex size-7 items-center justify-center rounded-md text-current/60 hover:bg-black/10 hover:text-current disabled:opacity-50"
+          aria-label="Cerrar"
+        >
+          ×
+        </button>
 
-        <div className="space-y-4 px-4 py-4 sm:px-5">
+        <span
+          className="mb-3 size-3 self-center rounded-full bg-black/20 shadow-inner dark:bg-white/25"
+          aria-hidden
+        />
+
+        <h2 id={titleId} className="sr-only">
+          {mode === "create" ? "Añadir tarea" : "Editar tarea"}
+        </h2>
+
+        <input
+          value={draft.title}
+          disabled={busy}
+          autoFocus
+          aria-label="Título"
+          className="w-full bg-transparent text-base font-semibold leading-snug outline-none placeholder:opacity-40 disabled:opacity-50"
+          onChange={(e) => onChange({ title: e.target.value })}
+        />
+
+        <textarea
+          value={draft.notes}
+          disabled={busy}
+          aria-label="Descripción"
+          rows={6}
+          className="mt-2 min-h-[8rem] flex-1 resize-none bg-transparent text-sm leading-relaxed outline-none placeholder:opacity-40 disabled:opacity-50"
+          onChange={(e) => onChange({ notes: e.target.value })}
+        />
+
+        <div className="mt-4 grid gap-3 border-t border-black/10 pt-3 dark:border-white/15 sm:grid-cols-2">
           <div>
-            <label className="text-sm font-medium text-foreground">
-              Título
-            </label>
-            <input
-              value={draft.title}
-              disabled={busy}
-              autoFocus
-              className="mt-1.5 w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring/50 disabled:opacity-50"
-              onChange={(e) => onChange({ title: e.target.value })}
-            />
-          </div>
-
-          <div>
-            <label className="text-sm font-medium text-foreground">
-              Descripción<span className="text-destructive">*</span>
-            </label>
-            <textarea
-              value={draft.notes}
-              disabled={busy}
-              rows={3}
-              className="mt-1.5 w-full resize-y rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring/50 disabled:opacity-50"
-              onChange={(e) => onChange({ notes: e.target.value })}
-            />
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <p className="text-sm font-medium text-foreground">Asignada a</p>
-              <div className="mt-1.5">
-                <OfferMemberPicker
-                  value={draft.owner_member_id}
-                  members={members}
-                  disabled={busy}
-                  boxed
-                  ariaLabel="Asignada a"
-                  onChange={(owner_member_id) => onChange({ owner_member_id })}
-                />
-              </div>
-            </div>
-            <div>
-              <span className="text-sm font-medium text-foreground">
-                Para cuándo
-              </span>
-              <div className="mt-1.5">
-                <SingleDatePicker
-                  value={draft.due_day}
-                  disabled={busy}
-                  boxed
-                  onChange={(day) => onChange({ due_day: day })}
-                />
-              </div>
+            <p className="text-[0.7rem] font-medium uppercase tracking-wide opacity-70">
+              Asignada a
+            </p>
+            <div className="mt-1">
+              <OfferMemberPicker
+                value={draft.owner_member_id}
+                members={members}
+                disabled={busy}
+                boxed
+                ariaLabel="Asignada a"
+                onChange={(owner_member_id) => onChange({ owner_member_id })}
+              />
             </div>
           </div>
-
-          {error ? <p className="text-xs text-destructive">{error}</p> : null}
+          <div>
+            <p className="text-[0.7rem] font-medium uppercase tracking-wide opacity-70">
+              Para cuándo
+            </p>
+            <div className="mt-1">
+              <SingleDatePicker
+                value={draft.due_day}
+                disabled={busy}
+                boxed
+                onChange={(day) => onChange({ due_day: day })}
+              />
+            </div>
+          </div>
         </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border px-4 py-3 sm:px-5">
+        {error ? (
+          <p className="mt-2 text-xs text-destructive">{error}</p>
+        ) : null}
+
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
           <div className="flex flex-wrap gap-2">
             {mode === "edit" && onToggleDone ? (
               <Button
@@ -482,6 +486,7 @@ function TaskEditorModal({
                 variant="outline"
                 size="sm"
                 disabled={busy}
+                className="border-black/15 bg-white/40 dark:border-white/20 dark:bg-black/20"
                 onClick={onToggleDone}
               >
                 {draft.done ? "Reabrir" : "Marcar hecha"}
@@ -534,6 +539,7 @@ export function OfferTasksPanel({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [editor, setEditor] = useState<"create" | OfferTaskItem | null>(null);
+  const [editorTone, setEditorTone] = useState(0);
   const [draft, setDraft] = useState<Draft>(EMPTY_DRAFT);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
@@ -575,10 +581,11 @@ export function OfferTasksPanel({
   function openCreate() {
     setDraft(EMPTY_DRAFT);
     setFormError(null);
+    setEditorTone(0);
     setEditor("create");
   }
 
-  function openEdit(task: OfferTaskItem) {
+  function openEdit(task: OfferTaskItem, toneIndex: number) {
     setDraft({
       title: task.title ?? "",
       owner_member_id: task.owner_member_id,
@@ -587,6 +594,7 @@ export function OfferTasksPanel({
       done: task.done_at != null,
     });
     setFormError(null);
+    setEditorTone(toneIndex);
     setEditor(task);
   }
 
@@ -715,7 +723,7 @@ export function OfferTasksPanel({
               key={task.id}
               task={task}
               index={index}
-              onOpen={() => openEdit(task)}
+              onOpen={() => openEdit(task, index)}
             />
           ))}
         </div>
@@ -737,6 +745,7 @@ export function OfferTasksPanel({
         members={assignable}
         draft={draft}
         error={formError}
+        toneIndex={editorTone}
         onChange={(patch) => setDraft((d) => ({ ...d, ...patch }))}
         onClose={closeEditor}
         onSave={() => void save()}
