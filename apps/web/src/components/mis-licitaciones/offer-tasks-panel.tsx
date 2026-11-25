@@ -203,6 +203,32 @@ function TrashIcon({ className }: { className?: string }) {
   );
 }
 
+/** Casilla marcada: distingue hechas en la bandeja. */
+function DoneTick({ className }: { className?: string }) {
+  return (
+    <span
+      className={cn(
+        "inline-flex size-5 items-center justify-center rounded-[0.3rem] border-2 border-current bg-current/10",
+        className,
+      )}
+      aria-hidden
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className="size-3.5"
+      >
+        <path d="M5 13l4 4L19 7" />
+      </svg>
+    </span>
+  );
+}
+
 type NoteOrigin = {
   top: number;
   left: number;
@@ -240,7 +266,7 @@ function TaskNoteCard({
         });
       }}
       className={cn(
-        "group flex min-h-[9.5rem] flex-col rounded-md border p-3.5 text-left shadow-md transition",
+        "group relative flex min-h-[9.5rem] flex-col rounded-md border p-3.5 text-left shadow-md transition",
         "hover:-translate-y-0.5 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
         tone,
         tilt,
@@ -248,6 +274,9 @@ function TaskNoteCard({
         hidden && "invisible pointer-events-none",
       )}
     >
+      {task.status === "hecha" ? (
+        <DoneTick className="absolute right-2.5 top-2.5 opacity-90" />
+      ) : null}
       <span
         className="mb-2 size-2.5 self-center rounded-full bg-black/20 shadow-inner dark:bg-white/25"
         aria-hidden
