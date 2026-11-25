@@ -208,7 +208,7 @@ function DoneTick({ className }: { className?: string }) {
   return (
     <span
       className={cn(
-        "inline-flex size-5 items-center justify-center rounded-[0.3rem] border-2 border-current bg-current/10",
+        "relative inline-flex size-5 overflow-visible items-center justify-center rounded-[0.3rem] border-2 border-emerald-600 bg-emerald-50 text-emerald-600 dark:border-emerald-400 dark:bg-emerald-950/50 dark:text-emerald-400",
         className,
       )}
       aria-hidden
@@ -218,12 +218,12 @@ function DoneTick({ className }: { className?: string }) {
         viewBox="0 0 24 24"
         fill="none"
         stroke="currentColor"
-        strokeWidth="2.5"
+        strokeWidth="2.75"
         strokeLinecap="round"
         strokeLinejoin="round"
-        className="size-3.5"
+        className="absolute -right-1 -top-1.5 size-[1.15rem] overflow-visible"
       >
-        <path d="M5 13l4 4L19 7" />
+        <path d="M3 13l5.5 5.5L22 4" />
       </svg>
     </span>
   );
