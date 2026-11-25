@@ -224,74 +224,69 @@ export function OfferCaseLogPanel({
           registran solos; también puedes añadir notas manuales.
         </p>
       ) : (
-        <div className="overflow-x-auto pt-1">
+        <div className="min-w-[28rem] overflow-x-auto pt-1">
           {/*
-            Estructura del boceto (idea.png): tabla unida con marco primary;
-            la columna de fechas es el fuste y arriba sale el piquito.
+            Timeline en chevrones verticales (punta arriba = más reciente),
+            como el SmartArt horizontal pero girado; color primary de la UI.
           */}
-          <div className="relative min-w-[30rem]">
-            {/* Piquito (punta hacia arriba, centrado en la columna de fechas) */}
-            <svg
-              className="relative z-[1] block h-4 w-32 text-primary"
-              viewBox="0 0 128 16"
-              fill="none"
-              aria-hidden
-            >
-              <path
-                d="M1 15.25 L64 1.25 L127 15.25"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinejoin="miter"
-                strokeLinecap="square"
-              />
-            </svg>
+          <ul className="relative list-none p-0">
+            {entries.map((entry, index) => {
+              const meta = entry.created_by_name
+                ? `Por ${shortName(entry.created_by_name)}`
+                : "Detectado automáticamente";
+              const isLast = index === entries.length - 1;
+              return (
+                <li
+                  key={entry.id}
+                  className={cn(
+                    "relative flex items-stretch gap-3 sm:gap-4",
+                    index > 0 && "-mt-3",
+                  )}
+                  style={{ zIndex: entries.length - index }}
+                >
+                  <div
+                    className={cn(
+                      "flex w-[7.25rem] shrink-0 items-center justify-center px-2 text-center text-[0.8rem] font-semibold tabular-nums text-primary-foreground",
+                      index === 0
+                        ? "bg-primary"
+                        : index % 2 === 1
+                          ? "bg-primary-dark"
+                          : "bg-primary",
+                    )}
+                    style={{
+                      // Chevron hacia arriba: punta arriba, encaje abajo
+                      clipPath:
+                        "polygon(50% 0%, 100% 14px, 100% calc(100% - 14px), 50% 100%, 0% calc(100% - 14px), 0% 14px)",
+                      paddingTop: "1.35rem",
+                      paddingBottom: "1.35rem",
+                      minHeight: "4.25rem",
+                    }}
+                  >
+                    {formatDateMadrid(entry.happened_on)}
+                  </div>
 
-            {/* Cuerpo: mismo trazo primary; fuste de fechas + resto de la tabla */}
-            <div className="relative -mt-px border border-primary">
-              {/* Quita el trazo superior bajo el piquito para que se una al triángulo */}
-              <span
-                className="absolute -top-px left-px z-[1] h-[2px] w-[calc(8rem-2px)] bg-background"
-                aria-hidden
-              />
-              {/* Separador vertical del fuste de fechas */}
-              <span
-                className="absolute bottom-0 left-32 top-0 w-px bg-primary"
-                aria-hidden
-              />
-
-              <table className="w-full border-collapse text-sm">
-                <tbody>
-                  {entries.map((entry, index) => {
-                    const meta = entry.created_by_name
-                      ? `Por ${shortName(entry.created_by_name)}`
-                      : "Detectado automáticamente";
-                    const isLast = index === entries.length - 1;
-                    return (
-                      <tr
-                        key={entry.id}
-                        className={cn(!isLast && "border-b border-border")}
-                      >
-                        <td className="w-32 whitespace-nowrap px-2 py-3 text-center align-top text-foreground tabular-nums">
-                          {formatDateMadrid(entry.happened_on)}
-                        </td>
-                        <td className="w-[10.5rem] px-3 py-3 align-top">
-                          <EventBadge type={entry.event_type} />
-                        </td>
-                        <td className="py-3 pr-3 align-top">
-                          <p className="whitespace-pre-wrap text-foreground">
-                            {entry.body}
-                          </p>
-                          <p className="mt-1 text-xs text-muted-foreground">
-                            {meta}
-                          </p>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </div>
+                  <div
+                    className={cn(
+                      "min-w-0 flex-1 py-3 pl-1",
+                      !isLast && "border-b border-border",
+                    )}
+                  >
+                    <div className="flex flex-wrap items-start gap-2 sm:gap-3">
+                      <EventBadge type={entry.event_type} />
+                      <div className="min-w-0 flex-1">
+                        <p className="whitespace-pre-wrap text-foreground">
+                          {entry.body}
+                        </p>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {meta}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
         </div>
       )}
     </div>
