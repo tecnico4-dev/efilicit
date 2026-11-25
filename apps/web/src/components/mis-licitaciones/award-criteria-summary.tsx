@@ -337,9 +337,6 @@ export function AwardCriteriaSummary({
               </tfoot>
             </table>
           </div>
-          <p className="mt-3 text-xs text-muted-foreground">
-            Detalle y adjuntos en la pestaña Sobres.
-          </p>
         </>
       )}
     </div>
