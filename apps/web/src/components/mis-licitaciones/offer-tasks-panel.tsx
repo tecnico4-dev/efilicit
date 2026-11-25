@@ -4,6 +4,7 @@ import { createPortal } from "react-dom";
 import { useCallback, useEffect, useId, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { MisLicitacionesFiltersButton } from "@/components/mis-licitaciones/mis-licitaciones-filters-modal";
+import { OfferMemberPicker } from "@/components/mis-licitaciones/offer-member-picker";
 import { SingleDatePicker } from "@/components/mis-licitaciones/single-date-picker";
 import { cn } from "@/lib/cn";
 import { calendarDayMadrid, formatDateMadrid } from "@/lib/datetime";
@@ -443,26 +444,17 @@ function TaskEditorModal({
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <label className="text-sm font-medium text-foreground">
-                Asignada a
-              </label>
-              <select
-                value={draft.owner_member_id ?? ""}
-                disabled={busy}
-                className="mt-1.5 h-9 w-full rounded-md border border-border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring/50 disabled:opacity-50"
-                onChange={(e) =>
-                  onChange({
-                    owner_member_id: e.target.value || null,
-                  })
-                }
-              >
-                <option value="">Sin asignar</option>
-                {members.map((m) => (
-                  <option key={m.id} value={m.id}>
-                    {m.displayName}
-                  </option>
-                ))}
-              </select>
+              <p className="text-sm font-medium text-foreground">Asignada a</p>
+              <div className="mt-1.5">
+                <OfferMemberPicker
+                  value={draft.owner_member_id}
+                  members={members}
+                  disabled={busy}
+                  boxed
+                  ariaLabel="Asignada a"
+                  onChange={(owner_member_id) => onChange({ owner_member_id })}
+                />
+              </div>
             </div>
             <div>
               <span className="text-sm font-medium text-foreground">
