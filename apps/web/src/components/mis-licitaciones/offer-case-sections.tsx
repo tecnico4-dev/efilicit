@@ -49,7 +49,7 @@ const ENVELOPE_FALLBACK: Record<"A" | "B" | "C", { title: string; hint: string }
 
 const FETCH_STATUS: Record<string, { label: string; tone: Tone }> = {
   descargado: { label: "Descargado", tone: "ok" },
-  pendiente: { label: "Pendiente de descarga", tone: "warn" },
+  pendiente: { label: "Descarga pendiente", tone: "warn" },
   solo_enlace: { label: "Solo enlace oficial", tone: "muted" },
   error: { label: "Error de descarga", tone: "bad" },
 };
@@ -86,11 +86,22 @@ function formatPoints(value: number | null): string | null {
   return `${text} pts`;
 }
 
-export function PliegosList({ pliegos }: { pliegos: OfferCasePliego[] }) {
+export function PliegosList({
+  pliegos,
+  intakeStatus = null,
+}: {
+  pliegos: OfferCasePliego[];
+  /** Si el intake está en curso, el vacío no suena a “no hay documentos”. */
+  intakeStatus?: "pending" | "processing" | "done" | "failed" | null;
+}) {
   if (pliegos.length === 0) {
+    const waiting =
+      intakeStatus === "pending" || intakeStatus === "processing";
     return (
       <div className="rounded-lg border border-dashed border-border px-4 py-6 text-center text-sm text-muted-foreground">
-        Sin PCAP/PPT/anexos vinculados.
+        {waiting
+          ? "Los documentos aparecerán cuando termine el procesamiento."
+          : "Todavía no hay pliegos ni anexos en este expediente."}
       </div>
     );
   }
@@ -100,7 +111,6 @@ export function PliegosList({ pliegos }: { pliegos: OfferCasePliego[] }) {
         const status = FETCH_STATUS[p.fetch_status ?? ""] ?? null;
         const detail = [
           formatBytes(p.byte_size),
-          p.fetch_status === "error" ? p.fetch_error : null,
           p.source_key ? null : "Añadido a mano",
         ]
           .filter(Boolean)

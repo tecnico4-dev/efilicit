@@ -17,7 +17,10 @@ function describe(intake: OfferCaseIntakeRow | null): {
   tone: "muted" | "warn" | "bad" | "ok";
 } {
   if (!intake) {
-    return { text: "Aún no se ha extraído información del pliego.", tone: "muted" };
+    return {
+      text: "Aún no se ha extraído información automáticamente.",
+      tone: "muted",
+    };
   }
   if (intake.status === "pending") {
     return {
@@ -27,23 +30,23 @@ function describe(intake: OfferCaseIntakeRow | null): {
     };
   }
   if (intake.status === "processing") {
-    return { text: "Procesando pliegos…", tone: "warn" };
+    return { text: "Procesando la información…", tone: "warn" };
   }
   if (intake.status === "failed") {
     return {
-      text: `La última extracción falló${intake.last_error ? `: ${intake.last_error}` : "."}`,
+      text: "No se pudo completar la extracción.",
       tone: "bad",
     };
   }
   const stats = (intake.stats ?? {}) as Record<string, unknown>;
   if (typeof stats.skipped === "string") {
     return {
-      text: "Esta licitación no tiene datos PLACSP para extraer (solo se procesan fuentes PLACSP).",
+      text: "La extracción automática solo está disponible para licitaciones de la Plataforma de Contratación del Sector Público.",
       tone: "muted",
     };
   }
   const when = intake.finished_at ? formatDateTimeMadrid(intake.finished_at) : "—";
-  return { text: `Última extracción del pliego PLACSP: ${when}.`, tone: "ok" };
+  return { text: `Última extracción automática: ${when}.`, tone: "ok" };
 }
 
 export function OfferCaseIntakeStatus({
@@ -100,7 +103,11 @@ export function OfferCaseIntakeStatus({
         onClick={onRequest}
         disabled={pending || open}
       >
-        {open ? "En cola" : intake ? "Reprocesar pliegos" : "Extraer del pliego"}
+        {open
+          ? "En espera"
+          : intake
+            ? "Reprocesar información"
+            : "Extraer información"}
       </Button>
     </div>
   );

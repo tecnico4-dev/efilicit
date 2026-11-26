@@ -398,7 +398,10 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
                   {pliegosResult.error ? (
                     <ErrorState>{pliegosResult.error.message}</ErrorState>
                   ) : (
-                    <PliegosList pliegos={pliegosResult.data} />
+                    <PliegosList
+                      pliegos={pliegosResult.data}
+                      intakeStatus={intakeResult.data?.status ?? null}
+                    />
                   )}
                 </div>
               ),
