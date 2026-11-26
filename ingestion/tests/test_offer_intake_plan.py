@@ -2,8 +2,12 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from efilicit_ingestion.offer_intake.placsp_terms import parse_offer_terms
+from efilicit_ingestion.offer_intake.placsp_terms import (
+    OfferAwardingCriterion,
+    parse_offer_terms,
+)
 from efilicit_ingestion.offer_intake.plan import (
+    _criterion_title,
     build_intake_plan,
     format_number,
     target_lot_ids,
@@ -105,3 +109,27 @@ def test_format_number_es() -> None:
     assert format_number(313537.19) == "313.537,19"
     assert format_number(60.0) == "60"
     assert format_number(1234567.0) == "1.234.567"
+
+
+def test_criterion_title_prefers_numbered_detail() -> None:
+    c = OfferAwardingCriterion(
+        kind="subjetivo",
+        description=(
+            "Organización de medios a disposición del contrato.- "
+            "1-Conocimiento de condicionantes"
+        ),
+        note="detalle de la nota",
+        weight=8.0,
+        position=1,
+    )
+    assert _criterion_title(c).startswith("1-Conocimiento de condicionantes")
+    assert "detalle de la nota" in _criterion_title(c)
+
+    plain = OfferAwardingCriterion(
+        kind="objetivo",
+        description="OFERTA ECONÓMICA",
+        note=None,
+        weight=80.0,
+        position=2,
+    )
+    assert _criterion_title(plain) == "OFERTA ECONÓMICA"

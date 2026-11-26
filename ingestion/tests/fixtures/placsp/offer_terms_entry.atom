@@ -179,6 +179,18 @@ Importe anual acumulado igual o superior al 70% del valor estimado.</cbc:Descrip
       </cac:AdditionalDocumentReference>
       <cac-place-ext:GeneralDocument>
         <cac-place-ext:GeneralDocumentDocumentReference>
+          <cbc:ID>2026-fixture-pcap-wcm</cbc:ID>
+          <cbc:DocumentTypeCode>ZZZ</cbc:DocumentTypeCode>
+          <cac:Attachment>
+            <cac:ExternalReference>
+              <cbc:URI>https://example.invalid/wps/wcm/connect/PLACE_es/Site/area/docAccCmpnt?srv=cmpnt&amp;cmpntname=GetDocumentsById&amp;source=library&amp;DocumentIdParam=2026-fixture-pcap-wcm</cbc:URI>
+              <cbc:FileName>Pliego de cláusulas administrativas particulares</cbc:FileName>
+            </cac:ExternalReference>
+          </cac:Attachment>
+        </cac-place-ext:GeneralDocumentDocumentReference>
+      </cac-place-ext:GeneralDocument>
+      <cac-place-ext:GeneralDocument>
+        <cac-place-ext:GeneralDocumentDocumentReference>
           <cbc:ID>2026-fixture-modelo</cbc:ID>
           <cbc:DocumentTypeCode>ZZZ</cbc:DocumentTypeCode>
           <cac:Attachment>

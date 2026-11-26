@@ -224,7 +224,7 @@ def _documents(status: etree._Element) -> list[OfferDocumentRef]:
         out.append(
             OfferDocumentRef(
                 origin="general",
-                pliego_type="anexo" if _looks_like_template(title) else "otro",
+                pliego_type=_infer_general_pliego_type(title),
                 title=title,
                 uri=uri,
                 general_type_code=_text(ref.find("cbc:DocumentTypeCode", NS)),
@@ -233,9 +233,40 @@ def _documents(status: etree._Element) -> list[OfferDocumentRef]:
     return out
 
 
-def _looks_like_template(title: str) -> bool:
+def _infer_general_pliego_type(title: str) -> PliegoType:
+    """Clasifica documentos de biblioteca (GeneralDocument) por el nombre.
+
+    En muchos Atom solo hay ``wcm/connect`` (no FileSystem): siguen siendo
+    ``solo_enlace``, pero el tipo debe ser PCAP/PPT/anexo cuando el título lo dice.
+    """
     lowered = title.lower()
-    return any(word in lowered for word in ("modelo", "anexo", "declaración", "declaracion"))
+    if any(
+        word in lowered
+        for word in (
+            "cláusulas administrativas",
+            "clausulas administrativas",
+            "pcap",
+            "pliego administrativo",
+        )
+    ):
+        return "pcap"
+    if any(
+        word in lowered
+        for word in (
+            "prescripciones técnicas",
+            "prescripciones tecnicas",
+            "ppt",
+            "pliego técnico",
+            "pliego tecnico",
+        )
+    ):
+        return "ppt"
+    if any(
+        word in lowered
+        for word in ("modelo", "anexo", "declaración", "declaracion")
+    ):
+        return "anexo"
+    return "otro"
 
 
 def _lots(status: etree._Element) -> list[OfferLot]:
@@ -271,19 +302,43 @@ def _terms_scopes(status: etree._Element) -> list[tuple[str | None, etree._Eleme
 
 
 def _criteria(status: etree._Element) -> list[OfferAwardingCriterion]:
+    """Criterios de adjudicación; si hay subordinados, se emiten esos (no el padre)."""
     out: list[OfferAwardingCriterion] = []
     for lot_id, terms in _terms_scopes(status):
-        for position, crit in enumerate(
-            terms.findall("cac:AwardingTerms/cac:AwardingCriteria", NS), start=1
-        ):
+        # ``position`` por ámbito (expediente / lote) para source_key estable.
+        position = 0
+        for crit in terms.findall("cac:AwardingTerms/cac:AwardingCriteria", NS):
+            code = (_text(crit.find("cbc:AwardingCriteriaTypeCode", NS)) or "").upper()
+            kind: CriterionKind = "subjetivo" if code == "SUBJ" else "objetivo"
+            subs = crit.findall("cac:SubordinateAwardingCriterion", NS)
+            if not subs:
+                # Algunas entradas usan el plural CODICE.
+                subs = crit.findall("cac:SubordinateAwardingCriteria", NS)
+            if subs:
+                for sub in subs:
+                    description = _text(sub.find("cbc:Description", NS))
+                    if not description:
+                        continue
+                    position += 1
+                    out.append(
+                        OfferAwardingCriterion(
+                            lot_id=lot_id,
+                            kind=kind,
+                            description=description,
+                            note=_text(sub.find("cbc:Note", NS)),
+                            weight=_number(sub.find("cbc:WeightNumeric", NS)),
+                            position=position,
+                        )
+                    )
+                continue
             description = _text(crit.find("cbc:Description", NS))
             if not description:
                 continue
-            code = (_text(crit.find("cbc:AwardingCriteriaTypeCode", NS)) or "").upper()
+            position += 1
             out.append(
                 OfferAwardingCriterion(
                     lot_id=lot_id,
-                    kind="subjetivo" if code == "SUBJ" else "objetivo",
+                    kind=kind,
                     description=description,
                     note=_text(crit.find("cbc:Note", NS)),
                     weight=_number(crit.find("cbc:WeightNumeric", NS)),

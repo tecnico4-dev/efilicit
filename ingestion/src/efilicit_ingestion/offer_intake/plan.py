@@ -6,6 +6,7 @@ solo lo que falta y nunca pisa ediciones del usuario.
 
 from __future__ import annotations
 
+import re
 from collections.abc import Iterable
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -21,6 +22,12 @@ from efilicit_ingestion.offer_intake.placsp_terms import (
 )
 
 TITLE_MAX = 160
+
+# Prefijo largo + ".- 1-detalle" / ". 2-detalle" (típico en criterios SUBJ PLACSP).
+_CRITERION_NUMBERED_SUFFIX = re.compile(
+    r"^(?P<prefix>.+?)[\.\-]\s*(?P<detail>\d+[\.\-]?\s*.+)$",
+    re.DOTALL,
+)
 
 _QUALIFICATION_CATEGORY = {
     "solvencia_tecnica": "solvencia_tecnica",
@@ -258,13 +265,12 @@ def _deliverables(
             )
         )
         for child_order, criterion in enumerate(own, start=1):
-            title = criterion.description
-            if criterion.note:
-                title = f"{criterion.description} — {criterion.note}"
             out.append(
                 DeliverableRow(
                     source_key=f"env:{envelope}:{criterion.source_key}",
-                    title=_short(_lot_prefix(criterion.lot_id) + title),
+                    title=_short(
+                        _lot_prefix(criterion.lot_id) + _criterion_title(criterion)
+                    ),
                     envelope=envelope,
                     points_max=criterion.weight,
                     sort_order=order * 100 + child_order,
@@ -272,6 +278,21 @@ def _deliverables(
                 )
             )
     return out
+
+
+def _criterion_title(c: OfferAwardingCriterion) -> str:
+    """Título legible: ante prefijos repetidos, prioriza el detalle numerado + nota."""
+    desc = " ".join(c.description.split())
+    note = " ".join(c.note.split()) if c.note else ""
+    match = _CRITERION_NUMBERED_SUFFIX.match(desc)
+    if match and len(match.group("prefix")) >= 35:
+        distinctive = match.group("detail").strip()
+        if note:
+            return f"{distinctive} — {note}"
+        return distinctive
+    if note:
+        return f"{desc} — {note}"
+    return desc
 
 
 def _envelope_points(criteria: list[OfferAwardingCriterion]) -> float | None:

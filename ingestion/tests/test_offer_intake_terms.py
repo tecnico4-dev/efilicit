@@ -25,6 +25,12 @@ def test_documents_map_to_pliego_types_and_downloadability() -> None:
     assert by_title["Anexo I DeclaracionResponsable.docx"].pliego_type == "anexo"
     assert by_title["Modelo de oferta económica"].pliego_type == "anexo"
     assert by_title["Memoria justificativa"].pliego_type == "otro"
+    # Biblioteca wcm: tipado por nombre aunque no sea descargable.
+    assert (
+        by_title["Pliego de cláusulas administrativas particulares"].pliego_type
+        == "pcap"
+    )
+    assert not by_title["Pliego de cláusulas administrativas particulares"].downloadable
 
     assert by_title["PCAP alumbrado.pdf"].downloadable
     assert by_title["PCAP alumbrado.pdf"].document_hash == "A6OeDcakZZXPLpktpv84c1uxq6E="
@@ -101,3 +107,40 @@ def test_invalid_payload_raises() -> None:
         parse_offer_terms(b"not xml")
     with pytest.raises(OfferTermsParseError):
         parse_offer_terms(b"<feed xmlns='http://www.w3.org/2005/Atom'/>")
+
+
+def test_subordinate_awarding_criteria_replace_parent() -> None:
+    raw = b"""<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom"
+      xmlns:cac="urn:dgpe:names:draft:codice:schema:xsd:CommonAggregateComponents-2"
+      xmlns:cbc="urn:dgpe:names:draft:codice:schema:xsd:CommonBasicComponents-2"
+      xmlns:cac-place-ext="urn:dgpe:names:draft:codice-place-ext:schema:xsd:CommonAggregateComponents-2">
+  <entry>
+    <cac-place-ext:ContractFolderStatus>
+      <cbc:ContractFolderID>SUB/1</cbc:ContractFolderID>
+      <cac:TenderingTerms>
+        <cac:AwardingTerms>
+          <cac:AwardingCriteria>
+            <cbc:AwardingCriteriaTypeCode>SUBJ</cbc:AwardingCriteriaTypeCode>
+            <cbc:Description>Organizacion de medios</cbc:Description>
+            <cbc:WeightNumeric>20</cbc:WeightNumeric>
+            <cac:SubordinateAwardingCriterion>
+              <cbc:Description>1-Conocimiento</cbc:Description>
+              <cbc:WeightNumeric>8</cbc:WeightNumeric>
+            </cac:SubordinateAwardingCriterion>
+            <cac:SubordinateAwardingCriterion>
+              <cbc:Description>2-Equipos</cbc:Description>
+              <cbc:WeightNumeric>12</cbc:WeightNumeric>
+            </cac:SubordinateAwardingCriterion>
+          </cac:AwardingCriteria>
+        </cac:AwardingTerms>
+      </cac:TenderingTerms>
+    </cac-place-ext:ContractFolderStatus>
+  </entry>
+</feed>
+"""
+    extract = parse_offer_terms(raw)
+    assert [(c.description, c.weight, c.kind) for c in extract.criteria] == [
+        ("1-Conocimiento", 8.0, "subjetivo"),
+        ("2-Equipos", 12.0, "subjetivo"),
+    ]
