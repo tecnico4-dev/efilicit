@@ -8,7 +8,7 @@ Por defecto solo simula (dry-run). Con ``--apply`` borra tenders no protegidos,
 limpia artifacts/RAW huérfanos de ese lote y poda ``notification_emails``.
 
 Escudos (skip total): offer_cases, favorites, favorites_common, favorites_shared,
-tender_ratings,
+tender_recommendations, tender_ratings,
 alerta viva (notification_queue sin dismiss permanente de papelera 30d),
 abierta/en plazo (deadline NULL o > now()).
 
@@ -49,8 +49,8 @@ SHIELD_TABLES = (
     "offer_cases",
     "favorites",
     "favorites_common",
-    "shared_favorites",  # nombre legado si remoto aún no renombró
     "favorites_shared",
+    "tender_recommendations",
     "tender_ratings",
     "notification_queue",
     "alert_related_trash",
@@ -98,20 +98,19 @@ def build_candidates_sql(tables: set[str]) -> str:
         select 1 from public.favorites_common sf where sf.tender_id = b.id
       ) then 'favorites_common'"""
         )
-    elif "shared_favorites" in tables:
-        # Remoto aún no migrado a favorites_common (ADR 032).
-        whens.append(
-            """
-      when exists (
-        select 1 from public.shared_favorites sf where sf.tender_id = b.id
-      ) then 'favorites_common'"""
-        )
     if "favorites_shared" in tables:
         whens.append(
             """
       when exists (
         select 1 from public.favorites_shared fs where fs.tender_id = b.id
       ) then 'favorites_shared'"""
+        )
+    if "tender_recommendations" in tables:
+        whens.append(
+            """
+      when exists (
+        select 1 from public.tender_recommendations tr where tr.tender_id = b.id
+      ) then 'recommendation'"""
         )
     if "tender_ratings" in tables:
         whens.append(
@@ -252,23 +251,22 @@ def pick_shield(
     in_favorite: bool = False,
     in_favorites_common: bool = False,
     in_favorites_shared: bool = False,
-    in_shared_favorite: bool = False,
+    in_recommendation: bool = False,
     has_rating: bool = False,
     alert_related_alive: bool = False,
     open_or_null_deadline: bool = False,
 ) -> str | None:
-    """Misma prioridad que el CASE de ``CANDIDATES_SQL`` (ADR 031).
-
-    ``in_shared_favorite`` se acepta como alias de ``in_favorites_common``.
-    """
+    """Misma prioridad que el CASE de ``CANDIDATES_SQL`` (ADR 031)."""
     if in_offer:
         return "offer"
     if in_favorite:
         return "favorite"
-    if in_favorites_common or in_shared_favorite:
+    if in_favorites_common:
         return "favorites_common"
     if in_favorites_shared:
         return "favorites_shared"
+    if in_recommendation:
+        return "recommendation"
     if has_rating:
         return "rating"
     if alert_related_alive:
