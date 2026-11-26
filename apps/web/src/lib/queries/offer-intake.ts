@@ -1,7 +1,8 @@
 /**
  * Intake de pliegos del expediente (ADR 035).
- * La web solo encola (`offer_case_intake` pending) y lee resultados; el worker
- * batch descarga y vuelca. Ficheros en bucket privado `offer-docs` vía signed URL.
+ * Sync estructurado inmediato: Server Action (service_role, sin PDFs).
+ * Cola `offer_case_intake` pending → worker batch descarga a `offer-docs`.
+ * Ficheros en bucket privado vía signed URL (sesión).
  */
 import type { Database } from "@efilicit/types";
 import type { SupabaseClient } from "@supabase/supabase-js";

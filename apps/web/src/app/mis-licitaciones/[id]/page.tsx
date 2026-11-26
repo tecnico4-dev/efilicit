@@ -416,7 +416,15 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
                   ) : (
                     <PliegosList
                       pliegos={pliegosResult.data}
-                      intakeStatus={intakeResult.data?.status ?? null}
+                      intakeStatus={
+                        (intakeResult.data?.status as
+                          | "pending"
+                          | "processing"
+                          | "done"
+                          | "failed"
+                          | null
+                          | undefined) ?? null
+                      }
                     />
                   )}
                 </div>

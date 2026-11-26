@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { applyStructuredOfferIntake } from "@/app/actions/offer-intake-structured";
 import { Button } from "@/components/ui/button";
 import { OFFER_ACTION_ERROR } from "@/components/mis-licitaciones/offer-user-facing-error";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
@@ -45,11 +46,14 @@ export function OfferCaseToggle({
       createdBy: userId,
       kind,
     });
-    setPending(false);
     if (createError || !data) {
+      setPending(false);
       setError(OFFER_ACTION_ERROR);
       return;
     }
+    // Sync estructurado inmediato (sin PDFs); fallo graceful — el cron descarga.
+    await applyStructuredOfferIntake(data.id);
+    setPending(false);
     setCaseId(data.id);
     router.push(`/mis-licitaciones/${data.id}`);
     router.refresh();

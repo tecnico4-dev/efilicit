@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { applyStructuredOfferIntake } from "@/app/actions/offer-intake-structured";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/cn";
 import { formatDateTimeMadrid } from "@/lib/datetime";
@@ -12,21 +13,33 @@ import {
   type OfferCaseIntakeRow,
 } from "@/lib/queries";
 
-function describe(intake: OfferCaseIntakeRow | null): {
+function describe(
+  intake: OfferCaseIntakeRow | null,
+  hasStructuredData: boolean,
+): {
   text: string;
   detail?: string;
   tone: "muted" | "warn" | "bad" | "ok";
 } {
   if (!intake) {
     return {
-      text: "Aún no se ha extraído información automáticamente.",
-      tone: "muted",
+      text: hasStructuredData
+        ? "Datos del anuncio cargados. La descarga de pliegos se encolará al solicitar extracción."
+        : "Aún no se ha extraído información automáticamente.",
+      tone: hasStructuredData ? "ok" : "muted",
     };
   }
   if (intake.status === "pending") {
+    if (hasStructuredData) {
+      return {
+        text: "Datos del anuncio cargados. Descarga de pliegos en cola.",
+        detail: `En espera desde el ${formatDateTimeMadrid(intake.requested_at)}. El proceso automático completará los PDF cuando se ejecute (1–2 veces al día).`,
+        tone: "ok",
+      };
+    }
     return {
-      text: "Esta licitación aún no se ha procesado para extraer su información automáticamente.",
-      detail: `En espera desde el ${formatDateTimeMadrid(intake.requested_at)}. Se procesará en cuanto se ejecute el proceso automático.`,
+      text: "Extracción automática en cola.",
+      detail: `En espera desde el ${formatDateTimeMadrid(intake.requested_at)}.`,
       tone: "warn",
     };
   }
@@ -35,8 +48,10 @@ function describe(intake: OfferCaseIntakeRow | null): {
   }
   if (intake.status === "failed") {
     return {
-      text: "No se pudo completar la extracción.",
-      tone: "bad",
+      text: hasStructuredData
+        ? "Datos del anuncio cargados; falló la descarga de pliegos."
+        : "No se pudo completar la extracción.",
+      tone: hasStructuredData ? "warn" : "bad",
     };
   }
   const stats = (intake.stats ?? {}) as Record<string, unknown>;
@@ -54,16 +69,19 @@ export function OfferCaseIntakeStatus({
   offerCaseId,
   userId,
   intake,
+  hasStructuredData = false,
 }: {
   offerCaseId: string;
   userId: string;
   intake: OfferCaseIntakeRow | null;
+  /** Ya hay filas offer_* del sync inmediato (requisitos/pliegos/…). */
+  hasStructuredData?: boolean;
 }) {
   const router = useRouter();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const open = intake?.status === "pending" || intake?.status === "processing";
-  const status = describe(intake);
+  const status = describe(intake, hasStructuredData);
 
   async function onRequest() {
     setPending(true);
@@ -73,11 +91,13 @@ export function OfferCaseIntakeStatus({
       offerCaseId,
       requestedBy: userId,
     });
-    setPending(false);
     if (result.error) {
+      setPending(false);
       setError(OFFER_ACTION_ERROR);
       return;
     }
+    await applyStructuredOfferIntake(offerCaseId);
+    setPending(false);
     router.refresh();
   }
 

@@ -1,7 +1,8 @@
 # ADR 035 — intake de pliegos del expediente (Mis licitaciones).
 #
-# Disparo: workflow_dispatch (cron externo). Sin on.schedule (ADR 005).
-# Procesa offer_case_intake pendientes: XML PLACSP → offer_* + pliegos a offer-docs.
+# Disparo: workflow_dispatch (cron externo 1–2×/día). Sin on.schedule (ADR 005).
+# Tras el sync estructurado en la web, este worker aplica (idempotente) y descarga PDFs
+# FileSystem → offer-docs. Cadencia baja: no hace falta spam de Actions.
 name: Offer intake
 
 on:
