@@ -1,8 +1,11 @@
 """Cola de notificaciones e idempotencia (Paso 7.2 / 8).
 
 Contrato compartido por la cola en memoria (tests) y Postgres
-(``PostgresNotificationQueue``). La clave evita reenviar el mismo
-match alerta×licitación en el mismo periodo de digest.
+(``PostgresNotificationQueue``). La clave evita reencolar el mismo
+match alerta×licitación (una sola vez; no “renace” al cruzar día/semana).
+
+El periodo de digest (día / semana ISO) solo gobierna *cuándo* se drena
+el correo (``should_send_digest`` / inbox), no la idempotencia de cola.
 
 Frecuencias de cuenta (ADR 013): ``diaria`` | ``semanal``.
 ``instantanea`` queda fuera del MVP (BACKLOG).
@@ -74,37 +77,42 @@ def make_idempotency_key(
     *,
     alert_id: str,
     tender_id: str,
-    digest: str,
 ) -> str:
-    """Clave estable por alerta+licitación+periodo (re-run del job no reenvía)."""
-    return f"alert:{alert_id}:tender:{tender_id}:digest:{digest}"
+    """Clave estable por alerta+licitación (re-run / nuevo periodo no reencola)."""
+    return f"alert:{alert_id}:tender:{tender_id}"
 
 
 def match_to_notification(
     match: AlertMatch,
     tender: TenderCandidate,
     *,
-    digest: str,
     frequency: DigestFrequency = "daily",
+    alert_name: str | None = None,
 ) -> NotificationItem:
     """Construye el ítem de cola con payload mínimo para el email de digest."""
     key = make_idempotency_key(
         alert_id=match.alert_id,
         tender_id=match.tender_id,
-        digest=digest,
     )
+    value = tender.estimated_value
+    name = (alert_name or "").strip()
     return NotificationItem(
         user_id=match.user_id,
         alert_id=match.alert_id,
+        tender_id=match.tender_id,
         idempotency_key=key,
         payload={
             "tender_id": match.tender_id,
             "alert_id": match.alert_id,
+            "alert_name": name or None,
             "title": tender.title,
+            "authority_name": tender.authority_name,
+            "estimated_value": str(value) if value is not None else None,
+            "place_ccaa_code": tender.place_ccaa_code,
+            "cpv_codes": list(tender.cpv_codes[:8]),
             "score": match.score,
             "priority": match.priority,
             "reasons": list(match.reasons),
-            "digest": digest,
             "frequency": (frequency or "daily").strip().lower(),
             "channel": "email",
             "kind": "alert_match",
@@ -151,6 +159,15 @@ class NotificationQueue(Protocol):
         ...
 
 
+def _item_tender_id(item: NotificationItem) -> str | None:
+    if item.tender_id and str(item.tender_id).strip():
+        return str(item.tender_id).strip()
+    raw = item.payload.get("tender_id")
+    if isinstance(raw, str) and raw.strip():
+        return raw.strip()
+    return None
+
+
 class InMemoryNotificationQueue:
     """Cola en memoria para tests / dry-run (sin red ni Postgres)."""
 
@@ -158,6 +175,15 @@ class InMemoryNotificationQueue:
         self._by_key: dict[str, NotificationItem] = {}
 
     def enqueue(self, item: NotificationItem) -> tuple[NotificationItem, bool]:
+        # Candado de negocio: misma alerta + misma licitación (como UNIQUE parcial).
+        tender_id = _item_tender_id(item)
+        if item.alert_id and tender_id:
+            for existing in self._by_key.values():
+                if (
+                    existing.alert_id == item.alert_id
+                    and _item_tender_id(existing) == tender_id
+                ):
+                    return existing, False
         existing = self._by_key.get(item.idempotency_key)
         if existing is not None:
             # No reabrir enviados / cancelled ni duplicar pendientes.
@@ -165,6 +191,7 @@ class InMemoryNotificationQueue:
         stored = NotificationItem(
             user_id=item.user_id,
             alert_id=item.alert_id,
+            tender_id=tender_id,
             idempotency_key=item.idempotency_key,
             payload=dict(item.payload),
             status=item.status,

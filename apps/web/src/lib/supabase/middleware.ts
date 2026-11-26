@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import type { Database } from "@efilicit/types";
+import { isMisLicitacionesEnabled } from "@/lib/features/mis-licitaciones";
 
 /**
  * Refresca cookies de sesión Auth en cada request.
@@ -43,6 +44,17 @@ export async function updateSession(request: NextRequest) {
 
   const path = request.nextUrl.pathname;
 
+  // Mis licitaciones: solo local (NEXT_PUBLIC_MIS_LICITACIONES_ENABLED=1).
+  if (
+    path.startsWith("/mis-licitaciones") &&
+    !isMisLicitacionesEnabled()
+  ) {
+    const redirectUrl = request.nextUrl.clone();
+    redirectUrl.pathname = "/";
+    redirectUrl.search = "";
+    return NextResponse.redirect(redirectUrl);
+  }
+
   if (path === "/account" || path.startsWith("/account/")) {
     const redirectUrl = request.nextUrl.clone();
     redirectUrl.pathname = "/";
@@ -63,6 +75,7 @@ export async function updateSession(request: NextRequest) {
     path.startsWith("/notifications") ||
     path.startsWith("/search") ||
     path.startsWith("/favorites") ||
+    path.startsWith("/mis-licitaciones") ||
     path.startsWith("/tenders");
 
   if (isProtected && !user) {

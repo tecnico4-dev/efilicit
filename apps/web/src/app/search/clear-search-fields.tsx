@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { cn } from "@/lib/cn";
 import { CLEAR_SEARCH_EVENT, useSearchFeedback } from "./search-feedback";
+import { isSearchFormPreviewing } from "./search-form-preview";
 import { SEARCH_FORM_ID } from "./save-search-button";
 
 const FIELD_NAMES = [
@@ -34,7 +36,11 @@ function blankNamedFields(form: HTMLFormElement, name: string) {
     }
     return;
   }
-  if (el instanceof HTMLInputElement || el instanceof HTMLSelectElement) {
+  if (
+    el instanceof HTMLInputElement ||
+    el instanceof HTMLSelectElement ||
+    el instanceof HTMLTextAreaElement
+  ) {
     if (el instanceof HTMLInputElement && el.type === "checkbox") {
       el.checked = false;
       return;
@@ -42,6 +48,9 @@ function blankNamedFields(form: HTMLFormElement, name: string) {
     el.value = "";
     if (el instanceof HTMLSelectElement) {
       el.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+    if (el instanceof HTMLTextAreaElement) {
+      el.dispatchEvent(new Event("input", { bubbles: true }));
     }
   }
 }
@@ -54,10 +63,20 @@ function blankFormFields(form: HTMLFormElement) {
     "#municipality-text",
   ) as HTMLInputElement | null;
   if (munText) munText.value = "";
+  // «Solo en plazo» vuelve al default marcado.
+  const enPlazo = form.elements.namedItem("en_plazo");
+  if (enPlazo instanceof HTMLInputElement && enPlazo.type === "checkbox") {
+    enPlazo.checked = true;
+  }
   window.dispatchEvent(new Event(CLEAR_SEARCH_EVENT));
 }
 
 function fieldHasValue(form: HTMLFormElement, name: string): boolean {
+  // Default marcado: no cuenta como «sucio» para mostrar Limpiar.
+  if (name === "en_plazo") {
+    const el = form.elements.namedItem(name);
+    return el instanceof HTMLInputElement && !el.checked;
+  }
   const el = form.elements.namedItem(name);
   if (el instanceof RadioNodeList) {
     return [...el].some((node) => {
@@ -70,7 +89,9 @@ function fieldHasValue(form: HTMLFormElement, name: string): boolean {
     return el.checked;
   }
   return (
-    (el instanceof HTMLInputElement || el instanceof HTMLSelectElement) &&
+    (el instanceof HTMLInputElement ||
+      el instanceof HTMLSelectElement ||
+      el instanceof HTMLTextAreaElement) &&
     el.value.trim() !== ""
   );
 }
@@ -81,7 +102,7 @@ function formHasValues(form: HTMLFormElement): boolean {
 
 /**
  * Solo vacía los inputs del formulario. No toca la URL ni los resultados.
- * Visible únicamente si algún campo tiene valor.
+ * Invisible (pero ocupa hueco) si no hay valores — evita saltos del botón Buscar.
  */
 export function ClearSearchFieldsButton() {
   const { clearFeedback } = useSearchFeedback();
@@ -91,7 +112,10 @@ export function ClearSearchFieldsButton() {
     const form = document.getElementById(SEARCH_FORM_ID) as HTMLFormElement | null;
     if (!form) return;
 
-    const sync = () => setVisible(formHasValues(form));
+    const sync = () => {
+      if (isSearchFormPreviewing(form)) return;
+      setVisible(formHasValues(form));
+    };
     sync();
     form.addEventListener("input", sync);
     form.addEventListener("change", sync);
@@ -101,9 +125,8 @@ export function ClearSearchFieldsButton() {
     };
   }, []);
 
-  if (!visible) return null;
-
   function onClear() {
+    if (!visible) return;
     clearFeedback();
     const form = document.getElementById(SEARCH_FORM_ID) as HTMLFormElement | null;
     if (form && formHasValues(form)) {
@@ -116,7 +139,13 @@ export function ClearSearchFieldsButton() {
     <button
       type="button"
       onClick={onClear}
-      className="text-xs text-muted-foreground hover:text-foreground hover:underline"
+      tabIndex={visible ? 0 : -1}
+      aria-hidden={!visible}
+      disabled={!visible}
+      className={cn(
+        "text-xs text-muted-foreground hover:text-foreground hover:underline",
+        !visible && "invisible pointer-events-none",
+      )}
     >
       Limpiar campos
     </button>

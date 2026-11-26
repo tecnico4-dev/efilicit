@@ -2,10 +2,26 @@
 
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
-import { listPlaceMunicipalities } from "@/lib/queries/list-place-municipalities";
+import { listPlaceMunicipalitiesForCcaas } from "@/lib/queries/list-place-municipalities";
+import { criteriaToFilterInitial } from "@/lib/criteria-display";
+import { ccaaShortLabel } from "@/lib/geo-ccaa";
+import { cn } from "@/lib/cn";
 import { SEARCH_FORM_ID } from "./save-search-button";
+import { CLEAR_SEARCH_EVENT } from "./search-feedback";
+import {
+  SEARCH_APPLY_CRITERIA_EVENT,
+  SEARCH_CCAA_MENU_OPEN_EVENT,
+  SEARCH_CCAA_SELECTION_EVENT,
+  SEARCH_CCAA_SET_EVENT,
+  SEARCH_PREVIEW_GHOST_CLASS,
+  useOptionalSearchFormPreview,
+  type SearchCcaaSelectionDetail,
+  type SearchCcaaSetDetail,
+} from "./search-form-preview";
+import { AnchoredPortal } from "@/components/ui/anchored-portal";
+import type { SearchCriteria } from "@efilicit/types";
 
-type Option = { code: string; name: string };
+type Option = { code: string; name: string; ccaaCode: string };
 
 function fold(value: string): string {
   return value
@@ -21,136 +37,306 @@ function startsWithFold(name: string, prefix: string): boolean {
 }
 
 type Props = {
-  /** CCAA inicial (URL). */
-  initialCcaa: string;
-  /** Código INE de municipio inicial (URL), si es válido para esa CCAA. */
+  /** CCAA iniciales (URL / criteria). */
+  initialCcaaCodes: string[];
+  /** Código INE de municipio inicial, si es válido para alguna CCAA. */
   initialMunicipalityCode: string;
   initialMunicipalityName?: string;
+  formId?: string;
 };
 
 /**
  * Typeahead de municipio: deshabilitado sin CCAA; opciones = municipios
- * de esa CCAA con ≥1 tender. Prefijo de texto; blur/submit sin match → cancela.
+ * de todas las CCAA marcadas. Al fijar un municipio, la CCAA se estrecha a
+ * la suya (guardando snapshot); al quitarlo o reabrir CCAA, se restauran.
  */
 export function MunicipalityFilter({
-  initialCcaa,
+  initialCcaaCodes,
   initialMunicipalityCode,
   initialMunicipalityName = "",
+  formId = SEARCH_FORM_ID,
 }: Props) {
   const listId = useId();
-  const [ccaa, setCcaa] = useState(initialCcaa);
+  const formPreview = useOptionalSearchFormPreview();
+  const previewInitial = formPreview?.preview
+    ? criteriaToFilterInitial(formPreview.preview)
+    : null;
+  const isPreviewing = previewInitial != null;
+  const previewCcaaCodes = previewInitial?.ccaaCodes ?? [];
+  const previewCode = previewInitial?.municipalityCode ?? "";
+
+  const [ccaaCodes, setCcaaCodes] = useState<string[]>(initialCcaaCodes);
   const [options, setOptions] = useState<Option[]>([]);
   const [loading, setLoading] = useState(false);
   const [text, setText] = useState(initialMunicipalityName);
   const [selectedCode, setSelectedCode] = useState(initialMunicipalityCode);
   const [open, setOpen] = useState(false);
+  const [previewName, setPreviewName] = useState("");
+  const [previewLoading, setPreviewLoading] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const ccaaCodesRef = useRef(ccaaCodes);
+  ccaaCodesRef.current = ccaaCodes;
+  const selectedCodeRef = useRef(selectedCode);
+  selectedCodeRef.current = selectedCode;
+  /** CCAA elegidas antes de estrechar al fijar municipio. */
+  const preMunicipalityCcaaRef = useRef<string[] | null>(null);
 
-  const enabled = ccaa !== "";
-  /** CCAA elegida pero sin municipios con licitaciones → mismo bloqueo que sin CCAA. */
+  const enabled = ccaaCodes.length > 0;
+  const showCcaaHint = ccaaCodes.length >= 2;
   const noMunicipalities = enabled && !loading && options.length === 0;
   const inputDisabled = !enabled || noMunicipalities;
+  const interactionLocked = inputDisabled || isPreviewing;
+
+  function setCcaaCodesExternal(codes: string[]) {
+    window.dispatchEvent(
+      new CustomEvent<SearchCcaaSetDetail>(SEARCH_CCAA_SET_EVENT, {
+        detail: { codes },
+      }),
+    );
+  }
+
+  function pinMunicipality(opt: Option) {
+    setSelectedCode(opt.code);
+    setText(opt.name);
+    setOpen(false);
+    if (preMunicipalityCcaaRef.current == null) {
+      preMunicipalityCcaaRef.current = [...ccaaCodesRef.current];
+    }
+    const current = ccaaCodesRef.current;
+    if (current.length !== 1 || current[0] !== opt.ccaaCode) {
+      setCcaaCodesExternal([opt.ccaaCode]);
+    }
+  }
+
+  function clearMunicipalityCommitted() {
+    setSelectedCode("");
+    setText("");
+    setOpen(false);
+    const snap = preMunicipalityCcaaRef.current;
+    if (!snap) return;
+    preMunicipalityCcaaRef.current = null;
+    setCcaaCodesExternal(snap);
+  }
 
   useEffect(() => {
-    const form = document.getElementById(SEARCH_FORM_ID) as HTMLFormElement | null;
-    const select = form?.elements.namedItem("ccaa");
-    if (!(select instanceof HTMLSelectElement)) return;
-
-    const onCcaaChange = () => {
-      const next = select.value.trim();
-      setCcaa(next);
-      setText("");
-      setSelectedCode("");
+    function onCcaaSelection(e: Event) {
+      const detail = (e as CustomEvent<SearchCcaaSelectionDetail>).detail;
+      const next = detail?.codes ?? [];
+      setCcaaCodes(next);
       setOpen(false);
+    }
+    function onCcaaMenuOpen() {
+      if (!selectedCodeRef.current) return;
+      const snap = preMunicipalityCcaaRef.current;
+      setSelectedCode("");
+      setText("");
+      setOpen(false);
+      if (snap) {
+        preMunicipalityCcaaRef.current = null;
+        setCcaaCodesExternal(snap);
+      }
+    }
+    window.addEventListener(SEARCH_CCAA_SELECTION_EVENT, onCcaaSelection);
+    window.addEventListener(SEARCH_CCAA_MENU_OPEN_EVENT, onCcaaMenuOpen);
+    return () => {
+      window.removeEventListener(SEARCH_CCAA_SELECTION_EVENT, onCcaaSelection);
+      window.removeEventListener(SEARCH_CCAA_MENU_OPEN_EVENT, onCcaaMenuOpen);
     };
-    select.addEventListener("change", onCcaaChange);
-    return () => select.removeEventListener("change", onCcaaChange);
   }, []);
 
   useEffect(() => {
-    if (!ccaa) {
+    if (ccaaCodes.length === 0) {
       setOptions([]);
+      setSelectedCode("");
+      setText("");
       return;
     }
     let cancelled = false;
     setLoading(true);
     const client = createSupabaseBrowserClient();
-    void listPlaceMunicipalities(client, ccaa).then((res) => {
+    void listPlaceMunicipalitiesForCcaas(client, ccaaCodes).then((res) => {
       if (cancelled) return;
       setLoading(false);
       setOptions(res.data);
-      if (selectedCode) {
-        const still = res.data.find((o) => o.code === selectedCode);
+      if (selectedCodeRef.current) {
+        const still = res.data.find((o) => o.code === selectedCodeRef.current);
         if (!still) {
+          // CCAA ya no cubre el municipio: limpiar sin restaurar snapshot
+          // (la selección de CCAA es la fuente de verdad).
           setSelectedCode("");
           setText("");
-        } else if (!text) {
-          setText(still.name);
+          preMunicipalityCcaaRef.current = null;
+        } else {
+          if (!text) setText(still.name);
+          // URL / apply con varias CCAA + municipio → estrechar CCAA a la del municipio.
+          const current = ccaaCodesRef.current;
+          if (
+            current.length > 1 &&
+            preMunicipalityCcaaRef.current == null
+          ) {
+            preMunicipalityCcaaRef.current = [...current];
+            setCcaaCodesExternal([still.ccaaCode]);
+          }
         }
       }
     });
     return () => {
       cancelled = true;
     };
-    // Solo al cambiar CCAA (no al teclear).
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional
-  }, [ccaa]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- solo al cambiar CCAA
+  }, [ccaaCodes.join("\u0001")]);
+
+  useEffect(() => {
+    if (!isPreviewing) {
+      setPreviewName("");
+      setPreviewLoading(false);
+      return;
+    }
+    setOpen(false);
+    if (previewCcaaCodes.length === 0 || !previewCode) {
+      setPreviewName("");
+      setPreviewLoading(false);
+      return;
+    }
+    let cancelled = false;
+    setPreviewLoading(true);
+    const client = createSupabaseBrowserClient();
+    void listPlaceMunicipalitiesForCcaas(client, previewCcaaCodes).then(
+      (res) => {
+        if (cancelled) return;
+        setPreviewLoading(false);
+        const hit = res.data.find((o) => o.code === previewCode);
+        setPreviewName(hit?.name ?? previewCode);
+      },
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, [isPreviewing, previewCcaaCodes.join("\u0001"), previewCode]);
+
+  useEffect(() => {
+    function onApply(e: Event) {
+      const criteria = (e as CustomEvent<SearchCriteria>).detail;
+      if (!criteria) return;
+      const initial = criteriaToFilterInitial(criteria);
+      setOpen(false);
+      preMunicipalityCcaaRef.current = null;
+      setCcaaCodes(initial.ccaaCodes);
+      setSelectedCode(initial.municipalityCode);
+      if (!initial.municipalityCode) {
+        setText("");
+        return;
+      }
+      if (initial.municipalityName) {
+        setText(initial.municipalityName);
+        return;
+      }
+      setText("");
+    }
+    function onClear() {
+      preMunicipalityCcaaRef.current = null;
+      setSelectedCode("");
+      setText("");
+      setOpen(false);
+    }
+    window.addEventListener(SEARCH_APPLY_CRITERIA_EVENT, onApply);
+    window.addEventListener(CLEAR_SEARCH_EVENT, onClear);
+    return () => {
+      window.removeEventListener(SEARCH_APPLY_CRITERIA_EVENT, onApply);
+      window.removeEventListener(CLEAR_SEARCH_EVENT, onClear);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (isPreviewing || !selectedCode || text) return;
+    const hit = options.find((o) => o.code === selectedCode);
+    if (hit) setText(hit.name);
+  }, [isPreviewing, selectedCode, text, options]);
+
+  function commitOrCancel() {
+    if (!selectedCode) {
+      const exact = options.find(
+        (o) => fold(o.name) === fold(text) && startsWithFold(o.name, text),
+      );
+      if (
+        exact &&
+        startsWithFold(exact.name, text) &&
+        fold(exact.name) === fold(text)
+      ) {
+        pinMunicipality(exact);
+        return;
+      }
+      if (preMunicipalityCcaaRef.current || text) {
+        clearMunicipalityCommitted();
+      } else {
+        setText("");
+      }
+      return;
+    }
+    const sel = options.find((o) => o.code === selectedCode);
+    if (!sel || fold(text) !== fold(sel.name)) {
+      clearMunicipalityCommitted();
+    } else {
+      pinMunicipality(sel);
+    }
+  }
+
+  useEffect(() => {
+    const form = document.getElementById(formId) as HTMLFormElement | null;
+    if (!form) return;
+    const onSubmit = () => {
+      const codeInput = form.elements.namedItem("municipality");
+      if (!(codeInput instanceof HTMLInputElement)) return;
+      if (!codeInput.value.trim()) {
+        clearMunicipalityCommitted();
+      }
+    };
+    form.addEventListener("submit", onSubmit);
+    return () => form.removeEventListener("submit", onSubmit);
+  }, [formId]);
+
+  useEffect(() => {
+    if (isPreviewing) return;
+    const form = document.getElementById(formId) as HTMLFormElement | null;
+    const codeInput = form?.elements.namedItem("municipality");
+    if (!(codeInput instanceof HTMLInputElement)) return;
+    codeInput.dispatchEvent(new Event("input", { bubbles: true }));
+    codeInput.dispatchEvent(new Event("change", { bubbles: true }));
+  }, [selectedCode, formId, isPreviewing]);
 
   const filtered = useMemo(
     () => options.filter((o) => startsWithFold(o.name, text)),
     [options, text],
   );
 
-  function commitOrCancel() {
-    if (!selectedCode) {
-      // Texto suelto sin selección válida → cancelar.
-      const exact = options.find(
-        (o) => fold(o.name) === fold(text) && startsWithFold(o.name, text),
-      );
-      if (exact && startsWithFold(exact.name, text) && fold(exact.name) === fold(text)) {
-        setSelectedCode(exact.code);
-        setText(exact.name);
-        return;
-      }
-      setText("");
-      setSelectedCode("");
-      return;
-    }
-    const sel = options.find((o) => o.code === selectedCode);
-    if (!sel || fold(text) !== fold(sel.name)) {
-      setText("");
-      setSelectedCode("");
-    } else {
-      setText(sel.name);
-    }
-  }
+  const previewDisplayText = previewCcaaCodes.length === 0
+    ? ""
+    : !previewCode
+      ? ""
+      : previewLoading
+        ? ""
+        : previewName;
 
-  useEffect(() => {
-    const form = document.getElementById(SEARCH_FORM_ID) as HTMLFormElement | null;
-    if (!form) return;
-    const onSubmit = () => {
-      // Antes de enviar: si el texto no corresponde a un código válido, vaciar.
-      const codeInput = form.elements.namedItem("municipality");
-      if (!(codeInput instanceof HTMLInputElement)) return;
-      if (!codeInput.value.trim()) {
-        setText("");
-        setSelectedCode("");
-      }
-    };
-    form.addEventListener("submit", onSubmit);
-    return () => form.removeEventListener("submit", onSubmit);
-  }, []);
+  const needCcaaHint = "Selecciona antes una o más CCAA";
+  const previewPlaceholder =
+    previewCcaaCodes.length === 0
+      ? needCcaaHint
+      : previewLoading
+        ? "Cargando…"
+        : "Escribe para filtrar…";
 
-  useEffect(() => {
-    function onDocMouseDown(e: MouseEvent) {
-      if (!wrapRef.current?.contains(e.target as Node)) {
-        setOpen(false);
-        commitOrCancel();
-      }
-    }
-    document.addEventListener("mousedown", onDocMouseDown);
-    return () => document.removeEventListener("mousedown", onDocMouseDown);
-  });
+  const committedValue = inputDisabled ? "" : text;
+  const displayValue = isPreviewing ? previewDisplayText : committedValue;
+  const displayPlaceholder = isPreviewing
+    ? previewPlaceholder
+    : !enabled
+      ? needCcaaHint
+      : loading
+        ? "Cargando…"
+        : options.length === 0
+          ? "Sin municipios con licitaciones"
+          : "Escribe para filtrar…";
 
   return (
     <div ref={wrapRef} className="relative">
@@ -162,25 +348,20 @@ export function MunicipalityFilter({
       </label>
       <input type="hidden" name="municipality" value={selectedCode} />
       <input
+        ref={inputRef}
         id="municipality-text"
         type="text"
         autoComplete="off"
-        disabled={inputDisabled}
-        value={inputDisabled ? "" : text}
-        placeholder={
-          !enabled
-            ? "Selecciona antes una CCAA"
-            : loading
-              ? "Cargando…"
-              : options.length === 0
-                ? "Sin municipios con licitaciones"
-                : "Escribe para filtrar…"
-        }
+        disabled={!isPreviewing && inputDisabled}
+        readOnly={isPreviewing}
+        value={displayValue}
+        placeholder={displayPlaceholder}
         onFocus={() => {
-          if (!inputDisabled) setOpen(true);
+          if (interactionLocked) return;
+          setOpen(true);
         }}
         onChange={(e) => {
-          if (inputDisabled) return;
+          if (interactionLocked) return;
           const next = e.target.value;
           setText(next);
           setOpen(true);
@@ -188,63 +369,91 @@ export function MunicipalityFilter({
           setSelectedCode(match ? match.code : "");
         }}
         onKeyDown={(e) => {
-          if (inputDisabled) return;
+          if (interactionLocked) return;
           if (e.key === "Escape") {
-            setText("");
-            setSelectedCode("");
-            setOpen(false);
+            clearMunicipalityCommitted();
           }
           if (e.key === "Enter" && open && filtered.length === 1) {
             e.preventDefault();
-            setSelectedCode(filtered[0].code);
-            setText(filtered[0].name);
-            setOpen(false);
+            pinMunicipality(filtered[0]);
           }
         }}
         onBlur={() => {
-          // blur puede ir antes del click en opción; delay corto.
           window.setTimeout(() => {
-            if (!wrapRef.current?.contains(document.activeElement)) {
-              setOpen(false);
-              commitOrCancel();
+            const ae = document.activeElement;
+            if (
+              wrapRef.current?.contains(ae) ||
+              ae?.closest?.("[data-anchored-portal]")
+            ) {
+              return;
             }
+            setOpen(false);
+            commitOrCancel();
           }, 120);
         }}
-        className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
+        className={cn(
+          "mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-60",
+          isPreviewing && SEARCH_PREVIEW_GHOST_CLASS,
+        )}
         aria-controls={listId}
-        aria-expanded={open && !inputDisabled}
+        aria-expanded={open && !interactionLocked}
         aria-autocomplete="list"
         role="combobox"
       />
-      {!inputDisabled && open && filtered.length > 0 ? (
-        <ul
-          id={listId}
-          role="listbox"
-          className="absolute z-20 mt-1 max-h-56 w-full overflow-auto rounded-md border border-border bg-background py-1 shadow-md"
-        >
+      <AnchoredPortal
+        open={!interactionLocked && open && filtered.length > 0}
+        anchorRef={inputRef}
+        onDismiss={() => {
+          setOpen(false);
+          commitOrCancel();
+        }}
+        className="bg-background py-1"
+        maxHeight={224}
+      >
+        <ul id={listId} role="listbox">
           {filtered.map((opt) => (
-            <li key={opt.code} role="option" aria-selected={opt.code === selectedCode}>
+            <li
+              key={opt.code}
+              role="option"
+              aria-selected={opt.code === selectedCode}
+            >
               <button
                 type="button"
-                className="w-full px-3 py-1.5 text-left text-sm text-foreground hover:bg-muted"
+                className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-foreground hover:bg-muted"
                 onMouseDown={(e) => e.preventDefault()}
-                onClick={() => {
-                  setSelectedCode(opt.code);
-                  setText(opt.name);
-                  setOpen(false);
-                }}
+                onClick={() => pinMunicipality(opt)}
               >
-                {opt.name}
+                <span className="min-w-0 flex-1 truncate">{opt.name}</span>
+                {showCcaaHint ? (
+                  <span className="shrink-0 text-xs text-muted-foreground/70">
+                    {ccaaShortLabel(opt.ccaaCode)}
+                  </span>
+                ) : null}
               </button>
             </li>
           ))}
         </ul>
-      ) : null}
-      {!inputDisabled && open && !loading && text !== "" && filtered.length === 0 ? (
-        <p className="absolute z-20 mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-xs text-muted-foreground shadow-md">
+      </AnchoredPortal>
+      <AnchoredPortal
+        open={
+          !interactionLocked &&
+          open &&
+          !loading &&
+          text !== "" &&
+          filtered.length === 0
+        }
+        anchorRef={inputRef}
+        onDismiss={() => {
+          setOpen(false);
+          commitOrCancel();
+        }}
+        className="bg-background px-3 py-2"
+        maxHeight={80}
+      >
+        <p className="text-xs text-muted-foreground">
           Ningún municipio coincide
         </p>
-      ) : null}
+      </AnchoredPortal>
     </div>
   );
 }

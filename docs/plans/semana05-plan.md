@@ -235,7 +235,7 @@ Registro de lo acordado al cerrar (o antes de) cada paso:
 | Paso 4 | UI mínima `/search` (form GET + `searchTenders`) | Texto + CPV + importe; badge FTS/errata/filtro; sin ficha/dashboard |
 | Paso 5 | `@supabase/ssr` + middleware + trigger `handle_new_user` | Login/account mínimos; seed Alice/Bob → `public.users`; sin service_role |
 | Paso 6 | `/register` + `/alerts` CRUD mínimo + script RLS | `pnpm --filter @efilicit/web verify:rls` → Alice≠Bob OK; fondo blanco fijo hasta Semana 6 |
-| Paso 7 | Motor batch Python `alerts/` (match → cola) | Tests sin red; `idempotency_key` por alerta+tender+digest; sin email aún |
+| Paso 7 | Motor batch Python `alerts/` (match → cola) | Tests sin red; `idempotency_key` por alerta+tender; sin email aún |
 | Paso 8 | Digest diario/semanal + Resend (`FakeEmailSender` / `ResendEmailSender`) | Preferencia `users.digest_frequency`; drain por usuario+periodo; weekly solo lunes UTC; Edge Function N/A ([ADR 012](../adr/012-digest-email-job-python-sin-edge-function.md)); `instant` diferido ([ADR 013](../adr/013-alert-frequencies-daily-weekly-instant-diferido.md)) |
 | Paso 9 | CLI `run-alerts` + workflow `alerts-digest.yml` | Dry-run default (fixtures+Fake); `--write` / `--send`; cron off |
 | Paso 10 | E2E local buscar → alerta → batch → digest | Guía `semana05-e2e-local.md`; Resend OK (personal); dominio eficen → IT |

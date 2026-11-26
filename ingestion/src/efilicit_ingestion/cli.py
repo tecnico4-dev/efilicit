@@ -18,6 +18,10 @@ from efilicit_ingestion.run_alerts import AlertsRunConfig, format_result as form
 from efilicit_ingestion.run_catalunya import CatalunyaRunConfig, run_catalunya
 from efilicit_ingestion.run_euskadi import EuskadiRunConfig, run_euskadi
 from efilicit_ingestion.run_placsp import PlacspRunConfig, format_result, run_placsp
+from efilicit_ingestion.run_recommendations import (
+    RecommendationsRunConfig,
+    run_recommendations,
+)
 
 _SYNDICATIONS: dict[str, PlacspSyndication] = {
     PLACSP.source_code: PLACSP,
@@ -112,6 +116,15 @@ def build_parser() -> argparse.ArgumentParser:
         type=int,
         default=0,
         help="SODA $offset de la primera página (default: 0).",
+    )
+    catalunya.add_argument(
+        "--since-days",
+        type=int,
+        default=7,
+        help=(
+            "Ventana SoQL data_publicacio_anunci (default: 7; "
+            "0 = sin filtro de fecha, backfill)."
+        ),
     )
     catalunya.add_argument(
         "--dry-run",
@@ -217,6 +230,54 @@ def build_parser() -> argparse.ArgumentParser:
         ),
     )
 
+    recommendations = sub.add_parser(
+        "run-recommendations",
+        help=(
+            "Recomendaciones batch (ADR 034): ratings + favoritos + perfil Eficen. "
+            "Por defecto dry-run (fixtures, sin DB)."
+        ),
+    )
+    recommendations.set_defaults(dry_run=True)
+    recommendations.add_argument(
+        "--dry-run",
+        action="store_true",
+        dest="dry_run",
+        help="Fixtures en memoria (default seguro).",
+    )
+    recommendations.add_argument(
+        "--write",
+        action="store_false",
+        dest="dry_run",
+        help="Postgres real (EFILICIT_DATABASE_URL).",
+    )
+    recommendations.add_argument(
+        "--user-id",
+        help="Solo recalcular este users.id (UUID).",
+    )
+
+    intake = sub.add_parser(
+        "run-offer-intake",
+        help=(
+            "Intake de pliegos del expediente (ADR 035): procesa offer_case_intake "
+            "pendientes. Necesita EFILICIT_DATABASE_URL + Storage service_role."
+        ),
+    )
+    intake.add_argument(
+        "--limit",
+        type=int,
+        default=10,
+        help="Máximo de trabajos por ejecución (default: 10).",
+    )
+    intake.add_argument(
+        "--offer-case-id",
+        help="Encola (si no hay trabajo abierto) y procesa solo este expediente.",
+    )
+    intake.add_argument(
+        "--no-download",
+        action="store_true",
+        help="Solo volcar el XML; no descargar pliegos.",
+    )
+
     health = sub.add_parser(
         "source-health",
         help=(
@@ -254,6 +315,10 @@ def main(argv: list[str] | None = None) -> int:
         return _cmd_run_euskadi(args)
     if args.command == "run-alerts":
         return _cmd_run_alerts(args)
+    if args.command == "run-recommendations":
+        return _cmd_run_recommendations(args)
+    if args.command == "run-offer-intake":
+        return _cmd_run_offer_intake(args)
     if args.command == "source-health":
         return _cmd_source_health(args)
 
@@ -293,11 +358,33 @@ def _cmd_run_placsp(args: argparse.Namespace) -> int:
     try:
         result = run_placsp(config)
     except Exception as exc:  # noqa: BLE001 — superficie al CLI
-        print(f"error: {exc}", file=sys.stderr)
+        from efilicit_ingestion.pipeline.runner import SourceUnavailableError
+
+        if isinstance(exc, SourceUnavailableError):
+            # Actions: warning visible, job verde (fuente no sirvió el ZIP).
+            print(
+                "::warning::PLACSP no sirvió el ZIP (WAF/HTML o aún no publicado). "
+                "Ingesta omitida; el próximo cron reintentará. "
+                f"Detalle: {exc.reason}",
+                file=sys.stderr,
+            )
+            print(f"status=success source_unavailable=1 run_id={exc.sync.run_id}")
+            if exc.sync.error_message:
+                print(f"error_message={exc.sync.error_message}")
+            return 0
+        _print_cli_error(exc)
         return 1
 
     print(format_result(result))
     return 0 if result.sync.status == "success" else 1
+
+
+def _print_cli_error(exc: BaseException) -> None:
+    """Imprime el error y la causa encadenada (si la hay) para logs de Actions."""
+    print(f"error: {exc}", file=sys.stderr)
+    cause = exc.__cause__
+    if cause is not None and cause is not exc:
+        print(f"cause: {cause}", file=sys.stderr)
 
 
 def _cmd_run_catalunya(args: argparse.Namespace) -> int:
@@ -313,12 +400,16 @@ def _cmd_run_catalunya(args: argparse.Namespace) -> int:
     if args.page_size < 1 or args.max_pages < 1 or args.start_offset < 0:
         print("error: invalid page-size / max-pages / start-offset", file=sys.stderr)
         return 2
+    if args.since_days < 0:
+        print("error: invalid since-days (use >= 0; 0 = no date filter)", file=sys.stderr)
+        return 2
 
     config = CatalunyaRunConfig(
         fixture_path=fixture,
         page_size=args.page_size,
         max_pages=args.max_pages,
         start_offset=args.start_offset,
+        since_days=args.since_days if args.since_days > 0 else None,
         dry_run=bool(args.dry_run),
         run_id=args.run_id,
         use_storage=not bool(args.no_storage),
@@ -327,7 +418,7 @@ def _cmd_run_catalunya(args: argparse.Namespace) -> int:
     try:
         result = run_catalunya(config)
     except Exception as exc:  # noqa: BLE001 — superficie al CLI
-        print(f"error: {exc}", file=sys.stderr)
+        _print_cli_error(exc)
         return 1
 
     print(format_result(result))
@@ -360,7 +451,7 @@ def _cmd_run_euskadi(args: argparse.Namespace) -> int:
     try:
         result = run_euskadi(config)
     except Exception as exc:  # noqa: BLE001 — superficie al CLI
-        print(f"error: {exc}", file=sys.stderr)
+        _print_cli_error(exc)
         return 1
 
     print(format_result(result))
@@ -409,13 +500,58 @@ def _cmd_run_alerts(args: argparse.Namespace) -> int:
     try:
         result = run_alerts(config)
     except Exception as exc:  # noqa: BLE001 — superficie al CLI
-        print(f"error: {exc}", file=sys.stderr)
+        _print_cli_error(exc)
         return 1
 
     print(format_alerts_result(result))
     if result.drain.digests_failed and not result.dry_run:
         return 1
     return 0
+
+
+def _cmd_run_recommendations(args: argparse.Namespace) -> int:
+    config = RecommendationsRunConfig(
+        dry_run=bool(args.dry_run),
+        user_id=getattr(args, "user_id", None) or None,
+    )
+    try:
+        result = run_recommendations(config)
+    except Exception as exc:  # noqa: BLE001
+        _print_cli_error(exc)
+        return 1
+
+    mode = "dry-run" if result.dry_run else "write"
+    print(
+        f"recommendations {mode}: users={result.users} written={result.written} "
+        f"by_profile={result.by_profile} cold_skip={result.skipped_cold}"
+    )
+    return 0
+
+
+def _cmd_run_offer_intake(args: argparse.Namespace) -> int:
+    from efilicit_ingestion.run_offer_intake import (
+        OfferIntakeRunConfig,
+        format_result as format_intake_result,
+        run_offer_intake,
+    )
+
+    if args.limit < 1:
+        print("error: --limit must be >= 1", file=sys.stderr)
+        return 2
+
+    config = OfferIntakeRunConfig(
+        limit=args.limit,
+        offer_case_id=args.offer_case_id or None,
+        download=not bool(args.no_download),
+    )
+    try:
+        result = run_offer_intake(config)
+    except Exception as exc:  # noqa: BLE001
+        _print_cli_error(exc)
+        return 1
+
+    print(format_intake_result(result))
+    return 1 if result.failed else 0
 
 
 def _cmd_source_health(args: argparse.Namespace) -> int:

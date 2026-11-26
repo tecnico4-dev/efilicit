@@ -10,8 +10,15 @@ import { EmptyState, ErrorState } from "@/components/ui/state-message";
 import {
   isNotificationInTrashWindow,
   listFavoriteStatusNotifications,
+  listOwnCommonInboxNotifications,
+  listOwnCommonRemovedInboxNotifications,
+  listOwnDigestInboxNotifications,
+  listOwnSharedInboxNotifications,
 } from "@/lib/queries";
-import { NotificationsList } from "./notifications-list";
+import {
+  NotificationsList,
+  type InboxItem,
+} from "./notifications-list";
 import type { NotificationsView } from "./notifications-folder-tabs";
 
 export const dynamic = "force-dynamic";
@@ -21,6 +28,10 @@ type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 function first(value: string | string[] | undefined): string {
   if (Array.isArray(value)) return value[0] ?? "";
   return value ?? "";
+}
+
+function itemTrashedAt(item: InboxItem): string | null {
+  return item.data.trashedAt;
 }
 
 export default async function NotificationsPage({
@@ -51,15 +62,72 @@ export default async function NotificationsPage({
     );
   }
 
-  const { data: notifications, error } = await listFavoriteStatusNotifications(
-    supabase,
-    { userId: profile.id },
-  );
+  const [
+    favResult,
+    digestResult,
+    commonResult,
+    commonRemovedResult,
+    sharedResult,
+  ] = await Promise.all([
+    listFavoriteStatusNotifications(supabase, { userId: profile.id }),
+    listOwnDigestInboxNotifications(supabase, { userId: profile.id }),
+    listOwnCommonInboxNotifications(supabase, { userId: profile.id }),
+    listOwnCommonRemovedInboxNotifications(supabase, {
+      userId: profile.id,
+    }),
+    listOwnSharedInboxNotifications(supabase, { userId: profile.id }),
+  ]);
 
-  const hasActive = notifications.some((n) => n.trashedAt == null);
-  const hasTrash = notifications.some(
-    (n) => n.trashedAt != null && isNotificationInTrashWindow(n.trashedAt),
-  );
+  const error =
+    favResult.error ??
+    digestResult.error ??
+    commonResult.error ??
+    commonRemovedResult.error ??
+    sharedResult.error;
+
+  const items: InboxItem[] = [
+    ...favResult.data.map(
+      (data): InboxItem => ({
+        kind: "favorite_status",
+        sortAt: data.detectedAt,
+        data,
+      }),
+    ),
+    ...digestResult.data.map(
+      (data): InboxItem => ({
+        kind: "digest",
+        sortAt: data.sentAt,
+        data,
+      }),
+    ),
+    ...commonResult.data.map(
+      (data): InboxItem => ({
+        kind: "common",
+        sortAt: data.sharedAt,
+        data,
+      }),
+    ),
+    ...commonRemovedResult.data.map(
+      (data): InboxItem => ({
+        kind: "common_removed",
+        sortAt: data.removedAt,
+        data,
+      }),
+    ),
+    ...sharedResult.data.map(
+      (data): InboxItem => ({
+        kind: "shared",
+        sortAt: data.sharedAt,
+        data,
+      }),
+    ),
+  ].sort((a, b) => (a.sortAt < b.sortAt ? 1 : -1));
+
+  const hasActive = items.some((n) => itemTrashedAt(n) == null);
+  const hasTrash = items.some((n) => {
+    const trashedAt = itemTrashedAt(n);
+    return trashedAt != null && isNotificationInTrashWindow(trashedAt);
+  });
   const showList = hasActive || hasTrash || view === "trash";
 
   return (
@@ -77,7 +145,7 @@ export default async function NotificationsPage({
           <EmptyState>Aún no tienes notificaciones.</EmptyState>
         ) : (
           <NotificationsList
-            notifications={notifications}
+            items={items}
             initialView={view}
             userId={profile.id}
           />

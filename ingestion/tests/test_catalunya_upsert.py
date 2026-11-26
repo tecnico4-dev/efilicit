@@ -18,8 +18,10 @@ from efilicit_ingestion.models import RemoteArtifact, SyncContext
 from efilicit_ingestion.pipeline import (
     InMemoryArtifactStore,
     InMemorySyncRepository,
-    run_pipeline,
     stages,
+)
+from efilicit_ingestion.pipeline.catalunya_incremental import (
+    run_pipeline_catalunya_incremental,
 )
 from efilicit_ingestion.pipeline.canonical_repo import (
     EVENT_TYPE_INGESTED,
@@ -99,18 +101,19 @@ def test_catalunya_source_code_does_not_collide_with_placsp() -> None:
 
 
 def test_catalunya_pipeline_updates_source_sync_and_does_not_duplicate() -> None:
-    """Fixture JSON → pipeline: sync success + counters; 2ª pasada → updated."""
+    """Fixture JSON → incremental: sync success; 2ª pasada → skip por checksum."""
     body = FIXTURE.read_bytes()
     connector = SocrataConnector(
         page_size=1000,
         max_pages=1,
+        since_days=None,
         fetch_transport=lambda _url: (200, {"content-type": "application/json"}, body),
     )
     store = InMemoryArtifactStore()
     sync_repo = InMemorySyncRepository()
     canonical = InMemoryCanonicalRepository()
 
-    first = run_pipeline(
+    first = run_pipeline_catalunya_incremental(
         connector,
         SyncContext(source_code=SOURCE_CODE, run_id="catalunya-upsert-1"),
         artifact_store=store,
@@ -122,10 +125,11 @@ def test_catalunya_pipeline_updates_source_sync_and_does_not_duplicate() -> None
     assert first.sync.records_new == 2
     assert first.sync.records_updated == 0
     assert first.stored_artifacts[0].storage_path.startswith("raw/catalunya/")
+    assert "rows/" in first.stored_artifacts[0].artifact_key
     assert len(canonical.tenders) == 2
     assert (SOURCE_CODE, ID_1) in canonical.tender_sources
 
-    second = run_pipeline(
+    second = run_pipeline_catalunya_incremental(
         connector,
         SyncContext(source_code=SOURCE_CODE, run_id="catalunya-upsert-2"),
         artifact_store=store,
@@ -133,8 +137,10 @@ def test_catalunya_pipeline_updates_source_sync_and_does_not_duplicate() -> None
         canonical_repo=canonical,
     )
     assert second.sync.status == "success"
+    assert second.sync.records_seen == 0
     assert second.sync.records_new == 0
     assert second.sync.records_updated == 0
+    assert second.stored_artifacts == []
     assert len(canonical.tenders) == 2
     assert len(canonical.tender_sources) == 2
 

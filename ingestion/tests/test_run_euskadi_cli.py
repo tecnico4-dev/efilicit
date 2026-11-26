@@ -33,6 +33,7 @@ def test_cli_run_euskadi_dry_run_fixture(capsys: pytest.CaptureFixture[str]) -> 
     assert "records_seen=2" in captured.out
     assert "records_new=2" in captured.out
     assert "raw_path=raw/euskadi/" in captured.out
+    assert "rows/" in captured.out
 
 
 def test_run_euskadi_dry_run_programmatic() -> None:
@@ -41,6 +42,7 @@ def test_run_euskadi_dry_run_programmatic() -> None:
     )
     assert result.sync.status == "success"
     assert result.records_processed == 2
+    assert result.stored_artifacts[0].artifact_key.startswith("rows/")
     assert "status=success" in format_result(result)
 
 
@@ -54,11 +56,24 @@ def _db_available() -> bool:
 
 
 @pytest.mark.skipif(not _db_available(), reason="Local Supabase Postgres not reachable")
-def test_run_euskadi_fixture_writes_postgres_without_storage() -> None:
+def test_run_euskadi_fixture_writes_postgres_without_storage(
+    tmp_path: Path,
+) -> None:
+    """Nonce en ítems → checksums nuevos (ADR 025) sin chocar con runs previos."""
+    import json
+
     run_id = f"e2e-eus-pg-{uuid.uuid4()}"
+    nonce = str(uuid.uuid4())
+    page = json.loads(FIXTURE.read_text(encoding="utf-8"))
+    for item in page.get("items", []):
+        if isinstance(item, dict) and item.get("id") is not None:
+            item["_efilicit_test_nonce"] = nonce
+    fixture_path = tmp_path / "euskadi_page.json"
+    fixture_path.write_text(json.dumps(page), encoding="utf-8")
+
     result = run_euskadi(
         EuskadiRunConfig(
-            fixture_path=FIXTURE,
+            fixture_path=fixture_path,
             dry_run=False,
             use_storage=False,
             run_id=run_id,

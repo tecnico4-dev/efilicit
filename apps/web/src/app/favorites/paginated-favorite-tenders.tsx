@@ -1,8 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import type { FavoriteWithTender } from "@/lib/queries";
-import { FavoriteTenderList } from "./favorites-shared";
+import type {
+  FavoriteWithTender,
+  SharedFavoriteOwnerInfo,
+} from "@/lib/queries";
+import { FavoriteTenderList } from "./favorite-tender-list";
 import {
   DEFAULT_PAGE_SIZE,
   ListPager,
@@ -19,9 +22,18 @@ export const FAVORITES_PAGE_SIZE = DEFAULT_PAGE_SIZE;
 export function PaginatedFavoriteTenders({
   favorites,
   from = "favorites-tenders",
+  shareUserId,
+  sharedOwners,
+  showKindBubble = true,
+  /** False si no hay pestañas kind: redondea también la esquina superior izquierda. */
+  flushTopLeft = true,
 }: {
   favorites: FavoriteWithTender[];
   from?: "favorites" | "favorites-tenders";
+  shareUserId?: string;
+  sharedOwners?: Readonly<Record<string, SharedFavoriteOwnerInfo>>;
+  showKindBubble?: boolean;
+  flushTopLeft?: boolean;
 }) {
   const total = favorites.length;
   const showPager = total > FAVORITES_PAGE_SIZE;
@@ -48,13 +60,21 @@ export function PaginatedFavoriteTenders({
     setPage(1);
   }
 
+  // Con pestañas: esquina izq a ras del tab; der sigue redondeada.
+  const panelClass = flushTopLeft
+    ? "rounded-lg rounded-tl-none border border-border"
+    : "rounded-lg border border-border";
+
   if (!showPager) {
     return (
-      <div className="rounded-lg border border-border px-4">
+      <div className={`${panelClass} px-4`}>
         <FavoriteTenderList
           favorites={pageItems}
           from={from}
           bordered={false}
+          shareUserId={shareUserId}
+          sharedOwners={sharedOwners}
+          showKindBubble={showKindBubble}
         />
       </div>
     );
@@ -62,7 +82,7 @@ export function PaginatedFavoriteTenders({
 
   return (
     <div
-      className="flex flex-col overflow-hidden rounded-lg border border-border"
+      className={`flex flex-col overflow-hidden ${panelClass}`}
       style={{ height: "calc(100dvh - 11.5rem)" }}
     >
       <div
@@ -73,6 +93,9 @@ export function PaginatedFavoriteTenders({
           favorites={pageItems}
           from={from}
           bordered={false}
+          shareUserId={shareUserId}
+          sharedOwners={sharedOwners}
+          showKindBubble={showKindBubble}
         />
       </div>
       <div className="shrink-0 border-t border-border bg-background px-4 py-3">

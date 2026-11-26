@@ -49,3 +49,8 @@ export function useSearchFeedback(): SearchFeedbackApi {
   }
   return ctx;
 }
+
+/** Para widgets reutilizados fuera de `/search` (p. ej. alertas + CpvPicker). */
+export function useOptionalSearchFeedback(): SearchFeedbackApi | null {
+  return useContext(SearchFeedbackContext);
+}

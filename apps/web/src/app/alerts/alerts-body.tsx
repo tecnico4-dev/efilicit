@@ -1,16 +1,26 @@
-import { EmptyState, ErrorState } from "@/components/ui/state-message";
+import { ErrorState } from "@/components/ui/state-message";
+import {
+  PAGE_TITLE_RULE,
+} from "@/components/shell/page-width";
 import {
   getSessionProfile,
   getSupabaseServerClient,
 } from "@/lib/auth/session";
-import { listOwnAlerts } from "@/lib/queries";
-import { AlertRowItem } from "./alert-row";
+import {
+  listMunicipalityNamesByCodes,
+  listOwnAlertIdsWithQueueItems,
+  listOwnAlerts,
+  listSearchFilterOptions,
+} from "@/lib/queries";
+import { parseCriteria } from "@/lib/criteria-display";
+import type { CriteriaFilterOptionsProp } from "@/components/criteria/criteria-filters";
 import { AlertsPanel } from "./alerts-panel";
-import { DigestFrequencyControl } from "./digest-frequency-control";
+import { AlertsWorkspace } from "./alerts-workspace";
+import { PaginatedAlertsList } from "./paginated-alerts-list";
 
 /**
- * Perfil + lista de alertas. Pensado para `<Suspense>`: el `<h1>` de la
- * página pinta antes de este bloque.
+ * Cabecera (título + Crear alerta) + Mis alertas | Coincidencias.
+ * Pensado para `<Suspense>`: el loading/fallback muestra el marco.
  */
 export async function AlertsBody() {
   let supabase;
@@ -24,9 +34,10 @@ export async function AlertsBody() {
     );
   }
 
-  const [profileResult, alertsResult] = await Promise.all([
+  const [profileResult, alertsResult, filterListed] = await Promise.all([
     getSessionProfile(),
     listOwnAlerts(supabase),
+    listSearchFilterOptions(supabase),
   ]);
 
   if (!profileResult.data) {
@@ -41,33 +52,72 @@ export async function AlertsBody() {
   const digestFrequency =
     profileResult.data.digest_frequency === "semanal" ? "semanal" : "diaria";
 
+  const queueAlertIdsResult = await listOwnAlertIdsWithQueueItems(supabase, {
+    userId: profileResult.data.id,
+  });
+  const alertIdsWithQueue = queueAlertIdsResult.data;
+
+  const filterOptions: CriteriaFilterOptionsProp = filterListed.error
+    ? {
+        statuses: [],
+        procedureTypes: [],
+        contractTypes: [],
+        ccaaCodesWithTenders: [],
+      }
+    : {
+        statuses: filterListed.data.statuses,
+        procedureTypes: filterListed.data.procedureTypes,
+        contractTypes: filterListed.data.contractTypes,
+        ccaaCodesWithTenders: [...filterListed.data.ccaaCodesWithTenders],
+      };
+
+  const alertMunCodes = (alertsResult.data ?? []).flatMap(
+    (a) =>
+      parseCriteria(a.criteria).geography?.municipality_codes ?? [],
+  );
+  const municipalityNames = await listMunicipalityNamesByCodes(
+    supabase,
+    alertMunCodes,
+  );
+
   return (
     <>
-      <AlertsPanel
-        userId={profileResult.data.id}
-        digestFrequency={digestFrequency}
-      />
+      {/* Altura del bloque = solo el H1 (como Notificaciones); el CTA no empuja la raya. */}
+      <div className="relative">
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+          Alertas
+        </h1>
+        <div className="absolute right-0 top-1/2 z-10 -translate-y-1/2">
+          <AlertsPanel
+            userId={profileResult.data.id}
+            digestFrequency={digestFrequency}
+            filterOptions={filterOptions}
+          />
+        </div>
+      </div>
 
-      <section className="mt-10">
-        <h2 className="text-base font-medium text-foreground">Mis alertas</h2>
-        <DigestFrequencyControl
+      <div className={PAGE_TITLE_RULE}>
+        <AlertsWorkspace
           userId={profileResult.data.id}
-          initialFrequency={digestFrequency}
+          digestFrequency={digestFrequency}
+          alertsList={
+            alertsResult.error ? (
+              <ErrorState>{alertsResult.error.message}</ErrorState>
+            ) : alertsResult.data.length === 0 ? (
+              <p className="border-t border-border px-4 py-8 text-center text-sm text-muted-foreground sm:px-5">
+                Aún no tienes alertas. Usa «Crear alerta» para añadir una.
+              </p>
+            ) : (
+              <PaginatedAlertsList
+                alerts={alertsResult.data}
+                filterOptions={filterOptions}
+                alertIdsWithQueue={[...alertIdsWithQueue]}
+                municipalityNames={municipalityNames}
+              />
+            )
+          }
         />
-        {alertsResult.error ? (
-          <ErrorState className="mt-2">{alertsResult.error.message}</ErrorState>
-        ) : alertsResult.data.length === 0 ? (
-          <EmptyState className="mt-2">
-            Aún no tienes alertas. Crea una arriba.
-          </EmptyState>
-        ) : (
-          <ul className="mt-3 divide-y divide-border border-t border-border">
-            {alertsResult.data.map((a) => (
-              <AlertRowItem key={a.id} alert={a} />
-            ))}
-          </ul>
-        )}
-      </section>
+      </div>
     </>
   );
 }

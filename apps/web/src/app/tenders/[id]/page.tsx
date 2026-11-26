@@ -1,13 +1,24 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { FavoriteToggle } from "@/components/favorites/favorite-toggle";
+import { TenderFavoriteActions } from "@/components/favorites/tender-favorite-actions";
+import { OfferCaseToggle } from "@/components/mis-licitaciones/offer-case-toggle";
 import { PAGE_MAIN_CLASS } from "@/components/shell/page-width";
 import { ErrorState } from "@/components/ui/state-message";
 import { getSessionProfile, getSupabaseServerClient } from "@/lib/auth/session";
+import { isMisLicitacionesEnabled } from "@/lib/features/mis-licitaciones";
 import {
+  getOfferCaseIdByTenderId,
+  getOwnFavoriteKind,
+  getSharedFavoriteOwner,
   getTenderById,
-  isOwnFavorite,
+  asTenderInterestKind,
+  getOwnAlertInterestKindForTender,
+  listOwnTenderRatings,
   listTenderStatusHistory,
+  type FavoriteKind,
+  type SharedFavoriteOwnerInfo,
+  type TenderInterestKind,
+  type TenderRating,
   type TenderSourceSummary,
 } from "@/lib/queries";
 import { normalizeCpvCode } from "@/lib/cpv";
@@ -16,9 +27,11 @@ import { formatDateMadrid, formatDateTimeMadrid } from "@/lib/datetime";
 import {
   formatContractType,
   formatProcedureType,
+  formatSourceCode,
   formatTenderStatus,
 } from "@/lib/tender-labels";
 import { StatusHistoryPopover } from "./status-history-popover";
+import { TenderDetailRating } from "./tender-detail-rating";
 
 export const dynamic = "force-dynamic";
 
@@ -38,10 +51,34 @@ function allParam(value: string | string[] | undefined): string[] {
   return raw.map((v) => v.trim()).filter(Boolean);
 }
 
+/** Orígenes donde se muestra valoración 1–5 (+ modal al salir si no hay nota). */
+function showRatingFromParams(
+  params: Record<string, string | string[] | undefined>,
+): boolean {
+  const from = first(params.from);
+  return (
+    from === "notifications" ||
+    from === "alerts" ||
+    from === "email" ||
+    from === "recommendations"
+  );
+}
+
 function backLinkFromParams(
   params: Record<string, string | string[] | undefined>,
-): { href: string; label: string } {
+): { href: string; label: string } | null {
   const from = first(params.from);
+  // Buzón / alertas / correo / cambio de estado / retirada Común / peer buzón: sin «volver».
+  if (
+    from === "notifications" ||
+    from === "alerts" ||
+    from === "email" ||
+    from === "favorite-status" ||
+    from === "common-removed" ||
+    from === "shared-notification"
+  ) {
+    return null;
+  }
   if (from === "home") {
     return {
       href: "/",
@@ -54,10 +91,43 @@ function backLinkFromParams(
       label: "← Volver a la lista de licitaciones favoritas",
     };
   }
+  if (from === "favorites-common") {
+    return {
+      href: "/favorites/common",
+      label: "← Volver a la carpeta común",
+    };
+  }
+  if (from === "favorites-shared") {
+    return {
+      href: "/favorites/shared",
+      label: "← Volver a licitaciones compartidas",
+    };
+  }
   if (from === "favorites") {
     return {
-      href: "/favorites",
-      label: "← Volver a la lista de favoritos",
+      href: "/favorites/tenders",
+      label: "← Volver a licitaciones favoritas",
+    };
+  }
+  if (from === "mis-licitaciones" && isMisLicitacionesEnabled()) {
+    return {
+      href: "/mis-licitaciones",
+      label: "← Volver a Mis licitaciones",
+    };
+  }
+  if (from === "recommendations") {
+    const tab = first(params.tab).trim();
+    const view = first(params.view).trim();
+    const qs = new URLSearchParams();
+    if (view === "kanban") {
+      qs.set("view", "kanban");
+    } else if (tab === "propia" || tab === "subcontrata") {
+      qs.set("tab", tab);
+    }
+    const q = qs.toString();
+    return {
+      href: q ? `/recommendations?${q}` : "/recommendations",
+      label: "← Volver a mis recomendaciones",
     };
   }
 
@@ -68,14 +138,14 @@ function backLinkFromParams(
     const cpvMatch = first(params.cpv_match).trim().toLowerCase();
     const min = first(params.min).trim();
     const max = first(params.max).trim();
-    const ccaa = first(params.ccaa).trim();
+    const ccaaCodes = allParam(params.ccaa);
     const municipality = first(params.municipality).trim();
-    const status = first(params.status).trim();
-    const procedure = first(params.procedure).trim();
-    const contractType = first(params.contract_type).trim();
+    const statuses = allParam(params.status);
+    const procedures = allParam(params.procedure);
+    const contractTypes = allParam(params.contract_type);
     const pubFrom = first(params.pub_from).trim();
     const pubTo = first(params.pub_to).trim();
-    const enPlazo = first(params.en_plazo).trim() === "1";
+    const enPlazoRaw = first(params.en_plazo).trim();
     if (q) qs.set("q", q);
     for (const code of cpvCodes) qs.append("cpv", code);
     if (cpvCodes.length >= 2 && cpvMatch === "all") {
@@ -83,14 +153,16 @@ function backLinkFromParams(
     }
     if (min) qs.set("min", min);
     if (max) qs.set("max", max);
-    if (ccaa) qs.set("ccaa", ccaa);
+    for (const c of ccaaCodes) qs.append("ccaa", c);
     if (municipality) qs.set("municipality", municipality);
-    if (status) qs.set("status", status);
-    if (procedure) qs.set("procedure", procedure);
-    if (contractType) qs.set("contract_type", contractType);
+    for (const s of statuses) qs.append("status", s);
+    for (const p of procedures) qs.append("procedure", p);
+    for (const c of contractTypes) qs.append("contract_type", c);
     if (pubFrom) qs.set("pub_from", pubFrom);
     if (pubTo) qs.set("pub_to", pubTo);
-    if (enPlazo) qs.set("en_plazo", "1");
+    if (enPlazoRaw === "0" || enPlazoRaw === "1") {
+      qs.set("en_plazo", enPlazoRaw);
+    }
     const pageRaw = Number.parseInt(first(params.page).trim(), 10);
     if (Number.isInteger(pageRaw) && pageRaw > 1) {
       qs.set("page", String(pageRaw));
@@ -137,12 +209,34 @@ function Field({
   );
 }
 
+/** Cambio real en canónico vs solo alta; si no hay update, fecha de enlace a la fuente. */
+function sourceFreshnessLabel(
+  sourceCreatedAt: string,
+  tenderCreatedAt: string,
+  tenderUpdatedAt: string,
+): { label: "Creada" | "Actualizada"; at: string } {
+  const createdMs = Date.parse(tenderCreatedAt);
+  const updatedMs = Date.parse(tenderUpdatedAt);
+  if (
+    Number.isFinite(createdMs) &&
+    Number.isFinite(updatedMs) &&
+    updatedMs > createdMs + 1000
+  ) {
+    return { label: "Actualizada", at: tenderUpdatedAt };
+  }
+  return { label: "Creada", at: sourceCreatedAt || tenderCreatedAt };
+}
+
 function SourcesList({
   sources,
   canonicalSourceCode,
+  tenderCreatedAt,
+  tenderUpdatedAt,
 }: {
   sources: TenderSourceSummary[];
   canonicalSourceCode: string;
+  tenderCreatedAt: string;
+  tenderUpdatedAt: string;
 }) {
   if (sources.length === 0) {
     return (
@@ -156,14 +250,19 @@ function SourcesList({
     <ul className="mt-3 space-y-3">
       {sources.map((source) => {
         const isCanonical = source.source_code === canonicalSourceCode;
+        const freshness = sourceFreshnessLabel(
+          source.created_at,
+          tenderCreatedAt,
+          tenderUpdatedAt,
+        );
         return (
           <li
             key={source.id}
             className="rounded-md border border-border bg-surface px-4 py-3 text-sm"
           >
             <div className="flex flex-wrap items-center gap-2">
-              <span className="font-mono font-medium text-foreground">
-                {source.source_code}
+              <span className="font-medium text-foreground">
+                {formatSourceCode(source.source_code)}
               </span>
               {isCanonical ? (
                 <span className="rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-xs font-semibold text-link">
@@ -173,31 +272,14 @@ function SourcesList({
             </div>
             <dl className="mt-2 space-y-1 text-muted-foreground">
               <div>
-                <dt className="inline">Id en fuente · </dt>
-                <dd className="inline font-mono text-foreground">
-                  {source.source_tender_id}
-                </dd>
-              </div>
-              <div>
-                <dt className="inline">Visto · </dt>
+                <dt className="inline">{freshness.label}: </dt>
                 <dd className="inline text-foreground">
-                  {formatDateMadrid(source.last_seen_at)}
+                  {formatDateMadrid(freshness.at)}
                 </dd>
               </div>
-              {source.match_method ? (
-                <div>
-                  <dt className="inline">Emparejado · </dt>
-                  <dd className="inline text-foreground">
-                    {source.match_method}
-                    {source.review_status
-                      ? ` · ${source.review_status}`
-                      : null}
-                  </dd>
-                </div>
-              ) : null}
               {source.source_url ? (
                 <div>
-                  <dt className="inline">URL · </dt>
+                  <dt className="inline">URL: </dt>
                   <dd className="inline">
                     <a
                       href={source.source_url}
@@ -225,6 +307,7 @@ export default async function TenderDetailPage({
   const { id } = await params;
   const query = await searchParams;
   const back = backLinkFromParams(query);
+  const showRating = showRatingFromParams(query);
   const supabase = await getSupabaseServerClient();
   const { data: tender, error } = await getTenderById(supabase, id);
 
@@ -234,11 +317,16 @@ export default async function TenderDetailPage({
         <ErrorState>
           No se pudo cargar la licitación: {error.message}
         </ErrorState>
-        <p className="mt-4 text-sm">
-          <Link href={back.href} className="font-medium text-link hover:underline">
-            {back.label.replace(/^←\s*/, "")}
-          </Link>
-        </p>
+        {back ? (
+          <p className="mt-4 text-sm">
+            <Link
+              href={back.href}
+              className="font-medium text-link hover:underline"
+            >
+              {back.label.replace(/^←\s*/, "")}
+            </Link>
+          </p>
+        ) : null}
       </main>
     );
   }
@@ -257,41 +345,120 @@ export default async function TenderDetailPage({
     if (!history.error) statusHistory = history.data;
   }
 
-  // Favoritos solo con sesión (mismo criterio que Alertas en la nav).
+  // Favoritos / Mis licitaciones solo con sesión; valoración solo en from rating.
+  const misLicitacionesOn = isMisLicitacionesEnabled();
   let favoriteUserId: string | null = null;
+  let displayName: string | null = null;
   let initiallyFavorited = false;
+  let favoriteKind: FavoriteKind | null = null;
+  let sharedOwner: SharedFavoriteOwnerInfo | null = null;
+  let existingOfferCaseId: string | null = null;
+  let initialRating: TenderRating | null = null;
+  let defaultInterestKind: TenderInterestKind | null =
+    asTenderInterestKind(first(query.interest));
   try {
     const profile = await getSessionProfile();
     if (profile.data) {
       favoriteUserId = profile.data.id;
-      const fav = await isOwnFavorite(supabase, {
-        userId: profile.data.id,
-        tenderId: tender.id,
-      });
-      initiallyFavorited = fav.data;
+      displayName = profile.data.display_name;
+      const [favKind, shared, offer, ratings, alertInterest] =
+        await Promise.all([
+          getOwnFavoriteKind(supabase, {
+            userId: profile.data.id,
+            tenderId: tender.id,
+          }),
+          getSharedFavoriteOwner(supabase, tender.id),
+          misLicitacionesOn
+            ? getOfferCaseIdByTenderId(supabase, tender.id)
+            : Promise.resolve({ data: null as string | null, error: null }),
+          showRating
+            ? listOwnTenderRatings(supabase, {
+                userId: profile.data.id,
+                tenderIds: [tender.id],
+              })
+            : Promise.resolve(null),
+          showRating && !defaultInterestKind
+            ? getOwnAlertInterestKindForTender(supabase, {
+                userId: profile.data.id,
+                tenderId: tender.id,
+              })
+            : Promise.resolve(null),
+        ]);
+      favoriteKind = favKind.error ? null : favKind.data;
+      initiallyFavorited = favoriteKind != null;
+      sharedOwner = shared.error ? null : shared.data;
+      existingOfferCaseId = offer.data;
+      if (ratings && !ratings.error) {
+        initialRating = ratings.data[tender.id] ?? null;
+      }
+      if (!defaultInterestKind && alertInterest && !alertInterest.error) {
+        defaultInterestKind = alertInterest.data;
+      }
     }
   } catch {
     favoriteUserId = null;
   }
 
+  const showDetailRating = Boolean(showRating && favoriteUserId);
+
   return (
     <main className={PAGE_MAIN_CLASS}>
-      <p className="text-sm">
-        <Link href={back.href} className="font-medium text-link hover:underline">
-          {back.label}
-        </Link>
-      </p>
+      {back || showDetailRating ? (
+        <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-start gap-x-3">
+          <div className="justify-self-start">
+            {back ? (
+              <p className="text-sm">
+                <Link
+                  href={back.href}
+                  className="font-medium text-link hover:underline"
+                >
+                  {back.label}
+                </Link>
+              </p>
+            ) : null}
+          </div>
+          <div className="justify-self-center">
+            {showDetailRating ? (
+              <TenderDetailRating
+                userId={favoriteUserId!}
+                tenderId={tender.id}
+                initialRating={initialRating}
+                defaultInterestKind={defaultInterestKind}
+              />
+            ) : null}
+          </div>
+          <div aria-hidden />
+        </div>
+      ) : null}
 
-      <div className="mt-4 flex flex-wrap items-start justify-between gap-3">
+      <div
+        className={`flex flex-wrap items-start justify-between gap-3 ${
+          back || showDetailRating ? "mt-4" : ""
+        }`}
+      >
         <h1 className="min-w-0 flex-1 text-2xl font-semibold tracking-tight text-foreground">
           {tender.title}
         </h1>
         {favoriteUserId ? (
-          <FavoriteToggle
-            userId={favoriteUserId}
-            tenderId={tender.id}
-            initiallyFavorited={initiallyFavorited}
-          />
+          <div className="flex flex-wrap items-center gap-2">
+            {misLicitacionesOn ? (
+              <OfferCaseToggle
+                userId={favoriteUserId}
+                tenderId={tender.id}
+                existingCaseId={existingOfferCaseId}
+                kind={favoriteKind ?? defaultInterestKind}
+              />
+            ) : null}
+            <TenderFavoriteActions
+              userId={favoriteUserId}
+              tenderId={tender.id}
+              tenderTitle={tender.title}
+              initiallyFavorited={initiallyFavorited}
+              initialKind={favoriteKind}
+              initialSharedOwner={sharedOwner}
+              shareKindHint={defaultInterestKind}
+            />
+          </div>
         ) : null}
       </div>
 
@@ -331,7 +498,7 @@ export default async function TenderDetailPage({
         </Field>
         <Field label="Tipo de contrato">{formatContractType(tender.contract_type)}</Field>
         <Field label="Procedimiento">{formatProcedureType(tender.procedure_type)}</Field>
-        <Field label="Publicación">{formatDateMadrid(tender.publication_date)}</Field>
+        <Field label="Actualizado">{formatDateMadrid(tender.publication_date)}</Field>
         <Field label="Plazo">{formatDateTimeMadrid(tender.deadline_at)}</Field>
         <Field label="Comunidad autónoma">
           {tender.place_ccaa?.name ?? "—"}
@@ -371,6 +538,8 @@ export default async function TenderDetailPage({
         <SourcesList
           sources={tender.sources}
           canonicalSourceCode={tender.canonical_source_code}
+          tenderCreatedAt={tender.created_at}
+          tenderUpdatedAt={tender.updated_at}
         />
       </section>
     </main>

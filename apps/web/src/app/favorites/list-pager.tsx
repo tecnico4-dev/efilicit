@@ -19,6 +19,7 @@ export function ListPager({
   showing,
   total,
   itemLabel,
+  totalQualifier = "totales",
   ariaPageSizeLabel,
   onPageChange,
   onPageSizeChange,
@@ -31,6 +32,8 @@ export function ListPager({
   total: number;
   /** Ej. «licitaciones» o «búsquedas». */
   itemLabel: string;
+  /** Tras el total: «totales» (default) o «acotadas» (buscador top-K). */
+  totalQualifier?: string;
   ariaPageSizeLabel: string;
   onPageChange: (page: number) => void;
   onPageSizeChange: (size: number) => void;
@@ -189,7 +192,7 @@ export function ListPager({
         <span>
           de{" "}
           <span className="font-medium text-foreground tabular-nums">{total}</span>{" "}
-          {itemLabel} totales
+          {itemLabel} {totalQualifier}
         </span>
       </span>
     </div>

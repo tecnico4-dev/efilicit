@@ -5,32 +5,161 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
+  CriteriaFilters,
+  type CriteriaFilterOptionsProp,
+} from "@/components/criteria/criteria-filters";
+import {
   criteriaHasFilters,
-  criteriaToFormFields,
-  formFieldsToCriteria,
+  criteriaToFilterInitial,
   formatCriteriaSummary,
   parseCriteria,
 } from "@/lib/criteria-display";
+import {
+  buildCriteriaFromSearchForm,
+  hasInvalidAmountRange,
+  hasInvalidPublicationRange,
+} from "@/lib/build-criteria-from-form";
+import { cn } from "@/lib/cn";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
-import { ownAlertNameTaken, updateOwnAlert } from "@/lib/queries";
+import { FavoriteKindBubble } from "@/components/favorites/favorite-kind-bubble";
+import {
+  asFavoriteKind,
+  ownAlertNameTaken,
+  updateOwnAlert,
+  type FavoriteKind,
+} from "@/lib/queries";
 import type { Database } from "@efilicit/types";
+import { AlertRelatedTendersPanel } from "./alert-related-tenders-panel";
 import { RemoveAlertButton } from "./remove-alert-button";
 
 type AlertRow = Database["public"]["Tables"]["alerts"]["Row"];
 
-export function AlertRowItem({ alert }: { alert: AlertRow }) {
+function PencilIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M12 20h9" />
+      <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
+    </svg>
+  );
+}
+
+/** Interruptor Activa/Inactiva: ancho fijo (Inactiva); círculo pegado al extremo. */
+function ActiveToggle({
+  active,
+  disabled,
+  pending,
+  onToggle,
+}: {
+  active: boolean;
+  disabled?: boolean;
+  pending?: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={active}
+      aria-label={active ? "Desactivar alerta" : "Activar alerta"}
+      title={active ? "Desactivar" : "Activar"}
+      disabled={disabled || pending}
+      onClick={onToggle}
+      className={cn(
+        "relative inline-flex h-8 w-[5.25rem] shrink-0 items-center rounded-full border transition-colors",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
+        "disabled:pointer-events-none disabled:opacity-50",
+        active
+          ? "border-primary/30 bg-primary/15"
+          : "border-destructive/25 bg-destructive/15",
+      )}
+    >
+      {/* Etiqueta en el hueco libre (el círculo ocupa ~1.5rem + márgenes). */}
+      <span
+        className={cn(
+          "pointer-events-none absolute inset-y-0 flex items-center justify-center text-[10px] font-semibold leading-none tracking-wide transition-[left,right,color] duration-200",
+          active
+            ? "left-1 right-7 text-link"
+            : "left-7 right-1 text-destructive",
+        )}
+        aria-hidden
+      >
+        {active ? "Activa" : "Inactiva"}
+      </span>
+      {/* Desliza con translate-x (left/right no anima bien). 5.25rem − 0.25rem − 1.5rem = 3.5rem. */}
+      <span
+        className={cn(
+          "pointer-events-none absolute left-0.5 top-1/2 flex size-6 -translate-y-1/2 items-center justify-center rounded-full bg-background shadow-sm transition-transform duration-200 ease-out will-change-transform",
+          active ? "translate-x-[3.5rem]" : "translate-x-0",
+        )}
+      >
+        {active ? (
+          <svg
+            viewBox="0 0 16 16"
+            className="size-3.5 text-primary"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden
+          >
+            <path d="M3.5 8.5 6.5 11.5 12.5 4.5" />
+          </svg>
+        ) : (
+          <svg
+            viewBox="0 0 16 16"
+            className="size-3.5 text-destructive"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            aria-hidden
+          >
+            <path d="M4 4l8 8M12 4l-8 8" />
+          </svg>
+        )}
+      </span>
+    </button>
+  );
+}
+
+export function AlertRowItem({
+  alert,
+  filterOptions,
+  hasRelatedTenders = false,
+  municipalityNames = {},
+}: {
+  alert: AlertRow;
+  filterOptions: CriteriaFilterOptionsProp;
+  /** Hay filas en notification_queue para esta alerta. */
+  hasRelatedTenders?: boolean;
+  municipalityNames?: Readonly<Record<string, string>>;
+}) {
   const router = useRouter();
   const criteria = parseCriteria(alert.criteria);
-  const fields = criteriaToFormFields(criteria);
+  const formId = `alert-edit-form-${alert.id}`;
+  const idPrefix = `alert-edit-${alert.id}-`;
 
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(alert.name);
-  const [keywords, setKeywords] = useState(fields.keywords);
-  const [cpv, setCpv] = useState(fields.cpv);
-  const [min, setMin] = useState(fields.min);
-  const [max, setMax] = useState(fields.max);
+  /** Si ya tenía kind, se respeta; si es legado (null), vacío hasta que elijan. */
+  const [kind, setKind] = useState<FavoriteKind | "">(
+    () => asFavoriteKind(alert.kind) ?? "",
+  );
+  const [editKey, setEditKey] = useState(0);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [relatedOpen, setRelatedOpen] = useState(false);
+  const savedKind = asFavoriteKind(alert.kind);
 
   async function toggleActive() {
     setPending(true);
@@ -49,25 +178,31 @@ export function AlertRowItem({ alert }: { alert: AlertRow }) {
   }
 
   async function onSaveEdit() {
-    const nextCriteria = formFieldsToCriteria({ keywords, cpv, min, max });
+    const form = document.getElementById(formId) as HTMLFormElement | null;
+    if (!form) {
+      setError("No se encontró el formulario.");
+      return;
+    }
     if (!name.trim()) {
       setError("Indica un nombre.");
       return;
     }
-    if (!criteriaHasFilters(nextCriteria)) {
-      setError("Indica al menos un criterio (keywords, CPV o importe).");
+    const alertKind = asFavoriteKind(kind);
+    if (!alertKind) {
+      setError("Indica el tipo de alerta.");
       return;
     }
-    const minVal = nextCriteria.estimated_value_min;
-    const maxVal = nextCriteria.estimated_value_max;
-    if (
-      minVal != null &&
-      maxVal != null &&
-      !Number.isNaN(minVal) &&
-      !Number.isNaN(maxVal) &&
-      minVal > maxVal
-    ) {
+    if (hasInvalidAmountRange(form)) {
       setError("Importe solicitado inválido.");
+      return;
+    }
+    if (hasInvalidPublicationRange(form)) {
+      setError("Rango de fechas de actualización inválido.");
+      return;
+    }
+    const nextCriteria = buildCriteriaFromSearchForm(form);
+    if (!nextCriteria || !criteriaHasFilters(nextCriteria)) {
+      setError("Indica al menos un criterio de búsqueda.");
       return;
     }
 
@@ -93,6 +228,7 @@ export function AlertRowItem({ alert }: { alert: AlertRow }) {
       alertId: alert.id,
       name: name.trim(),
       criteria: nextCriteria,
+      kind: alertKind,
     });
     setPending(false);
     if (updateError) {
@@ -103,132 +239,162 @@ export function AlertRowItem({ alert }: { alert: AlertRow }) {
     router.refresh();
   }
 
+  function cancelEdit() {
+    setName(alert.name);
+    setKind(asFavoriteKind(alert.kind) ?? "");
+    setEditKey((k) => k + 1);
+    setError(null);
+    setEditing(false);
+  }
+
   return (
     <li className="py-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <p className="font-medium text-foreground">{alert.name}</p>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {formatCriteriaSummary(criteria)}
-          </p>
-          <p className="mt-2">
-            {alert.is_active ? (
-              <span className="rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-xs font-semibold text-link">
-                Activa
-              </span>
-            ) : (
-              <span className="rounded-full border border-destructive/30 bg-destructive/10 px-2 py-0.5 text-xs font-semibold text-destructive">
-                Inactiva
-              </span>
-            )}
-          </p>
+          <div className={cn(!alert.is_active && "opacity-55")}>
+            <div
+              className={cn(
+                "flex flex-wrap items-center gap-2 font-medium",
+                alert.is_active ? "text-foreground" : "text-muted-foreground",
+              )}
+            >
+              <span className="min-w-0">{alert.name}</span>
+              {savedKind ? <FavoriteKindBubble kind={savedKind} /> : null}
+            </div>
+            <p
+              className={cn(
+                "mt-1 text-sm",
+                alert.is_active
+                  ? "text-muted-foreground"
+                  : "text-muted-foreground/80",
+              )}
+            >
+              {formatCriteriaSummary(criteria, { municipalityNames })}
+            </p>
+          </div>
+          {hasRelatedTenders ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={pending || editing}
+              onClick={() => setRelatedOpen(true)}
+              className="mt-2"
+            >
+              Licitaciones relacionadas
+            </Button>
+          ) : null}
         </div>
-        <div className="flex flex-wrap gap-2">
-          <Button
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <ActiveToggle
+            active={alert.is_active}
+            disabled={editing}
+            pending={pending}
+            onToggle={() => void toggleActive()}
+          />
+          <button
             type="button"
-            variant="outline"
-            size="sm"
             disabled={pending || editing}
             aria-pressed={editing}
+            aria-label="Editar alerta"
+            title="Editar"
             onClick={() => {
+              setName(alert.name);
+              setKind(asFavoriteKind(alert.kind) ?? "");
               setEditing(true);
+              setEditKey((k) => k + 1);
               setError(null);
             }}
+            className={cn(
+              "inline-flex size-8 items-center justify-center rounded-md text-foreground/75 transition-colors",
+              "hover:bg-muted hover:text-foreground",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
+              "disabled:pointer-events-none disabled:opacity-50",
+              editing && "bg-muted text-foreground",
+            )}
           >
-            Editar
-          </Button>
-          <Button
-            type="button"
-            variant={alert.is_active ? "outline" : "primary"}
-            size="sm"
-            disabled={pending || editing}
-            onClick={toggleActive}
-          >
-            {alert.is_active ? "Desactivar" : "Activar"}
-          </Button>
+            <PencilIcon className="size-[1.15rem]" />
+          </button>
           <RemoveAlertButton alert={alert} disabled={editing} />
         </div>
       </div>
 
+      <AlertRelatedTendersPanel
+        alertId={alert.id}
+        alertName={alert.name}
+        alertKind={asFavoriteKind(alert.kind)}
+        userId={alert.user_id}
+        open={relatedOpen}
+        onClose={() => setRelatedOpen(false)}
+      />
+
       {editing ? (
-        <div className="mt-4 space-y-3 rounded-lg border border-border bg-surface p-4">
-          <div>
-            <label
-              htmlFor={`edit-name-${alert.id}`}
-              className="block text-sm font-medium text-foreground"
-            >
-              Nombre de la alerta
-            </label>
-            <Input
-              id={`edit-name-${alert.id}`}
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="mt-1"
-            />
-          </div>
-          <div>
-            <label
-              htmlFor={`edit-kw-${alert.id}`}
-              className="block text-sm font-medium text-foreground"
-            >
-              Keywords (separados por comas)
-            </label>
-            <Input
-              id={`edit-kw-${alert.id}`}
-              value={keywords}
-              onChange={(e) => setKeywords(e.target.value)}
-              className="mt-1"
-            />
-          </div>
-          <div>
-            <label
-              htmlFor={`edit-cpv-${alert.id}`}
-              className="block text-sm font-medium text-foreground"
-            >
-              CPV (prefijo)
-            </label>
-            <Input
-              id={`edit-cpv-${alert.id}`}
-              value={cpv}
-              onChange={(e) => setCpv(e.target.value)}
-              className="mt-1 font-mono"
-            />
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div>
+        <form
+          id={formId}
+          className="mt-4 space-y-3 rounded-lg border border-border bg-surface p-4"
+          onSubmit={(e) => e.preventDefault()}
+        >
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:gap-4">
+            <div className="min-w-0 flex-1">
               <label
-                htmlFor={`edit-min-${alert.id}`}
-                className="block text-sm font-medium text-foreground"
+                htmlFor={`${idPrefix}name`}
+                className="block text-sm font-medium text-primary"
               >
-                Importe mín. (sin IVA)
+                Nombre de la alerta*
               </label>
               <Input
-                id={`edit-min-${alert.id}`}
-                type="number"
-                min={0}
-                step={1}
-                value={min}
-                onChange={(e) => setMin(e.target.value)}
-                className="mt-1"
+                id={`${idPrefix}name`}
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="mt-1 border-primary/25 bg-primary-light/45"
               />
             </div>
-            <div>
-              <label
-                htmlFor={`edit-max-${alert.id}`}
-                className="block text-sm font-medium text-foreground"
+            <div className="shrink-0">
+              <p
+                id={`${idPrefix}kind_label`}
+                className="text-sm font-medium text-primary"
               >
-                Importe máx. (sin IVA)
-              </label>
-              <Input
-                id={`edit-max-${alert.id}`}
-                type="number"
-                min={0}
-                step={1}
-                value={max}
-                onChange={(e) => setMax(e.target.value)}
-                className="mt-1"
-              />
+                Clasificación*
+              </p>
+              <div
+                role="radiogroup"
+                aria-labelledby={`${idPrefix}kind_label`}
+                className="mt-1.5 flex flex-col gap-1"
+              >
+                <label className="inline-flex cursor-pointer items-center gap-1.5 text-sm leading-none text-foreground">
+                  <input
+                    type="radio"
+                    name={`${idPrefix}kind`}
+                    value="propia"
+                    checked={kind === "propia"}
+                    onChange={() => setKind("propia")}
+                    className="size-3.5 shrink-0 accent-primary"
+                  />
+                  Eficen
+                </label>
+                <label className="inline-flex cursor-pointer items-center gap-1.5 text-sm leading-none text-foreground">
+                  <input
+                    type="radio"
+                    name={`${idPrefix}kind`}
+                    value="subcontrata"
+                    checked={kind === "subcontrata"}
+                    onChange={() => setKind("subcontrata")}
+                    className="size-3.5 shrink-0 accent-primary"
+                  />
+                  Subcontrata
+                </label>
+              </div>
             </div>
+          </div>
+          {/* Hueco bajo el textbox del nombre → label «Texto» (filtros). */}
+          <div className="!mt-8">
+            <CriteriaFilters
+              key={editKey}
+              initial={criteriaToFilterInitial(criteria)}
+              filterOptions={filterOptions}
+              formId={formId}
+              idPrefix={idPrefix}
+            />
           </div>
           <div className="flex flex-wrap gap-2">
             <Button
@@ -244,20 +410,12 @@ export function AlertRowItem({ alert }: { alert: AlertRow }) {
               variant="outline"
               size="sm"
               disabled={pending}
-              onClick={() => {
-                setName(alert.name);
-                setKeywords(fields.keywords);
-                setCpv(fields.cpv);
-                setMin(fields.min);
-                setMax(fields.max);
-                setError(null);
-                setEditing(false);
-              }}
+              onClick={cancelEdit}
             >
               Cancelar
             </Button>
           </div>
-        </div>
+        </form>
       ) : null}
 
       {error ? (

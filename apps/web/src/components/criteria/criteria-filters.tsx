@@ -1,0 +1,257 @@
+"use client";
+
+import type { ReactNode } from "react";
+import { SEARCH_CCAA_OPTIONS } from "@/lib/geo-ccaa";
+import type { CriteriaFilterInitial } from "@/lib/criteria-display";
+import {
+  sortSearchFilterOptions,
+  type SearchFilterOption,
+} from "@/lib/queries";
+import { CpvPicker } from "@/app/search/cpv-picker";
+import { MunicipalityFilter } from "@/app/search/municipality-filter";
+import { SEARCH_FORM_ID } from "@/app/search/save-search-button";
+import { CriteriaMultiSelect } from "./criteria-multi-select";
+import { PublicationDateRange } from "./publication-date-range";
+import { SearchTextField } from "./search-text-field";
+
+const inputClass =
+  "mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring";
+
+export type CriteriaFilterOptionsProp = {
+  statuses: SearchFilterOption[];
+  procedureTypes: SearchFilterOption[];
+  contractTypes: SearchFilterOption[];
+  /** Códigos INE de CCAA con ≥1 licitación. */
+  ccaaCodesWithTenders: readonly string[];
+};
+
+function withInitialOptions(
+  options: SearchFilterOption[],
+  values: string[],
+): SearchFilterOption[] {
+  let out = options;
+  for (const value of values) {
+    if (!value || out.some((o) => o.value === value)) continue;
+    out = [...out, { value, label: value }];
+  }
+  return out;
+}
+
+type Props = {
+  initial: CriteriaFilterInitial;
+  filterOptions: CriteriaFilterOptionsProp;
+  /** Id del `<form>` que envuelve estos campos. */
+  formId?: string;
+  /** Prefijo para ids de labels (p. ej. editar varias alertas). */
+  idPrefix?: string;
+  /** Hint de keywords solo ruido (buscador). */
+  queryOnlyNoise?: boolean;
+  /** Acción a la derecha del label «Texto» (p. ej. guardar búsqueda). */
+  textFieldAction?: ReactNode;
+};
+
+/**
+ * Campos de Criteria v1 compartidos entre búsqueda y alertas (sin organismo).
+ * Los `name=` deben coincidir con `buildCriteriaFromSearchForm`.
+ */
+export function CriteriaFilters({
+  initial,
+  filterOptions,
+  formId = SEARCH_FORM_ID,
+  idPrefix = "",
+  queryOnlyNoise = false,
+  textFieldAction,
+}: Props) {
+  const ccaaWithData = new Set(filterOptions.ccaaCodesWithTenders);
+  const statuses = sortSearchFilterOptions(
+    withInitialOptions(filterOptions.statuses, initial.statuses),
+  );
+  const procedureTypes = sortSearchFilterOptions(
+    withInitialOptions(filterOptions.procedureTypes, initial.procedureTypes),
+  );
+  const contractTypes = sortSearchFilterOptions(
+    withInitialOptions(filterOptions.contractTypes, initial.contractTypes),
+  );
+  const qId = `${idPrefix}q`;
+  const minId = `${idPrefix}min`;
+  const maxId = `${idPrefix}max`;
+  const ccaaId = `${idPrefix}ccaa`;
+  const statusId = `${idPrefix}status`;
+  const procedureId = `${idPrefix}procedure`;
+  const contractId = `${idPrefix}contract_type`;
+  return (
+    <div className="space-y-4">
+      <div>
+        {textFieldAction ? (
+          <div className="-mr-1.5 mb-1.5 w-full min-w-0">{textFieldAction}</div>
+        ) : null}
+        <label
+          htmlFor={qId}
+          className="block text-sm font-medium text-foreground"
+        >
+          Texto
+        </label>
+        <SearchTextField
+          id={qId}
+          name="q"
+          defaultValue={initial.q}
+          aria-invalid={queryOnlyNoise || undefined}
+          aria-describedby={queryOnlyNoise ? `${qId}-noise-hint` : undefined}
+          className={inputClass}
+        />
+        {queryOnlyNoise ? (
+          <p
+            id={`${qId}-noise-hint`}
+            className="mt-1 text-xs text-destructive"
+            role="alert"
+          >
+            Escribe al menos un término significativo. Evita palabras como
+            «de», «el» o «la».
+          </p>
+        ) : null}
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <CriteriaMultiSelect
+          id={ccaaId}
+          name="ccaa"
+          label="Comunidad Autónoma"
+          allLabel="Todas"
+          options={SEARCH_CCAA_OPTIONS.filter(
+            (opt) =>
+              ccaaWithData.has(opt.code) ||
+              initial.ccaaCodes.includes(opt.code),
+          ).map((opt) => ({ value: opt.code, label: opt.name }))}
+          initialSelected={initial.ccaaCodes}
+        />
+        <MunicipalityFilter
+          formId={formId}
+          initialCcaaCodes={initial.ccaaCodes}
+          initialMunicipalityCode={initial.municipalityCode}
+          initialMunicipalityName={initial.municipalityName}
+        />
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-3">
+        <CriteriaMultiSelect
+          id={statusId}
+          name="status"
+          label="Estado"
+          options={statuses}
+          initialSelected={initial.statuses}
+        />
+        <CriteriaMultiSelect
+          id={procedureId}
+          name="procedure"
+          label="Procedimiento"
+          options={procedureTypes}
+          initialSelected={initial.procedureTypes}
+        />
+        <CriteriaMultiSelect
+          id={contractId}
+          name="contract_type"
+          label="Tipo de contrato"
+          options={contractTypes}
+          initialSelected={initial.contractTypes}
+        />
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div>
+          <label
+            htmlFor={minId}
+            className="block text-sm font-medium text-foreground"
+          >
+            Importe mín. (sin IVA)
+          </label>
+          <input
+            id={minId}
+            name="min"
+            type="number"
+            min={0}
+            step={1}
+            defaultValue={initial.min}
+            className={inputClass}
+          />
+        </div>
+        <div>
+          <label
+            htmlFor={maxId}
+            className="block text-sm font-medium text-foreground"
+          >
+            Importe máx. (sin IVA)
+          </label>
+          <input
+            id={maxId}
+            name="max"
+            type="number"
+            min={0}
+            step={1}
+            defaultValue={initial.max}
+            className={inputClass}
+          />
+        </div>
+        <div className="sm:col-span-2 lg:col-span-1">
+          <PublicationDateRange
+            idPrefix={idPrefix}
+            initialFrom={initial.pubFrom}
+            initialTo={initial.pubTo}
+          />
+        </div>
+      </div>
+
+      <CpvPicker
+        initialCodes={initial.cpvCodes}
+        initialMatch={initial.cpvMatch}
+      />
+
+      <label className="inline-flex items-center gap-2 text-sm text-foreground">
+        <input
+          type="checkbox"
+          name="en_plazo"
+          value="1"
+          defaultChecked={initial.openForSubmission}
+          className="ef-checkbox"
+        />
+        Solo en plazo
+      </label>
+    </div>
+  );
+}
+
+/** Placeholder mientras llegan opciones DISTINCT (Suspense búsqueda). */
+export function CriteriaFiltersFallback({
+  initial,
+  formId = SEARCH_FORM_ID,
+  idPrefix = "",
+  queryOnlyNoise = false,
+  textFieldAction,
+}: {
+  initial: CriteriaFilterInitial;
+  formId?: string;
+  idPrefix?: string;
+  queryOnlyNoise?: boolean;
+  textFieldAction?: ReactNode;
+}) {
+  return (
+    <CriteriaFilters
+      initial={initial}
+      formId={formId}
+      idPrefix={idPrefix}
+      queryOnlyNoise={queryOnlyNoise}
+      textFieldAction={textFieldAction}
+      filterOptions={{
+        statuses: initial.statuses.map((value) => ({ value, label: value })),
+        procedureTypes: initial.procedureTypes.map((value) => ({
+          value,
+          label: value,
+        })),
+        contractTypes: initial.contractTypes.map((value) => ({
+          value,
+          label: value,
+        })),
+        ccaaCodesWithTenders: initial.ccaaCodes,
+      }}
+    />
+  );
+}

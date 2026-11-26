@@ -3,17 +3,66 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { DigestFrequency } from "@/lib/queries";
+import { isMisLicitacionesEnabled } from "@/lib/features/mis-licitaciones";
 import { cn } from "@/lib/cn";
 import type { ReactNode } from "react";
+import { FavoritesSubnav } from "@/app/favorites/favorites-subnav";
 import { AccountMenu } from "./account-menu";
 import { FavoritesNavItem } from "./favorites-nav-item";
 
+/** Nav principal: en <sm solo icono; desde sm etiqueta visible. */
 function navClass(active: boolean) {
   return cn(
-    "inline-flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+    "inline-flex items-center gap-0 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors sm:gap-1.5 sm:px-3",
     active
       ? "bg-primary text-primary-foreground shadow-sm"
       : "text-foreground hover:bg-muted",
+  );
+}
+
+const NAV_LABEL_CLASS = "hidden sm:inline";
+
+const NAV_ICON_CLASS = "size-4 shrink-0";
+
+/** Lupa del inicio (métrica Búsquedas). */
+function NavSearchIcon() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={NAV_ICON_CLASS}
+      aria-hidden
+    >
+      <circle cx="10.5" cy="10.5" r="6.25" />
+      <path d="M7.4 8.1c.7-1.5 2.1-2.5 3.7-2.7" />
+      <path d="m15.2 15.2 5.3 5.3" />
+    </svg>
+  );
+}
+
+/** Triángulo de alerta del inicio. */
+function NavAlertIcon() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={NAV_ICON_CLASS}
+      aria-hidden
+    >
+      <path d="M12 3.6 2.8 19.2a1.2 1.2 0 0 0 1.05 1.8h16.3a1.2 1.2 0 0 0 1.05-1.8L12 3.6z" />
+      <path d="M12 9.2v5" />
+      <path d="M12 17.2h.01" />
+    </svg>
   );
 }
 
@@ -24,6 +73,7 @@ export function AppHeader({
   userId,
   digestFrequency,
   notifications,
+  recommendationsNav,
 }: {
   isAuthenticated: boolean;
   displayName: string;
@@ -31,51 +81,80 @@ export function AppHeader({
   digestFrequency: DigestFrequency;
   /** Slot RSC (p. ej. Suspense + badge); no bloquear el layout con la query. */
   notifications: ReactNode;
+  /** Slot RSC: «Recomendaciones» solo si hay recomendaciones visibles. */
+  recommendationsNav: ReactNode;
 }) {
   const pathname = usePathname() || "/";
 
   if (!isAuthenticated) return null;
 
+  const inFavorites = pathname.startsWith("/favorites");
+
   return (
-    <header className="sticky top-0 z-40 border-b border-border/80 bg-surface/95 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-surface/85">
-      <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center gap-3 px-4 py-3 sm:px-6">
-        <Link
-          href="/"
-          className="text-lg font-bold tracking-tight text-foreground"
-        >
-          Efi<span className="text-primary-dark">Licit</span>
-        </Link>
-
-        <nav
-          aria-label="Principal"
-          className="-mx-1 flex max-w-full flex-1 flex-nowrap items-center gap-1.5 overflow-x-auto px-1 sm:flex-wrap sm:overflow-visible"
-        >
+    <>
+      {/* Nav principal siempre fijo. */}
+      <header className="sticky top-0 z-40 border-b border-border/80 bg-surface/95 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-surface/85">
+        <div className="flex w-full flex-wrap items-center gap-3 px-4 py-3 sm:px-6 lg:px-8">
           <Link
-            href="/search"
-            className={navClass(pathname.startsWith("/search"))}
+            href="/"
+            className="text-lg font-bold tracking-tight text-foreground"
           >
-            Búsqueda
+            Efi<span className="text-primary-dark">Licit</span>
           </Link>
-          <FavoritesNavItem active={pathname.startsWith("/favorites")} />
-          <Link
-            href="/alerts"
-            className={navClass(pathname.startsWith("/alerts"))}
-          >
-            Alertas
-          </Link>
-        </nav>
 
-        <div className="flex items-center gap-2">
-          {notifications}
-          {userId ? (
-            <AccountMenu
-              displayName={displayName}
-              userId={userId}
-              digestFrequency={digestFrequency}
-            />
-          ) : null}
+          <nav
+            aria-label="Principal"
+            className="-mx-1 flex max-w-full flex-1 flex-nowrap items-center gap-1.5 overflow-x-auto px-1 sm:flex-wrap sm:overflow-visible"
+          >
+            <Link
+              href="/search"
+              className={navClass(pathname.startsWith("/search"))}
+              aria-label="Búsqueda"
+            >
+              <NavSearchIcon />
+              <span className={NAV_LABEL_CLASS}>Búsqueda</span>
+            </Link>
+            <FavoritesNavItem active={inFavorites} />
+            {recommendationsNav}
+            <Link
+              href="/alerts"
+              className={navClass(pathname.startsWith("/alerts"))}
+              aria-label="Alertas"
+            >
+              <NavAlertIcon />
+              <span className={NAV_LABEL_CLASS}>Alertas</span>
+            </Link>
+          </nav>
+
+          <div className="flex items-center gap-2">
+            {isMisLicitacionesEnabled() ? (
+              <Link
+                href="/mis-licitaciones"
+                className={navClass(pathname.startsWith("/mis-licitaciones"))}
+              >
+                Mis licitaciones
+              </Link>
+            ) : null}
+            {notifications}
+            {userId ? (
+              <AccountMenu
+                displayName={displayName}
+                userId={userId}
+                digestFrequency={digestFrequency}
+              />
+            ) : null}
+          </div>
         </div>
-      </div>
-    </header>
+      </header>
+
+      {/* Subnav Favoritos: fluye con la página y se oculta al bajar. */}
+      {inFavorites ? (
+        <div className="border-b border-primary/25 bg-primary-light/45 dark:bg-primary/15">
+          <div className="flex w-full px-4 py-2 sm:px-6 lg:px-8">
+            <FavoritesSubnav />
+          </div>
+        </div>
+      ) : null}
+    </>
   );
 }

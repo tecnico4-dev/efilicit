@@ -14,8 +14,17 @@ import { preloadCpvDictionary } from "@/lib/cpv-load";
 import type { CpvSuggestion } from "@/lib/cpv-dictionary";
 import {
   CLEAR_SEARCH_EVENT,
-  useSearchFeedback,
+  useOptionalSearchFeedback,
 } from "./search-feedback";
+import {
+  SEARCH_APPLY_CRITERIA_EVENT,
+  SEARCH_PREVIEW_GHOST_CLASS,
+  useOptionalSearchFormPreview,
+} from "./search-form-preview";
+import { AnchoredPortal } from "@/components/ui/anchored-portal";
+import { criteriaToFilterInitial } from "@/lib/criteria-display";
+import { cn } from "@/lib/cn";
+import type { SearchCriteria } from "@efilicit/types";
 
 const CpvDictionaryDialog = dynamic(
   () =>
@@ -48,7 +57,14 @@ export function CpvPicker({
   const listId = useId();
   const selectedId = useId();
   const wrapRef = useRef<HTMLDivElement>(null);
-  const { clearFeedback } = useSearchFeedback();
+  const draftInputRef = useRef<HTMLInputElement>(null);
+  const searchFeedback = useOptionalSearchFeedback();
+  const clearFeedback = searchFeedback?.clearFeedback ?? (() => {});
+  const formPreview = useOptionalSearchFormPreview();
+  const previewInitial = formPreview?.preview
+    ? criteriaToFilterInitial(formPreview.preview)
+    : null;
+  const isPreviewing = previewInitial != null;
   const [draft, setDraft] = useState("");
   const [fieldMessage, setFieldMessage] = useState<{
     text: string;
@@ -60,11 +76,25 @@ export function CpvPicker({
   const [matchMode, setMatchMode] = useState<CpvMatchMode>(
     initialMatch === "all" ? "all" : "any",
   );
+  const displayCodes = isPreviewing
+    ? uniqueNormalized(previewInitial.cpvCodes)
+    : codes;
+  const displayMatch: CpvMatchMode = isPreviewing
+    ? previewInitial.cpvMatch
+    : matchMode;
   const [dictOpen, setDictOpen] = useState(false);
   const [suggestOpen, setSuggestOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
   const [dict, setDict] = useState<CpvDictApi | null>(null);
   const [dictReady, setDictReady] = useState(false);
+
+  /** Hidden `name="cpv"` no dispara input/change nativo al añadir/quitar chips. */
+  useEffect(() => {
+    const form = wrapRef.current?.closest("form");
+    if (!form) return;
+    form.dispatchEvent(new Event("input", { bubbles: true }));
+    form.dispatchEvent(new Event("change", { bubbles: true }));
+  }, [codes]);
 
   useEffect(() => {
     let cancelled = false;
@@ -135,15 +165,22 @@ export function CpvPicker({
   }, [reset]);
 
   useEffect(() => {
-    function onDocMouseDown(e: MouseEvent) {
-      if (!wrapRef.current?.contains(e.target as Node)) {
-        setSuggestOpen(false);
-        setActiveIndex(-1);
-      }
+    function onApply(e: Event) {
+      const criteria = (e as CustomEvent<SearchCriteria>).detail;
+      if (!criteria) return;
+      const initial = criteriaToFilterInitial(criteria);
+      setDraft("");
+      setFieldMessage(null);
+      setCodes(uniqueNormalized(initial.cpvCodes));
+      setMatchMode(initial.cpvMatch === "all" ? "all" : "any");
+      setDictOpen(false);
+      setSuggestOpen(false);
+      setActiveIndex(-1);
     }
-    document.addEventListener("mousedown", onDocMouseDown);
-    return () => document.removeEventListener("mousedown", onDocMouseDown);
+    window.addEventListener(SEARCH_APPLY_CRITERIA_EVENT, onApply);
+    return () => window.removeEventListener(SEARCH_APPLY_CRITERIA_EVENT, onApply);
   }, []);
+
 
   useEffect(() => {
     setActiveIndex(-1);
@@ -225,7 +262,7 @@ export function CpvPicker({
     return dict.formatCpvSelection(code);
   }
 
-  const selectedDisplay = codes.map(labelFor).join("\n");
+  const selectedDisplay = displayCodes.map(labelFor).join("\n");
 
   return (
     <div className="grid gap-4 sm:grid-cols-2">
@@ -239,6 +276,7 @@ export function CpvPicker({
         <div className="mt-1 flex gap-2">
           <div ref={wrapRef} className="relative min-w-0 flex-1">
             <input
+              ref={draftInputRef}
               id={draftId}
               name="cpv_draft"
               type="text"
@@ -311,12 +349,17 @@ export function CpvPicker({
             >
               i
             </button>
-            {showSuggestions ? (
-              <ul
-                id={listId}
-                role="listbox"
-                className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-md border border-border bg-background py-1 shadow-md"
-              >
+            <AnchoredPortal
+              open={showSuggestions}
+              anchorRef={draftInputRef}
+              onDismiss={() => {
+                setSuggestOpen(false);
+                setActiveIndex(-1);
+              }}
+              className="bg-background py-1"
+              maxHeight={240}
+            >
+              <ul id={listId} role="listbox">
                 {!dictReady ? (
                   <li className="px-3 py-2 text-sm text-muted-foreground">
                     Cargando diccionario CPV…
@@ -354,7 +397,7 @@ export function CpvPicker({
                   })
                 )}
               </ul>
-            ) : null}
+            </AnchoredPortal>
           </div>
           <button
             type="button"
@@ -386,78 +429,110 @@ export function CpvPicker({
           CPV seleccionados
         </label>
         <div className="relative mt-1">
-          {codes.length >= 2 ? (
+          {displayCodes.length >= 2 ? (
             <div
               role="radiogroup"
               aria-label="Coincidencia CPV"
+              aria-disabled={isPreviewing || undefined}
               className="absolute right-0 bottom-full z-10 flex translate-y-px gap-1"
             >
               <label
                 className={
-                  matchMode === "any"
-                    ? "cursor-pointer rounded-t-md border border-border border-b-[color-mix(in_srgb,var(--muted)_30%,transparent)] bg-muted/30 px-2.5 py-1 text-xs font-medium text-primary"
-                    : "cursor-pointer rounded-t-md border border-transparent px-2.5 py-1 text-xs text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                  displayMatch === "any"
+                    ? cn(
+                        "cursor-pointer rounded-t-md border border-border border-b-[color-mix(in_srgb,var(--muted)_30%,transparent)] bg-muted/30 px-2.5 py-1 text-xs font-medium text-primary",
+                        isPreviewing && SEARCH_PREVIEW_GHOST_CLASS,
+                      )
+                    : cn(
+                        "cursor-pointer rounded-t-md border border-transparent px-2.5 py-1 text-xs text-muted-foreground hover:bg-muted/50 hover:text-foreground",
+                        isPreviewing && "pointer-events-none",
+                      )
                 }
               >
                 <input
                   type="radio"
-                  name="cpv_match"
+                  name={isPreviewing ? undefined : "cpv_match"}
                   value="any"
-                  checked={matchMode === "any"}
-                  onChange={() => setMatchMode("any")}
+                  checked={displayMatch === "any"}
+                  disabled={isPreviewing}
+                  onChange={() => {
+                    if (isPreviewing) return;
+                    setMatchMode("any");
+                  }}
                   className="sr-only"
                 />
                 Cualquiera
               </label>
               <label
                 className={
-                  matchMode === "all"
-                    ? "cursor-pointer rounded-t-md border border-border border-b-[color-mix(in_srgb,var(--muted)_30%,transparent)] bg-muted/30 px-2.5 py-1 text-xs font-medium text-primary"
-                    : "cursor-pointer rounded-t-md border border-transparent px-2.5 py-1 text-xs text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                  displayMatch === "all"
+                    ? cn(
+                        "cursor-pointer rounded-t-md border border-border border-b-[color-mix(in_srgb,var(--muted)_30%,transparent)] bg-muted/30 px-2.5 py-1 text-xs font-medium text-primary",
+                        isPreviewing && SEARCH_PREVIEW_GHOST_CLASS,
+                      )
+                    : cn(
+                        "cursor-pointer rounded-t-md border border-transparent px-2.5 py-1 text-xs text-muted-foreground hover:bg-muted/50 hover:text-foreground",
+                        isPreviewing && "pointer-events-none",
+                      )
                 }
               >
                 <input
                   type="radio"
-                  name="cpv_match"
+                  name={isPreviewing ? undefined : "cpv_match"}
                   value="all"
-                  checked={matchMode === "all"}
-                  onChange={() => setMatchMode("all")}
+                  checked={displayMatch === "all"}
+                  disabled={isPreviewing}
+                  onChange={() => {
+                    if (isPreviewing) return;
+                    setMatchMode("all");
+                  }}
                   className="sr-only"
                 />
                 Todos
               </label>
             </div>
-          ) : (
+          ) : null}
+          {!isPreviewing && displayCodes.length < 2 ? (
             <input type="hidden" name="cpv_match" value="any" />
-          )}
+          ) : null}
+          {isPreviewing ? (
+            <input type="hidden" name="cpv_match" value={matchMode} />
+          ) : null}
           <div
             id={selectedId}
             className={
-              codes.length >= 2
+              displayCodes.length >= 2
                 ? "min-h-[2.5rem] rounded-md rounded-tr-none border border-border bg-muted/30 px-3 py-2 text-sm"
                 : "min-h-[2.5rem] rounded-md border border-border bg-muted/30 px-3 py-2 text-sm"
             }
           >
-            {codes.length === 0 ? (
+            {displayCodes.length === 0 ? (
               <p className="text-muted-foreground">Ninguno</p>
             ) : (
               <ul className="space-y-1">
-                {codes.map((code) => (
+                {displayCodes.map((code) => (
                   <li
                     key={code}
                     className="flex items-start justify-between gap-2 font-mono text-xs sm:text-sm"
                   >
-                    <span className="min-w-0 break-words text-foreground">
+                    <span
+                      className={cn(
+                        "min-w-0 break-words text-foreground",
+                        isPreviewing && SEARCH_PREVIEW_GHOST_CLASS,
+                      )}
+                    >
                       {labelFor(code)}
                     </span>
-                    <button
-                      type="button"
-                      onClick={() => removeCode(code)}
-                      className="shrink-0 text-muted-foreground hover:text-destructive hover:underline"
-                      aria-label={`Quitar CPV ${code}`}
-                    >
-                      Quitar
-                    </button>
+                    {!isPreviewing ? (
+                      <button
+                        type="button"
+                        onClick={() => removeCode(code)}
+                        className="shrink-0 text-muted-foreground hover:text-destructive hover:underline"
+                        aria-label={`Quitar CPV ${code}`}
+                      >
+                        Quitar
+                      </button>
+                    ) : null}
                   </li>
                 ))}
               </ul>

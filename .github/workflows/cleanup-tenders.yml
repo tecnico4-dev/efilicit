@@ -1,0 +1,103 @@
+# Purge de licitaciones canónicas con escudos de retención (ADR 031).
+# Disparo: solo workflow_dispatch (manual). Sin on.schedule por ahora.
+# Default = dry-run. apply borra tenders + artifacts/RAW huérfanos del lote.
+# No lanzar mientras corre una ingesta.
+name: Cleanup tenders (retention)
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: >
+          dry-run = candidatas + escudos + CSV (no borra).
+          apply = borra tenders no protegidos (irreversible).
+        type: choice
+        options:
+          - dry-run
+          - apply
+        default: dry-run
+      min_deadline_age_months:
+        description: "Solo deadline vencido hace al menos N meses (default 3)"
+        required: false
+        default: "3"
+      source_code:
+        description: >
+          Filtrar por tender_sources.source_code
+          (vacío = todas: placsp, placsp_menores, placsp_agregadas, catalunya, euskadi, …)
+        required: false
+        default: ""
+      limit:
+        description: "Máximo de licitaciones borrables tras escudos (0 = sin tope)"
+        required: false
+        default: "0"
+
+jobs:
+  purge:
+    name: Purge tenders (${{ inputs.mode }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    concurrency:
+      group: cleanup-tenders
+      cancel-in-progress: false
+    env:
+      EFILICIT_DATABASE_URL: ${{ secrets.EFILICIT_DATABASE_URL }}
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      MODE: ${{ inputs.mode }}
+      MIN_DEADLINE_AGE_MONTHS: ${{ inputs.min_deadline_age_months }}
+      SOURCE_CODE: ${{ inputs.source_code }}
+      LIMIT: ${{ inputs.limit }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Guard secrets
+        run: |
+          set -euo pipefail
+          if [ -z "${EFILICIT_DATABASE_URL:-}" ]; then
+            echo "::error::Missing repository secret EFILICIT_DATABASE_URL"
+            exit 1
+          fi
+          if [ "${MODE}" = "apply" ]; then
+            if [ -z "${SUPABASE_SERVICE_ROLE_KEY:-}" ]; then
+              echo "::error::mode=apply requires secret SUPABASE_SERVICE_ROLE_KEY"
+              exit 1
+            fi
+            if [ -z "${SUPABASE_URL:-}" ]; then
+              echo "::error::mode=apply requires secret SUPABASE_URL"
+              exit 1
+            fi
+          fi
+
+      - name: Run tender purge
+        run: |
+          set -euo pipefail
+          EXTRA=(
+            --min-deadline-age-months "${MIN_DEADLINE_AGE_MONTHS:-3}"
+            --limit "${LIMIT:-0}"
+            --csv "purge_tenders_${{ github.run_id }}.csv"
+          )
+          if [ -n "${SOURCE_CODE:-}" ]; then
+            EXTRA+=(--source-code "${SOURCE_CODE}")
+          fi
+          if [ "${MODE}" = "apply" ]; then
+            EXTRA+=(--apply)
+          fi
+          uv run --script scripts/purge_tenders.py "${EXTRA[@]}"
+
+      - name: Upload CSV artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: purge-tenders-${{ inputs.mode }}-${{ github.run_id }}
+          path: purge_tenders_*.csv
+          if-no-files-found: warn
+          retention-days: 14

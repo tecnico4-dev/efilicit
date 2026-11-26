@@ -1,10 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/button";
 import { PasswordInput } from "@/components/ui/password-input";
+import {
+  PASSWORD_MIN_LENGTH,
+  PASSWORD_POLICY_HINT,
+  mapAuthPasswordError,
+  passwordCharsetErrorMessage,
+} from "@/lib/password-policy";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { cn } from "@/lib/cn";
 
 const META_PASSWORD_CHANGED = "password_changed";
 const META_PASSWORD_OFFER_SEEN = "password_offer_seen";
@@ -42,17 +49,70 @@ export async function markPasswordOfferSeen(): Promise<{ error: Error | null }> 
   return { error: null };
 }
 
-/** Formulario de cambio de contraseña (Cuenta, modal o post-login). */
+/** «i» tipográfica: al click muestra la política de contraseña. */
+function PasswordPolicyInfoButton({ className }: { className?: string }) {
+  const [open, setOpen] = useState(false);
+  const tipId = useId();
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function onDoc(e: MouseEvent) {
+      if (!rootRef.current?.contains(e.target as Node)) setOpen(false);
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setOpen(false);
+    }
+    document.addEventListener("mousedown", onDoc);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDoc);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
+  return (
+    <div ref={rootRef} className={cn("relative", className)}>
+      <button
+        type="button"
+        aria-expanded={open}
+        aria-controls={tipId}
+        aria-label="Requisitos de la contraseña"
+        onClick={() => setOpen((v) => !v)}
+        className="flex h-6 w-6 items-center justify-center rounded-full border border-primary/35 bg-primary-light/70 font-serif text-[0.85rem] leading-none text-primary-dark italic hover:border-primary/55 hover:bg-primary-light"
+      >
+        i
+      </button>
+      {open ? (
+        <p
+          id={tipId}
+          role="status"
+          className="absolute right-0 top-full z-20 mt-1.5 w-max max-w-[16rem] rounded-md border border-border bg-surface px-3 py-2 text-xs text-foreground shadow-md"
+        >
+          {PASSWORD_POLICY_HINT}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+/** Formulario de cambio de contraseña (Cuenta paso 2, o post-login sin pedir actual). */
 export function ChangePasswordForm({
   onDone,
   onCancel,
   submitLabel = "Guardar contraseña",
   cancelLabel = "Cancelar",
+  /** Si false, el tip «i» lo pone el contenedor (p. ej. modal). */
+  showPolicyInfo = true,
+  /** Contraseña actual ya verificada (modal Cuenta); evita reutilizarla como nueva. */
+  previousPassword,
 }: {
   onDone?: () => void;
   onCancel?: () => void;
   submitLabel?: string;
   cancelLabel?: string;
+  showPolicyInfo?: boolean;
+  previousPassword?: string;
 }) {
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -61,16 +121,26 @@ export function ChangePasswordForm({
   const [pending, setPending] = useState(false);
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
+    // Vacío / minLength: el navegador ya validó (bocadillos) antes de este evento.
     event.preventDefault();
     setError(null);
     setSaved(false);
 
-    if (password.length < 8) {
-      setError("La contraseña debe tener al menos 8 caracteres.");
-      return;
-    }
     if (password !== confirm) {
       setError("Las contraseñas no coinciden.");
+      return;
+    }
+    if (
+      previousPassword != null &&
+      previousPassword !== "" &&
+      password === previousPassword
+    ) {
+      setError("La nueva contraseña es igual a la actual.");
+      return;
+    }
+    const charsetError = passwordCharsetErrorMessage(password);
+    if (charsetError) {
+      setError(charsetError);
       return;
     }
 
@@ -83,7 +153,7 @@ export function ChangePasswordForm({
     setPending(false);
 
     if (updateError) {
-      setError(updateError.message);
+      setError(mapAuthPasswordError(updateError.message));
       return;
     }
 
@@ -96,17 +166,20 @@ export function ChangePasswordForm({
   return (
     <form onSubmit={onSubmit} className="space-y-4">
       <div>
-        <label
-          htmlFor="new_password"
-          className="mb-1 block text-sm text-muted-foreground"
-        >
-          Nueva contraseña
-        </label>
+        <div className="mb-1 flex items-center justify-between gap-2">
+          <label
+            htmlFor="new_password"
+            className="block text-sm text-muted-foreground"
+          >
+            Nueva contraseña
+          </label>
+          {showPolicyInfo ? <PasswordPolicyInfoButton /> : null}
+        </div>
         <PasswordInput
           id="new_password"
           autoComplete="new-password"
           required
-          minLength={8}
+          minLength={PASSWORD_MIN_LENGTH}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
@@ -122,7 +195,7 @@ export function ChangePasswordForm({
           id="confirm_password"
           autoComplete="new-password"
           required
-          minLength={8}
+          minLength={PASSWORD_MIN_LENGTH}
           value={confirm}
           onChange={(e) => setConfirm(e.target.value)}
         />
@@ -159,7 +232,12 @@ export function ChangePasswordForm({
   );
 }
 
-/** Modal centrado en viewport (portal); bloquea hasta Guardar o Cancelar. */
+type ModalStep = "verify" | "change";
+
+/**
+ * Modal Cuenta: paso 1 verifica contraseña actual (sin cerrar sesión si falla);
+ * paso 2 pide la nueva. El post-login usa solo `ChangePasswordForm`.
+ */
 export function ChangePasswordModal({
   open,
   onClose,
@@ -168,6 +246,13 @@ export function ChangePasswordModal({
   onClose: () => void;
 }) {
   const [mounted, setMounted] = useState(false);
+  const [step, setStep] = useState<ModalStep>("verify");
+  const [currentPassword, setCurrentPassword] = useState("");
+  /** Conservada tras verificar, para comparar con la nueva en el paso 2. */
+  const [verifiedPassword, setVerifiedPassword] = useState("");
+  const [verifyError, setVerifyError] = useState<string | null>(null);
+  const [pending, setPending] = useState(false);
+  const [forgotHint, setForgotHint] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -175,6 +260,12 @@ export function ChangePasswordModal({
 
   useEffect(() => {
     if (!open) return;
+    setStep("verify");
+    setCurrentPassword("");
+    setVerifiedPassword("");
+    setVerifyError(null);
+    setPending(false);
+    setForgotHint(false);
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => {
@@ -182,7 +273,50 @@ export function ChangePasswordModal({
     };
   }, [open]);
 
+  async function onVerify(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setVerifyError(null);
+    setForgotHint(false);
+
+    const supabase = createSupabaseBrowserClient();
+    const { data: userData, error: userError } = await supabase.auth.getUser();
+    const email = userData.user?.email?.trim();
+    if (userError || !email) {
+      setVerifyError("No se pudo comprobar la sesión. Inténtalo de nuevo.");
+      return;
+    }
+
+    const { data: before } = await supabase.auth.getSession();
+    const sessionBefore = before.session;
+
+    setPending(true);
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email,
+      password: currentPassword,
+    });
+    setPending(false);
+
+    if (signInError) {
+      // Por si Auth limpiara la sesión ante un fallo: restaurar.
+      const { data: after } = await supabase.auth.getSession();
+      if (!after.session && sessionBefore) {
+        await supabase.auth.setSession({
+          access_token: sessionBefore.access_token,
+          refresh_token: sessionBefore.refresh_token,
+        });
+      }
+      setVerifyError("Contraseña incorrecta.");
+      return;
+    }
+
+    setVerifiedPassword(currentPassword);
+    setCurrentPassword("");
+    setStep("change");
+  }
+
   if (!open || !mounted) return null;
+
+  const titleId = "change-password-title";
 
   return createPortal(
     <div
@@ -192,18 +326,95 @@ export function ChangePasswordModal({
       <div
         role="dialog"
         aria-modal="true"
-        aria-labelledby="change-password-title"
+        aria-labelledby={titleId}
         className="max-h-[min(90vh,36rem)] w-full max-w-md overflow-y-auto rounded-xl border border-border bg-surface p-6 shadow-xl"
       >
-        <h2
-          id="change-password-title"
-          className="text-lg font-semibold tracking-tight text-foreground"
-        >
-          Cambiar contraseña
-        </h2>
-        <div className="mt-4">
-          <ChangePasswordForm onDone={onClose} onCancel={onClose} />
-        </div>
+        {step === "verify" ? (
+          <>
+            <h2
+              id={titleId}
+              className="text-lg font-semibold tracking-tight text-foreground"
+            >
+              Cambiar contraseña
+            </h2>
+            <form onSubmit={onVerify} className="mt-4 space-y-4">
+              <div>
+                <label
+                  htmlFor="current_password"
+                  className="mb-1 block text-sm text-muted-foreground"
+                >
+                  Introduce tu contraseña actual:
+                </label>
+                <PasswordInput
+                  id="current_password"
+                  autoComplete="current-password"
+                  required
+                  autoFocus
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                />
+                <p className="mt-1.5 text-right">
+                  <button
+                    type="button"
+                    onClick={() => setForgotHint(true)}
+                    className="text-xs text-primary underline-offset-2 hover:text-primary-dark hover:underline"
+                  >
+                    ¿Has olvidado tu contraseña?
+                  </button>
+                </p>
+                {forgotHint ? (
+                  <p
+                    className="mt-2 rounded-lg border border-border bg-muted/50 px-3 py-2 text-xs text-muted-foreground"
+                    role="status"
+                  >
+                    Contacta con el administrador para restablecerla.
+                  </p>
+                ) : null}
+              </div>
+              {verifyError ? (
+                <p
+                  className="rounded-lg border border-destructive/40 bg-surface px-3 py-2 text-sm text-destructive"
+                  role="alert"
+                >
+                  {verifyError}
+                </p>
+              ) : null}
+              <div className="flex flex-wrap items-center gap-2">
+                <Button type="submit" disabled={pending}>
+                  {pending ? "Comprobando…" : "Continuar"}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={pending}
+                  onClick={onClose}
+                >
+                  Cancelar
+                </Button>
+              </div>
+            </form>
+          </>
+        ) : (
+          <>
+            <div className="flex items-center justify-between gap-2">
+              <h2
+                id={titleId}
+                className="text-lg font-semibold tracking-tight text-foreground"
+              >
+                Cambiar contraseña
+              </h2>
+              <PasswordPolicyInfoButton />
+            </div>
+            <div className="mt-4">
+              <ChangePasswordForm
+                onDone={onClose}
+                onCancel={onClose}
+                showPolicyInfo={false}
+                previousPassword={verifiedPassword}
+              />
+            </div>
+          </>
+        )}
       </div>
     </div>,
     document.body,

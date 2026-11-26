@@ -15,6 +15,7 @@ from efilicit_ingestion.models import SourceRecord
 from efilicit_ingestion.pipeline.canonical_repo import (
     InMemoryCanonicalRepository,
     PostgresCanonicalRepository,
+    _authority_cache_key,
 )
 from efilicit_ingestion.pipeline.postgres import connect, default_database_url
 
@@ -50,6 +51,59 @@ def _record(
             }
         },
     )
+
+
+def test_authority_cache_key_prefers_tax_id_over_platform() -> None:
+    assert _authority_cache_key(
+        {"tax_id": "P1234567A", "tax_id_country": "ES", "platform_id": "L01"}
+    ) == "tax:ES:P1234567A"
+    assert _authority_cache_key(
+        {"tax_id": None, "tax_id_country": "ES", "platform_id": DIR3_A}
+    ) == f"plat:ES:{DIR3_A}"
+    assert _authority_cache_key({"name": "Solo nombre"}) is None
+
+
+def test_postgres_authority_cache_skips_repeat_sql_in_same_run() -> None:
+    """Misma autoridad estable → un solo INSERT…ON CONFLICT por corrida."""
+
+    class _Result:
+        def __init__(self, row: tuple[str, ...]) -> None:
+            self._row = row
+
+        def fetchone(self) -> tuple[str, ...]:
+            return self._row
+
+    class _Conn:
+        def __init__(self) -> None:
+            self.authority_inserts = 0
+
+        def execute(self, sql: str, params: object = None) -> _Result:
+            if "insert into public.contracting_authorities" in sql:
+                self.authority_inserts += 1
+                return _Result(("auth-cached-1",))
+            if "select tender_id" in sql:
+                return _Result(())  # type: ignore[arg-type]
+            if "insert into public.tenders" in sql:
+                return _Result(("tender-1",))
+            if "insert into public.tender_sources" in sql:
+                return _Result(("ts-1",))
+            if "insert into public.tender_cpvs" in sql or "delete from public.tender_cpvs" in sql:
+                return _Result(())  # type: ignore[arg-type]
+            if "select canonical_source_code" in sql or "select 1 from public.tenders" in sql:
+                return _Result(())  # type: ignore[arg-type]
+            return _Result(())  # type: ignore[arg-type]
+
+    conn = _Conn()
+    repo = PostgresCanonicalRepository(conn)  # type: ignore[arg-type]
+    r1 = _record(source_record_id="cache-1", name="Ajuntament A", platform_id=DIR3_A)
+    r2 = _record(source_record_id="cache-2", name="Ajuntament A", platform_id=DIR3_A)
+
+    # El mock no implementa el upsert completo de tenders; ejercitamos solo
+    # _upsert_authority vía dos llamadas consecutivas.
+    id1 = repo._upsert_authority(r1.payload["canonical"]["authority"])
+    id2 = repo._upsert_authority(r2.payload["canonical"]["authority"])
+    assert id1 == id2 == "auth-cached-1"
+    assert conn.authority_inserts == 1
 
 
 def test_inmemory_same_platform_id_reuses_authority_across_tenders_and_reingest() -> None:

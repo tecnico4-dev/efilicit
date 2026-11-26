@@ -13,7 +13,7 @@ No uses un ADR para el estado de una fuente o un parser: eso va en `docs/sources
 
 | ADR | Título | Estado |
 |---|---|---|
-| [001](001-proteccion-main-aplazada.md) | Protección de `main` aplazada (GitHub Free / repo privado) | Aceptado |
+| [001](001-proteccion-main-aplazada.md) | Protección de `main` (aplazada → reactivada; repo público) | Cerrado — activa |
 | [002](002-bootstrap-supabase-remoto-greenfield.md) | Bootstrap Supabase remoto greenfield (`db push`, no `db pull`) | Aceptado |
 | [003](003-acceso-canonico-publico-etl-privado.md) | Acceso Semana 1: canónico público, ETL privado (`errors` reservada) | Aceptado |
 | [004](004-ci-ingestion-sin-postgres.md) | CI de ingestion sin Postgres (tests de DB en skip) | Aceptado |
@@ -33,3 +33,19 @@ No uses un ADR para el estado de una fuente o un parser: eso va en `docs/sources
 | [018](018-geografia-lugar-ejecucion-ccaa-municipio.md) | Geografía lugar de ejecución: CCAA + municipio (sin provincia) | Aceptado |
 | [019](019-tender-cpvs-multivalor.md) | CPV multivalor en `tender_cpvs` (sin columna en `tenders`) | Aceptado |
 | [020](020-alertas-match-post-ingesta-y-digest-diario.md) | Alertas: match post-ingesta + digest diario; despertador = cron externo → `workflow_dispatch` | Aceptado |
+| [021](021-raw-storage-tus-resumable-httpx.md) | RAW Storage: TUS resumable vía `httpx` (ZIP intacto; umbral 6 MiB) | Aceptado |
+| [022](022-placsp-raw-entry-incremental.md) | PLACSP RAW incremental por entry Atom (sin ZIP entero en Storage) | Aceptado |
+| [022](022-digest-email-inbox-in-app.md) | Digest email → aviso in-app en el buzón (1 = 1 correo) | Aceptado |
+| [023](023-mis-licitaciones-pipeline-compartido.md) | Mis licitaciones: pipeline de presentación compartido (Eficen) | Aceptado |
+| [024](024-drop-tender-sources-last-seen.md) | Eliminar `tender_sources.last_seen_at` (+ RPC `tender_max_last_seen`) | Aceptado |
+| [025](025-catalunya-raw-row-incremental.md) | CCAA RAW incremental por unidad (Catalunya + Euskadi; extiende 022) | Aceptado |
+| [026](026-mis-licitaciones-offer-cases.md) | Mis licitaciones: expediente de oferta (`offer_*`; extiende 023) | Aceptado |
+| [027](027-offer-schema-hardening-is-app-user.md) | Endurecimiento oferta: `is_app_user` + cadena migraciones (bloque A) | Aceptado |
+| [028](028-offer-schema-block-b-integrity.md) | Endurecimiento oferta (bloque B): RESTRICT + evidencias + FK compuestas | Aceptado |
+| [029](029-shared-favorites-comun.md) | Favoritos Común (`shared_favorites` → `favorites_common` vía 032) | Aceptado |
+| [030](030-favorites-kind-eficen-subcontrata.md) | Favoritos: dimensión Eficen / Subcontrata (`kind`) | Aceptado |
+| [031](031-retencion-purge-tenders.md) | Retención canónica: purge de licitaciones con escudos | Aceptado |
+| [032](032-eficen-members-favorites-shared.md) | Directorio `eficen_members` + peer shares `favorites_shared` | Aceptado |
+| [033](033-placsp-commit-por-pagina-raw-sin-fecha.md) | PLACSP commit por página Atom + RAW path sin fecha | Aceptado |
+| [034](034-recomendaciones-desde-ratings-y-favoritos.md) | Recomendaciones batch (ratings, favoritos, perfil Eficen) | Aceptado |
+| [037](037-notification-shared-peer.md) | Aviso in-app al compartir peer (`notification_shared`) | Aceptado |

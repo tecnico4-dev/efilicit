@@ -28,14 +28,17 @@ from efilicit_ingestion.alerts.digest import (
     drain_daily_digests,
 )
 from efilicit_ingestion.alerts.email import FakeEmailSender, ResendEmailSender
+from efilicit_ingestion.alerts.inbox import InMemoryDigestInbox, PostgresDigestInbox
 from efilicit_ingestion.alerts.models import AlertRule, BatchResult, TenderCandidate
 from efilicit_ingestion.alerts.postgres import (
     PostgresNotificationQueue,
     list_success_sync_windows,
     load_active_alerts,
+    load_alert_digest_meta,
     load_tender_candidates_for_sync_day,
+    load_tender_source_urls,
     load_user_digest_frequencies,
-    load_user_emails,
+    load_user_email_directory,
 )
 from efilicit_ingestion.alerts.queue import InMemoryNotificationQueue, digest_day
 from efilicit_ingestion.pipeline.postgres import connect
@@ -113,8 +116,10 @@ def _fixture_tenders() -> list[TenderCandidate]:
 
 
 def _fixture_directory() -> UserEmailDirectory:
+    uid = "00000000-0000-4000-8000-0000000000u1"
     return UserEmailDirectory(
-        emails={"00000000-0000-4000-8000-0000000000u1": "dry-run@example.com"}
+        emails={uid: "dry-run@example.com"},
+        display_names={uid: "Demo"},
     )
 
 
@@ -180,6 +185,7 @@ def _run_dry(
             directory=directory,
             frequencies=frequencies,
             job_date=job_date,
+            inbox=InMemoryDigestInbox(),
         )
 
     return AlertsRunResult(
@@ -245,13 +251,37 @@ def _run_write(
                     **frequencies,
                     **load_user_digest_frequencies(conn, user_ids),
                 }
-            directory = UserEmailDirectory(emails=load_user_emails(conn, user_ids))
+            directory = load_user_email_directory(conn, user_ids)
+            alert_meta_cache: dict = {}
+
+            def _alert_meta(ids: list[str]):
+                missing = [i for i in ids if i not in alert_meta_cache]
+                if missing:
+                    alert_meta_cache.update(load_alert_digest_meta(conn, missing))
+                return alert_meta_cache
+
+            def resolve_alert_names(ids: list[str]) -> dict[str, str]:
+                meta = _alert_meta(ids)
+                return {
+                    aid: meta[aid].name
+                    for aid in ids
+                    if aid in meta and meta[aid].name
+                }
+
+            def resolve_alert_kinds(ids: list[str]) -> dict[str, str | None]:
+                meta = _alert_meta(ids)
+                return {aid: meta[aid].kind for aid in ids if aid in meta}
+
             drain = drain_daily_digests(
                 queue=queue,
                 sender=sender,
                 directory=directory,
                 frequencies=frequencies,
                 job_date=job_date,
+                inbox=PostgresDigestInbox(conn),
+                resolve_source_urls=lambda ids: load_tender_source_urls(conn, ids),
+                resolve_alert_names=resolve_alert_names,
+                resolve_alert_kinds=resolve_alert_kinds,
             )
 
         conn.commit()

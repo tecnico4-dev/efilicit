@@ -20,9 +20,9 @@ from efilicit_ingestion.models import RemoteArtifact, SyncContext
 from efilicit_ingestion.pipeline import (
     InMemoryArtifactStore,
     InMemorySyncRepository,
-    run_pipeline,
     stages,
 )
+from efilicit_ingestion.pipeline.placsp_incremental import run_pipeline_placsp_incremental
 from efilicit_ingestion.pipeline.canonical_repo import (
     EVENT_TYPE_INGESTED,
     InMemoryCanonicalRepository,
@@ -128,7 +128,7 @@ def test_menores_pipeline_updates_source_sync_and_does_not_duplicate() -> None:
     sync_repo = InMemorySyncRepository()
     canonical = InMemoryCanonicalRepository()
 
-    first = run_pipeline(
+    first = run_pipeline_placsp_incremental(
         connector,
         SyncContext(source_code=SOURCE_CODE, run_id="menores-upsert-1"),
         artifact_store=store,
@@ -139,11 +139,12 @@ def test_menores_pipeline_updates_source_sync_and_does_not_duplicate() -> None:
     assert first.sync.records_seen == 1
     assert first.sync.records_new == 1
     assert first.sync.records_updated == 0
+    assert "/entries/" in first.stored_artifacts[0].storage_path
     assert first.stored_artifacts[0].storage_path.startswith("raw/placsp_menores/")
     assert len(canonical.tenders) == 1
     assert (SOURCE_CODE, "B00000000:EXP/2026/0001") in canonical.tender_sources
 
-    second = run_pipeline(
+    second = run_pipeline_placsp_incremental(
         connector,
         SyncContext(source_code=SOURCE_CODE, run_id="menores-upsert-2"),
         artifact_store=store,
@@ -151,6 +152,7 @@ def test_menores_pipeline_updates_source_sync_and_does_not_duplicate() -> None:
         canonical_repo=canonical,
     )
     assert second.sync.status == "success"
+    assert second.stored_artifacts == []
     assert second.sync.records_new == 0
     assert second.sync.records_updated == 0
     assert len(canonical.tenders) == 1

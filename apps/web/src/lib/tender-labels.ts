@@ -89,3 +89,19 @@ export function formatContractType(value: string | null | undefined): string {
 export function formatProcedureType(value: string | null | undefined): string {
   return labelFrom(PROCEDURE_TYPE_LABELS, value);
 }
+
+const SOURCE_CODE_LABELS: Record<string, string> = {
+  placsp: "PlaCSP",
+  placsp_menores: "PlaCSP (menores)",
+  placsp_agregadas: "PlaCSP (agregadas)",
+  euskadi: "Euskadi",
+  catalunya: "Cataluña",
+  import_eficen: "Import Eficen",
+};
+
+/** Código de fuente (`source_code`) para mostrar al usuario. */
+export function formatSourceCode(value: string | null | undefined): string {
+  if (value == null || value.trim() === "") return "—";
+  const key = value.trim().toLowerCase();
+  return SOURCE_CODE_LABELS[key] ?? value.trim();
+}

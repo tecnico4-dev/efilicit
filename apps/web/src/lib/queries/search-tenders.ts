@@ -46,6 +46,10 @@ export type SearchTendersInput = {
    * La RPC no recuenta el universo; `total_count` = este valor.
    */
   knownTotal?: number;
+  /** Campo de orden (`relevance` default). */
+  sortBy?: string;
+  /** `asc` | `desc` (default `desc`). */
+  sortDir?: "asc" | "desc" | string;
 };
 
 type SearchTendersArgs = Database["public"]["Functions"]["search_tenders"]["Args"];
@@ -93,7 +97,32 @@ function buildRpcArgs(input: SearchTendersInput): SearchTendersArgs {
       input.knownTotal >= 0
         ? Math.floor(input.knownTotal)
         : undefined,
+    p_sort_by: input.sortBy?.trim() || undefined,
+    p_sort_dir:
+      input.sortDir === "asc" || input.sortDir === "desc"
+        ? input.sortDir
+        : undefined,
   };
+}
+
+function isSearchStatementTimeout(message: string): boolean {
+  const m = message.toLowerCase();
+  return (
+    m.includes("statement timeout") ||
+    m.includes("canceling statement") ||
+    m.includes("cancelling statement")
+  );
+}
+
+/** Mensaje de UI si Postgres cancela por statement_timeout. */
+export const SEARCH_TIMEOUT_USER_MESSAGE =
+  "Esta búsqueda es demasiado amplia. Afina los filtros y vuelve a intentarlo.";
+
+function mapSearchError(message: string): Error {
+  if (isSearchStatementTimeout(message)) {
+    return new Error(SEARCH_TIMEOUT_USER_MESSAGE);
+  }
+  return new Error(`Error al buscar: ${message}`);
 }
 
 /**
@@ -112,7 +141,7 @@ export async function searchTenders(
   const { data, error } = await client.rpc("search_tenders", buildRpcArgs(input));
 
   if (error) {
-    return { data: null, totalCount: 0, error: new Error(error.message) };
+    return { data: null, totalCount: 0, error: mapSearchError(error.message) };
   }
 
   const rows = (data ?? []) as SearchTenderRpcRow[];

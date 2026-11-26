@@ -1,7 +1,7 @@
 """Ejecuta la ingesta Euskadi (KontratazioA) de punta a punta (Semana 3 Paso 9).
 
-Análogo a ``run_catalunya``: fixture/dry-run o Postgres+Storage. La API fija
-10 avisos por página; ``max_pages`` es el dial de alcance en live.
+Monta el ``EuskadiConnector`` + pipeline incremental por aviso (ADR 025).
+La API fija 10 avisos por página; ``max_pages`` es el dial de alcance en live.
 """
 
 from __future__ import annotations
@@ -13,9 +13,11 @@ from pathlib import Path
 from efilicit_ingestion.connectors.euskadi import EUSKADI, EuskadiConnector, EuskadiDataset
 from efilicit_ingestion.models import SyncContext
 from efilicit_ingestion.pipeline.canonical_repo import InMemoryCanonicalRepository
-from efilicit_ingestion.pipeline.db_run import run_pipeline_postgres
+from efilicit_ingestion.pipeline.euskadi_incremental import (
+    run_pipeline_euskadi_incremental,
+    run_pipeline_euskadi_incremental_postgres,
+)
 from efilicit_ingestion.pipeline.ports import InMemoryArtifactStore, InMemorySyncRepository
-from efilicit_ingestion.pipeline.runner import run_pipeline
 from efilicit_ingestion.pipeline.supabase_storage import (
     SupabaseStorageArtifactStore,
     default_service_role_key,
@@ -59,7 +61,7 @@ def load_fixture_bytes(path: Path) -> bytes:
 
 
 def run_euskadi(config: EuskadiRunConfig) -> PipelineResult:
-    """Ejecuta discover→…→upsert para páginas contracting-notices de Euskadi.
+    """Ejecuta discover→expand avisos→upsert (solo checksums nuevos).
 
     Con fixture, el transport ignora la URL y siempre sirve el mismo JSON
     (útil para dry-run Actions). Sin fixture: llamadas reales a la API.
@@ -85,7 +87,7 @@ def run_euskadi(config: EuskadiRunConfig) -> PipelineResult:
     context = SyncContext(source_code=connector.source_code, run_id=run_id)
 
     if config.dry_run:
-        return run_pipeline(
+        return run_pipeline_euskadi_incremental(
             connector,
             context,
             artifact_store=InMemoryArtifactStore(),
@@ -107,7 +109,7 @@ def run_euskadi(config: EuskadiRunConfig) -> PipelineResult:
     else:
         artifact_store = InMemoryArtifactStore()
 
-    return run_pipeline_postgres(
+    return run_pipeline_euskadi_incremental_postgres(
         connector,
         context,
         artifact_store=artifact_store,  # type: ignore[arg-type]

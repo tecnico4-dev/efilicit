@@ -1,3 +1,10 @@
+import {
+  DEFAULT_SEARCH_SORT_BY,
+  DEFAULT_SEARCH_SORT_DIR,
+  type SearchSortBy,
+  type SearchSortDir,
+} from "./search-sort";
+
 /** Ancla al inicio del listado (mantener scroll al cambiar de página). */
 export const SEARCH_RESULTS_ANCHOR = "resultados";
 
@@ -22,17 +29,17 @@ export type SearchHrefFilters = {
   cpvMatch: "any" | "all";
   minRaw: string;
   maxRaw: string;
-  ccaa: string;
+  ccaaCodes: string[];
   municipality: string;
-  status: string;
-  procedure: string;
-  contractType: string;
+  statuses: string[];
+  procedures: string[];
+  contractTypes: string[];
   pubFrom: string;
   pubTo: string;
   openForSubmission: boolean;
 };
 
-/** Construye href de `/search` preservando filtros, página y tamaño. */
+/** Construye href de `/search` preservando filtros, página, tamaño y orden. */
 export function searchHref(
   filters: SearchHrefFilters,
   page: number,
@@ -46,6 +53,8 @@ export function searchHref(
      * El submit del formulario no lo envía → se recalcula al buscar de nuevo.
      */
     totalCount?: number;
+    sortBy?: SearchSortBy;
+    sortDir?: SearchSortDir;
   },
 ): string {
   const params = new URLSearchParams();
@@ -56,14 +65,14 @@ export function searchHref(
   }
   if (filters.minRaw) params.set("min", filters.minRaw);
   if (filters.maxRaw) params.set("max", filters.maxRaw);
-  if (filters.ccaa) params.set("ccaa", filters.ccaa);
+  for (const c of filters.ccaaCodes) params.append("ccaa", c);
   if (filters.municipality) params.set("municipality", filters.municipality);
-  if (filters.status) params.set("status", filters.status);
-  if (filters.procedure) params.set("procedure", filters.procedure);
-  if (filters.contractType) params.set("contract_type", filters.contractType);
+  for (const s of filters.statuses) params.append("status", s);
+  for (const p of filters.procedures) params.append("procedure", p);
+  for (const c of filters.contractTypes) params.append("contract_type", c);
   if (filters.pubFrom) params.set("pub_from", filters.pubFrom);
   if (filters.pubTo) params.set("pub_to", filters.pubTo);
-  if (filters.openForSubmission) params.set("en_plazo", "1");
+  params.set("en_plazo", filters.openForSubmission ? "1" : "0");
   const from = options?.from;
   if (from === "favorites" || from === "favorites-searches") {
     params.set("from", from);
@@ -77,6 +86,10 @@ export function searchHref(
   if (tc != null && Number.isFinite(tc) && tc >= 0) {
     params.set("tc", String(Math.floor(tc)));
   }
+  const sortBy = options?.sortBy ?? DEFAULT_SEARCH_SORT_BY;
+  const sortDir = options?.sortDir ?? DEFAULT_SEARCH_SORT_DIR;
+  if (sortBy !== DEFAULT_SEARCH_SORT_BY) params.set("sort", sortBy);
+  if (sortDir !== DEFAULT_SEARCH_SORT_DIR) params.set("dir", sortDir);
   const qs = params.toString();
   const path = qs ? `/search?${qs}` : "/search";
   if (options?.withAnchor) {

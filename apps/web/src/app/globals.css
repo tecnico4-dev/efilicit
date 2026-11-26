@@ -96,10 +96,27 @@
   --radius-2xl: calc(var(--radius) * 1.8);
 }
 
+/**
+ * Documento sin barra de scroll visible (rueda / dedo / teclado siguen
+ * funcionando). Modales y listas con overflow propio pueden mostrar la suya.
+ */
+html {
+  scrollbar-width: none; /* Firefox */
+}
+
+html::-webkit-scrollbar {
+  display: none; /* Chromium, Safari, Edge */
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  scrollbar-width: none;
+}
+
+body::-webkit-scrollbar {
+  display: none;
 }
 
 /** Checkbox marca: tick blanco sobre primary Eficen. */
@@ -153,14 +170,49 @@ body {
   }
 }
 
-.home-dashboard {
-  background:
-    radial-gradient(
-      120% 80% at 50% -10%,
-      color-mix(in srgb, var(--primary-light) 55%, transparent),
-      transparent 55%
-    ),
-    var(--background);
+/* Empujón al intentar puntuar sin elegir Eficen/Subcontrata. */
+@keyframes interest-chip-nudge {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  18% {
+    transform: translateX(-3px) rotate(-1.5deg);
+  }
+  36% {
+    transform: translateX(3px) rotate(1.5deg);
+  }
+  54% {
+    transform: translateX(-2px) rotate(-1deg);
+  }
+  72% {
+    transform: translateX(2px) rotate(1deg);
+  }
+}
+
+.interest-chip-nudge {
+  animation: interest-chip-nudge 420ms ease-in-out;
+}
+
+/* Rebote al volver a pulsar el corazón sin elegir Eficen/Subcontrata. */
+@keyframes fav-kind-nudge {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  28% {
+    transform: scale(1.08);
+  }
+  55% {
+    transform: scale(0.95);
+  }
+  78% {
+    transform: scale(1.04);
+  }
+}
+
+.fav-kind-nudge {
+  animation: fav-kind-nudge 380ms ease-in-out;
 }
 
 .home-anim {
@@ -187,6 +239,9 @@ body {
 }
 .home-anim-delay-7 {
   animation-delay: 380ms;
+}
+.home-anim-delay-8 {
+  animation-delay: 440ms;
 }
 
 @media (prefers-reduced-motion: reduce) {

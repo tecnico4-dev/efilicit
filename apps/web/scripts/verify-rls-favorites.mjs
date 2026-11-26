@@ -65,7 +65,7 @@ async function main() {
 
   const { data: created, error: createError } = await alice
     .from("favorites")
-    .insert({ user_id: aliceUserId, tender_id: tenderId })
+    .insert({ user_id: aliceUserId, tender_id: tenderId, kind: "propia" })
     .select("id, tender_id")
     .single();
 

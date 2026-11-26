@@ -46,8 +46,8 @@ Crear **7 jobs** (PLACSP son tres sindicaciones; un dispatch = una).
 | 1 | 03:00 | 02:00 | `ingest-placsp.yml` | `syndication=placsp`, `mode=live`, `upload_storage=true` |
 | 2 | 03:00 | 02:00 | `ingest-placsp.yml` | `syndication=placsp_agregadas`, `mode=live`, `upload_storage=true` |
 | 3 | 03:00 | 02:00 | `ingest-placsp.yml` | `syndication=placsp_menores`, `mode=live`, `upload_storage=true` |
-| 4 | 05:00 | 04:00 | `ingest-catalunya.yml` | `mode=live`, `max_pages=10`, `page_size=1000`, `upload_storage=true` |
-| 5 | 06:00 | 05:00 | `ingest-euskadi.yml` | `mode=live`, `max_pages=10`, `upload_storage=true` |
+| 4 | 05:00 | 04:00 | `ingest-catalunya.yml` | `mode=live`, `since_days=7`, `max_pages=20`, `page_size=1000`, `upload_storage=true` |
+| 5 | 06:00 | 05:00 | `ingest-euskadi.yml` | `mode=live`, `max_pages=30`, `upload_storage=true` |
 | 6 | 07:00 | 06:00 | `alerts-match.yml` | `mode=write` |
 | 7 | 07:30 | 06:30 | `alerts-digest.yml` | `mode=write-resend` |
 
@@ -69,14 +69,15 @@ PLACSP perfiles:
 }
 ```
 
-Catalunya:
+Catalunya (ventana 7 días + RAW por fila — ADR 025):
 
 ```json
 {
   "ref": "main",
   "inputs": {
     "mode": "live",
-    "max_pages": "10",
+    "since_days": "7",
+    "max_pages": "20",
     "page_size": "1000",
     "upload_storage": "true"
   }
@@ -90,7 +91,7 @@ Euskadi:
   "ref": "main",
   "inputs": {
     "mode": "live",
-    "max_pages": "10",
+    "max_pages": "30",
     "upload_storage": "true"
   }
 }

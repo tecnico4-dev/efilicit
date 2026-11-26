@@ -16,6 +16,7 @@ Escrituras: upsert idempotente en ``notification_queue`` (ON CONFLICT DO NOTHING
 from __future__ import annotations
 
 from collections.abc import Callable, Sequence
+from dataclasses import dataclass
 from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 from typing import Any
@@ -246,7 +247,7 @@ def load_tender_candidates_sync_page(
     """Página de tenders cuyo touch cae en alguna ventana de sync (ADR 020).
 
     Criterio: ``coalesce(updated_at, created_at)`` ∈ [started_at, finished_at].
-    No usa ``last_seen_at`` (re-visita sin cambio de negocio no alerta).
+    No usa re-visitas de fuente sin cambio de negocio (ADR 024).
     """
     if not windows:
         return []
@@ -380,18 +381,105 @@ def load_tender_candidates_for_sync_day(
     return collect_paginated_candidates(fetch_page, page_size=page_size)
 
 
+def load_tender_source_urls(
+    conn: psycopg.Connection,
+    tender_ids: list[str],
+) -> dict[str, str]:
+    """``tender_id`` → ``source_url`` (la más reciente con URL; trusted)."""
+    if not tender_ids:
+        return {}
+    ids = [UUID(t) for t in tender_ids]
+    with conn.cursor(row_factory=dict_row) as cur:
+        cur.execute(
+            """
+            select distinct on (ts.tender_id)
+              ts.tender_id::text as tender_id,
+              ts.source_url
+            from public.tender_sources ts
+            where ts.tender_id = any(%s)
+              and ts.source_url is not null
+              and trim(both from ts.source_url) <> ''
+            order by ts.tender_id, ts.created_at desc
+            """,
+            (ids,),
+        )
+        rows = cur.fetchall()
+    return {row["tender_id"]: row["source_url"].strip() for row in rows}
+
+
+@dataclass(frozen=True)
+class AlertDigestMeta:
+    """Nombre + clasificación para bloques del digest email."""
+
+    name: str
+    kind: str | None = None  # propia | subcontrata | None
+
+
+def load_alert_digest_meta(
+    conn: psycopg.Connection,
+    alert_ids: list[str],
+) -> dict[str, AlertDigestMeta]:
+    """``alerts.id`` → nombre/kind (trusted; bloques del digest)."""
+    if not alert_ids:
+        return {}
+    ids = [UUID(a) for a in alert_ids]
+    with conn.cursor(row_factory=dict_row) as cur:
+        cur.execute(
+            """
+            select id::text as alert_id, name, kind
+            from public.alerts
+            where id = any(%s)
+            """,
+            (ids,),
+        )
+        rows = cur.fetchall()
+    out: dict[str, AlertDigestMeta] = {}
+    for row in rows:
+        name = (row["name"] or "").strip()
+        raw_kind = (row.get("kind") or "").strip()
+        kind = raw_kind if raw_kind in ("propia", "subcontrata") else None
+        if name or kind:
+            out[row["alert_id"]] = AlertDigestMeta(name=name, kind=kind)
+    return out
+
+
+def load_alert_names(
+    conn: psycopg.Connection,
+    alert_ids: list[str],
+) -> dict[str, str]:
+    """``alerts.id`` → ``name`` (trusted; para bloques del digest)."""
+    return {
+        aid: meta.name
+        for aid, meta in load_alert_digest_meta(conn, alert_ids).items()
+        if meta.name
+    }
+
+
 def load_user_emails(
     conn: psycopg.Connection,
     user_ids: list[str],
 ) -> dict[str, str]:
     """``public.users.id`` → ``auth.users.email`` (conexión trusted / service)."""
+    return load_user_email_directory(conn, user_ids).emails
+
+
+def load_user_email_directory(
+    conn: psycopg.Connection,
+    user_ids: list[str],
+):
+    """Emails + ``display_name`` para el digest branded (trusted / service)."""
+    from efilicit_ingestion.alerts.digest import UserEmailDirectory
+
     if not user_ids:
-        return {}
+        return UserEmailDirectory()
     ids = [UUID(u) for u in user_ids]
     with conn.cursor(row_factory=dict_row) as cur:
         cur.execute(
             """
-            select u.id::text as user_id, au.email
+            select
+              u.id::text as user_id,
+              au.email,
+              nullif(trim(both from u.display_name), '') as display_name
             from public.users u
             join auth.users au on au.id = u.auth_user_id
             where u.id = any(%s)
@@ -401,7 +489,14 @@ def load_user_emails(
             (ids,),
         )
         rows = cur.fetchall()
-    return {row["user_id"]: row["email"] for row in rows}
+    emails: dict[str, str] = {}
+    display_names: dict[str, str] = {}
+    for row in rows:
+        uid = row["user_id"]
+        emails[uid] = row["email"]
+        if row["display_name"]:
+            display_names[uid] = row["display_name"]
+    return UserEmailDirectory(emails=emails, display_names=display_names)
 
 
 def load_user_digest_frequencies(
@@ -437,10 +532,16 @@ def load_user_digest_frequencies(
 
 
 def _row_to_item(row: dict[str, Any]) -> NotificationItem:
+    tender_id = _as_str(row.get("tender_id"))
+    if not tender_id:
+        payload = row.get("payload") or {}
+        if isinstance(payload, dict):
+            tender_id = _as_str(payload.get("tender_id"))
     return NotificationItem(
         id=str(row["id"]),
         user_id=str(row["user_id"]),
         alert_id=_as_str(row["alert_id"]),
+        tender_id=tender_id,
         idempotency_key=row["idempotency_key"],
         payload=dict(row["payload"] or {}),
         status=row["status"],
@@ -452,33 +553,42 @@ def _row_to_item(row: dict[str, Any]) -> NotificationItem:
 
 
 class PostgresNotificationQueue:
-    """Cola ``notification_queue`` con upsert por ``idempotency_key``.
+    """Cola ``notification_queue`` idempotente por alerta×licitación.
 
-    ON CONFLICT DO NOTHING: si la clave ya existe (pending o sent), se reutiliza
-    la fila y no se reabre un envío previo.
+    Inserta ``tender_id`` tipado. ``ON CONFLICT`` del UNIQUE parcial
+    ``(alert_id, tender_id)``: no reabre filas ya existentes (pending o sent).
+    ``idempotency_key`` sigue siendo única (logs / re-runs).
     """
 
     def __init__(self, conn: psycopg.Connection) -> None:
         self._conn = conn
 
     def enqueue(self, item: NotificationItem) -> tuple[NotificationItem, bool]:
+        tender_id = item.tender_id or _as_str((item.payload or {}).get("tender_id"))
+        if not tender_id:
+            raise ValueError(
+                "notification_queue.enqueue requires tender_id "
+                "(column or payload.tender_id)"
+            )
         with self._conn.cursor(row_factory=dict_row) as cur:
             cur.execute(
                 """
                 insert into public.notification_queue (
-                  user_id, alert_id, status, idempotency_key,
+                  user_id, alert_id, tender_id, status, idempotency_key,
                   attempts, last_error, payload, scheduled_at, sent_at
                 )
                 values (
-                  %s::uuid, %s::uuid, %s, %s,
+                  %s::uuid, %s::uuid, %s::uuid, %s, %s,
                   %s, %s, %s, coalesce(%s, now()), %s
                 )
-                on conflict (idempotency_key) do nothing
+                on conflict (alert_id, tender_id) where (alert_id is not null)
+                do nothing
                 returning *
                 """,
                 (
                     item.user_id,
                     item.alert_id,
+                    tender_id,
                     item.status,
                     item.idempotency_key,
                     item.attempts,
@@ -492,18 +602,33 @@ class PostgresNotificationQueue:
             if inserted is not None:
                 return _row_to_item(inserted), True
 
-            cur.execute(
-                """
-                select *
-                from public.notification_queue
-                where idempotency_key = %s
-                """,
-                (item.idempotency_key,),
-            )
-            existing = cur.fetchone()
+            existing = None
+            if item.alert_id:
+                cur.execute(
+                    """
+                    select *
+                    from public.notification_queue
+                    where alert_id = %s::uuid
+                      and tender_id = %s::uuid
+                    """,
+                    (item.alert_id, tender_id),
+                )
+                existing = cur.fetchone()
+            if existing is None:
+                cur.execute(
+                    """
+                    select *
+                    from public.notification_queue
+                    where idempotency_key = %s
+                    """,
+                    (item.idempotency_key,),
+                )
+                existing = cur.fetchone()
             if existing is None:
                 raise RuntimeError(
-                    f"notification_queue missing after conflict: {item.idempotency_key}"
+                    "notification_queue missing after conflict: "
+                    f"alert={item.alert_id} tender={tender_id} "
+                    f"key={item.idempotency_key}"
                 )
             return _row_to_item(existing), False
 

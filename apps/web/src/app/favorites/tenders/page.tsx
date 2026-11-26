@@ -1,45 +1,26 @@
-import Link from "next/link";
-import {
-  PAGE_MAIN_CLASS,
-  PAGE_TITLE_RULE,
-} from "@/components/shell/page-width";
+import type { CriteriaFilterOptionsProp } from "@/components/criteria/criteria-filters";
+import { PAGE_MAIN_FAVORITES_CLASS } from "@/components/shell/page-width";
 import { EmptyState, ErrorState } from "@/components/ui/state-message";
 import {
   getSessionProfile,
   getSupabaseServerClient,
 } from "@/lib/auth/session";
-import { listOwnFavorites } from "@/lib/queries";
+import {
+  listOwnFavorites,
+  listSearchFilterOptions,
+  listSharedFavoriteOwners,
+} from "@/lib/queries";
 import { EmptyFavoritesTendersHint } from "../empty-hints";
-import { PaginatedFavoriteTenders } from "../paginated-favorite-tenders";
+import { OwnFavoritesSection } from "../own-favorites-section";
 
 export const dynamic = "force-dynamic";
 
-type SearchParams = Promise<Record<string, string | string[] | undefined>>;
-
-function first(value: string | string[] | undefined): string {
-  if (Array.isArray(value)) return value[0] ?? "";
-  return value ?? "";
-}
-
-export default async function FavoriteTendersPage({
-  searchParams,
-}: {
-  searchParams: SearchParams;
-}) {
-  const params = await searchParams;
-  const from = first(params.from);
-  const back =
-    from === "home"
-      ? { href: "/", label: "← Volver al Inicio" }
-      : from === "nav"
-        ? { href: "/favorites", label: "← Ir a la lista de favoritos" }
-        : { href: "/favorites", label: "← Volver a la lista de favoritos" };
-
+export default async function FavoriteTendersPage() {
   const supabase = await getSupabaseServerClient();
   const profile = await getSessionProfile();
   if (!profile.data) {
     return (
-      <main className={PAGE_MAIN_CLASS}>
+      <main className={PAGE_MAIN_FAVORITES_CLASS}>
         <ErrorState>
           No hay perfil en public.users:{" "}
           {profile.error?.message ?? "desconocido"}
@@ -48,34 +29,50 @@ export default async function FavoriteTendersPage({
     );
   }
 
-  const { data: favorites, error } = await listOwnFavorites(supabase);
+  const userId = profile.data.id;
+  const [favoritesResult, filterListed] = await Promise.all([
+    listOwnFavorites(supabase),
+    listSearchFilterOptions(supabase),
+  ]);
+  const { data: favorites, error } = favoritesResult;
+  const filterOptions: CriteriaFilterOptionsProp = filterListed.error
+    ? {
+        statuses: [],
+        procedureTypes: [],
+        contractTypes: [],
+        ccaaCodesWithTenders: [],
+      }
+    : {
+        statuses: filterListed.data.statuses,
+        procedureTypes: filterListed.data.procedureTypes,
+        contractTypes: filterListed.data.contractTypes,
+        ccaaCodesWithTenders: [...filterListed.data.ccaaCodesWithTenders],
+      };
+  const tenderIds = favorites
+    .map((f) => f.tenders?.id)
+    .filter((id): id is string => Boolean(id));
+  const sharedOwnersResult = await listSharedFavoriteOwners(
+    supabase,
+    tenderIds,
+  );
+  const sharedOwners = Object.fromEntries(sharedOwnersResult.data);
 
   return (
-    <main className={PAGE_MAIN_CLASS}>
-      <p className="text-sm">
-        <Link href={back.href} className="font-medium text-link hover:underline">
-          {back.label}
-        </Link>
-      </p>
-
-      <h1 className="mt-4 text-2xl font-semibold tracking-tight text-foreground">
-        Licitaciones favoritas
-      </h1>
-
-      <div className={PAGE_TITLE_RULE}>
-        {error ? (
-          <ErrorState>{error.message}</ErrorState>
-        ) : favorites.length === 0 ? (
-          <EmptyState>
-            <EmptyFavoritesTendersHint />
-          </EmptyState>
-        ) : (
-          <PaginatedFavoriteTenders
-            favorites={favorites}
-            from="favorites-tenders"
-          />
-        )}
-      </div>
+    <main className={PAGE_MAIN_FAVORITES_CLASS}>
+      {error ? (
+        <ErrorState>{error.message}</ErrorState>
+      ) : favorites.length === 0 ? (
+        <EmptyState>
+          <EmptyFavoritesTendersHint />
+        </EmptyState>
+      ) : (
+        <OwnFavoritesSection
+          favorites={favorites}
+          userId={userId}
+          sharedOwners={sharedOwners}
+          filterOptions={filterOptions}
+        />
+      )}
     </main>
   );
 }

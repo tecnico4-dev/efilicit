@@ -13,8 +13,10 @@ from efilicit_ingestion.models import RemoteArtifact, SyncContext
 from efilicit_ingestion.pipeline import (
     InMemoryArtifactStore,
     InMemorySyncRepository,
-    run_pipeline,
     stages,
+)
+from efilicit_ingestion.pipeline.euskadi_incremental import (
+    run_pipeline_euskadi_incremental,
 )
 from efilicit_ingestion.pipeline.canonical_repo import (
     InMemoryCanonicalRepository,
@@ -74,28 +76,33 @@ def test_euskadi_upsert_idempotent_and_pipeline_sync() -> None:
         max_pages=1,
         fetch_transport=lambda _u: (200, {"content-type": "application/json"}, body),
     )
+    store = InMemoryArtifactStore()
+    sync_repo = InMemorySyncRepository()
     canonical = InMemoryCanonicalRepository()
-    first = run_pipeline(
+    first = run_pipeline_euskadi_incremental(
         connector,
         SyncContext(source_code=SOURCE_CODE, run_id="eus-1"),
-        artifact_store=InMemoryArtifactStore(),
-        sync_repo=InMemorySyncRepository(),
+        artifact_store=store,
+        sync_repo=sync_repo,
         canonical_repo=canonical,
     )
     assert first.sync.status == "success"
     assert first.sync.records_seen == 2
     assert first.sync.records_new == 2
     assert first.stored_artifacts[0].storage_path.startswith("raw/euskadi/")
+    assert "rows/" in first.stored_artifacts[0].artifact_key
 
-    second = run_pipeline(
+    second = run_pipeline_euskadi_incremental(
         connector,
         SyncContext(source_code=SOURCE_CODE, run_id="eus-2"),
-        artifact_store=InMemoryArtifactStore(),
-        sync_repo=InMemorySyncRepository(),
+        artifact_store=store,
+        sync_repo=sync_repo,
         canonical_repo=canonical,
     )
+    assert second.sync.records_seen == 0
     assert second.sync.records_new == 0
     assert second.sync.records_updated == 0
+    assert second.stored_artifacts == []
     assert len(canonical.tender_sources) == 2
 
 
@@ -114,17 +121,28 @@ def test_euskadi_postgres_upsert_does_not_duplicate() -> None:
     with connect() as conn:
         for r in records:
             sid = r.payload["canonical"]["source_tender_id"]
+            # ADR 028/031: no borrar tenders con expediente en Mis licitaciones.
             conn.execute(
                 """
                 delete from public.tenders t
                 using public.tender_sources ts
                 where ts.tender_id = t.id
                   and ts.source_code = %s and ts.source_tender_id = %s
+                  and not exists (
+                    select 1 from public.offer_cases oc where oc.tender_id = t.id
+                  )
                 """,
                 (SOURCE_CODE, sid),
             )
         conn.execute(
-            "delete from public.contracting_authorities where tax_id = %s",
+            """
+            delete from public.contracting_authorities ca
+            where ca.tax_id = %s
+              and not exists (
+                select 1 from public.tenders t
+                where t.contracting_authority_id = ca.id
+              )
+            """,
             ("S4833001C",),
         )
         conn.commit()
@@ -132,7 +150,11 @@ def test_euskadi_postgres_upsert_does_not_duplicate() -> None:
         first = repo.upsert_records(source_code=SOURCE_CODE, records=records)
         second = repo.upsert_records(source_code=SOURCE_CODE, records=records)
         conn.commit()
-        assert first.new == 2 and second.updated == 0
+        # Idempotencia: 2ª pasada no crea filas nuevas. Si un tender del fixture
+        # está en offer_cases, el DELETE previo se salta (ADR 028) y puede no
+        # contar como updated si el contenido no cambia.
+        assert first.seen == 2 and len(first.tender_ids) == 2
+        assert second.seen == 2 and second.new == 0 and len(second.tender_ids) == 2
         row = conn.execute(
             """
             select t.title, a.tax_id, a.identity_confidence

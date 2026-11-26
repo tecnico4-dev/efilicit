@@ -1,0 +1,314 @@
+"use client";
+
+import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
+import {
+  OFFER_STAGE_LABELS,
+  asOfferCaseKind,
+  type OfferCaseListItem,
+  type OfferStage,
+} from "@/lib/queries";
+import { formatCountdown } from "@/lib/bid-countdown";
+import { formatDateMadrid } from "@/lib/datetime";
+import { CaseStageBadge } from "@/components/mis-licitaciones/case-stage-badge";
+import { FavoriteKindBubble } from "@/components/favorites/favorite-kind-bubble";
+import { ListPager } from "@/app/favorites/list-pager";
+import { cn } from "@/lib/cn";
+
+type Scope = "active" | "historic";
+
+const ACTIVE_KANBAN: { label: string; stages: OfferStage[] }[] = [
+  { label: "Interés / Análisis", stages: ["interes", "analisis"] },
+  { label: "En preparación", stages: ["preparacion"] },
+  { label: "Presentada / Evaluación", stages: ["presentada", "en_evaluacion"] },
+  { label: "Requerimiento", stages: ["requerimiento"] },
+];
+
+const HISTORIC_KANBAN: { label: string; stages: OfferStage[] }[] = [
+  { label: "Adjudicada", stages: ["adjudicada"] },
+  { label: "No adjudicada", stages: ["no_adjudicada"] },
+  { label: "Descartada", stages: ["descartada"] },
+];
+
+function formatMoneySafe(
+  value: number | null | undefined,
+  currency: string | undefined,
+): string {
+  if (value == null) return "—";
+  try {
+    return new Intl.NumberFormat("es-ES", {
+      style: "currency",
+      currency: currency || "EUR",
+      maximumFractionDigits: 0,
+    }).format(value);
+  } catch {
+    return `${value} ${currency ?? ""}`;
+  }
+}
+
+function prepPct(item: OfferCaseListItem): number | null {
+  if (item.requirements_total <= 0) return null;
+  return Math.round(
+    (item.requirements_ready / item.requirements_total) * 100,
+  );
+}
+
+function riskTone(
+  item: OfferCaseListItem,
+  scope: Scope,
+): { label: string; className: string } | null {
+  if (scope === "historic") return null;
+  const due =
+    item.next_due_at ??
+    item.internal_deadline_at ??
+    item.tenders?.deadline_at ??
+    null;
+  const cd = formatCountdown(due);
+  if (cd.tone === "overdue") {
+    return {
+      label: "🔴 Crítico",
+      className: "border-destructive/40 bg-destructive/10 text-destructive",
+    };
+  }
+  if (cd.tone === "soon") {
+    return {
+      label: "🟠 Ajustado",
+      className: "border-amber-300/60 bg-amber-50 text-amber-900",
+    };
+  }
+  if (cd.tone === "ok") {
+    return {
+      label: "🟢 Holgado",
+      className: "border-emerald-300/60 bg-emerald-50 text-emerald-900",
+    };
+  }
+  return null;
+}
+
+function CaseListRow({
+  item,
+  scope,
+}: {
+  item: OfferCaseListItem;
+  scope: Scope;
+}) {
+  const pct = prepPct(item);
+  const risk = riskTone(item, scope);
+  const due =
+    item.next_due_at ??
+    item.internal_deadline_at ??
+    item.tenders?.deadline_at ??
+    null;
+  const cd = formatCountdown(scope === "active" ? due : null);
+  return (
+    <li>
+      <Link
+        href={`/mis-licitaciones/${item.id}`}
+        className="block px-4 py-4 transition-colors hover:bg-muted/50 sm:px-5"
+      >
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <p className="font-medium text-foreground">
+              {item.tenders?.title ?? "Licitación eliminada"}
+            </p>
+            <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+              <CaseStageBadge stage={item.stage} />
+              {asOfferCaseKind(item.kind) === "subcontrata" ? (
+                <FavoriteKindBubble kind="subcontrata" />
+              ) : null}
+              {item.owner_member?.display_name ? (
+                <span>Resp. {item.owner_member.display_name}</span>
+              ) : null}
+              {scope === "historic" &&
+              (item.outcome_on || item.presented_on) ? (
+                <span>
+                  {formatDateMadrid(item.outcome_on ?? item.presented_on)}
+                </span>
+              ) : null}
+              {cd.tone !== "none" ? (
+                <span
+                  className={cn(
+                    "font-medium",
+                    cd.tone === "overdue" && "text-destructive",
+                    cd.tone === "soon" && "text-amber-700",
+                  )}
+                >
+                  {cd.label}
+                </span>
+              ) : null}
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center justify-end gap-1.5">
+            <span className="rounded-full border border-border bg-muted px-2.5 py-0.5 text-xs font-semibold text-foreground">
+              {formatMoneySafe(
+                item.tenders?.estimated_value,
+                item.tenders?.currency,
+              )}
+            </span>
+            {pct != null ? (
+              <span className="rounded-full border border-border bg-muted px-2.5 py-0.5 text-xs font-semibold text-foreground">
+                Prep. {pct}%
+              </span>
+            ) : null}
+            {item.requirements_total > 0 ? (
+              <span className="rounded-full border border-primary/30 bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-link">
+                {item.requirements_ready}/{item.requirements_total}
+              </span>
+            ) : null}
+            {risk ? (
+              <span
+                className={cn(
+                  "rounded-full border px-2.5 py-0.5 text-xs font-semibold",
+                  risk.className,
+                )}
+              >
+                {risk.label}
+              </span>
+            ) : null}
+          </div>
+        </div>
+      </Link>
+    </li>
+  );
+}
+
+export type PipelineViewMode = "lista" | "kanban";
+
+/** Lista: máximo 10 por página, sin scroll interno (solo pager abajo). */
+const LIST_PAGE_SIZE = 10;
+
+export function PipelineBoard({
+  scope,
+  cases,
+  view,
+}: {
+  scope: Scope;
+  cases: OfferCaseListItem[];
+  view: PipelineViewMode;
+}) {
+  const [page, setPage] = useState(1);
+  const columns = scope === "historic" ? HISTORIC_KANBAN : ACTIVE_KANBAN;
+
+  const total = cases.length;
+  const showPager = total > LIST_PAGE_SIZE;
+  const totalPages = Math.max(1, Math.ceil(total / LIST_PAGE_SIZE));
+
+  const pageItems = useMemo(() => {
+    const safe = Math.min(Math.max(page, 1), totalPages);
+    const start = (safe - 1) * LIST_PAGE_SIZE;
+    return cases.slice(start, start + LIST_PAGE_SIZE);
+  }, [cases, page, totalPages]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [scope]);
+
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages);
+  }, [page, totalPages]);
+
+  const byStage = useMemo(() => {
+    const map = new Map<string, OfferCaseListItem[]>();
+    for (const col of columns) {
+      map.set(
+        col.label,
+        cases.filter((c) =>
+          (col.stages as readonly string[]).includes(c.stage),
+        ),
+      );
+    }
+    return map;
+  }, [cases, columns]);
+
+  const listShell =
+    "rounded-xl rounded-tl-none border border-border bg-surface";
+
+  return (
+    <div>
+      {view === "lista" ? (
+        <div className={listShell}>
+          <ul
+            key={`${scope}-${page}`}
+            className="divide-y divide-border"
+          >
+            {pageItems.map((item) => (
+              <CaseListRow key={item.id} item={item} scope={scope} />
+            ))}
+          </ul>
+          {showPager ? (
+            <div className="border-t border-border bg-background px-4 py-3 sm:px-5">
+              <ListPager
+                page={page}
+                totalPages={totalPages}
+                pageSize={LIST_PAGE_SIZE}
+                showing={pageItems.length}
+                total={total}
+                itemLabel="licitaciones"
+                ariaPageSizeLabel="Licitaciones por página"
+                pageSizeOptions={[LIST_PAGE_SIZE]}
+                onPageChange={setPage}
+                onPageSizeChange={() => {
+                  /* fijo a 10 */
+                }}
+              />
+            </div>
+          ) : null}
+        </div>
+      ) : (
+        <div className="grid gap-3 overflow-x-auto pb-2 md:grid-cols-3 lg:grid-cols-4">
+          {columns.map((col) => {
+            const rows = byStage.get(col.label) ?? [];
+            return (
+              <section
+                key={col.label}
+                className="min-w-[220px] rounded-xl border border-border bg-muted/40 p-3"
+              >
+                <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  {col.label}{" "}
+                  <span className="tabular-nums">({rows.length})</span>
+                </h3>
+                <div className="mt-2 space-y-2">
+                  {rows.length === 0 ? (
+                    <p className="rounded-lg border border-dashed border-border bg-surface/70 px-3 py-4 text-center text-xs text-muted-foreground">
+                      Ninguno
+                    </p>
+                  ) : (
+                    rows.map((item) => (
+                      <Link
+                        key={item.id}
+                        href={`/mis-licitaciones/${item.id}`}
+                        className="block rounded-lg border border-border bg-surface p-3 text-sm shadow-sm transition-colors hover:border-primary/40"
+                      >
+                        <p className="font-medium text-foreground">
+                          {item.tenders?.title ?? "Licitación eliminada"}
+                        </p>
+                        <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                          {asOfferCaseKind(item.kind) === "subcontrata" ? (
+                            <FavoriteKindBubble kind="subcontrata" />
+                          ) : null}
+                          <span className="text-xs text-muted-foreground">
+                            {OFFER_STAGE_LABELS[item.stage as OfferStage] ??
+                              item.stage}
+                          </span>
+                        </div>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {formatMoneySafe(
+                            item.tenders?.estimated_value,
+                            item.tenders?.currency,
+                          )}
+                          {item.owner_member?.display_name
+                            ? ` · ${item.owner_member.display_name}`
+                            : ""}
+                        </p>
+                      </Link>
+                    ))
+                  )}
+                </div>
+              </section>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}

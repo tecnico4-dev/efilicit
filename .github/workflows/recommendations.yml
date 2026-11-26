@@ -1,0 +1,85 @@
+# ADR 034 — recomendaciones batch (ratings + favoritos + perfil Eficen).
+#
+# Disparo: workflow_dispatch (default dry-run). Sin on.schedule (ADR 005).
+name: Recommendations
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: >
+          dry-run = fixtures en memoria (seguro).
+          write = Postgres (necesita EFILICIT_DATABASE_URL).
+        type: choice
+        options:
+          - dry-run
+          - write
+        default: dry-run
+      user_id:
+        description: "Opcional: solo este users.id (UUID)"
+        required: false
+        default: ""
+
+concurrency:
+  group: recommendations-${{ github.event_name }}-${{ github.event.inputs.mode || 'write' }}
+  cancel-in-progress: false
+
+jobs:
+  recommend:
+    name: Run recommendations (${{ inputs.mode }})
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ingestion
+    env:
+      EFILICIT_DATABASE_URL: ${{ secrets.EFILICIT_DATABASE_URL }}
+      MODE: ${{ inputs.mode }}
+      USER_ID: ${{ inputs.user_id }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Sync dependencies
+        run: uv sync --frozen
+
+      - name: Guard secrets for write
+        if: env.MODE != 'dry-run'
+        run: |
+          set -euo pipefail
+          if [ -z "${EFILICIT_DATABASE_URL:-}" ]; then
+            echo "::error::Missing repository secret EFILICIT_DATABASE_URL (required for ${MODE})"
+            exit 1
+          fi
+
+      - name: Run recommendations CLI
+        run: |
+          set -euo pipefail
+          EXTRA=()
+          if [ -n "${USER_ID:-}" ]; then
+            EXTRA+=(--user-id "$USER_ID")
+          fi
+
+          case "$MODE" in
+            dry-run)
+              uv run python -m efilicit_ingestion.cli run-recommendations \
+                --dry-run \
+                "${EXTRA[@]}"
+              ;;
+            write)
+              uv run python -m efilicit_ingestion.cli run-recommendations \
+                --write \
+                "${EXTRA[@]}"
+              ;;
+            *)
+              echo "::error::Unknown mode: $MODE"
+              exit 1
+              ;;
+          esac

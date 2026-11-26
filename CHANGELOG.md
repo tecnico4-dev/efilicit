@@ -7,19 +7,184 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Removed
+
+- Schema Mis licitaciones: se eliminan `offer_sources` + `offer_source_links` (trazabilidad de fuentes sin uso; el intake ya deja origen en requisitos/pliegos). Migración local.
+- Schema Mis licitaciones: se elimina `offer_requirement_deliverables` (puente N:M requisito↔entregable sin uso de producto; el sobre va en `offer_requirements.envelope`). Migración local.
+- Mis licitaciones: stages `subcontrata` y `desierta` dejan de ser etapas del expediente (histórico solo adjudicada / no adjudicada / descartada).
+
+### Added
+
+- Mis licitaciones · intake PLACSP: condiciones de ejecución (`ContractExecutionRequirement` social/ambiental) → `offer_requirements` con `category = condiciones_ejecucion`. Migración local del CHECK.
+- Mis licitaciones · entregables: `our_estimate` (estimación de puntos en criterios B/C). Migración local + backfill desde requisitos criterio.
+- Mis licitaciones · pestaña Tareas: notas clicables (`offer_tasks`) con descripción obligatoria, título opcional, asignado (`eficen_members`), plazo y estado hecha; botón «Añadir tarea».
+- Mis licitaciones · Bitácora: timeline sobre `offer_case_log`; altas manuales; auto-registro al crear expediente (`alta_expediente`), al pasar a Análisis y al decidir GO/NO-GO. Migración local del CHECK de `event_type`.
+- Buzón · Licitaciones compartidas: tabla `notification_shared` (`share_id`, `read_at`, `trashed_at`) + trigger al INSERT/reactivar `favorites_shared` + UI en el buzón (copy tipo Común; open/papelera) — [ADR 037](docs/adr/037-notification-shared-peer.md). Solo local/Studio.
+- Mis licitaciones: `offer_cases.kind` obligatorio (`propia` | `subcontrata`); histórico = 3 estados; UI sin riesgo de plazo en histórico; semillas recomendaciones por kind — [ADR 036](docs/adr/036-offer-cases-kind-y-historico-tres-estados.md). Solo local/Studio.
+- Mis licitaciones · intake de pliegos PLACSP ([ADR 035](docs/adr/035-intake-pliegos-expediente.md)): al crear un expediente se encola `offer_case_intake`; el worker `run-offer-intake` (workflow `offer-intake.yml`, `workflow_dispatch`) lee el RAW CODICE y vuelca pliegos (PCAP/PPT/anexos descargados al bucket privado `offer-docs`; biblioteca solo enlace), requisitos (`source_kind = pliego_xml`), sobres A/B/C con puntos y hitos oficiales. Idempotente por `source_key`; no pisa ediciones. Pestañas Pliegos (estado + «Reprocesar pliegos» + abrir por signed URL), Sobres, Requisitos (origen/sobre/valor) y Calendario con datos reales. Solo local.
+- Mis licitaciones · cabecera: KPI «Responsable y equipo» con avatar del owner y fila de avatares del equipo.
+- Mis licitaciones · pestaña Equipo: asignar responsable y añadir/quitar trabajadores desde `eficen_members` (local).
+
 ### Changed
 
+- Home · carrusel «Tus favoritos»: solo se muestra si hay plazos próximos (`attentionFavorites`) o cambios de estado; columnas solo con contenido (sin vacío «Ninguna con plazo…»).
+- Mis licitaciones · Calendario: timeline (fecha · Oficial/Interno · countdown / hecho · marca HOY); hitos intake preguntas/apertura; pestaña oculta si no hay plazos.
+- Mis licitaciones · criterios de adjudicación: dejan de ser filas de Requisitos; viven en `offer_deliverables` (Resumen + Sobres). Intake ya no crea `criterio_adjudicacion`. Migración local limpia filas antiguas.
+- Ingesta PLACSP: si la plataforma no sirve el ZIP (WAF/HTML sin ``PK``, HTTP 403/404), el job sale en verde con ``::warning::`` y `source_sync` ``success`` + motivo; errores propios (DB, Storage, tamaño…) siguen en rojo.
+- `offer_tasks`: `status` pendiente|hecha|descartada (sustituye `done_at`); asignado = `owner_member_id` → `eficen_members`; se quitan `owner_user_id` / `owner_name` / `created_at` / `updated_at`; se añade `created_by` → `users`. Migración local — enmienda [ADR 026](docs/adr/026-mis-licitaciones-offer-cases.md).
+- Mis licitaciones · Bitácora: fechas en chevrones verticales (punta arriba, muesca inferior hacia dentro) rellenos primary / primary-dark.
+- Mis licitaciones · Resumen: tabla de criterios desde entregables B/C; estimación editable en `our_estimate`.
+- Mis licitaciones · go/no-go: en Interés no hay cuadro (CTA «Pasar a análisis»); en Análisis sí; al decidir → preparación (go) o descartada (no-go).
+- Mis licitaciones · Requisitos (UI): responsive (cards en móvil, tabla en `md+`); Crear + Enter; filtros; Editar→Aplicar con aviso al salir; columna Sobre; chips; responsable con avatar. Migración local (`prep_status` + `bloqueado`).
+- Mis licitaciones · Requisitos: columnas Cumplimos / Preparación / Fecha interna / Responsable editables; responsable = `eficen_members` (`owner_member_id`). Migración local.
+- `offer_case_members`: `member_id` → `eficen_members`; se quitan `user_id` / `created_at`. Migración local.
+- `offer_cases`: responsable = `owner_member_id` → `eficen_members` (nullable); se quitan `owner_name` / `owner_user_id`. `created_by` se mantiene. Migración local — enmienda [ADR 032](docs/adr/032-eficen-members-favorites-shared.md).
+- Ingesta PLACSP: si el body descargado no tiene magic ``PK``, reintenta la descarga 3 veces (espera 60 s) antes de fallar el job (HTML/error intermitente de Hacienda).
+- Mis licitaciones · filtros: se borran al salir del área (otra pestaña de la app); listado ↔ expediente los conserva.
+- Mis licitaciones · filtros: modal (estilo Recomendaciones) con año (histórico), estado, importe y responsable; aplica en cliente.
+- Mis licitaciones · lista: fijo 10 por página, sin scroll interno; solo paginación al pie.
+- Mis licitaciones · listado: mismo ancho que Recomendaciones; pestañas Activas/Histórico; Lista|Kanban + Filtrar (botón sin modal aún).
+- Mis licitaciones · ficha de expediente: ancho completo (`PAGE_MAIN_WIDE_CLASS`), sin `max-w-6xl`.
+- `eficen_members`: sin `created_at`/`updated_at`; añade `avatar_url` nullable (UI: iniciales si vacío). Local + remoto — enmienda [ADR 032](docs/adr/032-eficen-members-favorites-shared.md).
+- Schema: se elimina `users.notifications_read_at` (watermark legacy del buzón; lectura por aviso en `notification_favorites`). Migración local.
+- Recomendaciones: una fila por `(user, tender)` (gana el kind de mayor score; empate → `profile_kind` null, solo en Todas). Migración local `20261118120000`.
+- `/recommendations`: título y barra como el resto; «Actualizado el…» arriba a la derecha; Plazo/Estado/Importe en la misma línea que el circulito; Filtrar (Criteria v1) como en favoritos.
+- Nav «Recomendaciones» (antes «Para ti»): tras Favoritos y antes de Alertas; solo visible si hay alguna recomendación pendiente.
+- Gobernanza: branch protection de `main` **activa** (repo público; PR obligatorio + checks CI; sin force push/borrado). [ADR 001](docs/adr/001-proteccion-main-aplazada.md) enmendado (sin ADR nuevo); ver `.github/README.md`.
+- Ingesta canónica: caché en memoria de `contracting_authorities` por corrida (NIF / `platform_id`) para no repetir el mismo `INSERT…ON CONFLICT` (menos locks en `placsp_menores`).
+- Ingesta PLACSP: commit Postgres por cada `.atom` del ZIP; rutas RAW content-addressed sin carpeta de día (`raw/{source}/entries|rows/{sha}…`) — [ADR 033](docs/adr/033-placsp-commit-por-pagina-raw-sin-fecha.md).
+- Buzón · cambios de estado: sin «· fuente»; línea «Carpeta: Favoritos propios/comunes» (enlace; oculta si está en ambos); abrir ficha sin valoración (`from=favorite-status`). Elegibilidad = propios ∪ Común; watermark `LEAST`; un aviso por `(user, event)`. RPCs badge/home alineados (migración local).
+- Alertas: borrar es irreversible (modal Aceptar/Cancelar/×; sin toast Revertir). `notification_queue.alert_id` pasa a `ON DELETE CASCADE` (local).
+- Alertas cola: el job escribe `tender_id` tipado y hace `ON CONFLICT (alert_id, tender_id)`; la web usa la columna como fuente de verdad (interés/Relacionadas; fallback `payload` solo legado).
+- Favoritos peer (`favorites_shared`): quitar es por lado (`hidden_by_from_at` / `hidden_by_to_at` + RPC `hide_favorite_share`); el otro sigue viendo el share hasta que quite; si ambos ocultan se borra la fila. Reenvío reactiva si estaba oculto. Toast Revertir (`unhide_favorite_share`). Solo local — [ADR 032](docs/adr/032-eficen-members-favorites-shared.md).
+
+### Added
+
+- Recomendaciones (ADR 034): job `run-recommendations` (dry-run/write), tabla `tender_recommendations`, home + `/recommendations` (Eficen | Subcontrata, umbral sin top-N fijo, boost perfil empresa, semillas comunes/peer/offer_cases). Solo local/Studio.
+- Recomendaciones: omitir semillas de `offer_cases` / común / compartidas si la tabla no existe o está vacía (remoto sin Mis Licitaciones).
+- Nav: pestaña «Para ti» con icono de regalo (antes «Recomendadas»).
+- Directorio Eficen (`eficen_members`) + favoritos peer (`favorites_shared`, N filas / unique por par+tender) y pestaña Licitaciones compartidas; Común renombrado a `favorites_common`; Mis licitaciones usa el directorio en lugar de `company_people` — [ADR 032](docs/adr/032-eficen-members-favorites-shared.md). Solo local hasta migración remota pedida.
+- `favorites_shared` INSERT RLS: `to_user_id` se valida contra `eficen_members` activos (no contra `users`, cuyo SELECT own-only bloqueaba enviar a compañeros). Solo local.
+- Retención canónica: workflow manual `cleanup-tenders` + `scripts/purge_tenders.py` (dry-run/apply; plazo ≥ N meses; fuente opcional; escudos offer/favoritos/común/ratings/alerta viva/abiertas; poda `notification_emails`) — [ADR 031](docs/adr/031-retencion-purge-tenders.md). Tests unitarios en `ingestion/tests/test_purge_tenders.py`.
+- `notification_queue.tender_id` + UNIQUE parcial `(alert_id, tender_id)` (migración local): dedupe dejando la fila más antigua, claves sin `:digest:`.
+- Web: suite unitaria con Vitest (`pnpm --filter @efilicit/web test`): helpers puros, validación del buscador, queries con fake Supabase y regresiones (dedupe Coincidencias, reasignar cola, purga buzón 30 días, `en_plazo=0`, «Otro» al final). Paso en CI.
+- Favoritos · Común: aviso in-app al autor si otro quita su licitación (`notification_common_removed`, `removed_by` / `removed_by_display_name`; trigger tras DELETE; buzón + badge). Solo local hasta migración remota pedida.
+- Favoritos personales: `favorites.kind` Propias de Eficen / Subcontrata (ADR 030). Modal obligatorio al guardar (corazón / ficha); pestañas Eficen/Subcontrata en `/favorites/tenders` y Común; hub muestra las más recientes mezcladas con burbuja.
+- Favoritos · Común: carpeta compartida del equipo (`shared_favorites`, ADR 029). Alta solo desde `/favorites/tenders` (avión + modal: «Calificada como …» según el favorito personal + nota); `added_by_display_name` al compartir; aviso in-app al equipo (`notification_common`); listado en hub y `/favorites/common` con burbuja y campos; cualquiera puede quitar.
+- Workflow manual `cleanup-orphans` (GitHub Actions): lista/borra ficheros huérfanos del bucket `raw` (`scripts/borrar_huerfanos.py`; default dry-run; `apply` opcional; CSV como artifact).
+
+### Removed
+
+- Pipeline legacy Mis licitaciones: ruta `/my-tenders` (nav «eliminar»), queries `bid-pipeline` y tablas `bid_*` (migración local `20261110140000`). Queda solo `/mis-licitaciones` + `offer_*` / `company_*` ([ADR 026](docs/adr/026-mis-licitaciones-offer-cases.md)).
+
+### Fixed
+
+- Buscador: `search_tenders` con `statement_timeout` 20s; si aún así corta, mensaje claro pidiendo afinar filtros (sin el error crudo de Postgres).
+- Buscador: FTS ignora tildes (`unaccent` en `search_vector` + `search_tenders`); título/descripción se siguen guardando con tildes.
+- Mis licitaciones (bloque B, local): `tender_id` RESTRICT; evidencias con CHECK por tipo + RESTRICT a `company_*`; FK compuestas para no mezclar expedientes; wipe salta licitaciones con `offer_cases` — [ADR 028](docs/adr/028-offer-schema-block-b-integrity.md).
+- Mis licitaciones / migraciones locales: `is_app_user()` se recrea tras el rollback que la dropeaba; ALTER/backfill `bid_*` con guardas si las tablas no existen — [ADR 027](docs/adr/027-offer-schema-hardening-is-app-user.md). Solo Studio local.
+
+### Changed
+
+- Favoritos · propias y Común: botón Filtrar (modal con criterios de búsqueda; Aplicar / Limpiar / Cancelar; contador Filtrar(n)).
+- Favoritos · Licitaciones: corazón a la izquierda del avión; al quitar, la fila desaparece con toast Revertir (recupera el kind).
+- Favoritos: sin hub de tres columnas; subnav azulado bajo la cabecera (iconos + contadores); recuerda la última sección; sin H1 redundante en cada página.
+- Favoritos · pestañas Eficen/Subcontrata: solo si hay ítems en ambos kinds; si no, lista directa o vacío.
+- Favoritos: al guardar, burbuja partida Eficen (teal) / Subcontrata (violeta) bajo el corazón (o botón de ficha) en lugar del modal grande; al elegir, flash breve y se guarda con ese kind.
+- Favoritos · Común: quitar pide confirmación modal (Sí/No); si no eres quien la añadió, avisa que se notificará al autor (aviso aún no implementado).
+- Favoritos · Común: bajo el título, burbuja + «Añadida por X (fecha)» e importe/CPV/estado a la izquierda; nota (si hay) a la derecha en recuadro discontinuo «Nota: …» (crece hacia abajo si hace falta).
+- Buzón · Común: título «…ha compartido una licitación interesante para Eficen/Subcontrata en la carpeta común.» con «común» enlazando a `/favorites/common`; abrir la ficha desde el aviso no pide ni muestra valoración (`from=favorites-common`).
+- Alertas: Clasificación* (Eficen / Subcontrata → `alerts.kind`) obligatoria al crear/convertir/guardar edición; legado puede ser `NULL` (radios vacíos hasta elegir); si ya tenía kind, se conserva al editar; si falta, «Indica el tipo de alerta.» En relacionadas/coincidencias/buzón/ficha (`?interest=` o cola), el chip de interés se preselecciona con el kind de la alerta (se puede cambiar). Digest email: burbuja Eficen/Sub a la derecha de «N coincidencias»; bloques ordenados Eficen → Subcontrata → sin clasificar (sin burbuja); enlaces con `&interest=` si hay kind.
+- Buzón: `notification_reads` + `notification_trash` → `notification_favorites` (`read_at` / `trashed_at` / `deleted`); `digest_inbox_notifications` → `notification_emails`. Papelera: eliminar definitivo (favoritos → `deleted`; emails → `DELETE`) con toast Revertir diferido ~7s.
+- Mis licitaciones: desactivado en remoto por defecto (`NEXT_PUBLIC_MIS_LICITACIONES_ENABLED`); nav oculta, rutas redirigen a `/` y no hay alta desde ficha. En local poner `=1` en `apps/web/.env.local`.
+- Mis licitaciones · Lista: paginación como favoritos/alertas (10 por página; 10/50/100 si hay más), en Activas e Histórico.
+- Mis licitaciones: se quita el subtítulo «Espacio de preparación de oferta · pipeline compartido Eficen».
+- Scripts locales `seed_import_eficen_*` escriben/`update` `offer_cases` (ya no `bid_cases`).
+
+### Added
+
+- Tests locales `ingestion/tests/test_offer_schema_integrity.py`: bloques A/B (`is_app_user`, RESTRICT tender/biblioteca, CHECK evidencias, FK compuestas); skip sin Postgres; rollback sin dejar datos.
+- Valoraciones: dimensión de interés `propia` (Eficen) / `subcontrata` (`tender_ratings.interest_kind`); hay que elegir chip antes de las estrellas (si no, rebotan); compacto `3★ Eficen` / `3★ Sub`. En Relacionadas, filtro Interés solo con Valoradas.
+- Alertas · Licitaciones relacionadas: papelera por ítem (icono) + «Vaciar listado» / «Restaurar todo» / «Vaciar papelera»; pestañas Todas | Papelera (30 días); filtros en panel colapsable (embudo); tiempo / estado / valoración. Solo el modal (`alert_related_trash`); no afecta al buzón.
+- Mis licitaciones (nuevo): esquema completo ADR 026 (`offer_*` + `company_*`: requisitos, entregables, evidencias, equipo, hitos, pliegos, fuentes, bitácora, biblioteca); backfill desde `bid_cases`; UI `/mis-licitaciones` sobre el expediente nuevo.
+- Buscador: en la franja de paginación, «Ordenar por» (desplegable ↑) + flecha asc/desc; URL `sort`/`dir` y RPC `p_sort_by`/`p_sort_dir`.
+- Mis licitaciones: etapa histórica `subcontrata` (participación sin ser adjudicatario).
+- Script local `scripts/seed_import_eficen_local.py`: histórico Eficen → `import_eficen` + `bid_cases` (Excel/ADJ del Escritorio; sin versionar datos).
+- Script local `scripts/enrich_import_eficen_authorities.py`: organismos PLACE/Navarra → `contracting_authorities` + FK en `import_eficen` (Gemelo → `subcontrata`; `source_url` PLACE `!ut/p` → deeplink `idEvl`).
+
+### Removed
+
+- Columna `tender_sources.last_seen_at` y RPC `tender_max_last_seen` — [ADR 024](docs/adr/024-drop-tender-sources-last-seen.md). Upsert ya no escribe heartbeat de re-visita.
+
+### Changed
+
+- Buzón: `notification_reads` + `notification_trash` → `notification_favorites` (`read_at` / `trashed_at` / `deleted`); `digest_inbox_notifications` → `notification_emails`. Papelera: eliminar definitivo (favoritos → `deleted`; emails → `DELETE`) con toast Revertir diferido ~7s.
+- Alertas · Coincidencias: filtro Alerta con nombres truncados al ancho del control (no desbordan el desplegable).
+- Alertas · filtros (Coincidencias / Relacionadas): con Valoración = Valoradas, además de Interés aparece Puntuación multi-valor (Cualquiera / 1★…5★; resumen `1★`, `2-3★`, `1-3★, 5★`).
+- Alertas · Coincidencias: una fila por licitación (dedupe); basura/restaurar/vaciar afecta a todas las colas de esa licitación. Relacionadas por alerta sigue con una fila por cola; si solo se borra en una alerta, en Coincidencias sigue saliendo en Todas / la otra alerta.
+- Alertas cola: `idempotency_key` = `alert:{id}:tender:{id}` (sin periodo); la misma alerta no reencola esa licitación al cambiar día/semana o diaria↔semanal. Ya no se escribe `payload.digest` (el periodo solo etiqueta el digest enviado / inbox).
+- Alertas: al Revertir un borrado se reasignan las filas de `notification_queue` a la alerta nueva (el botón «Licitaciones relacionadas» vuelve a salir).
+- Alertas: pestañas **Mis alertas** | **Coincidencias** (filtro Alerta; sin subtítulo; Interés sin «Sin clasificar» también en Relacionadas); listado con interruptor Activa/Inactiva + editar/eliminar, y «Licitaciones relacionadas» debajo a la derecha.
+- Digest email: hueco entre bloques de alerta con spacer HTML (`height`/celda), no `margin` (Gmail/Outlook lo ignoraban).
+- Digest email: un correo por usuario según frecuencia de cuenta.
+- Digest email: más aire entre bloques de alerta en la parte texto cuando hay varias.
+- Digest email: cuerpo agrupado por alerta (máx. 5 alertas × 5 ítems; «… y N más» / «… y K alertas más en el buzón»); `alert_name` en payload de cola + lookup `alerts.name` al enviar.
+- Cuenta: cambio de contraseña valida en UI (≥6, mayúscula, minúscula y número) con mensajes en español; Auth local `lower_upper_letters_digits`.
+- Cuenta: modal de cambio en 2 pasos (contraseña actual → nueva); fallo no cierra sesión; «¿Has olvidado…?» → contactar administrador. Post-login sigue sin pedir la actual.
+- Alertas / buscador: desplegables (estado, municipio, fechas, CPV…) en portal fijo para que no queden atrapados ni generen scroll dentro del modal «Crear alerta».
+- Buscador: «Solo en plazo» marcado por defecto (desmarcable; URL `en_plazo=0` al buscar sin él).
+- Buscador: Estado / Procedimiento / Tipo de contrato pasan a multi-selección con ticks (Todos por defecto; varios valores = OR).
+- Buscador: click en chip de «Búsquedas recientes» rellena el formulario (sin buscar ni cerrar el panel); hover sigue siendo preview fantasma.
+- CCAA ingest (ADR 025): Catalunya ventana SoQL 7 días + Euskadi cabeza `max_pages`; ambas con RAW content-addressed por unidad (`rows/{sha256}.json`) y skip por checksum — [ADR 025](docs/adr/025-catalunya-raw-row-incremental.md) (extiende [022](docs/adr/022-placsp-raw-entry-incremental.md)).
+- Favoritos web: se quitan los enlaces «Ir a / Volver a» en listados de licitaciones y búsquedas favoritas.
+- Favicon: marca «e» Eficen (`app/icon.png`); se retira el `favicon.ico` por defecto de Next.
+- Alertas: título + botón «Crear alerta» (modal con criterios; Crear / Guardar como búsqueda / Cancelar / ×); bajo la raya, Mis alertas con frecuencia a la derecha y el listado.
+- Alertas: paginación de Mis alertas (10/50/100, mismo pager que favoritos; controles solo si hay más de 10).
+- Ficha de licitación (fuentes): títulos legibles (`PlaCSP`, `PlaCSP (menores/agregadas)`, `Euskadi`, `Cataluña`); sin «Id en fuente» ni «Visto»; bajo el título/badge canónica solo «Creada» (alta) o «Actualizada» (cambio real en canónico) y la URL.
+- Favoritos: se quita «Datos actualizados» (`last_seen_at` / RPC `tender_max_last_seen`); ya no aporta frescura útil con ingesta incremental PLACSP.
+- Digest email: tarjeta ligera — título + «Ver en EfiLicit» + «Fuente oficial» (`source_url` de `tender_sources` al enviar; sin meta duplicada en el payload).
+- Digest email: sin pie «Eficen / Preferencias / correo automático»; el cuerpo termina en las tarjetas (y CTA al buzón si hay `EFILICIT_APP_URL`).
+- Favoritos: en escritorio, licitaciones favoritas y búsquedas guardadas en dos paneles 50/50 a la misma altura; en pantallas estrechas siguen apiladas.
+- Digest email (Resend): plantilla branded EfiLicit — asunto `EfiLicit resumen diario/semanal: N oportunidad(es) nueva(s)`, cabecera cian con Efi/Licit, saludo con nombre, tarjetas con organismo/CCAA/importe/CPV y CTA a la ficha (`EFILICIT_APP_URL`).
+- Buscador: publicación en un solo control (atajos 7 días/mes/año + personalizado con calendario de rango e Inicio/Fin); junto a importes en pantallas grandes.
+- Buscador: campo Texto multilínea que crece hasta ~5 líneas y luego hace scroll.
+- Buscador / favoritos / alertas: resumen de criteria con formato `Campo: valor` separado por ` ~ ` (texto ≤3 palabras, CPV ≤2 códigos, Lugar con nombre de municipio, Importe/Fecha tipados).
+- Buscador: en desplegables de estado/procedimiento/tipo, «Otro» va al final (resto alfabético; «Todos» sigue primero).
+- Buscador: «Búsquedas recientes» junto al marcador de guardar (fila del campo Texto), no al lado de Buscar.
+- Buscador: municipio (y CPV) notifican `input`/`change` al form al elegir valor en controles ocultos — el marcador detecta búsquedas ya guardadas con CCAA+municipio.
+- Buscador: «Limpiar campos» reserva altura aunque esté oculto (el botón Buscar no salta).
+- Buscador: «Guardar búsqueda» es un marcador (estilo corazón): desactivado si no hay criterios; outline gris / relleno azul eficen si ya está guardada; click elimina (toast «Búsqueda eliminada de favoritos.» + Revertir).
+- Alertas: crear/editar usan los mismos criterios que el buscador (`CriteriaFilters` compartido: texto, CPV multi, geo, estado/procedimiento/tipo, importes, fechas, solo en plazo); convertir búsqueda→alerta ya persistía el criteria completo.
+- PLACSP RAW incremental: se descarga el ZIP mensual pero en Storage solo entries Atom nuevas (`entries/{sha256}.atom.xml`); dedup por checksum — [ADR 022](docs/adr/022-placsp-raw-entry-incremental.md).
+- PLACSP download: timeout 600 s, max 512 MiB, 4 reintentos; Storage RAW: timeout 600 s, reintentos 5xx, TUS resumable ≥6 MiB vía `httpx` — [ADR 021](docs/adr/021-raw-storage-tus-resumable-httpx.md).
 - Despertador de ingest/alertas: cron externo → `workflow_dispatch` (sin `on.schedule` en GitHub). [ADR 020](docs/adr/020-alertas-match-post-ingesta-y-digest-diario.md) reescrito; runbook [external-cron-dispatch](docs/runbooks/external-cron-dispatch.md) + `scripts/dispatch-workflow.sh`. Cadencia estable: ingestas lun 05–07 UTC, match lun 08:00, digest diario 09:00. Prueba 2026-10-29 (Madrid): PLACSP 03:00×3 / Cat 05:00 / Euskadi 06:00 / match 07:00 / digest 07:30.
 
 ### Fixed
 
+- Ingesta: si Postgres aborta la transacción a mitad, ya no se enmascara el error real con `current transaction is aborted` al llamar `finish_run`; el `source_sync` `failed` se sigue persistiendo tras rollback (ADR 003). `public.errors` sigue sin cablear.
+- Alertas «Licitaciones relacionadas»: misma carga por trozos de 100 ids (evita Bad Request con colas grandes).
+- Buzón: abrir un digest con muchas licitaciones (p. ej. 900+) ya no falla con Bad Request — carga de `tenders` por trozos de 100 ids.
+- Alertas: `CpvPicker` ya no exige `SearchFeedbackProvider` (crash al abrir `/alerts` tras CriteriaFilters compartido).
 - RLS: `auth.uid()` → `(select auth.uid())` en políticas owner-only (advisor `auth_rls_initplan`); retirada `setup_rls_smoke` (andamiaje Fase 0).
 - Auth: `handle_new_user` sin `EXECUTE` para `anon`/`authenticated` (sigue el trigger; deja de exponerse como RPC SECURITY DEFINER).
 - CI/`next build`: `getSessionUser` y `AuthenticatedChrome` no exigen env Supabase en prerender (p. ej. `/_not-found`); sin sesión si faltan `NEXT_PUBLIC_*`.
 - Prefijo CPV de 1 dígito: `3` busca `3%` (no forzaba `30%`); mismo criterio en alertas batch.
 
+### Fixed
+
+- Mis licitaciones: rollback en remoto de tablas `bid_*` aplicadas por error (`20261030130100`); el pipeline queda solo en local hasta decisión explícita de remoto.
+
 ### Added
 
+- Alertas «Licitaciones relacionadas»: carpetas Valoradas / Sin valorar / Último envío (además de Todas / Enviadas / Pendientes); Último envío = ítems `sent` del periodo digest más reciente de esa alerta.
+- Ficha (from buzón/alertas/email): al salir sin valorar, diálogo «¿Te ha parecido interesante…?» con estrellas y «Valorar más tarde.»
+- Ficha: valoración 1–5 centrada sobre el título solo con `from=notifications|alerts|email` (sin «volver»); el digest enlaza `?from=email`.
+- Buzón (modal de digest) y Alertas «Licitaciones relacionadas»: puntuación 1–5 con estrellas doradas por licitación; compacto `N★` al reabrir; tabla `tender_ratings` (RLS own). Modales ensanchados para las estrellas.
+- Mis licitaciones: pipeline compartido de presentación Eficen (`/my-tenders`) — etapas, responsable, fechas, checklist con cuenta atrás, novedades, documentación reutilizable (URL+tags) e histórico por años; nav a la izquierda del buzón; alta desde la ficha. [ADR 023](docs/adr/023-mis-licitaciones-pipeline-compartido.md).
+- Buscador: hover en chip de recientes previsualiza el formulario completo (texto, importes, fechas, selects, en plazo, CCAA, municipio, CPV) en estilo fantasma; al salir se restaura. Click en el chip sigue buscando de verdad.
+- Buscador: historial `recent_searches` (máx. 5/cuenta, dedupe sube al repetir; chips «Recientes» junto a Buscar). Distinto de favoritos guardados.
+- Notificaciones: al enviar un digest email, aviso in-app en el buzón («Se ha enviado tu email diario/semanal: N licitaciones…» + día); al pulsar, modal con la lista plana de ese correo (scroll/paginado); badge unificado. [ADR 022](docs/adr/022-digest-email-inbox-in-app.md).
+- Alertas: «Licitaciones relacionadas» (cola `notification_queue` por alerta) — modal con carpetas Todas (default) / Enviadas / Pendientes; paginación 10/50/100 como favoritos; `failed`/`cancelled` con marca «Error al enviar»; orden por `created_at`.
 - [ADR 020](docs/adr/020-alertas-match-post-ingesta-y-digest-diario.md): alertas en dos crons — `alerts-match` lun 08:00 UTC (`--phase match`, ventana `source_sync` + `updated_at`, sin `since_days`); `alerts-digest` diario 09:00 UTC (`--phase send`, solo Resend). CLI `--phase` / `--sync-date`. Backfill al crear alerta → backlog.
 - Runbook + `scripts/wipe_app_data.sql`: vaciado operativo del remoto (dominio + alertas/favoritos/colas); conserva `users` y geo (`geo_ccaa` / `geo_municipio`).
 - Semana 6 Paso 10: cron de producción en GitHub Actions — ingestas PLACSP/Catalunya/Euskadi los lunes 05–07 UTC (`live`). Manual `workflow_dispatch` sigue en dry-run por defecto. *(Alertas: cadencia actualizada en ADR 020.)*

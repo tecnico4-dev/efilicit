@@ -1,0 +1,12 @@
+---
+description: Trabajo activo en Mis Licitaciones — rama y commits
+alwaysApply: true
+---
+
+# Rama activa: Mis Licitaciones
+
+- Implementar cambios de producto en la rama `tecnico4/mis-licitaciones` (partida de `tecnico4/semana-06`).
+- No implementar en `main`, `tecnico4/semana-06` u otras ramas salvo petición explícita.
+- Tras cada cambio funcional pedido por el usuario: commit automático en esa rama (mensaje convencional `feat`/`fix`/…).
+- Push a `origin/tecnico4/mis-licitaciones` si el usuario quiere ver preview remoto; por defecto commit local basta para Studio / web local.
+- **Prohibido** mergear de vuelta a `semana-06`/`main` hasta que el usuario lo pida explícitamente.

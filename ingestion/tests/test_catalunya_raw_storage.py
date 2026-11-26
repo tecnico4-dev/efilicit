@@ -57,9 +57,8 @@ def test_build_raw_storage_path_catalunya_prefix() -> None:
     storage_path, object_key = build_raw_storage_path(
         SOURCE_CODE,
         key,
-        day="2026/09/16",
     )
-    assert object_key == f"catalunya/2026/09/16/{key}"
+    assert object_key == f"catalunya/{key}"
     assert storage_path == f"raw/{object_key}"
 
 

@@ -4,21 +4,23 @@
  */
 import type { Database } from "@efilicit/types";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { asFavoriteKind, type FavoriteKind } from "./favorite-kind";
 
 type FavoriteRow = Database["public"]["Tables"]["favorites"]["Row"];
 
 export type FavoriteWithTender = FavoriteRow & {
+  kind: FavoriteKind;
   tenders: {
     id: string;
     title: string;
     status: string | null;
+    procedure_type: string | null;
+    contract_type: string | null;
     estimated_value: number | null;
     currency: string;
     cpv_codes: string[];
     publication_date: string | null;
     deadline_at: string | null;
-    /** max(`tender_sources.last_seen_at`): última vez que una fuente la vio. */
-    last_seen_at: string | null;
   } | null;
 };
 
@@ -36,6 +38,22 @@ export async function isOwnFavorite(
 
   if (error) return { data: false, error: new Error(error.message) };
   return { data: Boolean(data), error: null };
+}
+
+/** Kind del favorito propio, o null si no está en favoritos. */
+export async function getOwnFavoriteKind(
+  client: SupabaseClient<Database>,
+  input: { userId: string; tenderId: string },
+): Promise<{ data: FavoriteKind | null; error: Error | null }> {
+  const { data, error } = await client
+    .from("favorites")
+    .select("kind")
+    .eq("user_id", input.userId)
+    .eq("tender_id", input.tenderId)
+    .maybeSingle();
+
+  if (error) return { data: null, error: new Error(error.message) };
+  return { data: asFavoriteKind(data?.kind ?? null), error: null };
 }
 
 /** IDs de licitaciones favoritas entre un conjunto (p. ej. resultados de búsqueda). */
@@ -69,11 +87,14 @@ export async function listOwnFavorites(
       id,
       user_id,
       tender_id,
+      kind,
       created_at,
       tenders (
         id,
         title,
         status,
+        procedure_type,
+        contract_type,
         estimated_value,
         currency,
         publication_date,
@@ -86,45 +107,23 @@ export async function listOwnFavorites(
 
   if (error) return { data: [], error: new Error(error.message) };
 
-  const tenderIds = (data ?? [])
-    .map((row) => row.tender_id)
-    .filter(Boolean);
-
-  const lastSeenByTender = new Map<string, string>();
-  if (tenderIds.length > 0) {
-    const { data: seen, error: seenError } = await client.rpc(
-      "tender_max_last_seen",
-      { p_tender_ids: tenderIds },
-    );
-    if (seenError) {
-      return { data: [], error: new Error(seenError.message) };
-    }
-    for (const row of seen ?? []) {
-      if (row.tender_id && row.last_seen_at) {
-        lastSeenByTender.set(row.tender_id, row.last_seen_at);
-      }
-    }
-  }
-
   const rows = (data ?? []).map((row) => {
+    const kind = asFavoriteKind(row.kind) ?? "propia";
     const tender = row.tenders as
-      | (Omit<
-          NonNullable<FavoriteWithTender["tenders"]>,
-          "cpv_codes" | "last_seen_at"
-        > & {
+      | (Omit<NonNullable<FavoriteWithTender["tenders"]>, "cpv_codes"> & {
           tender_cpvs?: { cpv_code: string }[] | null;
         })
       | null;
     if (!tender) {
-      return { ...row, tenders: null } as FavoriteWithTender;
+      return { ...row, kind, tenders: null } as FavoriteWithTender;
     }
     const { tender_cpvs, ...rest } = tender;
     return {
       ...row,
+      kind,
       tenders: {
         ...rest,
         cpv_codes: [...(tender_cpvs ?? []).map((r) => r.cpv_code)].sort(),
-        last_seen_at: lastSeenByTender.get(row.tender_id) ?? null,
       },
     } as FavoriteWithTender;
   });
@@ -134,13 +133,14 @@ export async function listOwnFavorites(
 
 export async function addOwnFavorite(
   client: SupabaseClient<Database>,
-  input: { userId: string; tenderId: string },
+  input: { userId: string; tenderId: string; kind: FavoriteKind },
 ): Promise<{ data: FavoriteRow | null; error: Error | null }> {
   const { data, error } = await client
     .from("favorites")
     .insert({
       user_id: input.userId,
       tender_id: input.tenderId,
+      kind: input.kind,
     })
     .select("*")
     .single();

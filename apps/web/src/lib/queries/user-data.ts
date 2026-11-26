@@ -9,6 +9,7 @@
  */
 import type { Database, SearchCriteria } from "@efilicit/types";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import type { FavoriteKind } from "./favorite-kind";
 
 type AlertRow = Database["public"]["Tables"]["alerts"]["Row"];
 type SavedSearchRow = Database["public"]["Tables"]["saved_searches"]["Row"];
@@ -100,6 +101,8 @@ export async function createOwnAlert(
     userId: string;
     name: string;
     criteria: SearchCriteria;
+    /** Obligatorio en UI de alta; null solo al restaurar legado sin clasificar. */
+    kind: FavoriteKind | null;
     frequency?: DigestFrequency;
   },
 ): Promise<{ data: AlertRow | null; error: Error | null }> {
@@ -109,6 +112,7 @@ export async function createOwnAlert(
       user_id: input.userId,
       name: input.name,
       criteria: asJson(input.criteria),
+      kind: input.kind,
       frequency: input.frequency ?? "diaria",
       is_active: true,
     })
@@ -119,13 +123,14 @@ export async function createOwnAlert(
   return { data, error: null };
 }
 
-/** Actualiza nombre, criteria y/o is_active de una alerta propia (RLS). */
+/** Actualiza nombre, criteria, kind y/o is_active de una alerta propia (RLS). */
 export async function updateOwnAlert(
   client: SupabaseClient<Database>,
   input: {
     alertId: string;
     name?: string;
     criteria?: SearchCriteria;
+    kind?: FavoriteKind;
     isActive?: boolean;
   },
 ): Promise<{ data: AlertRow | null; error: Error | null }> {
@@ -134,6 +139,7 @@ export async function updateOwnAlert(
   };
   if (input.name !== undefined) patch.name = input.name;
   if (input.criteria !== undefined) patch.criteria = asJson(input.criteria);
+  if (input.kind !== undefined) patch.kind = input.kind;
   if (input.isActive !== undefined) patch.is_active = input.isActive;
 
   const { data, error } = await client

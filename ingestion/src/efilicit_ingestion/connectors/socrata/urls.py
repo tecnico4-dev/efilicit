@@ -7,12 +7,14 @@ oficiales (ficha en ``docs/sources/catalunya.md``).
 from __future__ import annotations
 
 from dataclasses import dataclass
+from urllib.parse import quote
 
 __all__ = [
     "SocrataDataset",
     "CATALUNYA",
     "page_artifact_key",
     "page_resource_url",
+    "publication_since_where",
 ]
 
 
@@ -20,8 +22,8 @@ __all__ = [
 class SocrataDataset:
     """Un dataset SODA concreto (dominio + id) que el conector puede paginar.
 
-    ``order_by`` fija un orden estable (p. ej. ``:id``) para que offset/limit
-    no reordenen filas entre corridas y el cursor tenga sentido.
+    ``order_by`` fija un orden estable para que offset/limit no reordenen filas
+    entre corridas dentro de la misma ventana SoQL.
     """
 
     source_code: str
@@ -36,26 +38,42 @@ class SocrataDataset:
 
 # Transparència Catalunya — publicaciones PSCP vía Open Data (no feed Atom).
 # Es la CCAA #1 de Semana 3; reutiliza este adaptador Socrata, no PLACSP.
+# Orden por fecha de anuncio (ADR 025); desempate :id estable.
 CATALUNYA = SocrataDataset(
     source_code="catalunya",
     domain="analisi.transparenciacatalunya.cat",
     dataset_id="ybgg-dgi6",
-    order_by=":id",
+    order_by="data_publicacio_anunci DESC,:id DESC",
 )
 
 
 def page_artifact_key(dataset: SocrataDataset, *, offset: int, limit: int) -> str:
-    """Nombre estable del artefacto RAW de una página SODA.
+    """Nombre estable del artefacto de página SODA (solo discover; no Storage ADR 025).
 
-    Incluye offset y limit: si cambias el tamaño de página, el key cambia
-    (evita mezclar evidencias de paginaciones distintas en Storage).
+    Incluye offset y limit: si cambias el tamaño de página, el key cambia.
     """
     return f"{dataset.dataset_id}_offset_{offset:07d}_limit_{limit:04d}.json"
 
 
-def page_resource_url(dataset: SocrataDataset, *, offset: int, limit: int) -> str:
-    # SoQL: $limit/$offset/$order. Valores enteros / tokens; sin query HTML.
-    return (
-        f"{dataset.resource_base_url}"
-        f"?$limit={limit}&$offset={offset}&$order={dataset.order_by}"
+def publication_since_where(since_iso: str) -> str:
+    """Cláusula SoQL ``$where`` por ``data_publicacio_anunci`` (ADR 025)."""
+    return f"data_publicacio_anunci >= '{since_iso}'"
+
+
+def page_resource_url(
+    dataset: SocrataDataset,
+    *,
+    offset: int,
+    limit: int,
+    where: str | None = None,
+) -> str:
+    """URL SoQL: ``$limit`` / ``$offset`` / ``$order`` y opcional ``$where``."""
+    # safe=",:" conserva comas y :id en $order; espacios → %20.
+    query = (
+        f"$limit={limit}"
+        f"&$offset={offset}"
+        f"&$order={quote(dataset.order_by, safe=',:')}"
     )
+    if where:
+        query = f"{query}&$where={quote(where, safe='')}"
+    return f"{dataset.resource_base_url}?{query}"

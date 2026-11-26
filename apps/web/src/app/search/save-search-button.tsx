@@ -5,125 +5,127 @@ import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useUndoToast } from "@/components/undo-toast";
+import { cn } from "@/lib/cn";
 import { criteriaEqual, parseCriteria } from "@/lib/criteria-display";
+import { buildCriteriaFromSearchForm } from "@/lib/build-criteria-from-form";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import {
   createOwnSavedSearch,
+  deleteOwnSavedSearch,
   listOwnSavedSearches,
 } from "@/lib/queries";
 import type { SearchCriteria } from "@efilicit/types";
-import { tokenizeKeywords } from "@/lib/keywords";
 import { useSearchFeedback } from "./search-feedback";
+import { isSearchFormPreviewing } from "./search-form-preview";
+
+type MatchedSavedSearch = {
+  id: string;
+  name: string;
+  criteria: SearchCriteria;
+};
 
 const FORM_ID = "search-form";
 
-function readField(form: HTMLFormElement, name: string): string {
-  const el = form.elements.namedItem(name);
-  if (el instanceof RadioNodeList) {
-    return String(el.value ?? "").trim();
-  }
-  if (el instanceof HTMLInputElement) {
-    if (el.type === "checkbox") return el.checked ? el.value.trim() || "1" : "";
-    return el.value.trim();
-  }
-  if (el instanceof HTMLSelectElement) {
-    return el.value.trim();
-  }
-  return "";
-}
-
-function readAllFields(form: HTMLFormElement, name: string): string[] {
-  const el = form.elements.namedItem(name);
-  if (el instanceof RadioNodeList) {
-    return [...el]
-      .filter((node): node is HTMLInputElement => node instanceof HTMLInputElement)
-      .map((node) => node.value.trim())
-      .filter(Boolean);
-  }
-  if (el instanceof HTMLInputElement || el instanceof HTMLSelectElement) {
-    const v = el.value.trim();
-    return v ? [v] : [];
-  }
-  return [];
-}
-
 function buildCriteria(form: HTMLFormElement): SearchCriteria | null {
-  const q = readField(form, "q");
-  const cpvCodes = readAllFields(form, "cpv");
-  const cpvMatchRaw = readField(form, "cpv_match").toLowerCase();
-  const cpvMatch =
-    cpvCodes.length >= 2 && cpvMatchRaw === "all" ? ("all" as const) : undefined;
-  const minRaw = readField(form, "min");
-  const maxRaw = readField(form, "max");
-  const ccaa = readField(form, "ccaa");
-  const municipality = readField(form, "municipality");
-  const status = readField(form, "status");
-  const procedure = readField(form, "procedure");
-  const contractType = readField(form, "contract_type");
-  const pubFrom = readField(form, "pub_from");
-  const pubTo = readField(form, "pub_to");
-  const openForSubmission = readField(form, "en_plazo") === "1";
-  const min = minRaw === "" ? undefined : Number(minRaw);
-  const max = maxRaw === "" ? undefined : Number(maxRaw);
-
-  const keywords = q ? tokenizeKeywords(q) : undefined;
-
-  const hasSomething =
-    (keywords && keywords.length > 0) ||
-    cpvCodes.length > 0 ||
-    (min != null && !Number.isNaN(min)) ||
-    (max != null && !Number.isNaN(max)) ||
-    ccaa !== "" ||
-    municipality !== "" ||
-    status !== "" ||
-    procedure !== "" ||
-    contractType !== "" ||
-    pubFrom !== "" ||
-    pubTo !== "" ||
-    openForSubmission;
-
-  if (!hasSomething) return null;
-
-  return {
-    version: 1,
-    keywords: keywords?.length ? keywords : undefined,
-    cpv_codes: cpvCodes.length ? cpvCodes : undefined,
-    cpv_match: cpvMatch,
-    estimated_value_min: min != null && !Number.isNaN(min) ? min : undefined,
-    estimated_value_max: max != null && !Number.isNaN(max) ? max : undefined,
-    statuses: status ? [status] : undefined,
-    procedure_types: procedure ? [procedure] : undefined,
-    contract_types: contractType ? [contractType] : undefined,
-    publication_date_from: pubFrom || undefined,
-    publication_date_to: pubTo || undefined,
-    open_for_submission: openForSubmission || undefined,
-    geography:
-      ccaa || municipality
-        ? {
-            ccaa_codes: ccaa ? [ccaa] : undefined,
-            municipality_codes: municipality ? [municipality] : undefined,
-          }
-        : undefined,
-  };
+  return buildCriteriaFromSearchForm(form);
 }
 
 /**
- * Guarda los criterios del formulario: pide nombre en modal.
+ * Marcador (bookmark) estilo favoritos: outline gris / relleno azul eficen.
+ * Un solo path (sin sombra de fondo).
+ */
+function BookmarkIcon({ filled }: { filled: boolean }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      width="20"
+      height="20"
+      fill={filled ? "currentColor" : "none"}
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M18.5 21.25 12 16.5l-6.5 4.75V5.25A2.25 2.25 0 0 1 7.75 3h8.5a2.25 2.25 0 0 1 2.25 2.25z" />
+    </svg>
+  );
+}
+
+/**
+ * Guarda los criterios del formulario: icono tipo favoritos + modal de nombre.
+ * Vacío → desactivado; guardada → click elimina (toast + Revertir).
  */
 export function SaveSearchButton({ userId }: { userId: string }) {
   const router = useRouter();
   const { setFeedback } = useSearchFeedback();
+  const { showUndo, showStatus } = useUndoToast();
   const titleId = useId();
   const [pending, setPending] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [hasCriteria, setHasCriteria] = useState(false);
+  const [matched, setMatched] = useState<MatchedSavedSearch | null>(null);
   const [name, setName] = useState("");
   const [criteria, setCriteria] = useState<SearchCriteria | null>(null);
   const [dialogError, setDialogError] = useState<string | null>(null);
 
+  const saved = matched != null;
+  const disabled = pending || (!saved && !hasCriteria);
+
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  /** Criterios del form + match con búsquedas guardadas. */
+  async function syncFromForm() {
+    const form = document.getElementById(FORM_ID) as HTMLFormElement | null;
+    if (!form) {
+      setHasCriteria(false);
+      setMatched(null);
+      return;
+    }
+    const built = buildCriteria(form);
+    setHasCriteria(built != null);
+    if (!built) {
+      setMatched(null);
+      return;
+    }
+    const client = createSupabaseBrowserClient();
+    const existing = await listOwnSavedSearches(client);
+    if (existing.error) return;
+    const hit = existing.data.find((s) =>
+      criteriaEqual(built, parseCriteria(s.criteria)),
+    );
+    setMatched(
+      hit
+        ? {
+            id: hit.id,
+            name: hit.name,
+            criteria: parseCriteria(hit.criteria),
+          }
+        : null,
+    );
+  }
+
+  useEffect(() => {
+    void syncFromForm();
+    const form = document.getElementById(FORM_ID) as HTMLFormElement | null;
+    if (!form) return;
+    const onChange = () => {
+      if (isSearchFormPreviewing(form)) return;
+      void syncFromForm();
+    };
+    form.addEventListener("input", onChange);
+    form.addEventListener("change", onChange);
+    return () => {
+      form.removeEventListener("input", onChange);
+      form.removeEventListener("change", onChange);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- sync once + listeners
+  }, [userId]);
 
   useEffect(() => {
     if (!dialogOpen) return;
@@ -134,7 +136,36 @@ export function SaveSearchButton({ userId }: { userId: string }) {
     };
   }, [dialogOpen]);
 
+  async function onUnsave() {
+    if (pending || !matched) return;
+    setPending(true);
+    const snapshot = matched;
+    const client = createSupabaseBrowserClient();
+    const { error } = await deleteOwnSavedSearch(client, {
+      searchId: snapshot.id,
+    });
+    setPending(false);
+    if (error) {
+      showStatus(`No se pudo eliminar: ${error.message}`);
+      return;
+    }
+    setMatched(null);
+    showUndo("Búsqueda eliminada de favoritos.", async () => {
+      const c = createSupabaseBrowserClient();
+      await createOwnSavedSearch(c, {
+        userId,
+        name: snapshot.name,
+        criteria: snapshot.criteria,
+      });
+      await syncFromForm();
+      router.refresh();
+    });
+    router.refresh();
+  }
+
   function openDialog() {
+    if (!hasCriteria) return;
+
     const form = document.getElementById(FORM_ID) as HTMLFormElement | null;
     if (!form) {
       setFeedback({
@@ -145,13 +176,7 @@ export function SaveSearchButton({ userId }: { userId: string }) {
     }
 
     const built = buildCriteria(form);
-    if (!built) {
-      setFeedback({
-        text: "Indica al menos un criterio antes de guardar.",
-        isError: true,
-      });
-      return;
-    }
+    if (!built) return;
 
     const minVal = built.estimated_value_min;
     const maxVal = built.estimated_value_max;
@@ -173,7 +198,7 @@ export function SaveSearchButton({ userId }: { userId: string }) {
     const pubTo = built.publication_date_to;
     if (pubFrom && pubTo && pubFrom > pubTo) {
       setFeedback({
-        text: "Rango de fechas de publicación inválido.",
+        text: "Rango de fechas de actualización inválido.",
         isError: true,
       });
       return;
@@ -183,6 +208,15 @@ export function SaveSearchButton({ userId }: { userId: string }) {
     setName("");
     setDialogError(null);
     setDialogOpen(true);
+  }
+
+  function onBookmarkClick() {
+    if (disabled) return;
+    if (saved) {
+      void onUnsave();
+      return;
+    }
+    openDialog();
   }
 
   async function onConfirmSave() {
@@ -211,44 +245,53 @@ export function SaveSearchButton({ userId }: { userId: string }) {
       setDialogError("Ya existe una búsqueda guardada con este nombre.");
       return;
     }
-    const duplicate = existing.data.some((s) =>
-      criteriaEqual(criteria, parseCriteria(s.criteria)),
-    );
-    if (duplicate) {
-      setPending(false);
-      setDialogError(
-        "Ya tienes una búsqueda guardada con esos mismos parámetros.",
-      );
-      return;
-    }
 
-    const { error } = await createOwnSavedSearch(client, {
+    const { data: created, error } = await createOwnSavedSearch(client, {
       userId,
       name: trimmed,
       criteria,
     });
     setPending(false);
 
-    if (error) {
-      setDialogError(error.message);
+    if (error || !created) {
+      setDialogError(error?.message ?? "No se pudo guardar.");
       return;
     }
 
     setDialogOpen(false);
-    setFeedback({
-      text: "Búsqueda guardada. Puedes verla en Favoritos.",
-      isError: false,
-      linkHref: "/favorites",
-      linkLabel: "Ir a Favoritos",
+    setMatched({
+      id: created.id,
+      name: created.name,
+      criteria: parseCriteria(created.criteria),
     });
     router.refresh();
   }
 
   return (
     <>
-      <Button type="button" variant="outline" onClick={openDialog}>
-        Guardar búsqueda
-      </Button>
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={onBookmarkClick}
+        aria-label={saved ? "Quitar búsqueda guardada" : "Guardar búsqueda"}
+        title={
+          disabled && !saved
+            ? "Indica algún criterio para guardar"
+            : saved
+              ? "Quitar búsqueda guardada"
+              : "Guardar búsqueda"
+        }
+        aria-pressed={saved}
+        className={cn(
+          "shrink-0 rounded-md p-1.5 transition-colors outline-none",
+          "focus-visible:ring-2 focus-visible:ring-ring/50 disabled:opacity-40 disabled:pointer-events-none",
+          saved
+            ? "text-primary hover:bg-primary/10"
+            : "text-muted-foreground hover:bg-muted hover:text-foreground",
+        )}
+      >
+        <BookmarkIcon filled={saved} />
+      </button>
       {dialogOpen && mounted
         ? createPortal(
             <div

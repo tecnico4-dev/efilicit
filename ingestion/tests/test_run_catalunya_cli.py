@@ -22,6 +22,8 @@ def test_cli_run_catalunya_dry_run_fixture(capsys: pytest.CaptureFixture[str]) -
             "--fixture",
             str(FIXTURE),
             "--dry-run",
+            "--since-days",
+            "7",
             "--run-id",
             "cli-cat-dry-1",
         ]
@@ -33,6 +35,25 @@ def test_cli_run_catalunya_dry_run_fixture(capsys: pytest.CaptureFixture[str]) -
     assert "records_seen=2" in captured.out
     assert "records_new=2" in captured.out
     assert "raw_path=raw/catalunya/" in captured.out
+    assert "rows/" in captured.out
+
+
+def test_cli_run_catalunya_rejects_negative_since_days(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    code = main(
+        [
+            "run-catalunya",
+            "--fixture",
+            str(FIXTURE),
+            "--dry-run",
+            "--since-days",
+            "-1",
+        ]
+    )
+    captured = capsys.readouterr()
+    assert code == 2
+    assert "since-days" in captured.err
 
 
 def test_cli_run_catalunya_dry_run_requires_fixture(
@@ -69,13 +90,27 @@ def _db_available() -> bool:
 
 
 @pytest.mark.skipif(not _db_available(), reason="Local Supabase Postgres not reachable")
-def test_run_catalunya_fixture_writes_postgres_without_storage() -> None:
+def test_run_catalunya_fixture_writes_postgres_without_storage(
+    tmp_path: Path,
+) -> None:
+    """Nonce en filas → checksums nuevos (ADR 025) sin chocar con runs previos."""
+    import json
+
     run_id = f"e2e-cat-pg-{uuid.uuid4()}"
+    nonce = str(uuid.uuid4())
+    rows = json.loads(FIXTURE.read_text(encoding="utf-8"))
+    for row in rows:
+        if isinstance(row, dict) and row.get("id_intern"):
+            row["_efilicit_test_nonce"] = nonce
+    fixture_path = tmp_path / "catalunya_page.json"
+    fixture_path.write_text(json.dumps(rows), encoding="utf-8")
+
     result = run_catalunya(
         CatalunyaRunConfig(
-            fixture_path=FIXTURE,
+            fixture_path=fixture_path,
             dry_run=False,
             use_storage=False,
+            since_days=None,
             run_id=run_id,
         )
     )

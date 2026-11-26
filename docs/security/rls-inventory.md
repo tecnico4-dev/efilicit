@@ -22,12 +22,14 @@ pnpm --filter @efilicit/web verify:rls:favorites
 | Tabla | RLS | Acceso cliente | Notas |
 |---|---|---|---|
 | `users` | Sí | select/update/insert **own** | Perfil app ↔ `auth.users` |
-| `saved_searches` | Sí | CRUD **own** | |
+| `saved_searches` | Sí | CRUD **own** | Favoritos con nombre |
+| `recent_searches` | Sí | CRUD **own** | Historial auto (máx. 5); escritura vía `record_recent_search` |
 | `alerts` | Sí | CRUD **own** | |
 | `notification_queue` | Sí | select **own** | Escritura vía job (service) |
-| `notification_reads` | Sí | select/insert/delete **own** | |
-| `notification_trash` | Sí | CRUD **own** | |
+| `notification_emails` | Sí | select/update/delete **own** | Insert vía job al enviar digest ([ADR 022](../adr/022-digest-email-inbox-in-app.md)); antes `digest_inbox_notifications` |
+| `notification_favorites` | Sí | CRUD **own** | Estado UI favoritos (read/trash/deleted); sustituye `notification_reads` + `notification_trash` |
 | `favorites` | Sí | select/insert/delete **own** | |
+| `tender_ratings` | Sí | select/insert/update/delete **own** | Nota 1–5 por licitación (buzón) |
 | `tenders` | Sí | select **public** | Canónico lectura |
 | `tender_sources` | Sí | select **public** | |
 | `tender_events` | Sí | select **public** | |

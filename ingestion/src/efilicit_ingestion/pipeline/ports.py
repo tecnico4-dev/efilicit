@@ -47,6 +47,14 @@ class SyncRepository(Protocol):
         """Guarda metadatos del artefacto; devuelve id en DB si existe."""
         ...
 
+    def find_artifact_by_checksum(
+        self,
+        source_code: str,
+        checksum: str,
+    ) -> tuple[str, StoredArtifact] | None:
+        """Lookup content-addressed (ADR 022). ``None`` si no hay fila."""
+        ...
+
     def finish_run(
         self,
         run: SyncRun,
@@ -98,6 +106,8 @@ class InMemorySyncRepository:
 
     def __init__(self) -> None:
         self.runs: dict[tuple[str, str], SyncRun] = {}
+        self.artifacts_by_checksum: dict[tuple[str, str], tuple[str, StoredArtifact]] = {}
+        self._next_id = 1
 
     def start_run(self, *, source_code: str, run_id: str, cursor: str | None) -> SyncRun:
         run = SyncRun(source_code=source_code, run_id=run_id, cursor=cursor)
@@ -108,7 +118,21 @@ class InMemorySyncRepository:
         run.artifacts.append(stored)
         run.last_artifact = stored.artifact_key
         run.checksum = stored.checksum
-        return None
+        key = (run.source_code, stored.checksum)
+        existing = self.artifacts_by_checksum.get(key)
+        if existing is not None:
+            return existing[0]
+        artifact_id = f"mem-{self._next_id}"
+        self._next_id += 1
+        self.artifacts_by_checksum[key] = (artifact_id, stored)
+        return artifact_id
+
+    def find_artifact_by_checksum(
+        self,
+        source_code: str,
+        checksum: str,
+    ) -> tuple[str, StoredArtifact] | None:
+        return self.artifacts_by_checksum.get((source_code, checksum))
 
     def finish_run(
         self,

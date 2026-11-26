@@ -1,0 +1,206 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Anonymized PLACSP Atom fixture: CODICE terms + document references (spike 2026-11-19). Not production data. -->
+<feed xmlns="http://www.w3.org/2005/Atom"
+      xmlns:cbc="urn:dgpe:names:draft:codice:schema:xsd:CommonBasicComponents-2"
+      xmlns:cac="urn:dgpe:names:draft:codice:schema:xsd:CommonAggregateComponents-2"
+      xmlns:cac-place-ext="urn:dgpe:names:draft:codice-place-ext:schema:xsd:CommonAggregateComponents-2"
+      xmlns:cbc-place-ext="urn:dgpe:names:draft:codice-place-ext:schema:xsd:CommonBasicComponents-2">
+  <id>https://example.invalid/sindicacion/fixture-offer-terms</id>
+  <title>PLACSP fixture feed — offer terms</title>
+  <updated>2026-11-17T20:06:09+01:00</updated>
+  <entry>
+    <id>https://example.invalid/sindicacion/licitacionesPerfilContratante/FIX-TERMS-001</id>
+    <link href="https://example.invalid/wps/poc?uri=deeplink:detalle_licitacion&amp;idEvl=FIX-TERMS-001"/>
+    <title>Obras de renovación de alumbrado exterior (fixture)</title>
+    <updated>2026-11-17T20:06:09.411+01:00</updated>
+    <cac-place-ext:ContractFolderStatus>
+      <cbc:ContractFolderID>FIX/2026/0099</cbc:ContractFolderID>
+      <cbc-place-ext:ContractFolderStatusCode>PUB</cbc-place-ext:ContractFolderStatusCode>
+      <cac-place-ext:LocatedContractingParty>
+        <cac:Party>
+          <cac:PartyIdentification>
+            <cbc:ID schemeName="NIF">P0000000X</cbc:ID>
+          </cac:PartyIdentification>
+          <cac:PartyName>
+            <cbc:Name>Ayuntamiento Fixture</cbc:Name>
+          </cac:PartyName>
+        </cac:Party>
+      </cac-place-ext:LocatedContractingParty>
+      <cac:ProcurementProject>
+        <cbc:Name>Obras de renovación de alumbrado exterior (fixture)</cbc:Name>
+        <cbc:TypeCode>3</cbc:TypeCode>
+        <cac:BudgetAmount>
+          <cbc:TotalAmount currencyID="EUR">379380</cbc:TotalAmount>
+          <cbc:TaxExclusiveAmount currencyID="EUR">313537.19</cbc:TaxExclusiveAmount>
+        </cac:BudgetAmount>
+        <cac:PlannedPeriod>
+          <cbc:DurationMeasure unitCode="MON">4</cbc:DurationMeasure>
+        </cac:PlannedPeriod>
+      </cac:ProcurementProject>
+      <cac:ProcurementProjectLot>
+        <cbc:ID schemeName="ID_LOTE">1</cbc:ID>
+        <cac:ProcurementProject>
+          <cbc:Name>Lote 1 · Zona norte</cbc:Name>
+          <cac:BudgetAmount>
+            <cbc:TotalAmount currencyID="EUR">200000</cbc:TotalAmount>
+            <cbc:TaxExclusiveAmount currencyID="EUR">165289.26</cbc:TaxExclusiveAmount>
+          </cac:BudgetAmount>
+        </cac:ProcurementProject>
+        <cac:TenderingTerms>
+          <cac:AwardingTerms>
+            <cac:AwardingCriteria>
+              <cbc:AwardingCriteriaTypeCode>OBJ</cbc:AwardingCriteriaTypeCode>
+              <cbc:Description>Precio lote 1</cbc:Description>
+              <cbc:WeightNumeric>70</cbc:WeightNumeric>
+            </cac:AwardingCriteria>
+          </cac:AwardingTerms>
+        </cac:TenderingTerms>
+      </cac:ProcurementProjectLot>
+      <cac:ProcurementProjectLot>
+        <cbc:ID schemeName="ID_LOTE">2</cbc:ID>
+        <cac:ProcurementProject>
+          <cbc:Name>Lote 2 · Zona sur</cbc:Name>
+          <cac:BudgetAmount>
+            <cbc:TaxExclusiveAmount currencyID="EUR">148247.93</cbc:TaxExclusiveAmount>
+          </cac:BudgetAmount>
+        </cac:ProcurementProject>
+      </cac:ProcurementProjectLot>
+      <cac:TenderingTerms>
+        <cac:RequiredFinancialGuarantee>
+          <cbc:GuaranteeTypeCode>1</cbc:GuaranteeTypeCode>
+          <cbc:LiabilityAmount currencyID="EUR">0</cbc:LiabilityAmount>
+        </cac:RequiredFinancialGuarantee>
+        <cac:RequiredFinancialGuarantee>
+          <cbc:GuaranteeTypeCode>2</cbc:GuaranteeTypeCode>
+          <cbc:AmountRate>5</cbc:AmountRate>
+        </cac:RequiredFinancialGuarantee>
+        <cac:TendererQualificationRequest>
+          <cac:TechnicalEvaluationCriteria>
+            <cbc:EvaluationCriteriaTypeCode>ZZZ</cbc:EvaluationCriteriaTypeCode>
+            <cbc:Description>Obras del mismo tipo en los últimos cinco años, avaladas por certificados de buena ejecución.
+Importe anual acumulado igual o superior al 70% del valor estimado.</cbc:Description>
+          </cac:TechnicalEvaluationCriteria>
+          <cac:FinancialEvaluationCriteria>
+            <cbc:EvaluationCriteriaTypeCode>5</cbc:EvaluationCriteriaTypeCode>
+            <cbc:Description>Volumen anual de negocios del año de mayor volumen de los tres últimos concluidos.</cbc:Description>
+            <cbc:ThresholdQuantity>313537.19</cbc:ThresholdQuantity>
+          </cac:FinancialEvaluationCriteria>
+          <cac:RequiredBusinessClassificationScheme>
+            <cbc:ID>RequiredBusinessProfileCode</cbc:ID>
+            <cac:ClassificationCategory>
+              <cbc:CodeValue>E1-2</cbc:CodeValue>
+            </cac:ClassificationCategory>
+          </cac:RequiredBusinessClassificationScheme>
+          <cac:SpecificTendererRequirement>
+            <cbc:RequirementTypeCode>5</cbc:RequirementTypeCode>
+            <cbc:Description>Cumplimiento con las obligaciones tributarias</cbc:Description>
+          </cac:SpecificTendererRequirement>
+          <cac:SpecificTendererRequirement>
+            <cbc:RequirementTypeCode>2</cbc:RequirementTypeCode>
+            <cbc:Description>No prohibición para contratar</cbc:Description>
+          </cac:SpecificTendererRequirement>
+        </cac:TendererQualificationRequest>
+        <cac:ContractExecutionRequirement>
+          <cbc:Name>Consideraciones de tipo social</cbc:Name>
+          <cbc:ExecutionRequirementCode>2</cbc:ExecutionRequirementCode>
+          <cbc:Description>Formación en PRL y cumplimiento de convenios colectivos aplicables.</cbc:Description>
+        </cac:ContractExecutionRequirement>
+        <cac:ContractExecutionRequirement>
+          <cbc:Name>Consideraciones de tipo medioambiental</cbc:Name>
+          <cbc:ExecutionRequirementCode>1</cbc:ExecutionRequirementCode>
+          <cbc:Description>Reciclado y separación de residuos generados durante la obra.</cbc:Description>
+        </cac:ContractExecutionRequirement>
+        <cac:AwardingTerms>
+          <cac:AwardingCriteria>
+            <cbc:AwardingCriteriaTypeCode>OBJ</cbc:AwardingCriteriaTypeCode>
+            <cbc:Description>Oferta económica</cbc:Description>
+            <cbc:AwardingCriteriaSubTypeCode>1</cbc:AwardingCriteriaSubTypeCode>
+            <cbc:WeightNumeric>60</cbc:WeightNumeric>
+          </cac:AwardingCriteria>
+          <cac:AwardingCriteria>
+            <cbc:AwardingCriteriaTypeCode>OBJ</cbc:AwardingCriteriaTypeCode>
+            <cbc:Description>Ampliación del plazo de garantía</cbc:Description>
+            <cbc:Note>1 punto por año adicional, máximo 15</cbc:Note>
+            <cbc:WeightNumeric>15</cbc:WeightNumeric>
+          </cac:AwardingCriteria>
+          <cac:AwardingCriteria>
+            <cbc:AwardingCriteriaTypeCode>SUBJ</cbc:AwardingCriteriaTypeCode>
+            <cbc:Description>Memoria técnica</cbc:Description>
+            <cbc:AwardingCriteriaSubTypeCode>99</cbc:AwardingCriteriaSubTypeCode>
+            <cbc:WeightNumeric>25</cbc:WeightNumeric>
+          </cac:AwardingCriteria>
+        </cac:AwardingTerms>
+      </cac:TenderingTerms>
+      <cac:TenderingProcess>
+        <cbc:ProcedureCode>9</cbc:ProcedureCode>
+        <cac:DocumentAvailabilityPeriod>
+          <cbc:EndDate>2026-12-07</cbc:EndDate>
+          <cbc:EndTime>10:00:00</cbc:EndTime>
+        </cac:DocumentAvailabilityPeriod>
+        <cac:AdditionalInformationRequestPeriod>
+          <cbc:EndDate>2026-12-05</cbc:EndDate>
+          <cbc:EndTime>14:00:00</cbc:EndTime>
+        </cac:AdditionalInformationRequestPeriod>
+        <cac:TenderSubmissionDeadlinePeriod>
+          <cbc:EndDate>2026-12-09</cbc:EndDate>
+          <cbc:EndTime>10:00:00</cbc:EndTime>
+        </cac:TenderSubmissionDeadlinePeriod>
+        <cac:OpenTenderEvent>
+          <cbc:OccurrenceDate>2026-12-11</cbc:OccurrenceDate>
+          <cbc:OccurrenceTime>12:00:00</cbc:OccurrenceTime>
+        </cac:OpenTenderEvent>
+      </cac:TenderingProcess>
+      <cac:LegalDocumentReference>
+        <cbc:ID>PCAP alumbrado.pdf</cbc:ID>
+        <cac:Attachment>
+          <cac:ExternalReference>
+            <cbc:URI>https://example.invalid/FileSystem/servlet/GetDocumentByIdServlet?cifrado=FIX&amp;DocumentIdParam=PCAP-1</cbc:URI>
+            <cbc:DocumentHash>A6OeDcakZZXPLpktpv84c1uxq6E=</cbc:DocumentHash>
+          </cac:ExternalReference>
+        </cac:Attachment>
+      </cac:LegalDocumentReference>
+      <cac:TechnicalDocumentReference>
+        <cbc:ID>Proyecto alumbrado.pdf</cbc:ID>
+        <cac:Attachment>
+          <cac:ExternalReference>
+            <cbc:URI>https://example.invalid/FileSystem/servlet/GetDocumentByIdServlet?cifrado=FIX&amp;DocumentIdParam=PPT-1</cbc:URI>
+            <cbc:DocumentHash>PfqqHTJxJYa9Q/j7REYuNEYVdU0=</cbc:DocumentHash>
+          </cac:ExternalReference>
+        </cac:Attachment>
+      </cac:TechnicalDocumentReference>
+      <cac:AdditionalDocumentReference>
+        <cbc:ID>Anexo I DeclaracionResponsable.docx</cbc:ID>
+        <cac:Attachment>
+          <cac:ExternalReference>
+            <cbc:URI>https://example.invalid/FileSystem/servlet/GetDocumentByIdServlet?cifrado=FIX&amp;DocumentIdParam=ANEXO-1</cbc:URI>
+            <cbc:DocumentHash>jwHhaQZbnyjkw0lyqQMGS1mSHsM=</cbc:DocumentHash>
+          </cac:ExternalReference>
+        </cac:Attachment>
+      </cac:AdditionalDocumentReference>
+      <cac-place-ext:GeneralDocument>
+        <cac-place-ext:GeneralDocumentDocumentReference>
+          <cbc:ID>2026-fixture-modelo</cbc:ID>
+          <cbc:DocumentTypeCode>ZZZ</cbc:DocumentTypeCode>
+          <cac:Attachment>
+            <cac:ExternalReference>
+              <cbc:URI>https://example.invalid/wps/wcm/connect/PLACE_es/Site/area/docAccCmpnt?srv=cmpnt&amp;cmpntname=GetDocumentsById&amp;source=library&amp;DocumentIdParam=2026-fixture-modelo</cbc:URI>
+              <cbc:FileName>Modelo de oferta económica</cbc:FileName>
+            </cac:ExternalReference>
+          </cac:Attachment>
+        </cac-place-ext:GeneralDocumentDocumentReference>
+      </cac-place-ext:GeneralDocument>
+      <cac-place-ext:GeneralDocument>
+        <cac-place-ext:GeneralDocumentDocumentReference>
+          <cbc:ID>2026-fixture-memoria</cbc:ID>
+          <cbc:DocumentTypeCode>9</cbc:DocumentTypeCode>
+          <cac:Attachment>
+            <cac:ExternalReference>
+              <cbc:URI>https://example.invalid/wps/wcm/connect/PLACE_es/Site/area/docAccCmpnt?srv=cmpnt&amp;cmpntname=GetDocumentsById&amp;source=library&amp;DocumentIdParam=2026-fixture-memoria</cbc:URI>
+              <cbc:FileName>Memoria justificativa</cbc:FileName>
+            </cac:ExternalReference>
+          </cac:Attachment>
+        </cac-place-ext:GeneralDocumentDocumentReference>
+      </cac-place-ext:GeneralDocument>
+    </cac-place-ext:ContractFolderStatus>
+  </entry>
+</feed>

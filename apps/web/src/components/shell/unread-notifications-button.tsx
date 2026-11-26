@@ -1,9 +1,9 @@
 import { getSupabaseServerClient } from "@/lib/auth/session";
-import { hasUnreadFavoriteStatusNotifications } from "@/lib/queries";
+import { hasUnreadNotifications } from "@/lib/queries";
 import { NotificationsButton } from "./notifications-button";
 
 /**
- * Resuelve el puntito de no leídas (RPC EXISTS).
+ * Resuelve el puntito de no leídas (RPC EXISTS: favoritos + digests).
  * Pensado para ir dentro de `<Suspense>` y no bloquear el layout.
  */
 export async function UnreadNotificationsButton({
@@ -12,7 +12,7 @@ export async function UnreadNotificationsButton({
   userId: string;
 }) {
   const supabase = await getSupabaseServerClient();
-  const unread = await hasUnreadFavoriteStatusNotifications(supabase, {
+  const unread = await hasUnreadNotifications(supabase, {
     userId,
   });
   return <NotificationsButton hasUnread={unread.data} />;
