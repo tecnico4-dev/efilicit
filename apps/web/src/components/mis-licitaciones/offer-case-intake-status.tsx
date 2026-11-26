@@ -13,6 +13,7 @@ import {
 
 function describe(intake: OfferCaseIntakeRow | null): {
   text: string;
+  detail?: string;
   tone: "muted" | "warn" | "bad" | "ok";
 } {
   if (!intake) {
@@ -20,7 +21,8 @@ function describe(intake: OfferCaseIntakeRow | null): {
   }
   if (intake.status === "pending") {
     return {
-      text: `En cola desde ${formatDateTimeMadrid(intake.requested_at)}. Se procesa en la próxima ejecución del intake.`,
+      text: "Esta licitación aún no se ha procesado para extraer su información automáticamente.",
+      detail: `En espera desde el ${formatDateTimeMadrid(intake.requested_at)}. Se procesará en la próxima ejecución.`,
       tone: "warn",
     };
   }
@@ -87,6 +89,9 @@ export function OfferCaseIntakeStatus({
     >
       <div className="min-w-0 flex-1">
         <p className="text-foreground">{status.text}</p>
+        {status.detail ? (
+          <p className="mt-0.5 text-xs text-muted-foreground">{status.detail}</p>
+        ) : null}
         {error ? <p className="mt-1 text-xs text-destructive">{error}</p> : null}
       </div>
       <Button
