@@ -10,9 +10,14 @@ limpia artifacts/RAW huérfanos de ese lote y poda ``notification_emails``.
 Escudos (skip total): offer_cases, favorites, favorites_common, favorites_shared,
 tender_recommendations, tender_ratings,
 alerta viva (notification_queue sin dismiss permanente de papelera 30d),
-abierta/en plazo (deadline NULL o > now()).
+más escudo de línea (deadline abierta / estado no cerrado).
 
-Include: deadline_at <= now() - N months; opcional source_code; opcional limit.
+Líneas de include:
+  1) deadline: deadline_at <= now() - N months
+  2) null-deadline (opt-in): deadline IS NULL AND status cerrado AND
+     coalesce(updated_at, created_at) <= now() - M days
+
+Opcional: source_code; limit (sobre el conjunto borrable tras escudos).
 
 Variables:
   EFILICIT_DATABASE_URL      Postgres (pooler)
@@ -22,6 +27,8 @@ Variables:
 Uso:
   uv run --script scripts/purge_tenders.py
   uv run --script scripts/purge_tenders.py --apply --min-deadline-age-months 3
+  uv run --script scripts/purge_tenders.py --include-null-deadline \\
+      --null-deadline-min-stale-days 90
 """
 
 from __future__ import annotations
@@ -42,9 +49,22 @@ from psycopg.rows import dict_row
 
 BUCKET = "raw"
 TRASH_DAYS = 30
+DEFAULT_NULL_STALE_DAYS = 90
+
+# Estados canónicos cerrados (+ alias EN legacy) para la línea sin deadline.
+CLOSED_TENDER_STATUSES: tuple[str, ...] = (
+    "adjudicada",
+    "resuelta",
+    "anulada",
+    "desierta",
+    "awarded",
+    "resolved",
+    "cancelled",
+    "deserted",
+)
 
 # Escudos opcionales: si la tabla no está en remoto (p. ej. offer_* aún local),
-# se omite ese WHEN. Ver ``build_candidates_sql``.
+# se omite ese WHEN. Ver ``build_shield_whens``.
 SHIELD_TABLES = (
     "offer_cases",
     "favorites",
@@ -74,8 +94,8 @@ def list_public_tables(conn: psycopg.Connection) -> set[str]:
     return out
 
 
-def build_candidates_sql(tables: set[str]) -> str:
-    """CASE de escudos solo con tablas existentes (tolerante a esquema incompleto)."""
+def build_shield_whens(tables: set[str]) -> list[str]:
+    """WHEN de escudos compartidos (tablas existentes)."""
     whens: list[str] = []
     if "offer_cases" in tables:
         whens.append(
@@ -143,17 +163,11 @@ def build_candidates_sql(tables: set[str]) -> str:
         select 1 from public.notification_queue nq where nq.tender_id = b.id
       ) then 'alert_related'"""
             )
-    whens.append(
-        """
-      when b.deadline_at is null or b.deadline_at > now() then 'open_deadline'"""
-    )
-    case_body = "".join(whens)
-    return f"""
-with base as (
-  select t.id, t.title, t.status, t.deadline_at
-  from public.tenders t
-  where t.deadline_at is not null
-    and t.deadline_at <= (now() - make_interval(months => %(months)s))
+    return whens
+
+
+def _source_filter_sql() -> str:
+    return """
     and (
       %(source)s::text is null
       or exists (
@@ -162,7 +176,24 @@ with base as (
         where ts.tender_id = t.id
           and ts.source_code = %(source)s
       )
+    )"""
+
+
+def build_deadline_candidates_sql(tables: set[str]) -> str:
+    """Línea 1: tienen deadline vencido hace ≥ N meses."""
+    whens = build_shield_whens(tables)
+    whens.append(
+        """
+      when b.deadline_at is null or b.deadline_at > now() then 'open_deadline'"""
     )
+    case_body = "".join(whens)
+    return f"""
+with base as (
+  select t.id, t.title, t.status, t.deadline_at, t.updated_at, t.created_at
+  from public.tenders t
+  where t.deadline_at is not null
+    and t.deadline_at <= (now() - make_interval(months => %(months)s))
+    {_source_filter_sql()}
 ),
 shielded as (
   select
@@ -170,19 +201,69 @@ shielded as (
     b.title,
     b.status,
     b.deadline_at,
+    b.updated_at,
+    b.created_at,
+    'deadline'::text as purge_line,
     case{case_body}
       else null
     end as shield
   from base b
 )
-select id, title, status, deadline_at, shield
+select id, title, status, deadline_at, updated_at, created_at, purge_line, shield
 from shielded
 order by deadline_at asc nulls last, id
 """
 
 
+def build_null_deadline_candidates_sql(tables: set[str]) -> str:
+    """Línea 2: sin deadline + estado cerrado + sin tocar ≥ M días."""
+    whens = build_shield_whens(tables)
+    whens.append(
+        """
+      when b.status is null
+        or lower(b.status) <> all(%(closed_statuses)s::text[])
+      then 'not_closed'"""
+    )
+    case_body = "".join(whens)
+    return f"""
+with base as (
+  select t.id, t.title, t.status, t.deadline_at, t.updated_at, t.created_at
+  from public.tenders t
+  where t.deadline_at is null
+    and t.status is not null
+    and lower(t.status) = any(%(closed_statuses)s::text[])
+    and coalesce(t.updated_at, t.created_at)
+        <= (now() - make_interval(days => %(stale_days)s))
+    {_source_filter_sql()}
+),
+shielded as (
+  select
+    b.id,
+    b.title,
+    b.status,
+    b.deadline_at,
+    b.updated_at,
+    b.created_at,
+    'null_deadline'::text as purge_line,
+    case{case_body}
+      else null
+    end as shield
+  from base b
+)
+select id, title, status, deadline_at, updated_at, created_at, purge_line, shield
+from shielded
+order by coalesce(updated_at, created_at) asc nulls last, id
+"""
+
+
+def build_candidates_sql(tables: set[str]) -> str:
+    """Compat: SQL de la línea deadline (tests / imports)."""
+    return build_deadline_candidates_sql(tables)
+
+
 # Compat tests / imports: SQL «completo» (todas las tablas de escudo presentes).
-CANDIDATES_SQL = build_candidates_sql(set(SHIELD_TABLES))
+CANDIDATES_SQL = build_deadline_candidates_sql(set(SHIELD_TABLES))
+NULL_DEADLINE_CANDIDATES_SQL = build_null_deadline_candidates_sql(set(SHIELD_TABLES))
 
 ARTIFACTS_SQL = """
 select distinct a.id, a.storage_path
@@ -245,6 +326,12 @@ def clamp_batch(n: int) -> int:
     return max(1, min(int(n), 1000))
 
 
+def status_is_closed(status: str | None) -> bool:
+    if status is None:
+        return False
+    return status.strip().lower() in CLOSED_TENDER_STATUSES
+
+
 def pick_shield(
     *,
     in_offer: bool = False,
@@ -254,9 +341,10 @@ def pick_shield(
     in_recommendation: bool = False,
     has_rating: bool = False,
     alert_related_alive: bool = False,
+    not_closed: bool = False,
     open_or_null_deadline: bool = False,
 ) -> str | None:
-    """Misma prioridad que el CASE de ``CANDIDATES_SQL`` (ADR 031)."""
+    """Misma prioridad que el CASE de escudos (ADR 031)."""
     if in_offer:
         return "offer"
     if in_favorite:
@@ -271,6 +359,8 @@ def pick_shield(
         return "rating"
     if alert_related_alive:
         return "alert_related"
+    if not_closed:
+        return "not_closed"
     if open_or_null_deadline:
         return "open_deadline"
     return None
@@ -297,7 +387,7 @@ def deadline_is_include_candidate(
     now: dt.datetime | None = None,
     months: int = 3,
 ) -> bool:
-    """Regla include: deadline no null y vencido hace al menos ``months`` meses."""
+    """Regla include línea deadline: no null y vencido hace al menos ``months`` meses."""
     if deadline_at is None:
         return False
     now = now or dt.datetime.now(dt.timezone.utc)
@@ -305,6 +395,42 @@ def deadline_is_include_candidate(
         deadline_at = deadline_at.replace(tzinfo=dt.timezone.utc)
     # Aproximación testeable: 30 días × months (SQL usa make_interval months).
     return deadline_at <= now - dt.timedelta(days=30 * max(0, months))
+
+
+def null_deadline_is_include_candidate(
+    deadline_at: dt.datetime | None,
+    status: str | None,
+    updated_at: dt.datetime | None,
+    created_at: dt.datetime | None,
+    *,
+    now: dt.datetime | None = None,
+    stale_days: int = DEFAULT_NULL_STALE_DAYS,
+) -> bool:
+    """Regla include línea null-deadline: sin plazo + cerrada + stale ≥ M días."""
+    if deadline_at is not None:
+        return False
+    if not status_is_closed(status):
+        return False
+    stamp = updated_at or created_at
+    if stamp is None:
+        return False
+    now = now or dt.datetime.now(dt.timezone.utc)
+    if stamp.tzinfo is None:
+        stamp = stamp.replace(tzinfo=dt.timezone.utc)
+    return stamp <= now - dt.timedelta(days=max(0, stale_days))
+
+
+def merge_candidate_rows(
+    deadline_rows: list[dict[str, Any]],
+    null_rows: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    """Une líneas; si un id aparece en ambas, gana la de deadline."""
+    by_id: dict[Any, dict[str, Any]] = {}
+    for r in deadline_rows:
+        by_id[r["id"]] = r
+    for r in null_rows:
+        by_id.setdefault(r["id"], r)
+    return list(by_id.values())
 
 
 def partition_by_shield(
@@ -351,6 +477,14 @@ def orphan_artifact_ids(
     return [aid for aid in candidate_ids if aid not in still_used]
 
 
+def _iso_or_empty(value: Any) -> str:
+    if value is None:
+        return ""
+    if hasattr(value, "isoformat"):
+        return value.isoformat()
+    return str(value)
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(
         description=__doc__,
@@ -365,7 +499,21 @@ def main() -> int:
         "--min-deadline-age-months",
         type=int,
         default=3,
-        help="candidatas con deadline vencido hace al menos N meses (default 3)",
+        help="línea deadline: vencido hace al menos N meses (default 3)",
+    )
+    ap.add_argument(
+        "--include-null-deadline",
+        action="store_true",
+        help="también candidatas sin deadline_at (cerradas + stale)",
+    )
+    ap.add_argument(
+        "--null-deadline-min-stale-days",
+        type=int,
+        default=DEFAULT_NULL_STALE_DAYS,
+        help=(
+            "línea null-deadline: mín. días sin actualizar "
+            f"(default {DEFAULT_NULL_STALE_DAYS})"
+        ),
     )
     ap.add_argument(
         "--source-code",
@@ -390,6 +538,7 @@ def main() -> int:
     )
     args = ap.parse_args()
     months = max(0, args.min_deadline_age_months)
+    stale_days = max(0, args.null_deadline_min_stale_days)
     batch = clamp_batch(args.batch)
     source = resolve_source_code(args.source_code)
 
@@ -406,20 +555,43 @@ def main() -> int:
         missing = [t for t in SHIELD_TABLES if t not in tables]
         if missing:
             print(f"Escudos omitidos (tabla ausente): {', '.join(missing)}")
-        candidates_sql = build_candidates_sql(tables)
-        rows: list[dict[str, Any]] = conn.execute(
-            candidates_sql,
+
+        deadline_sql = build_deadline_candidates_sql(tables)
+        deadline_rows: list[dict[str, Any]] = conn.execute(
+            deadline_sql,
             {"months": months, "source": source, "trash_days": TRASH_DAYS},
         ).fetchall()
 
+        null_rows: list[dict[str, Any]] = []
+        if args.include_null_deadline:
+            null_sql = build_null_deadline_candidates_sql(tables)
+            null_rows = conn.execute(
+                null_sql,
+                {
+                    "stale_days": stale_days,
+                    "source": source,
+                    "trash_days": TRASH_DAYS,
+                    "closed_statuses": list(CLOSED_TENDER_STATUSES),
+                },
+            ).fetchall()
+
+        rows = merge_candidate_rows(deadline_rows, null_rows)
         protected, deletable, shield_counts = partition_by_shield(rows)
         deletable = apply_deletable_limit(deletable, args.limit)
 
+        src_label = f", source={source}" if source else ", todas las fuentes"
         print(
-            f"Candidatas (deadline ≤ now()-{months}m"
-            + (f", source={source}" if source else ", todas las fuentes")
-            + f"): {len(rows):,}"
+            f"Línea deadline (≤ now()-{months}m{src_label}): "
+            f"{len(deadline_rows):,}"
         )
+        if args.include_null_deadline:
+            print(
+                f"Línea null-deadline (cerrada + stale≥{stale_days}d{src_label}): "
+                f"{len(null_rows):,}"
+            )
+        else:
+            print("Línea null-deadline: off")
+        print(f"Candidatas (unión):    {len(rows):,}")
         print(f"  Protegidas (escudo): {len(protected):,}")
         for k, n in sorted(shield_counts.items()):
             print(f"    {k:18} {n:>8,}")
@@ -432,7 +604,9 @@ def main() -> int:
             w.writerow(
                 [
                     "tender_id",
+                    "purge_line",
                     "deadline_at",
+                    "updated_at",
                     "status",
                     "title",
                     "shield",
@@ -443,7 +617,9 @@ def main() -> int:
                 w.writerow(
                     [
                         r["id"],
-                        r["deadline_at"].isoformat() if r["deadline_at"] else "",
+                        r.get("purge_line") or "",
+                        _iso_or_empty(r.get("deadline_at")),
+                        _iso_or_empty(r.get("updated_at")),
                         r["status"] or "",
                         (r["title"] or "")[:200],
                         r["shield"],
@@ -454,7 +630,9 @@ def main() -> int:
                 w.writerow(
                     [
                         r["id"],
-                        r["deadline_at"].isoformat() if r["deadline_at"] else "",
+                        r.get("purge_line") or "",
+                        _iso_or_empty(r.get("deadline_at")),
+                        _iso_or_empty(r.get("updated_at")),
                         r["status"] or "",
                         (r["title"] or "")[:200],
                         "",

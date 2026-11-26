@@ -77,8 +77,10 @@ Workflow: [`.github/workflows/cleanup-tenders.yml`](workflows/cleanup-tenders.ym
 Script: [`scripts/purge_tenders.py`](../scripts/purge_tenders.py) · ADR: [031](../docs/adr/031-retencion-purge-tenders.md)
 
 - Disparo **solo manual**. Default **`dry-run`**; **`apply`** borra.
-- Include: `min_deadline_age_months` (default 3), `source_code` opcional (vacío = todas), `limit` opcional.
-- Escudos (skip total): Mis licitaciones, favoritos personales/común, valoraciones, alerta viva (papelera 30d protege; dismiss permanente no), abierta/`deadline` null o futuro.
+- Include línea deadline: `min_deadline_age_months` (default 3).
+- Include línea null-deadline (opt-in): `include_null_deadline` + `null_deadline_min_stale_days` (default 90) — sin plazo **y** estado cerrado **y** sin actualizar ≥ M días.
+- Compartido: `source_code` opcional (vacío = todas), `limit` opcional.
+- Escudos (skip total): Mis licitaciones, favoritos personales/común/peer, recomendaciones, valoraciones, alerta viva (papelera 30d protege; dismiss permanente no); más `open_deadline` (línea plazo) o `not_closed` (línea null).
 - Tras borrar: poda `notification_emails.tender_ids` / `tender_count`; RAW solo si el artifact queda sin refs.
 - **No** lanzar durante ingesta. Workflows nuevos pueden no listarse en Actions hasta pasar por `main`.
 

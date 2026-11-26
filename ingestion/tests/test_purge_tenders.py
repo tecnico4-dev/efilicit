@@ -95,6 +95,7 @@ def test_pick_shield_offer_wins_over_everything() -> None:
             in_recommendation=True,
             has_rating=True,
             alert_related_alive=True,
+            not_closed=True,
             open_or_null_deadline=True,
         )
         == "offer"
@@ -126,6 +127,10 @@ def test_pick_shield_open_deadline() -> None:
     assert purge.pick_shield(open_or_null_deadline=True) == "open_deadline"
 
 
+def test_pick_shield_not_closed() -> None:
+    assert purge.pick_shield(not_closed=True) == "not_closed"
+
+
 def test_pick_shield_priority_order() -> None:
     order = [
         ("offer", {"in_offer": True}),
@@ -135,6 +140,7 @@ def test_pick_shield_priority_order() -> None:
         ("recommendation", {"in_recommendation": True}),
         ("rating", {"has_rating": True}),
         ("alert_related", {"alert_related_alive": True}),
+        ("not_closed", {"not_closed": True}),
         ("open_deadline", {"open_or_null_deadline": True}),
     ]
     for name, kwargs in order:
@@ -198,6 +204,80 @@ def test_include_rejects_recently_closed() -> None:
     assert (
         purge.deadline_is_include_candidate(recent, now=now, months=3) is False
     )
+
+
+# ---------------------------------------------------------------------------
+# Include línea null-deadline
+# ---------------------------------------------------------------------------
+
+
+def test_status_is_closed() -> None:
+    assert purge.status_is_closed("adjudicada") is True
+    assert purge.status_is_closed("AWARDED") is True
+    assert purge.status_is_closed("publicada") is False
+    assert purge.status_is_closed(None) is False
+
+
+def test_null_deadline_include_requires_null_deadline() -> None:
+    now = datetime(2026, 11, 16, tzinfo=timezone.utc)
+    old = now - timedelta(days=120)
+    assert (
+        purge.null_deadline_is_include_candidate(
+            now - timedelta(days=400),
+            "adjudicada",
+            old,
+            old,
+            now=now,
+            stale_days=90,
+        )
+        is False
+    )
+
+
+def test_null_deadline_include_rejects_open_status() -> None:
+    now = datetime(2026, 11, 16, tzinfo=timezone.utc)
+    old = now - timedelta(days=120)
+    assert (
+        purge.null_deadline_is_include_candidate(
+            None, "publicada", old, old, now=now, stale_days=90
+        )
+        is False
+    )
+
+
+def test_null_deadline_include_rejects_fresh_updated() -> None:
+    now = datetime(2026, 11, 16, tzinfo=timezone.utc)
+    recent = now - timedelta(days=10)
+    assert (
+        purge.null_deadline_is_include_candidate(
+            None, "desierta", recent, recent, now=now, stale_days=90
+        )
+        is False
+    )
+
+
+def test_null_deadline_include_accepts_closed_stale() -> None:
+    now = datetime(2026, 11, 16, tzinfo=timezone.utc)
+    old = now - timedelta(days=120)
+    assert (
+        purge.null_deadline_is_include_candidate(
+            None, "anulada", old, None, now=now, stale_days=90
+        )
+        is True
+    )
+
+
+def test_merge_candidate_rows_deadline_wins() -> None:
+    a, b = uuid4(), uuid4()
+    deadline = [{"id": a, "purge_line": "deadline"}]
+    null = [
+        {"id": a, "purge_line": "null_deadline"},
+        {"id": b, "purge_line": "null_deadline"},
+    ]
+    merged = purge.merge_candidate_rows(deadline, null)
+    by_id = {r["id"]: r for r in merged}
+    assert by_id[a]["purge_line"] == "deadline"
+    assert by_id[b]["purge_line"] == "null_deadline"
 
 
 # ---------------------------------------------------------------------------
@@ -277,9 +357,26 @@ def test_candidates_sql_lists_all_shields_and_tables() -> None:
         "'open_deadline'",
         "make_interval(months => %(months)s)",
         "tender_sources",
+        "'deadline'",
     ):
         assert token in sql, f"falta {token} en CANDIDATES_SQL"
     assert "shared_favorites" not in sql
+    assert "'not_closed'" not in sql
+
+
+def test_null_deadline_sql_lists_closed_and_stale() -> None:
+    sql = purge.NULL_DEADLINE_CANDIDATES_SQL
+    for token in (
+        "deadline_at is null",
+        "%(closed_statuses)s",
+        "make_interval(days => %(stale_days)s)",
+        "'null_deadline'",
+        "'not_closed'",
+        "tender_sources",
+    ):
+        assert token in sql, f"falta {token} en NULL_DEADLINE_CANDIDATES_SQL"
+    assert "'open_deadline'" not in sql
+    assert "make_interval(months => %(months)s)" not in sql
 
 
 def test_build_candidates_sql_omits_missing_offer_cases() -> None:
@@ -324,6 +421,10 @@ def test_workflow_yaml_defaults() -> None:
     assert "dry-run" in text
     assert "min_deadline_age_months" in text
     assert 'default: "3"' in text
+    assert "include_null_deadline" in text
+    assert "null_deadline_min_stale_days" in text
+    assert 'default: "90"' in text
+    assert "--include-null-deadline" in text
     assert "source_code" in text
     assert "purge_tenders.py" in text
     assert "\nschedule:" not in text
@@ -336,3 +437,5 @@ def test_adr_031_exists() -> None:
     body = adr.read_text(encoding="utf-8")
     assert "Escudos" in body or "escudos" in body
     assert "dry-run" in body
+    assert "null-deadline" in body
+    assert "include_null_deadline" in body
