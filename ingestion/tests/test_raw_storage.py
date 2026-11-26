@@ -15,6 +15,7 @@ from efilicit_ingestion.connectors.placsp import (
     PLACSP_MENORES,
     PlacspConnector,
 )
+from efilicit_ingestion.connectors.placsp.errors import InvalidZipPayloadError
 from efilicit_ingestion.connectors.placsp.fetch import sha256_hex
 from efilicit_ingestion.connectors.placsp.urls import (
     monthly_package_filename,
@@ -360,13 +361,15 @@ def test_fetch_validate_and_store_raw_agregadas_rejects_bad_payload() -> None:
     connector = PlacspConnector(
         syndication=PLACSP_AGREGADAS,
         fetch_transport=fetch_transport,
+        invalid_zip_retry_attempts=1,
+        invalid_zip_retry_wait_seconds=0,
     )
     store = SupabaseStorageArtifactStore(
         base_url="http://storage.test",
         service_role_key="test-service-role",
         http_client=http,
     )
-    with pytest.raises(ValueError, match="ZIP"):
+    with pytest.raises(InvalidZipPayloadError, match="ZIP|PK"):
         fetch_validate_and_store_raw(
             connector,
             _agregadas_artifact(),
@@ -426,13 +429,15 @@ def test_fetch_validate_and_store_raw_menores_rejects_bad_payload() -> None:
     connector = PlacspConnector(
         syndication=PLACSP_MENORES,
         fetch_transport=fetch_transport,
+        invalid_zip_retry_attempts=1,
+        invalid_zip_retry_wait_seconds=0,
     )
     store = SupabaseStorageArtifactStore(
         base_url="http://storage.test",
         service_role_key="test-service-role",
         http_client=http,
     )
-    with pytest.raises(ValueError, match="ZIP"):
+    with pytest.raises(InvalidZipPayloadError, match="ZIP|PK"):
         fetch_validate_and_store_raw(
             connector,
             _menores_artifact(),
