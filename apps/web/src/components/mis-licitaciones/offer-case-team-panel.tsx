@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { OFFER_ACTION_ERROR } from "@/components/mis-licitaciones/offer-user-facing-error";
 import { cn } from "@/lib/cn";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import {
@@ -99,7 +100,7 @@ export function OfferCaseTeamPanel({
     const client = createSupabaseBrowserClient();
     const result = await listEficenMembersForTeam(client);
     if (result.error) {
-      setError(result.error.message);
+      setError(OFFER_ACTION_ERROR);
       return [];
     }
     setDirectory(result.data);
@@ -151,7 +152,7 @@ export function OfferCaseTeamPanel({
     });
     if (result.error) {
       setPending(false);
-      setError(result.error.message);
+      setError(OFFER_ACTION_ERROR);
       return;
     }
     // Estaba en trabajadores → pasa a responsable (sale del equipo)
@@ -161,7 +162,7 @@ export function OfferCaseTeamPanel({
         const removed = await removeOfferCaseMember(client, asWorker.id);
         if (removed.error) {
           setPending(false);
-          setError(removed.error.message);
+          setError(OFFER_ACTION_ERROR);
           return;
         }
       }
@@ -187,7 +188,7 @@ export function OfferCaseTeamPanel({
     });
     setPending(false);
     if (result.error) {
-      setError(result.error.message);
+      setError(OFFER_ACTION_ERROR);
       return;
     }
     setPicker(null);
@@ -206,7 +207,7 @@ export function OfferCaseTeamPanel({
     });
     if (counts.error) {
       setPending(false);
-      setError(counts.error.message);
+      setError(OFFER_ACTION_ERROR);
       return;
     }
     if (counts.data.tasks > 0 || counts.data.requirements > 0) {
@@ -223,7 +224,7 @@ export function OfferCaseTeamPanel({
     const result = await removeOfferCaseMember(client, row.id);
     setPending(false);
     if (result.error) {
-      setError(result.error.message);
+      setError(OFFER_ACTION_ERROR);
       return;
     }
     router.refresh();
@@ -240,7 +241,7 @@ export function OfferCaseTeamPanel({
     });
     if (cleared.error) {
       setPending(false);
-      setError(cleared.error.message);
+      setError(OFFER_ACTION_ERROR);
       return;
     }
     const result = await removeOfferCaseMember(
@@ -249,7 +250,7 @@ export function OfferCaseTeamPanel({
     );
     setPending(false);
     if (result.error) {
-      setError(result.error.message);
+      setError(OFFER_ACTION_ERROR);
       return;
     }
     setRemoveConfirm(null);

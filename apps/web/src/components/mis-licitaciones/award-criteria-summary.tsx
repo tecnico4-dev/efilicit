@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ENVELOPE_LABELS } from "@/components/mis-licitaciones/offer-case-sections";
+import { OFFER_ACTION_ERROR } from "@/components/mis-licitaciones/offer-user-facing-error";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import {
   updateOfferDeliverable,
@@ -164,7 +165,7 @@ function EstimateCell({
       });
       setPending(false);
       if (err) {
-        setError(err.message);
+        setError(OFFER_ACTION_ERROR);
         setValue(initial ?? "");
         return;
       }
@@ -200,7 +201,7 @@ function EstimateCell({
     });
     setPending(false);
     if (err) {
-      setError(err.message);
+      setError(OFFER_ACTION_ERROR);
       setValue(initial ?? "");
       return;
     }

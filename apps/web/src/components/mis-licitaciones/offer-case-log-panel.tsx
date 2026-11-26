@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/cn";
 import { formatDateMadrid } from "@/lib/datetime";
+import { OFFER_ACTION_ERROR } from "@/components/mis-licitaciones/offer-user-facing-error";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import {
   OFFER_LOG_EVENT_LABELS,
@@ -76,7 +77,7 @@ export function OfferCaseLogPanel({
     const result = await listOfferCaseLog(client, offerCaseId);
     setLoading(false);
     if (result.error) {
-      setError(result.error.message);
+      setError(OFFER_ACTION_ERROR);
       setEntries([]);
       return;
     }
@@ -117,7 +118,7 @@ export function OfferCaseLogPanel({
     });
     setSaving(false);
     if (result.error) {
-      setError(result.error.message);
+      setError(OFFER_ACTION_ERROR);
       return;
     }
     setComposing(false);
@@ -220,8 +221,7 @@ export function OfferCaseLogPanel({
         <p className="text-muted-foreground">Cargando bitácora…</p>
       ) : entries.length === 0 ? (
         <p className="rounded-lg border border-dashed border-border px-4 py-6 text-center text-muted-foreground">
-          Sin entradas aún. Los cambios de etapa y la decisión GO / NO-GO se
-          registran solos; también puedes añadir notas manuales.
+          Sin entradas aún.
         </p>
       ) : (
         <div className="min-w-[28rem] overflow-x-auto pt-1">

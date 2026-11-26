@@ -24,6 +24,7 @@ import {
 import { MisLicitacionesFiltersButton } from "@/components/mis-licitaciones/mis-licitaciones-filters-modal";
 import { OfferMemberPicker } from "@/components/mis-licitaciones/offer-member-picker";
 import { SingleDatePicker } from "@/components/mis-licitaciones/single-date-picker";
+import { OFFER_ACTION_ERROR } from "@/components/mis-licitaciones/offer-user-facing-error";
 import { AnchoredPortal } from "@/components/ui/anchored-portal";
 import { cn } from "@/lib/cn";
 import { calendarDayMadrid, formatDateMadrid } from "@/lib/datetime";
@@ -1147,7 +1148,7 @@ export function OfferTasksPanel({
     const result = await listOfferTasks(client, offerCaseId);
     setLoading(false);
     if (result.error) {
-      setError(result.error.message);
+      setError(OFFER_ACTION_ERROR);
       setTasks([]);
       return;
     }
@@ -1212,7 +1213,7 @@ export function OfferTasksPanel({
       });
       setSaving(false);
       if (result.error) {
-        setFormError(result.error.message);
+        setFormError(OFFER_ACTION_ERROR);
         return false;
       }
       finishEditor();
@@ -1233,7 +1234,7 @@ export function OfferTasksPanel({
       });
       setSaving(false);
       if (result.error) {
-        setFormError(result.error.message);
+        setFormError(OFFER_ACTION_ERROR);
         return false;
       }
       await reload();
@@ -1255,7 +1256,7 @@ export function OfferTasksPanel({
     });
     setSaving(false);
     if (result.error) {
-      setFormError(result.error.message);
+      setFormError(OFFER_ACTION_ERROR);
       return;
     }
     setDraft((d) => {
@@ -1274,7 +1275,7 @@ export function OfferTasksPanel({
     const result = await deleteOfferTask(client, editor.id);
     setSaving(false);
     if (result.error) {
-      setFormError(result.error.message);
+      setFormError(OFFER_ACTION_ERROR);
       return;
     }
     finishEditor();

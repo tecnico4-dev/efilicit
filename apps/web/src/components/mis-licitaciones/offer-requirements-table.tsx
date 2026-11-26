@@ -20,6 +20,7 @@ import {
   REQUIREMENT_CATEGORY_LABELS,
 } from "@/components/mis-licitaciones/offer-case-sections";
 import { useDetailTabsLeaveGuard } from "@/components/mis-licitaciones/detail-tabs";
+import { OFFER_ACTION_ERROR } from "@/components/mis-licitaciones/offer-user-facing-error";
 import {
   EMPTY_OFFER_REQUIREMENTS_FILTERS,
   OWNER_UNASSIGNED,
@@ -1041,7 +1042,7 @@ export function OfferRequirementsTable({
     });
     setDeletingBusy(false);
     if (result.error) {
-      setError(result.error.message);
+      setError(OFFER_ACTION_ERROR);
       return;
     }
     exitSelecting();
@@ -1094,7 +1095,7 @@ export function OfferRequirementsTable({
       });
       if (result.error) {
         setSaving(false);
-        setError(result.error.message);
+        setError(OFFER_ACTION_ERROR);
         return false;
       }
     }
@@ -1148,7 +1149,7 @@ export function OfferRequirementsTable({
     });
     setCreatingBusy(false);
     if (result.error) {
-      setError(result.error.message);
+      setError(OFFER_ACTION_ERROR);
       return false;
     }
     setCreating(false);

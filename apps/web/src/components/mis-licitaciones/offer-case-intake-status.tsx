@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/cn";
 import { formatDateTimeMadrid } from "@/lib/datetime";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { OFFER_ACTION_ERROR } from "@/components/mis-licitaciones/offer-user-facing-error";
 import {
   requestOfferCaseIntake,
   type OfferCaseIntakeRow,
@@ -25,7 +26,7 @@ function describe(intake: OfferCaseIntakeRow | null): {
   if (intake.status === "pending") {
     return {
       text: "Esta licitación aún no se ha procesado para extraer su información automáticamente.",
-      detail: `En espera desde el ${formatDateTimeMadrid(intake.requested_at)}. Se procesará en la próxima ejecución.`,
+      detail: `En espera desde el ${formatDateTimeMadrid(intake.requested_at)}. Se procesará en cuanto se ejecute el proceso automático.`,
       tone: "warn",
     };
   }
@@ -74,7 +75,7 @@ export function OfferCaseIntakeStatus({
     });
     setPending(false);
     if (result.error) {
-      setError(result.error.message);
+      setError(OFFER_ACTION_ERROR);
       return;
     }
     router.refresh();

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { OFFER_ACTION_ERROR } from "@/components/mis-licitaciones/offer-user-facing-error";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import {
   createOfferCase,
@@ -46,7 +47,7 @@ export function OfferCaseToggle({
     });
     setPending(false);
     if (createError || !data) {
-      setError(createError?.message ?? "No se pudo crear el expediente");
+      setError(OFFER_ACTION_ERROR);
       return;
     }
     setCaseId(data.id);

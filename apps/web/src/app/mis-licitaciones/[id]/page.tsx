@@ -82,8 +82,8 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
     return (
       <main className={PAGE_MAIN_WIDE_CLASS}>
         <ErrorState>
-          No hay perfil en public.users:{" "}
-          {profile.error?.message ?? "desconocido"}
+          No se pudo cargar tu cuenta. Cierra sesión e inicia de nuevo, o
+          contacta con soporte.
         </ErrorState>
       </main>
     );
@@ -212,7 +212,7 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
       .map((r) => ({
         tone: "bad" as const,
         title: r.title,
-        detail: "Excluyente / no cumple",
+        detail: "No cumple",
       })),
     ...pendingReqs
       .filter(

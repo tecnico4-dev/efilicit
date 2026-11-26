@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { OFFER_ACTION_ERROR } from "@/components/mis-licitaciones/offer-user-facing-error";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { advanceOfferCaseToAnalisis } from "@/lib/queries";
 
@@ -22,7 +23,7 @@ function useAdvanceToAnalisis(offerCaseId: string, userId: string) {
     });
     setPending(false);
     if (err) {
-      setError(err.message);
+      setError(OFFER_ACTION_ERROR);
       return;
     }
     router.refresh();

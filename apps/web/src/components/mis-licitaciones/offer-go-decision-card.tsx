@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/cn";
 import { formatDateMadrid } from "@/lib/datetime";
+import { OFFER_ACTION_ERROR } from "@/components/mis-licitaciones/offer-user-facing-error";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import {
   asOfferGoDecision,
@@ -93,7 +94,7 @@ export function OfferGoDecisionCard({
     });
     setPending(false);
     if (result.error) {
-      setError(result.error.message);
+      setError(OFFER_ACTION_ERROR);
       return;
     }
     setEditing(false);
