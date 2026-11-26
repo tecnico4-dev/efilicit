@@ -94,7 +94,9 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
   if (error) {
     return (
       <main className={PAGE_MAIN_WIDE_CLASS}>
-        <ErrorState>{error.message}</ErrorState>
+        <ErrorState>
+          No se pudo cargar el expediente. Inténtalo de nuevo.
+        </ErrorState>
       </main>
     );
   }
@@ -396,7 +398,9 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
                     intake={intakeResult.data}
                   />
                   {pliegosResult.error ? (
-                    <ErrorState>{pliegosResult.error.message}</ErrorState>
+                    <ErrorState>
+                      No se pudo cargar los pliegos. Inténtalo de nuevo.
+                    </ErrorState>
                   ) : (
                     <PliegosList
                       pliegos={pliegosResult.data}

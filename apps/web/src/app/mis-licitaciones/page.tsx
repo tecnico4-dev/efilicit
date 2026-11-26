@@ -84,7 +84,9 @@ export default async function MisLicitacionesPage({ searchParams }: PageProps) {
 
       <div className={PAGE_TITLE_RULE}>
         {casesResult.error ? (
-          <ErrorState>{casesResult.error.message}</ErrorState>
+          <ErrorState>
+            No se pudo cargar Mis licitaciones. Inténtalo de nuevo.
+          </ErrorState>
         ) : (
           <MisLicitacionesSection
             key={tab}
