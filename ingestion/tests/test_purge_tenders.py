@@ -90,7 +90,9 @@ def test_pick_shield_offer_wins_over_everything() -> None:
         purge.pick_shield(
             in_offer=True,
             in_favorite=True,
-            in_shared_favorite=True,
+            in_favorites_common=True,
+            in_favorites_shared=True,
+            in_recommendation=True,
             has_rating=True,
             alert_related_alive=True,
             open_or_null_deadline=True,
@@ -99,17 +101,17 @@ def test_pick_shield_offer_wins_over_everything() -> None:
     )
 
 
-def test_pick_shield_favorite_before_shared() -> None:
+def test_pick_shield_favorite_before_common() -> None:
     assert (
-        purge.pick_shield(in_favorite=True, in_shared_favorite=True)
+        purge.pick_shield(in_favorite=True, in_favorites_common=True)
         == "favorite"
     )
 
 
-def test_pick_shield_shared_favorite() -> None:
-    assert purge.pick_shield(in_shared_favorite=True) == "favorites_common"
+def test_pick_shield_favorites_and_recommendation() -> None:
     assert purge.pick_shield(in_favorites_common=True) == "favorites_common"
     assert purge.pick_shield(in_favorites_shared=True) == "favorites_shared"
+    assert purge.pick_shield(in_recommendation=True) == "recommendation"
 
 
 def test_pick_shield_rating() -> None:
@@ -130,6 +132,7 @@ def test_pick_shield_priority_order() -> None:
         ("favorite", {"in_favorite": True}),
         ("favorites_common", {"in_favorites_common": True}),
         ("favorites_shared", {"in_favorites_shared": True}),
+        ("recommendation", {"in_recommendation": True}),
         ("rating", {"has_rating": True}),
         ("alert_related", {"alert_related_alive": True}),
         ("open_deadline", {"open_or_null_deadline": True}),
@@ -260,6 +263,7 @@ def test_candidates_sql_lists_all_shields_and_tables() -> None:
         "favorites",
         "favorites_common",
         "favorites_shared",
+        "tender_recommendations",
         "tender_ratings",
         "notification_queue",
         "alert_related_trash",
@@ -267,6 +271,7 @@ def test_candidates_sql_lists_all_shields_and_tables() -> None:
         "'favorite'",
         "'favorites_common'",
         "'favorites_shared'",
+        "'recommendation'",
         "'rating'",
         "'alert_related'",
         "'open_deadline'",
@@ -274,6 +279,7 @@ def test_candidates_sql_lists_all_shields_and_tables() -> None:
         "tender_sources",
     ):
         assert token in sql, f"falta {token} en CANDIDATES_SQL"
+    assert "shared_favorites" not in sql
 
 
 def test_build_candidates_sql_omits_missing_offer_cases() -> None:
@@ -291,11 +297,11 @@ def test_build_candidates_sql_omits_missing_offer_cases() -> None:
     assert "'open_deadline'" in sql
 
 
-def test_build_candidates_sql_legacy_shared_favorites_fallback() -> None:
-    sql = purge.build_candidates_sql({"shared_favorites"})
-    assert "public.shared_favorites" in sql
-    assert "public.favorites_common" not in sql
-    assert "'favorites_common'" in sql
+def test_build_candidates_sql_includes_recommendations() -> None:
+    sql = purge.build_candidates_sql({"tender_recommendations"})
+    assert "public.tender_recommendations" in sql
+    assert "'recommendation'" in sql
+    assert "shared_favorites" not in sql
 
 
 def test_build_candidates_sql_alert_without_trash_table() -> None:
