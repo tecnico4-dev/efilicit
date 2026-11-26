@@ -354,6 +354,7 @@ function TaskNoteCard({
   return (
     <button
       type="button"
+      data-offer-task-id={task.id}
       onClick={(e) => {
         const r = e.currentTarget.getBoundingClientRect();
         onOpen({

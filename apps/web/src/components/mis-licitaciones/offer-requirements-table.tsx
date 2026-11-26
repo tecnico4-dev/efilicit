@@ -1408,8 +1408,9 @@ export function OfferRequirementsTable({
             return (
               <article
                 key={item.id}
+                data-offer-requirement-id={item.id}
                 className={cn(
-                  "rounded-lg border border-border bg-surface p-3",
+                  "rounded-lg border border-border bg-surface p-3 transition-shadow",
                   naLocked && !selecting && "opacity-80",
                   selecting && isSelected && "border-primary/50 bg-primary/5",
                   selecting && "cursor-pointer",
@@ -1638,8 +1639,9 @@ export function OfferRequirementsTable({
                 return (
                   <tr
                     key={item.id}
+                    data-offer-requirement-id={item.id}
                     className={cn(
-                      "border-b border-border/80",
+                      "border-b border-border/80 transition-shadow",
                       selecting && isSelected && "bg-primary/5",
                       selecting && "cursor-pointer",
                     )}

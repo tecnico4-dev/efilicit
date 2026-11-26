@@ -22,7 +22,8 @@ const TABS = [
   { id: "bitacora", label: "Bitácora" },
 ] as const;
 
-type TabId = (typeof TABS)[number]["id"];
+export type DetailTabId = (typeof TABS)[number]["id"];
+type TabId = DetailTabId;
 
 const TAB_IDS = new Set<string>(TABS.map((t) => t.id));
 const TAB_STORAGE_KEY = "efilicit:mis-licitaciones-detail-tab";
@@ -38,6 +39,23 @@ type GuardCtx = {
 };
 
 const DetailTabsGuardContext = createContext<GuardCtx | null>(null);
+
+export const DETAIL_TAB_NAV_EVENT = "efilicit:detail-tab-nav";
+
+export type DetailTabNavDetail = {
+  tab: TabId;
+  /** p. ej. data-offer-requirement-id */
+  scrollAttr?: string;
+  scrollId?: string;
+};
+
+/** Navegación a pestaña desde fuera del árbol de tabs (p. ej. «Qué falta»). */
+export function navigateDetailTab(detail: DetailTabNavDetail): void {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(
+    new CustomEvent<DetailTabNavDetail>(DETAIL_TAB_NAV_EVENT, { detail }),
+  );
+}
 
 /**
  * Registra un guardia al cambiar de pestaña (p. ej. editar requisitos sin guardar).
@@ -91,16 +109,46 @@ export function DetailTabs({
     if (!tabAvailable) setTab("resumen");
   }, [tabAvailable]);
 
-  async function selectTab(next: TabId) {
-    if (next === tab || panes[next] == null) return;
-    const guard = leaveGuardRef.current;
-    if (guard) {
-      const ok = await guard(next);
-      if (!ok) return;
+  const selectTab = useCallback(
+    async (next: TabId) => {
+      if (panes[next] == null) return;
+      if (next !== tab) {
+        const guard = leaveGuardRef.current;
+        if (guard) {
+          const ok = await guard(next);
+          if (!ok) return;
+        }
+        setTab(next);
+        sessionStorage.setItem(TAB_STORAGE_KEY, next);
+      }
+    },
+    [tab, panes],
+  );
+
+  useEffect(() => {
+    function onNav(e: Event) {
+      const ce = e as CustomEvent<DetailTabNavDetail>;
+      const detail = ce.detail;
+      if (!detail?.tab || !isTabId(detail.tab)) return;
+      void (async () => {
+        await selectTab(detail.tab);
+        if (!detail.scrollAttr || !detail.scrollId) return;
+        window.setTimeout(() => {
+          const el = document.querySelector(
+            `[${detail.scrollAttr}="${CSS.escape(detail.scrollId!)}"]`,
+          );
+          if (!(el instanceof HTMLElement)) return;
+          el.scrollIntoView({ behavior: "smooth", block: "center" });
+          el.classList.add("ring-2", "ring-primary", "ring-offset-2");
+          window.setTimeout(() => {
+            el.classList.remove("ring-2", "ring-primary", "ring-offset-2");
+          }, 1600);
+        }, 80);
+      })();
     }
-    setTab(next);
-    sessionStorage.setItem(TAB_STORAGE_KEY, next);
-  }
+    window.addEventListener(DETAIL_TAB_NAV_EVENT, onNav);
+    return () => window.removeEventListener(DETAIL_TAB_NAV_EVENT, onNav);
+  }, [selectTab]);
 
   const activeTab: TabId = tabAvailable ? tab : "resumen";
 
