@@ -1130,7 +1130,7 @@ export function OfferRequirementsTable({
     const sortOrder =
       requirements.reduce((max, r) => Math.max(max, r.sort_order), 0) + 1;
     const client = createSupabaseBrowserClient();
-    let compliance = values.compliance_status;
+    const compliance = values.compliance_status;
     let prep = values.prep_status;
     if (compliance === "cumple") prep = "listo";
     const result = await createOfferRequirement(client, {

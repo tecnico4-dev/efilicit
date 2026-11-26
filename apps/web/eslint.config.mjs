@@ -6,10 +6,14 @@ const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
   {
-    // Semana 6 Paso 9: regla nueva de react-hooks rompe CI en patrones
-    // legítimos (mounted / sync props→draft). Warning hasta refactor puntual.
+    // Semana 6 Paso 9+: reglas nuevas de react-hooks / React Compiler rompen
+    // CI en patrones legítimos (mounted, sync props→ref/draft, Date.now en
+    // server render). Warning hasta refactor puntual.
     rules: {
       "react-hooks/set-state-in-effect": "warn",
+      "react-hooks/purity": "warn",
+      "react-hooks/refs": "warn",
+      "react-hooks/preserve-manual-memoization": "warn",
     },
   },
   // Override default ignores of eslint-config-next.
