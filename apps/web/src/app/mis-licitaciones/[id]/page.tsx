@@ -51,10 +51,8 @@ import {
 } from "@/components/mis-licitaciones/offer-calendar-timeline";
 import { OfferCaseLogPanel } from "@/components/mis-licitaciones/offer-case-log-panel";
 import { OfferGoDecisionCard } from "@/components/mis-licitaciones/offer-go-decision-card";
-import {
-  OfferMissingPanel,
-  buildMissingItems,
-} from "@/components/mis-licitaciones/offer-missing-panel";
+import { buildMissingItems } from "@/components/mis-licitaciones/offer-missing-items";
+import { OfferMissingPanel } from "@/components/mis-licitaciones/offer-missing-panel";
 import { OfferTasksPanel } from "@/components/mis-licitaciones/offer-tasks-panel";
 import { TenderFichaModalButton } from "@/components/mis-licitaciones/tender-ficha-modal";
 import { cn } from "@/lib/cn";
