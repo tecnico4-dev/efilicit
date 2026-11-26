@@ -58,22 +58,20 @@ export default async function MisLicitacionesPage({ searchParams }: PageProps) {
   const empty = (
     <div className="rounded-xl rounded-tl-none border border-dashed border-border bg-surface/60 px-6 py-10 text-center">
       <p className="text-sm font-medium text-foreground">
-        {tab === "active"
-          ? "Todavía no hay expedientes activos"
-          : "Sin histórico en este filtro"}
-      </p>
-      <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
-        {tab === "active"
-          ? "Abre una licitación en el buscador y pulsa «Añadir a Mis licitaciones»."
-          : "Cuando un expediente pase a adjudicada, no adjudicada o descartada aparecerá aquí."}
+        {tab === "active" ? "Todavía no hay expedientes activos" : "Sin histórico."}
       </p>
       {tab === "active" ? (
-        <Link
-          href="/search"
-          className="mt-4 inline-flex text-sm font-medium text-link hover:underline"
-        >
-          Buscar licitaciones
-        </Link>
+        <>
+          <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
+            Abre una licitación en el buscador y pulsa «Añadir a Mis licitaciones».
+          </p>
+          <Link
+            href="/search"
+            className="mt-4 inline-flex text-sm font-medium text-link hover:underline"
+          >
+            Buscar licitaciones
+          </Link>
+        </>
       ) : null}
     </div>
   );
