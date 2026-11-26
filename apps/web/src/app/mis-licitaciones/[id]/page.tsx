@@ -283,7 +283,12 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
           {tenderFull ? <TenderFichaModalButton tender={tenderFull} /> : null}
         </div>
 
-        <div className="mt-4 grid gap-2.5 pt-1 sm:grid-cols-2 lg:grid-cols-5">
+        <div
+          className={cn(
+            "mt-4 grid gap-2.5 pt-1 sm:grid-cols-2",
+            historic ? "lg:grid-cols-3" : "lg:grid-cols-5",
+          )}
+        >
           <Kpi
             label="Requisitos excluyentes"
             value={
@@ -295,11 +300,13 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
             }
             valueSize="lg"
           />
-          <Kpi
-            label="Preparación"
-            value={prepPct != null ? `${prepPct}%` : "—"}
-            bar={prepPct}
-          />
+          {!historic ? (
+            <Kpi
+              label="Preparación"
+              value={prepPct != null ? `${prepPct}%` : "—"}
+              bar={prepPct}
+            />
+          ) : null}
           {offerCase.stage === "interes" ? (
             <OutlinedField label="Estado">
               <p className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
@@ -313,11 +320,13 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
           ) : (
             <Kpi label="Estado" value={stageLabel} valueSize="lg" />
           )}
-          <DeadlineRiskKpi
-            historic={historic}
-            dueIso={due}
-            tone={cd.tone}
-          />
+          {!historic ? (
+            <DeadlineRiskKpi
+              historic={historic}
+              dueIso={due}
+              tone={cd.tone}
+            />
+          ) : null}
           <OwnerTeamKpi
             owner={offerCase.owner_member}
             team={teamMembers}
