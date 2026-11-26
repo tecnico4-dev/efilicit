@@ -15,6 +15,7 @@ import {
   listOfferCasePliegos,
   listOfferDeliverables,
   listOfferMilestones,
+  listOfferTasks,
   type OfferCaseTeamMember,
   type OfferOwnerMember,
   type OfferStage,
@@ -50,6 +51,10 @@ import {
 } from "@/components/mis-licitaciones/offer-calendar-timeline";
 import { OfferCaseLogPanel } from "@/components/mis-licitaciones/offer-case-log-panel";
 import { OfferGoDecisionCard } from "@/components/mis-licitaciones/offer-go-decision-card";
+import {
+  OfferMissingPanel,
+  buildMissingItems,
+} from "@/components/mis-licitaciones/offer-missing-panel";
 import { OfferTasksPanel } from "@/components/mis-licitaciones/offer-tasks-panel";
 import { TenderFichaModalButton } from "@/components/mis-licitaciones/tender-ficha-modal";
 import { cn } from "@/lib/cn";
@@ -112,6 +117,7 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
     deliverablesResult,
     milestonesResult,
     viewerMemberResult,
+    tasksResult,
   ] = await Promise.all([
     listOfferCaseMembers(supabase, offerCase.id),
     getLatestOfferCaseIntake(supabase, offerCase.id),
@@ -119,9 +125,11 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
     listOfferDeliverables(supabase, offerCase.id),
     listOfferMilestones(supabase, offerCase.id),
     getEficenMemberIdByUserId(supabase, profile.data.id),
+    listOfferTasks(supabase, offerCase.id),
   ]);
   const teamMembers = teamResult.data;
   const viewerMemberId = viewerMemberResult.data;
+  const tasks = tasksResult.data;
   const milestones = milestonesResult.data;
   const hasPresentationMilestone = milestones.some(
     (m) => m.code === "presentacion",
@@ -191,9 +199,6 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
     : { data: null, error: null };
   const tenderFull = tenderDetailResult.data;
 
-  const pendingReqs = offerCase.requirements.filter(
-    (r) => r.prep_status !== "listo",
-  );
   /** Riesgo plazo = deadline oficial de la licitación (no plazos internos de requisitos). */
   const due = tenderSummary?.deadline_at ?? null;
   const historic = isHistoric(offerCase.stage);
@@ -208,39 +213,12 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
   );
   const exclOk = excl.filter((r) => r.compliance_status === "cumple").length;
 
-  const missing = [
-    ...offerCase.requirements
-      .filter((r) => r.compliance_status === "no_cumple")
-      .map((r) => ({
-        tone: "bad" as const,
-        title: r.title,
-        detail: "No cumple",
-      })),
-    ...pendingReqs
-      .filter(
-        (r) =>
-          r.internal_due_at && new Date(r.internal_due_at).getTime() < Date.now(),
-      )
-      .map((r) => ({
-        tone: "bad" as const,
-        title: r.title,
-        detail: "Vencido",
-      })),
-    ...pendingReqs
-      .filter(
-        (r) =>
-          !r.internal_due_at ||
-          new Date(r.internal_due_at).getTime() >= Date.now(),
-      )
-      .slice(0, 6)
-      .map((r) => ({
-        tone: "warn" as const,
-        title: r.title,
-        detail: r.internal_due_at
-          ? `Vence ${formatDateMadrid(r.internal_due_at)}`
-          : "Pendiente de preparar",
-      })),
-  ];
+  const matrixReqs = offerCase.requirements.filter(
+    (r) => r.category !== "criterio_adjudicacion",
+  );
+  const missing = historic
+    ? []
+    : buildMissingItems(matrixReqs, tasks);
 
   const stageLabel =
     offerCase.stage in OFFER_STAGE_LABELS
@@ -396,11 +374,8 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
                   </div>
                 </div>
               ),
-              requisitos: (() => {
-                const matrixReqs = offerCase.requirements.filter(
-                  (r) => r.category !== "criterio_adjudicacion",
-                );
-                return matrixReqs.length === 0 ? (
+              requisitos:
+                matrixReqs.length === 0 ? (
                   <p className="rounded-lg border border-dashed border-border px-4 py-6 text-center text-sm text-muted-foreground">
                     Sin requisitos en este expediente.
                   </p>
@@ -412,14 +387,11 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
                     team={teamMembers}
                     actionsLocked={offerCase.stage === "interes"}
                   />
-                );
-              })(),
+                ),
               sobres: (
                 <SobresList
                   deliverables={deliverablesResult.data}
-                  requirements={offerCase.requirements.filter(
-                    (r) => r.category !== "criterio_adjudicacion",
-                  )}
+                  requirements={matrixReqs}
                 />
               ),
               pliegos: (
@@ -484,34 +456,7 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
           />
         </div>
 
-        {!historic ? (
-          <aside className="h-fit rounded-xl border border-border bg-surface p-4 lg:sticky lg:top-24">
-            <h2 className="text-sm font-semibold text-foreground">Qué falta</h2>
-            {missing.length === 0 ? (
-              <p className="mt-3 text-sm text-muted-foreground">
-                No hay pendientes detectados.
-              </p>
-            ) : (
-              <ul className="mt-3 space-y-2">
-                {missing.map((m) => (
-                  <li
-                    key={`${m.title}-${m.detail}`}
-                    className={cn(
-                      "rounded-r-md border-l-4 px-3 py-2 text-sm",
-                      m.tone === "bad" &&
-                        "border-destructive bg-destructive/10 text-foreground",
-                      m.tone === "warn" &&
-                        "border-amber-500 bg-amber-50 text-foreground",
-                    )}
-                  >
-                    <p className="font-medium">{m.title}</p>
-                    <p className="text-xs text-muted-foreground">{m.detail}</p>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </aside>
-        ) : null}
+        {!historic ? <OfferMissingPanel items={missing} /> : null}
       </div>
     </main>
   );
