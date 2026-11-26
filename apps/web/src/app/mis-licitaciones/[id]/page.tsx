@@ -191,11 +191,8 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
   const pendingReqs = offerCase.requirements.filter(
     (r) => r.prep_status !== "listo",
   );
-  const due =
-    pendingReqs.find((r) => r.internal_due_at)?.internal_due_at ??
-    offerCase.internal_deadline_at ??
-    tenderSummary?.deadline_at ??
-    null;
+  /** Riesgo plazo = deadline oficial de la licitación (no plazos internos de requisitos). */
+  const due = tenderSummary?.deadline_at ?? null;
   const historic = isHistoric(offerCase.stage);
   const cd = formatCountdown(historic ? null : due);
   const total = offerCase.requirements.length;
