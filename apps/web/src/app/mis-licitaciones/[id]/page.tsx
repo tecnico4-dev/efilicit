@@ -320,7 +320,12 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
         </div>
       </section>
 
-      <div className="mt-6 grid gap-4 lg:grid-cols-[minmax(0,1fr)_260px]">
+      <div
+        className={cn(
+          "mt-6 grid gap-4",
+          !historic && "lg:grid-cols-[minmax(0,1fr)_260px]",
+        )}
+      >
         <div className="min-w-0 rounded-xl border border-border bg-surface p-4 sm:p-5">
           <DetailTabs
             panes={{
@@ -436,36 +441,34 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
           />
         </div>
 
-        <aside className="h-fit rounded-xl border border-border bg-surface p-4 lg:sticky lg:top-24">
-          <h2 className="text-sm font-semibold text-foreground">Qué falta</h2>
-          {historic ? (
-            <p className="mt-3 text-sm text-muted-foreground">
-              Expediente histórico. El panel accionable aplica a activas.
-            </p>
-          ) : missing.length === 0 ? (
-            <p className="mt-3 text-sm text-muted-foreground">
-              No hay pendientes detectados.
-            </p>
-          ) : (
-            <ul className="mt-3 space-y-2">
-              {missing.map((m) => (
-                <li
-                  key={`${m.title}-${m.detail}`}
-                  className={cn(
-                    "rounded-r-md border-l-4 px-3 py-2 text-sm",
-                    m.tone === "bad" &&
-                      "border-destructive bg-destructive/10 text-foreground",
-                    m.tone === "warn" &&
-                      "border-amber-500 bg-amber-50 text-foreground",
-                  )}
-                >
-                  <p className="font-medium">{m.title}</p>
-                  <p className="text-xs text-muted-foreground">{m.detail}</p>
-                </li>
-              ))}
-            </ul>
-          )}
-        </aside>
+        {!historic ? (
+          <aside className="h-fit rounded-xl border border-border bg-surface p-4 lg:sticky lg:top-24">
+            <h2 className="text-sm font-semibold text-foreground">Qué falta</h2>
+            {missing.length === 0 ? (
+              <p className="mt-3 text-sm text-muted-foreground">
+                No hay pendientes detectados.
+              </p>
+            ) : (
+              <ul className="mt-3 space-y-2">
+                {missing.map((m) => (
+                  <li
+                    key={`${m.title}-${m.detail}`}
+                    className={cn(
+                      "rounded-r-md border-l-4 px-3 py-2 text-sm",
+                      m.tone === "bad" &&
+                        "border-destructive bg-destructive/10 text-foreground",
+                      m.tone === "warn" &&
+                        "border-amber-500 bg-amber-50 text-foreground",
+                    )}
+                  >
+                    <p className="font-medium">{m.title}</p>
+                    <p className="text-xs text-muted-foreground">{m.detail}</p>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </aside>
+        ) : null}
       </div>
     </main>
   );
