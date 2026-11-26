@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Purge tenders: línea opt-in sin `deadline_at` (estado cerrado + stale M días; default 90) además de la línea por plazo N meses; mismos escudos/`source_code`/`limit`; inputs en `cleanup-tenders.yml` — enmienda [ADR 031](docs/adr/031-retencion-purge-tenders.md).
 - Purge tenders: escudos `favorites_common`, `favorites_shared` y `tender_recommendations`; se elimina el fallback legado `shared_favorites` — enmienda [ADR 031](docs/adr/031-retencion-purge-tenders.md).
 - Home · carrusel «Tus favoritos»: solo se muestra si hay plazos próximos (`attentionFavorites`) o cambios de estado; columnas solo con contenido (sin vacío «Ninguna con plazo…»).
 - Mis licitaciones · Calendario: timeline (fecha · Oficial/Interno · countdown / hecho · marca HOY); hitos intake preguntas/apertura; pestaña oculta si no hay plazos.

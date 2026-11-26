@@ -17,17 +17,18 @@ El plan Free de Supabase no aguanta histórico ilimitado (~3,6 KB canónicos por
 ## Decisión
 
 1. **Herramienta:** script `scripts/purge_tenders.py` + workflow manual `cleanup-tenders.yml` (`workflow_dispatch`). Default **dry-run**; `apply` borra de verdad. Cron externo aplazado.
-2. **Selección (include), parámetros por run:**
-   - `min_deadline_age_months` (default **3**): candidatas con `deadline_at <= now() - N months`.
-   - `source_code` opcional (vacío = todas): solo licitaciones con fila en `tender_sources` de esa fuente.
-   - `limit` opcional: tope de borrables tras escudos.
+2. **Selección (include), parámetros por run** — dos líneas (unión por `tender_id`; si coincide, gana la de deadline):
+   - **Línea deadline (siempre on):** `min_deadline_age_months` (default **3**): `deadline_at IS NOT NULL` y `deadline_at <= now() - N months`.
+   - **Línea null-deadline (opt-in):** `include_null_deadline` (default **false**). Si on: `deadline_at IS NULL` **y** `status` cerrado (`adjudicada` / `resuelta` / `anulada` / `desierta` + alias EN) **y** `coalesce(updated_at, created_at) <= now() - M days` (`null_deadline_min_stale_days`, default **90**).
+   - `source_code` opcional (vacío = todas): solo licitaciones con fila en `tender_sources` de esa fuente (aplica a ambas líneas).
+   - `limit` opcional: tope de borrables tras escudos (sobre la unión).
 3. **Escudos (skip total** de esa licitación si aplica cualquiera):
    - `offer_cases` (Mis licitaciones) — coherente con RESTRICT ADR 028.
    - `favorites`, `favorites_common`, `favorites_shared`.
    - `tender_recommendations` (si la tabla existe).
    - `tender_ratings`.
    - Match de alerta **vivo**: fila en `notification_queue` sin `alert_related_trash`, o con papelera aún en ventana de 30 días. Dismiss permanente (vaciar papelera → `trashed_at` fuera de ventana) **no** escuda.
-   - Abierta / en plazo: `deadline_at IS NULL` **o** `deadline_at > now()` (red de seguridad; con el filtro de 3 meses casi no salta).
+   - Escudo de línea: en deadline → `deadline_at IS NULL` **o** `deadline_at > now()` (`open_deadline`, red de seguridad). En null-deadline → status no cerrado (`not_closed`).
    - Si una tabla de escudo **no existe** en el proyecto (p. ej. `offer_cases` aún no migrado a remoto), el script la **omite** y sigue con el resto.
 4. **No son escudo** (sí limpieza colateral tras `apply`):
    - `notification_emails.tender_ids` / `tender_count` (histórico de digest): podar IDs borrados; si la lista queda vacía, borrar la fila.
@@ -61,9 +62,14 @@ El plan Free de Supabase no aguanta histórico ilimitado (~3,6 KB canónicos por
 | RAW huérfano tras DELETE | Post-paso artifacts + API Storage |
 | Digests con IDs muertos | Podar `notification_emails` |
 
+### Enmienda 2026-11-26 — línea null-deadline
+
+Las licitaciones **sin** `deadline_at` no entraban nunca en el include (y el escudo `open_deadline` las trataba como abiertas). Eso acumulaba basura canónica/RAW. Se añade una **segunda línea opt-in** (casilla del workflow + flags del script): solo cerradas y stale ≥ M días, mismos escudos/`source_code`/`limit`. No se borra “sin plazo + abierta” aunque sea antigua.
+
 ## Referencias
 
 - Investigación almacenamiento 2026-11-06 (P6)
 - [028](028-offer-schema-block-b-integrity.md) — `offer_cases.tender_id` RESTRICT
 - [029](029-shared-favorites-comun.md) — favoritos comunes
 - Workflow huérfanos: `.github/workflows/cleanup-orphans.yml`
+- Script: `scripts/purge_tenders.py` · workflow: `.github/workflows/cleanup-tenders.yml`

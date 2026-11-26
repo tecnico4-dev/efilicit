@@ -17,9 +17,21 @@ on:
           - apply
         default: dry-run
       min_deadline_age_months:
-        description: "Solo deadline vencido hace al menos N meses (default 3)"
+        description: "Línea deadline: vencido hace al menos N meses (default 3)"
         required: false
         default: "3"
+      include_null_deadline:
+        description: >
+          También candidatas sin deadline_at
+          (estado cerrado + sin actualizar M días). Default off.
+        type: boolean
+        default: false
+      null_deadline_min_stale_days:
+        description: >
+          Solo si include_null_deadline: mín. días sin actualizar
+          (coalesce updated_at/created_at). Default 90.
+        required: false
+        default: "90"
       source_code:
         description: >
           Filtrar por tender_sources.source_code
@@ -45,6 +57,8 @@ jobs:
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
       MODE: ${{ inputs.mode }}
       MIN_DEADLINE_AGE_MONTHS: ${{ inputs.min_deadline_age_months }}
+      INCLUDE_NULL_DEADLINE: ${{ inputs.include_null_deadline }}
+      NULL_DEADLINE_MIN_STALE_DAYS: ${{ inputs.null_deadline_min_stale_days }}
       SOURCE_CODE: ${{ inputs.source_code }}
       LIMIT: ${{ inputs.limit }}
     steps:
@@ -82,11 +96,15 @@ jobs:
           set -euo pipefail
           EXTRA=(
             --min-deadline-age-months "${MIN_DEADLINE_AGE_MONTHS:-3}"
+            --null-deadline-min-stale-days "${NULL_DEADLINE_MIN_STALE_DAYS:-90}"
             --limit "${LIMIT:-0}"
             --csv "purge_tenders_${{ github.run_id }}.csv"
           )
           if [ -n "${SOURCE_CODE:-}" ]; then
             EXTRA+=(--source-code "${SOURCE_CODE}")
+          fi
+          if [ "${INCLUDE_NULL_DEADLINE}" = "true" ]; then
+            EXTRA+=(--include-null-deadline)
           fi
           if [ "${MODE}" = "apply" ]; then
             EXTRA+=(--apply)
