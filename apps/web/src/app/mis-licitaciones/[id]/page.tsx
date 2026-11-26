@@ -286,20 +286,22 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
         <div
           className={cn(
             "mt-4 grid gap-2.5 pt-1 sm:grid-cols-2",
-            historic ? "lg:grid-cols-3" : "lg:grid-cols-5",
+            historic ? "lg:grid-cols-2" : "lg:grid-cols-5",
           )}
         >
-          <Kpi
-            label="Requisitos excluyentes"
-            value={
-              excl.length > 0
-                ? `${exclOk}/${excl.length}`
-                : total > 0
-                  ? `${ready}/${total} prep.`
-                  : "Sin requisitos"
-            }
-            valueSize="lg"
-          />
+          {!historic ? (
+            <Kpi
+              label="Requisitos excluyentes"
+              value={
+                excl.length > 0
+                  ? `${exclOk}/${excl.length}`
+                  : total > 0
+                    ? `${ready}/${total} prep.`
+                    : "Sin requisitos"
+              }
+              valueSize="lg"
+            />
+          ) : null}
           {!historic ? (
             <Kpi
               label="Preparación"
