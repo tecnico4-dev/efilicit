@@ -26,7 +26,7 @@ import {
 import { formatDateMadrid, formatDateTimeMadrid } from "@/lib/datetime";
 import { formatTenderStatus } from "@/lib/tender-labels";
 import {
-  PAGE_MAIN_CLASS,
+  PAGE_MAIN_FAVORITES_CLASS,
   PAGE_MAIN_WIDE_CLASS,
 } from "@/components/shell/page-width";
 import { ErrorState } from "@/components/ui/state-message";
@@ -248,7 +248,9 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
       : offerCase.stage;
 
   return (
-    <main className={historic ? PAGE_MAIN_CLASS : PAGE_MAIN_WIDE_CLASS}>
+    <main
+      className={historic ? PAGE_MAIN_FAVORITES_CLASS : PAGE_MAIN_WIDE_CLASS}
+    >
       <section className="rounded-xl border border-border bg-surface p-4 sm:p-5">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
@@ -401,6 +403,11 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
                     offerCaseId={offerCase.id}
                     userId={profile.data.id}
                     intake={intakeResult.data}
+                    hasStructuredData={
+                      (pliegosResult.data?.length ?? 0) > 0 ||
+                      offerCase.requirements.length > 0 ||
+                      (deliverablesResult.data?.length ?? 0) > 0
+                    }
                   />
                   {pliegosResult.error ? (
                     <ErrorState>
