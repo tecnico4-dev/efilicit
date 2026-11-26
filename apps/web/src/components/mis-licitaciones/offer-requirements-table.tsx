@@ -97,6 +97,68 @@ function envelopeLabel(value: OfferEnvelope | string): string {
   return ENVELOPE_LABELS[value] ?? value;
 }
 
+/** Texto del pliego útil bajo el título (evita duplicar si ya está en el title). */
+function usefulLiteralText(
+  title: string,
+  literal: string | null | undefined,
+): string | null {
+  if (!literal) return null;
+  const flatTitle = title.split(/\s+/).join(" ").trim();
+  const flatLiteral = literal.split(/\s+/).join(" ").trim();
+  if (!flatLiteral) return null;
+  if (flatTitle === flatLiteral) return null;
+  if (flatTitle.endsWith(`: ${flatLiteral}`)) return null;
+  if (flatTitle.endsWith(flatLiteral) && flatTitle.length > flatLiteral.length) {
+    return null;
+  }
+  return flatLiteral;
+}
+
+function RequirementPliegoLiteral({
+  title,
+  literalText,
+  muted,
+}: {
+  title: string;
+  literalText: string | null | undefined;
+  muted?: boolean;
+}) {
+  const text = usefulLiteralText(title, literalText);
+  const [open, setOpen] = useState(false);
+  if (!text) return null;
+  return (
+    <div className="mt-1.5">
+      <button
+        type="button"
+        className={cn(
+          "inline-flex items-center gap-1 text-[0.7rem] font-medium underline-offset-2 hover:underline",
+          muted ? "text-muted-foreground/50" : "text-primary/80",
+        )}
+        aria-expanded={open}
+        onClick={(e) => {
+          e.stopPropagation();
+          setOpen((v) => !v);
+        }}
+      >
+        <span aria-hidden className="inline-block w-3 text-center">
+          {open ? "▾" : "▸"}
+        </span>
+        {open ? "Ocultar texto del pliego" : "Texto del pliego"}
+      </button>
+      {open ? (
+        <p
+          className={cn(
+            "mt-1.5 whitespace-pre-wrap rounded-md border border-border/70 bg-muted/30 px-2.5 py-2 text-xs font-normal leading-relaxed",
+            muted ? "text-muted-foreground/55" : "text-muted-foreground",
+          )}
+        >
+          {text}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
 const ENVELOPE_OPTIONS = OFFER_ENVELOPES.map((value) => ({
   value,
   label: envelopeLabel(value),
@@ -1413,6 +1475,11 @@ export function OfferRequirementsTable({
                         </span>
                       ) : null}
                     </p>
+                    <RequirementPliegoLiteral
+                      title={item.title}
+                      literalText={item.literal_text}
+                      muted={naLocked}
+                    />
                   </div>
                   <TypeTextSelect
                     value={item.requirement_type as OfferRequirementType}
@@ -1634,6 +1701,11 @@ export function OfferRequirementsTable({
                           </span>
                         ) : null}
                       </p>
+                      <RequirementPliegoLiteral
+                        title={item.title}
+                        literalText={item.literal_text}
+                        muted={naLocked}
+                      />
                     </td>
                     <td className={tdCenter}>
                       <TypeTextSelect
