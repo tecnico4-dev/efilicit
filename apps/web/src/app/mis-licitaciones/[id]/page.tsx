@@ -320,7 +320,16 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
               />
             </OutlinedField>
           ) : (
-            <Kpi label="Estado" value={stageLabel} valueSize="lg" />
+            <Kpi
+              label="Estado"
+              value={stageLabel}
+              valueSize="lg"
+              className={
+                historic
+                  ? "flex min-h-[5.75rem] flex-col justify-center"
+                  : undefined
+              }
+            />
           )}
           {!historic ? (
             <DeadlineRiskKpi
@@ -332,6 +341,11 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
           <OwnerTeamKpi
             owner={offerCase.owner_member}
             team={teamMembers}
+            className={
+              historic
+                ? "flex min-h-[5.75rem] flex-col justify-center"
+                : undefined
+            }
           />
         </div>
       </section>
@@ -533,14 +547,16 @@ function Kpi({
   value,
   bar,
   valueSize = "md",
+  className,
 }: {
   label: string;
   value: string;
   bar?: number | null;
   valueSize?: "md" | "lg";
+  className?: string;
 }) {
   return (
-    <OutlinedField label={label}>
+    <OutlinedField label={label} className={className}>
       <p
         className={cn(
           "font-semibold text-foreground",
@@ -673,9 +689,11 @@ function PersonAvatar({
 function OwnerTeamKpi({
   owner,
   team,
+  className,
 }: {
   owner: OfferOwnerMember | null;
   team: OfferCaseTeamMember[];
+  className?: string;
 }) {
   const ownerName = owner?.display_name?.trim() || null;
   const crew = team.filter((row) => row.member_id !== owner?.id);
@@ -683,7 +701,7 @@ function OwnerTeamKpi({
   const extra = crew.length - visible.length;
 
   return (
-    <OutlinedField label="Responsable y equipo">
+    <OutlinedField label="Responsable y equipo" className={className}>
       <div className="flex min-w-0 items-center gap-2.5">
         {owner && ownerName ? (
           <>
