@@ -326,7 +326,7 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
               valueSize="lg"
               className={
                 historic
-                  ? "flex min-h-[5.75rem] flex-col justify-center"
+                  ? "flex min-h-[4.75rem] flex-col justify-center"
                   : undefined
               }
             />
@@ -343,7 +343,7 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
             team={teamMembers}
             className={
               historic
-                ? "flex min-h-[5.75rem] flex-col justify-center"
+                ? "flex min-h-[4.75rem] flex-col justify-center"
                 : undefined
             }
           />
