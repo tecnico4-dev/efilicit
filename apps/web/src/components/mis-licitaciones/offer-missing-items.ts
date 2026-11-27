@@ -67,6 +67,8 @@ function audienceRank(item: MissingItem): number {
 const PLAZO_SOON_MS = 7 * 24 * 60 * 60 * 1000;
 const META_MAX = 120;
 const MAX_LINES = 2;
+/** Tope de cajas en el aside (BLOQUEANTE ya van primeras y ≤2). */
+const MAX_BOXES = 5;
 
 function truncateMeta(text: string): string {
   const t = text.trim().replace(/\s+/g, " ");
@@ -182,7 +184,7 @@ function collapseGroups(raw: RawEntry[]): MissingItem[] {
     }
     return 0;
   });
-  return items;
+  return items.slice(0, MAX_BOXES);
 }
 
 export type BuildMissingItemsOptions = {
