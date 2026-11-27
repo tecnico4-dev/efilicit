@@ -473,15 +473,16 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
                   workersEnabled={offerCase.stage !== "interes"}
                 />
               ),
-              tareas: (
-                <OfferTasksPanel
-                  offerCaseId={offerCase.id}
-                  userId={profile.data.id}
-                  viewerMemberId={viewerMemberId}
-                  owner={offerCase.owner_member}
-                  team={teamMembers}
-                />
-              ),
+              tareas:
+                offerCase.stage === "interes" ? null : (
+                  <OfferTasksPanel
+                    offerCaseId={offerCase.id}
+                    userId={profile.data.id}
+                    viewerMemberId={viewerMemberId}
+                    owner={offerCase.owner_member}
+                    team={teamMembers}
+                  />
+                ),
               calendario: showCalendarTab ? (
                 <OfferCalendarTimeline events={calendarEvents} />
               ) : null,
