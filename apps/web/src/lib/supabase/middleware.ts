@@ -44,7 +44,7 @@ export async function updateSession(request: NextRequest) {
 
   const path = request.nextUrl.pathname;
 
-  // Mis licitaciones: solo local (NEXT_PUBLIC_MIS_LICITACIONES_ENABLED=1).
+  // Mis licitaciones: gate NEXT_PUBLIC_MIS_LICITACIONES_ENABLED (on en prod).
   if (
     path.startsWith("/mis-licitaciones") &&
     !isMisLicitacionesEnabled()

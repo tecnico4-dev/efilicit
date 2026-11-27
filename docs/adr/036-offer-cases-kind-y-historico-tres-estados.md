@@ -33,18 +33,18 @@ Mis licitaciones mezclaba **desenlace** y **modo de participación** en el mismo
 
 ## Consecuencias
 
-- Migración `20261123120000_offer_cases_kind_and_historic_stages.sql` (local/Studio).
-- Migración `20261127130000_drop_offer_stage_en_evaluacion.sql` (local/Studio).
+- Migración `20261123120000_offer_cases_kind_and_historic_stages.sql` (aplicada en remoto).
+- Migración `20261127130000_drop_offer_stage_en_evaluacion.sql` (aplicada en remoto 2026-11-27).
 - Kanban activo: columna única «Presentada» (sin «Evaluación»).
 - Kanban histórico a 3 columnas; filtros de stage alineados.
 - Job recomendaciones: perfil desde `kind`.
+- Producto Mis licitaciones activo en remoto (flag Vercel).
 
 ## Riesgos
 
 | Riesgo | Mitigación |
 |---|---|
 | Filas legacy mal clasificadas | Backfill explícito; dos subcontrata históricas → adjudicada + kind |
-| Remoto | No aplicar hasta petición explícita del usuario |
 
 ## Referencias
 
