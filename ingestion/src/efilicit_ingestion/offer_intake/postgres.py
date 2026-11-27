@@ -300,7 +300,7 @@ def log_intake(conn: psycopg.Connection, offer_case_id: UUID, body: str) -> None
     conn.execute(
         """
         insert into public.offer_case_log (offer_case_id, event_type, body)
-        values (%s, 'otro', %s)
+        values (%s, 'extraccion_anuncio', %s)
         """,
         (offer_case_id, body),
     )

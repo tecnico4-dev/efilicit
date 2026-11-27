@@ -164,18 +164,63 @@ def _process_case(
 
 
 def _log_body(stats: dict[str, Any]) -> str:
-    parts = [
-        f"{stats['pliegos_new']} pliegos",
-        f"{stats['requirements_new']} requisitos",
-        f"{stats['deliverables_new']} sobres/entregables",
-        f"{stats['milestones_new']} hitos",
-    ]
-    text = "Intake PLACSP: " + ", ".join(parts) + "."
-    if stats["documents_downloaded"] or stats["documents_failed"]:
-        text += (
-            f" Descargados {stats['documents_downloaded']} documentos"
-            f" ({stats['documents_failed']} con error)."
+    """Copy de bitácora para personas (sin jerga Intake / ceros superfluos)."""
+    loaded: list[str] = []
+    pliegos = int(stats.get("pliegos_new") or 0)
+    requirements = int(stats.get("requirements_new") or 0)
+    deliverables = int(stats.get("deliverables_new") or 0)
+    milestones = int(stats.get("milestones_new") or 0)
+    downloaded = int(stats.get("documents_downloaded") or 0)
+    failed = int(stats.get("documents_failed") or 0)
+
+    if pliegos:
+        loaded.append(f"{pliegos} pliego{'s' if pliegos != 1 else ''}")
+    if requirements:
+        loaded.append(
+            f"{requirements} requisito{'s' if requirements != 1 else ''}"
         )
+    if deliverables:
+        loaded.append(
+            f"{deliverables} criterio{'s' if deliverables != 1 else ''} en sobres"
+        )
+    if milestones:
+        loaded.append(f"{milestones} plazo{'s' if milestones != 1 else ''}")
+
+    if loaded:
+        text = (
+            "Se han cargado datos del anuncio de la Plataforma: "
+            + ", ".join(loaded)
+            + "."
+        )
+    else:
+        text = (
+            "Se ha vuelto a consultar el anuncio. "
+            "No había datos nuevos que añadir."
+        )
+
+    if downloaded or failed:
+        if downloaded and not failed:
+            text += (
+                f" Se ha{'n' if downloaded != 1 else ''} descargado "
+                f"{downloaded} documento{'s' if downloaded != 1 else ''}."
+            )
+        elif downloaded and failed:
+            text += (
+                f" Se ha{'n' if downloaded != 1 else ''} descargado "
+                f"{downloaded} documento{'s' if downloaded != 1 else ''}; "
+                f"{failed} no se pudo{'ieron' if failed != 1 else ''} descargar."
+            )
+        else:
+            text += (
+                f" No se pudo{'ieron' if failed != 1 else ''} descargar "
+                f"{failed} documento{'s' if failed != 1 else ''}."
+            )
+    elif not loaded:
+        text = (
+            "Se ha consultado el anuncio; no había cambios ni documentos "
+            "pendientes de descarga."
+        )
+
     return text
 
 
