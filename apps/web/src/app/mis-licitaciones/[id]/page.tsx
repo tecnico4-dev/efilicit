@@ -45,6 +45,7 @@ import {
   AdvanceToAnalisisLink,
 } from "@/components/mis-licitaciones/advance-to-analisis-button";
 import { MarkAsPresentedLink } from "@/components/mis-licitaciones/mark-as-presented-link";
+import { OfferPresentedCard } from "@/components/mis-licitaciones/offer-presented-card";
 import { AwardCriteriaSummary } from "@/components/mis-licitaciones/award-criteria-summary";
 import {
   OfferCalendarTimeline,
@@ -404,6 +405,19 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
                       decidedAt={offerCase.go_decided_at}
                       decidedByName={offerCase.go_decider_name}
                       readOnly={historic}
+                    />
+                  ) : null}
+
+                  {offerCase.stage === "preparacion" ||
+                  offerCase.stage === "presentada" ||
+                  offerCase.stage === "requerimiento" ||
+                  offerCase.presented_on ? (
+                    <OfferPresentedCard
+                      offerCaseId={offerCase.id}
+                      userId={profile.data.id}
+                      stage={offerCase.stage}
+                      presentedOn={offerCase.presented_on}
+                      readOnly={historic || offerCase.stage !== "preparacion"}
                     />
                   ) : null}
 
