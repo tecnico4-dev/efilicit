@@ -315,6 +315,13 @@ export function buildMissingItems(
 
   for (const t of tasks) {
     if (t.status !== "pendiente") continue;
+    // No mostrar tareas de otros miembros; sí las mías y las sin asignar.
+    if (
+      t.owner_member_id != null &&
+      (viewerMemberId == null || t.owner_member_id !== viewerMemberId)
+    ) {
+      continue;
+    }
     const bucket = dueBucket(t.due_at, now);
     const mine = isMine(t.owner_member_id, viewerMemberId);
     if (bucket === "overdue") {
