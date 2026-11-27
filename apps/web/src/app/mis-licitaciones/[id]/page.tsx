@@ -307,6 +307,8 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
               <MarkAsPresentedLink
                 offerCaseId={offerCase.id}
                 userId={profile.data.id}
+                requirements={matrixReqs}
+                tasks={tasks}
               />
             </OutlinedField>
           ) : (
@@ -417,6 +419,8 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
                       userId={profile.data.id}
                       stage={offerCase.stage}
                       presentedOn={offerCase.presented_on}
+                      requirements={matrixReqs}
+                      tasks={tasks}
                       readOnly={historic || offerCase.stage !== "preparacion"}
                     />
                   ) : null}

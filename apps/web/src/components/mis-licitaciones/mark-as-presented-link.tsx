@@ -1,55 +1,56 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { OFFER_ACTION_ERROR } from "@/components/mis-licitaciones/offer-user-facing-error";
-import { createSupabaseBrowserClient } from "@/lib/supabase/client";
-import { markOfferCasePresented } from "@/lib/queries";
+import { MarkAsPresentedConfirmModal } from "@/components/mis-licitaciones/mark-as-presented-confirm-modal";
+import {
+  type PresentationReqInput,
+  type PresentationTaskInput,
+} from "@/components/mis-licitaciones/mark-as-presented-readiness";
+import { useMarkAsPresented } from "@/components/mis-licitaciones/use-mark-as-presented";
 
 /** CTA compacto bajo el KPI Estado (cabecera) en En preparación. */
 export function MarkAsPresentedLink({
   offerCaseId,
   userId,
+  requirements,
+  tasks,
 }: {
   offerCaseId: string;
   userId: string;
+  requirements: PresentationReqInput[];
+  tasks: PresentationTaskInput[];
 }) {
-  const router = useRouter();
-  const [pending, setPending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  async function mark() {
-    if (pending) return;
-    setPending(true);
-    setError(null);
-    const client = createSupabaseBrowserClient();
-    const { error: err } = await markOfferCasePresented(client, {
-      offerCaseId,
-      createdBy: userId,
-    });
-    setPending(false);
-    if (err) {
-      setError(OFFER_ACTION_ERROR);
-      return;
-    }
-    router.refresh();
-  }
+  const {
+    readiness,
+    confirmOpen,
+    pending,
+    error,
+    requestMark,
+    confirmMark,
+    cancelConfirm,
+  } = useMarkAsPresented({ offerCaseId, userId, requirements, tasks });
 
   return (
     <div className="mt-1.5">
       <button
         type="button"
-        onClick={() => void mark()}
+        onClick={requestMark}
         disabled={pending}
         className="text-left text-xs font-medium text-primary hover:underline disabled:opacity-60"
       >
-        {pending ? "Marcando…" : "Marcar como presentada →"}
+        {pending && !confirmOpen ? "Marcando…" : "Marcar como presentada →"}
       </button>
       {error ? (
         <p className="mt-0.5 text-[0.65rem] leading-snug text-destructive">
           {error}
         </p>
       ) : null}
+      <MarkAsPresentedConfirmModal
+        open={confirmOpen}
+        busy={pending}
+        readiness={readiness}
+        onConfirm={confirmMark}
+        onCancel={cancelConfirm}
+      />
     </div>
   );
 }

@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { formatDateMadrid } from "@/lib/datetime";
-import { OFFER_ACTION_ERROR } from "@/components/mis-licitaciones/offer-user-facing-error";
-import { createSupabaseBrowserClient } from "@/lib/supabase/client";
-import { markOfferCasePresented } from "@/lib/queries";
+import { MarkAsPresentedConfirmModal } from "@/components/mis-licitaciones/mark-as-presented-confirm-modal";
+import {
+  type PresentationReqInput,
+  type PresentationTaskInput,
+} from "@/components/mis-licitaciones/mark-as-presented-readiness";
+import { useMarkAsPresented } from "@/components/mis-licitaciones/use-mark-as-presented";
 
 function StatusBadge({ presented }: { presented: boolean }) {
   if (presented) {
@@ -34,36 +35,32 @@ export function OfferPresentedCard({
   userId,
   stage,
   presentedOn,
+  requirements,
+  tasks,
   readOnly = false,
 }: {
   offerCaseId: string;
   userId: string;
   stage: string;
   presentedOn: string | null;
+  requirements: PresentationReqInput[];
+  tasks: PresentationTaskInput[];
   readOnly?: boolean;
 }) {
-  const router = useRouter();
   const canMark = stage === "preparacion" && !readOnly;
-  const presented = Boolean(presentedOn) || stage === "presentada" || stage === "requerimiento";
-  const [pending, setPending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  async function onMark() {
-    if (pending || !canMark) return;
-    setPending(true);
-    setError(null);
-    const client = createSupabaseBrowserClient();
-    const result = await markOfferCasePresented(client, {
-      offerCaseId,
-      createdBy: userId,
-    });
-    setPending(false);
-    if (result.error) {
-      setError(OFFER_ACTION_ERROR);
-      return;
-    }
-    router.refresh();
-  }
+  const presented =
+    Boolean(presentedOn) ||
+    stage === "presentada" ||
+    stage === "requerimiento";
+  const {
+    readiness,
+    confirmOpen,
+    pending,
+    error,
+    requestMark,
+    confirmMark,
+    cancelConfirm,
+  } = useMarkAsPresented({ offerCaseId, userId, requirements, tasks });
 
   const meta = presented
     ? presentedOn
@@ -103,15 +100,24 @@ export function OfferPresentedCard({
             type="button"
             variant="outline"
             size="sm"
-            onClick={() => void onMark()}
+            onClick={requestMark}
             disabled={pending}
             className="shrink-0"
           >
-            {pending ? "Marcando…" : "Marcar como presentada"}
+            {pending && !confirmOpen ? "Marcando…" : "Marcar como presentada"}
           </Button>
         ) : null}
       </div>
       {error ? <p className="mt-3 text-xs text-destructive">{error}</p> : null}
+      {canMark ? (
+        <MarkAsPresentedConfirmModal
+          open={confirmOpen}
+          busy={pending}
+          readiness={readiness}
+          onConfirm={confirmMark}
+          onCancel={cancelConfirm}
+        />
+      ) : null}
     </div>
   );
 }
