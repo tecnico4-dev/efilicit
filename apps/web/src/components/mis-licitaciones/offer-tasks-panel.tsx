@@ -1043,6 +1043,7 @@ export function OfferTasksPanel({
   owner,
   team,
   readOnly = false,
+  initialFilterPreset,
 }: {
   offerCaseId: string;
   userId: string;
@@ -1051,10 +1052,17 @@ export function OfferTasksPanel({
   team: OfferCaseTeamMember[];
   /** Histórico: lista + filtros; sin alta/edición; default «Todas». */
   readOnly?: boolean;
+  /**
+   * Si se indica, esa es la vista inicial (no localStorage).
+   * p. ej. Presentada+ → «todas». Histórico también fuerza «todas».
+   */
+  initialFilterPreset?: TaskDefaultFilterPreset;
 }) {
-  const bootDefault: TaskDefaultFilterPreset = readOnly
+  const forcedPreset: TaskDefaultFilterPreset | null = readOnly
     ? "todas"
-    : fallbackTaskDefaultPreset(viewerMemberId);
+    : (initialFilterPreset ?? null);
+  const bootDefault: TaskDefaultFilterPreset =
+    forcedPreset ?? fallbackTaskDefaultPreset(viewerMemberId);
 
   const [tasks, setTasks] = useState<OfferTaskItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -1114,17 +1122,17 @@ export function OfferTasksPanel({
   useLayoutEffect(() => {
     if (prefsAppliedRef.current) return;
     prefsAppliedRef.current = true;
-    if (readOnly) {
-      setPreferredDefault("todas");
-      setFilterPreset("todas");
-      setFilters(filtersForPreset("todas", viewerMemberId));
+    if (forcedPreset) {
+      setPreferredDefault(forcedPreset);
+      setFilterPreset(forcedPreset);
+      setFilters(filtersForPreset(forcedPreset, viewerMemberId));
       return;
     }
     const preferred = readTaskDefaultFilterPreset(userId, viewerMemberId);
     setPreferredDefault(preferred);
     setFilterPreset(preferred);
     setFilters(filtersForDefaultPreset(preferred, viewerMemberId));
-  }, [userId, viewerMemberId, readOnly]);
+  }, [userId, viewerMemberId, forcedPreset]);
 
   /** Cierra solo el menú contextual; el desplegable de filtros sigue abierto. */
   useEffect(() => {

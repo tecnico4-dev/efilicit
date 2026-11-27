@@ -503,12 +503,20 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
               tareas:
                 offerCase.stage === "interes" ? null : (
                   <OfferTasksPanel
+                    key={`tasks-${offerCase.stage}`}
                     offerCaseId={offerCase.id}
                     userId={profile.data.id}
                     viewerMemberId={viewerMemberId}
                     owner={offerCase.owner_member}
                     team={teamMembers}
                     readOnly={historic}
+                    initialFilterPreset={
+                      historic ||
+                      offerCase.stage === "presentada" ||
+                      offerCase.stage === "requerimiento"
+                        ? "todas"
+                        : undefined
+                    }
                   />
                 ),
               calendario: showCalendarTab ? (
