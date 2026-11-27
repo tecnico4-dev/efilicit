@@ -110,6 +110,20 @@ function isAssignedToOther(
   return ownerMemberId !== viewerMemberId;
 }
 
+/** Cumple / no aplica / listo / en revisión → fuera de «Qué falta». */
+function isRequirementOutOfScope(r: OfferRequirementDetail): boolean {
+  if (
+    r.compliance_status === "cumple" ||
+    r.compliance_status === "no_aplica"
+  ) {
+    return true;
+  }
+  if (r.prep_status === "listo" || r.prep_status === "en_revision") {
+    return true;
+  }
+  return false;
+}
+
 function taskSourceLabel(task: OfferTaskItem): string {
   return truncateMeta(task.title?.trim() || task.notes);
 }
@@ -189,6 +203,7 @@ export function buildMissingItems(
 
   // BLOQUEANTE: excluyente marcado como no cumple (de cualquiera).
   for (const r of requirements) {
+    if (isRequirementOutOfScope(r)) continue;
     if (r.requirement_type !== "excluyente") continue;
     if (r.compliance_status !== "no_cumple") continue;
     seenReq.add(r.id);
@@ -212,6 +227,7 @@ export function buildMissingItems(
   // BLOQUEANTE: excluyente con preparación bloqueada (de cualquiera; un solo grupo).
   for (const r of requirements) {
     if (seenReq.has(r.id)) continue;
+    if (isRequirementOutOfScope(r)) continue;
     if (r.requirement_type !== "excluyente") continue;
     if (r.prep_status !== "bloqueado") continue;
     seenReq.add(r.id);
@@ -236,6 +252,7 @@ export function buildMissingItems(
   // Otros no_cumple (no excluyentes) → provisionalmente RIESGO.
   for (const r of requirements) {
     if (seenReq.has(r.id)) continue;
+    if (isRequirementOutOfScope(r)) continue;
     if (isAssignedToOther(r.owner_member_id, viewerMemberId)) continue;
     if (r.compliance_status !== "no_cumple") continue;
     seenReq.add(r.id);
@@ -260,11 +277,9 @@ export function buildMissingItems(
   // Excluyente sin verificar / sin asignar → provisionalmente RIESGO.
   for (const r of requirements) {
     if (seenReq.has(r.id)) continue;
+    if (isRequirementOutOfScope(r)) continue;
     if (isAssignedToOther(r.owner_member_id, viewerMemberId)) continue;
     if (r.requirement_type !== "excluyente") continue;
-    if (r.compliance_status === "cumple" || r.compliance_status === "no_aplica") {
-      continue;
-    }
     const unverified = r.compliance_status === "sin_verificar";
     const unassigned = r.owner_member_id == null;
     if (!unverified && !unassigned) continue;
@@ -308,8 +323,9 @@ export function buildMissingItems(
   // Preparación pendiente (míos / sin asignar).
   for (const r of requirements) {
     if (seenReq.has(r.id)) continue;
+    if (isRequirementOutOfScope(r)) continue;
     if (isAssignedToOther(r.owner_member_id, viewerMemberId)) continue;
-    if (r.prep_status === "listo" || r.prep_status === "bloqueado") continue;
+    if (r.prep_status === "bloqueado") continue;
     const bucket = dueBucket(r.internal_due_at, now);
     const mine = isMine(r.owner_member_id, viewerMemberId);
     seenReq.add(r.id);
