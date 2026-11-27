@@ -4,6 +4,7 @@ import { navigateDetailTab } from "@/components/mis-licitaciones/detail-tabs";
 import {
   type MissingItem,
   type MissingSeverity,
+  type MissingTarget,
 } from "@/components/mis-licitaciones/offer-missing-items";
 import { cn } from "@/lib/cn";
 
@@ -21,20 +22,20 @@ const SEVERITY_LABEL_CLASS: Record<MissingSeverity, string> = {
   riesgo: "text-amber-800 dark:text-amber-300",
 };
 
-export function OfferMissingPanel({ items }: { items: MissingItem[] }) {
-  function onOpen(item: MissingItem) {
-    const tab = item.target.kind === "requirement" ? "requisitos" : "tareas";
-    const scrollAttr =
-      item.target.kind === "requirement"
-        ? "data-offer-requirement-id"
-        : "data-offer-task-id";
-    navigateDetailTab({
-      tab,
-      scrollAttr,
-      scrollId: item.target.id,
-    });
-  }
+function openTarget(target: MissingTarget) {
+  const tab = target.kind === "requirement" ? "requisitos" : "tareas";
+  const scrollAttr =
+    target.kind === "requirement"
+      ? "data-offer-requirement-id"
+      : "data-offer-task-id";
+  navigateDetailTab({
+    tab,
+    scrollAttr,
+    scrollId: target.id,
+  });
+}
 
+export function OfferMissingPanel({ items }: { items: MissingItem[] }) {
   return (
     <aside className="h-fit rounded-xl border border-border bg-surface p-4 lg:sticky lg:top-24">
       <h2 className="text-sm font-semibold text-foreground">Qué falta</h2>
@@ -46,12 +47,9 @@ export function OfferMissingPanel({ items }: { items: MissingItem[] }) {
         <ul className="mt-3 space-y-2">
           {items.map((m) => (
             <li key={m.id}>
-              <button
-                type="button"
-                onClick={() => onOpen(m)}
+              <div
                 className={cn(
-                  "w-full rounded-r-md border-l-4 px-3 py-2 text-left text-sm transition-colors",
-                  "hover:brightness-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
+                  "rounded-r-md border-l-4 px-3 py-2 text-sm",
                   m.tone === "bad" &&
                     "border-destructive bg-destructive/10 text-foreground",
                   m.tone === "warn" &&
@@ -67,8 +65,29 @@ export function OfferMissingPanel({ items }: { items: MissingItem[] }) {
                   {SEVERITY_LABEL[m.severity]}
                 </p>
                 <p className="mt-0.5 font-medium leading-snug">{m.title}</p>
-                <p className="mt-0.5 text-xs text-muted-foreground">{m.meta}</p>
-              </button>
+                <ul className="mt-1 space-y-1">
+                  {m.lines.map((line) => (
+                    <li key={`${line.target.kind}-${line.target.id}`}>
+                      <button
+                        type="button"
+                        onClick={() => openTarget(line.target)}
+                        className={cn(
+                          "w-full rounded-sm text-left text-xs text-muted-foreground transition-colors",
+                          "line-clamp-2 hover:text-foreground",
+                          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
+                        )}
+                      >
+                        {line.meta}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+                {m.totalCount > m.lines.length ? (
+                  <p className="mt-1 text-[0.65rem] text-muted-foreground">
+                    +{m.totalCount - m.lines.length} más
+                  </p>
+                ) : null}
+              </div>
             </li>
           ))}
         </ul>

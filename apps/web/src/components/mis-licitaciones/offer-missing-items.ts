@@ -5,19 +5,45 @@ import type {
 
 export type MissingSeverity = "bloqueante" | "plazo" | "riesgo";
 
+export type MissingTarget =
+  | { kind: "requirement"; id: string }
+  | { kind: "task"; id: string };
+
+export type MissingLine = {
+  meta: string;
+  target: MissingTarget;
+  mine: boolean;
+};
+
 export type MissingItem = {
   id: string;
   severity: MissingSeverity;
   tone: "bad" | "warn";
-  /** Asignado al miembro que mira la pantalla. */
+  /** Algún ítem del grupo está asignado al viewer. */
   mine: boolean;
-  /** Qué pasa (corto). */
+  /** Qué pasa (corto; plural si count > 1). */
   title: string;
-  /** Inicio del requisito/tarea + … */
+  /** Hasta 2 líneas más relevantes. */
+  lines: MissingLine[];
+  totalCount: number;
+};
+
+type TitleForms = {
+  oneMine: string;
+  oneOther: string;
+  manyMine: (n: number) => string;
+  manyOther: (n: number) => string;
+};
+
+type RawEntry = {
+  groupKey: string;
+  severity: MissingSeverity;
+  tone: "bad" | "warn";
+  mine: boolean;
+  dueAt: string | null;
   meta: string;
-  target:
-    | { kind: "requirement"; id: string }
-    | { kind: "task"; id: string };
+  target: MissingTarget;
+  titles: TitleForms;
 };
 
 const SEVERITY_RANK: Record<MissingSeverity, number> = {
@@ -26,14 +52,15 @@ const SEVERITY_RANK: Record<MissingSeverity, number> = {
   riesgo: 2,
 };
 
-/** 0 = bloqueantes globales; 1 = lo mío; 2 = resto. */
+/** 0 = bloqueantes; 1 = grupos con algo mío; 2 = resto. */
 function audienceRank(item: MissingItem): number {
   if (item.severity === "bloqueante") return 0;
   return item.mine ? 1 : 2;
 }
 
 const PLAZO_SOON_MS = 7 * 24 * 60 * 60 * 1000;
-const META_MAX = 64;
+const META_MAX = 120;
+const MAX_LINES = 2;
 
 function truncateMeta(text: string): string {
   const t = text.trim().replace(/\s+/g, " ");
@@ -54,6 +81,12 @@ function dueBucket(
   return "later";
 }
 
+function dueMs(dueIso: string | null): number {
+  if (!dueIso) return Number.POSITIVE_INFINITY;
+  const t = new Date(dueIso).getTime();
+  return Number.isNaN(t) ? Number.POSITIVE_INFINITY : t;
+}
+
 function isMine(
   ownerMemberId: string | null,
   viewerMemberId: string | null,
@@ -65,12 +98,61 @@ function taskSourceLabel(task: OfferTaskItem): string {
   return truncateMeta(task.title?.trim() || task.notes);
 }
 
+function titleFor(titles: TitleForms, count: number, allMine: boolean): string {
+  if (count <= 1) return allMine ? titles.oneMine : titles.oneOther;
+  return allMine ? titles.manyMine(count) : titles.manyOther(count);
+}
+
+function compareEntries(a: RawEntry, b: RawEntry): number {
+  if (a.mine !== b.mine) return a.mine ? -1 : 1;
+  return dueMs(a.dueAt) - dueMs(b.dueAt);
+}
+
+function collapseGroups(raw: RawEntry[]): MissingItem[] {
+  const byKey = new Map<string, RawEntry[]>();
+  for (const e of raw) {
+    const list = byKey.get(e.groupKey);
+    if (list) list.push(e);
+    else byKey.set(e.groupKey, [e]);
+  }
+
+  const items: MissingItem[] = [];
+  for (const [groupKey, entries] of byKey) {
+    entries.sort(compareEntries);
+    const first = entries[0]!;
+    const allMine = entries.every((e) => e.mine);
+    const anyMine = entries.some((e) => e.mine);
+    const totalCount = entries.length;
+    const shown = entries.slice(0, MAX_LINES);
+    items.push({
+      id: groupKey,
+      severity: first.severity,
+      tone: first.tone,
+      mine: anyMine,
+      title: titleFor(first.titles, totalCount, allMine),
+      lines: shown.map((e) => ({
+        meta: e.meta,
+        target: e.target,
+        mine: e.mine,
+      })),
+      totalCount,
+    });
+  }
+
+  items.sort((a, b) => {
+    const aud = audienceRank(a) - audienceRank(b);
+    if (aud !== 0) return aud;
+    return SEVERITY_RANK[a.severity] - SEVERITY_RANK[b.severity];
+  });
+  return items;
+}
+
 export type BuildMissingItemsOptions = {
   viewerMemberId?: string | null;
   now?: number;
 };
 
-/** Requisitos + tareas pendientes → ítems de «Qué falta». */
+/** Requisitos + tareas pendientes → ítems de «Qué falta» (agrupados). */
 export function buildMissingItems(
   requirements: OfferRequirementDetail[],
   tasks: OfferTaskItem[],
@@ -78,7 +160,7 @@ export function buildMissingItems(
 ): MissingItem[] {
   const viewerMemberId = options.viewerMemberId ?? null;
   const now = options.now ?? Date.now();
-  const items: MissingItem[] = [];
+  const raw: RawEntry[] = [];
   const seenReq = new Set<string>();
 
   // BLOQUEANTE: solo excluyente marcado como no cumple.
@@ -86,14 +168,20 @@ export function buildMissingItems(
     if (r.requirement_type !== "excluyente") continue;
     if (r.compliance_status !== "no_cumple") continue;
     seenReq.add(r.id);
-    items.push({
-      id: `req-bloqueante-${r.id}`,
+    raw.push({
+      groupKey: "bloqueante-excl-nocumple",
       severity: "bloqueante",
       tone: "bad",
       mine: isMine(r.owner_member_id, viewerMemberId),
-      title: "No se cumple un requisito excluyente",
+      dueAt: r.internal_due_at,
       meta: truncateMeta(r.title),
       target: { kind: "requirement", id: r.id },
+      titles: {
+        oneMine: "No se cumple un requisito excluyente",
+        oneOther: "No se cumple un requisito excluyente",
+        manyMine: (n) => `No se cumplen ${n} requisitos excluyentes`,
+        manyOther: (n) => `No se cumplen ${n} requisitos excluyentes`,
+      },
     });
   }
 
@@ -103,16 +191,20 @@ export function buildMissingItems(
     if (r.compliance_status !== "no_cumple") continue;
     seenReq.add(r.id);
     const mine = isMine(r.owner_member_id, viewerMemberId);
-    items.push({
-      id: `req-nocumple-${r.id}`,
+    raw.push({
+      groupKey: "riesgo-nocumple",
       severity: "riesgo",
       tone: "warn",
       mine,
-      title: mine
-        ? "No se cumple un requisito tuyo"
-        : "No se cumple un requisito",
+      dueAt: r.internal_due_at,
       meta: truncateMeta(r.title),
       target: { kind: "requirement", id: r.id },
+      titles: {
+        oneMine: "No se cumple un requisito tuyo",
+        oneOther: "No se cumple un requisito",
+        manyMine: (n) => `No se cumplen ${n} requisitos tuyos`,
+        manyOther: (n) => `No se cumplen ${n} requisitos`,
+      },
     });
   }
 
@@ -128,19 +220,39 @@ export function buildMissingItems(
     if (!unverified && !unassigned) continue;
     seenReq.add(r.id);
     const mine = isMine(r.owner_member_id, viewerMemberId);
-    items.push({
-      id: `req-excl-${r.id}`,
-      severity: "riesgo",
-      tone: "warn",
-      mine,
-      title: unverified
-        ? mine
-          ? "Tienes un excluyente sin verificar"
-          : "Requisito excluyente sin verificar"
-        : "Requisito excluyente sin asignar",
-      meta: truncateMeta(r.title),
-      target: { kind: "requirement", id: r.id },
-    });
+    if (unverified) {
+      raw.push({
+        groupKey: "riesgo-excl-sin-verificar",
+        severity: "riesgo",
+        tone: "warn",
+        mine,
+        dueAt: r.internal_due_at,
+        meta: truncateMeta(r.title),
+        target: { kind: "requirement", id: r.id },
+        titles: {
+          oneMine: "Tienes un excluyente sin verificar",
+          oneOther: "Requisito excluyente sin verificar",
+          manyMine: (n) => `Tienes ${n} excluyentes sin verificar`,
+          manyOther: (n) => `${n} requisitos excluyentes sin verificar`,
+        },
+      });
+    } else {
+      raw.push({
+        groupKey: "riesgo-excl-sin-asignar",
+        severity: "riesgo",
+        tone: "warn",
+        mine: false,
+        dueAt: r.internal_due_at,
+        meta: truncateMeta(r.title),
+        target: { kind: "requirement", id: r.id },
+        titles: {
+          oneMine: "Requisito excluyente sin asignar",
+          oneOther: "Requisito excluyente sin asignar",
+          manyMine: (n) => `${n} requisitos excluyentes sin asignar`,
+          manyOther: (n) => `${n} requisitos excluyentes sin asignar`,
+        },
+      });
+    }
   }
 
   // Preparación pendiente.
@@ -151,40 +263,52 @@ export function buildMissingItems(
     const mine = isMine(r.owner_member_id, viewerMemberId);
     seenReq.add(r.id);
     if (bucket === "overdue") {
-      items.push({
-        id: `req-plazo-${r.id}`,
+      raw.push({
+        groupKey: "plazo-req-overdue",
         severity: "plazo",
         tone: "warn",
         mine,
-        title: mine
-          ? "Tienes un requisito con plazo vencido"
-          : "Requisito con plazo vencido",
+        dueAt: r.internal_due_at,
         meta: truncateMeta(r.title),
         target: { kind: "requirement", id: r.id },
+        titles: {
+          oneMine: "Tienes un requisito con plazo vencido",
+          oneOther: "Requisito con plazo vencido",
+          manyMine: (n) => `Tienes ${n} requisitos con plazo vencido`,
+          manyOther: (n) => `${n} requisitos con plazo vencido`,
+        },
       });
     } else if (bucket === "soon") {
-      items.push({
-        id: `req-plazo-soon-${r.id}`,
+      raw.push({
+        groupKey: "plazo-req-soon",
         severity: "plazo",
         tone: "warn",
         mine,
-        title: mine
-          ? "Tienes un requisito con plazo próximo"
-          : "Requisito con plazo próximo",
+        dueAt: r.internal_due_at,
         meta: truncateMeta(r.title),
         target: { kind: "requirement", id: r.id },
+        titles: {
+          oneMine: "Tienes un requisito con plazo próximo",
+          oneOther: "Requisito con plazo próximo",
+          manyMine: (n) => `Tienes ${n} requisitos con plazo próximo`,
+          manyOther: (n) => `${n} requisitos con plazo próximo`,
+        },
       });
     } else {
-      items.push({
-        id: `req-riesgo-${r.id}`,
+      raw.push({
+        groupKey: "riesgo-req-prep",
         severity: "riesgo",
         tone: "warn",
         mine,
-        title: mine
-          ? "Tienes un requisito pendiente de preparar"
-          : "Requisito pendiente de preparar",
+        dueAt: r.internal_due_at,
         meta: truncateMeta(r.title),
         target: { kind: "requirement", id: r.id },
+        titles: {
+          oneMine: "Tienes un requisito pendiente de preparar",
+          oneOther: "Requisito pendiente de preparar",
+          manyMine: (n) => `Tienes ${n} requisitos pendientes de preparar`,
+          manyOther: (n) => `${n} requisitos pendientes de preparar`,
+        },
       });
     }
   }
@@ -194,46 +318,55 @@ export function buildMissingItems(
     const bucket = dueBucket(t.due_at, now);
     const mine = isMine(t.owner_member_id, viewerMemberId);
     if (bucket === "overdue") {
-      items.push({
-        id: `task-plazo-${t.id}`,
+      raw.push({
+        groupKey: "plazo-task-overdue",
         severity: "plazo",
         tone: "warn",
         mine,
-        title: mine
-          ? "Tienes una tarea con plazo vencido"
-          : "Tarea con plazo vencido",
+        dueAt: t.due_at,
         meta: taskSourceLabel(t),
         target: { kind: "task", id: t.id },
+        titles: {
+          oneMine: "Tienes una tarea con plazo vencido",
+          oneOther: "Tarea con plazo vencido",
+          manyMine: (n) => `Tienes ${n} tareas con plazo vencido`,
+          manyOther: (n) => `${n} tareas con plazo vencido`,
+        },
       });
     } else if (bucket === "soon") {
-      items.push({
-        id: `task-plazo-soon-${t.id}`,
+      raw.push({
+        groupKey: "plazo-task-soon",
         severity: "plazo",
         tone: "warn",
         mine,
-        title: mine
-          ? "Tienes una tarea con plazo próximo"
-          : "Tarea con plazo próximo",
+        dueAt: t.due_at,
         meta: taskSourceLabel(t),
         target: { kind: "task", id: t.id },
+        titles: {
+          oneMine: "Tienes una tarea con plazo próximo",
+          oneOther: "Tarea con plazo próximo",
+          manyMine: (n) => `Tienes ${n} tareas con plazo próximo`,
+          manyOther: (n) => `${n} tareas con plazo próximo`,
+        },
       });
     } else {
-      items.push({
-        id: `task-riesgo-${t.id}`,
+      raw.push({
+        groupKey: "riesgo-task-pendiente",
         severity: "riesgo",
         tone: "warn",
         mine,
-        title: mine ? "Tienes una tarea pendiente" : "Tarea pendiente",
+        dueAt: t.due_at,
         meta: taskSourceLabel(t),
         target: { kind: "task", id: t.id },
+        titles: {
+          oneMine: "Tienes una tarea pendiente",
+          oneOther: "Tarea pendiente",
+          manyMine: (n) => `Tienes ${n} tareas pendientes`,
+          manyOther: (n) => `${n} tareas pendientes`,
+        },
       });
     }
   }
 
-  items.sort((a, b) => {
-    const aud = audienceRank(a) - audienceRank(b);
-    if (aud !== 0) return aud;
-    return SEVERITY_RANK[a.severity] - SEVERITY_RANK[b.severity];
-  });
-  return items;
+  return collapseGroups(raw);
 }
