@@ -216,7 +216,9 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
   );
   const missing = historic
     ? []
-    : buildMissingItems(matrixReqs, tasks);
+    : buildMissingItems(matrixReqs, tasks, {
+        viewerMemberId,
+      });
 
   const stageLabel =
     offerCase.stage in OFFER_STAGE_LABELS

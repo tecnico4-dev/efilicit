@@ -9,6 +9,8 @@ export type MissingItem = {
   id: string;
   severity: MissingSeverity;
   tone: "bad" | "warn";
+  /** Asignado al miembro que mira la pantalla. */
+  mine: boolean;
   /** Qué pasa (corto). */
   title: string;
   /** Inicio del requisito/tarea + … */
@@ -23,6 +25,12 @@ const SEVERITY_RANK: Record<MissingSeverity, number> = {
   plazo: 1,
   riesgo: 2,
 };
+
+/** 0 = bloqueantes globales; 1 = lo mío; 2 = resto. */
+function audienceRank(item: MissingItem): number {
+  if (item.severity === "bloqueante") return 0;
+  return item.mine ? 1 : 2;
+}
 
 const PLAZO_SOON_MS = 7 * 24 * 60 * 60 * 1000;
 const META_MAX = 64;
@@ -46,16 +54,30 @@ function dueBucket(
   return "later";
 }
 
+function isMine(
+  ownerMemberId: string | null,
+  viewerMemberId: string | null,
+): boolean {
+  return viewerMemberId != null && ownerMemberId === viewerMemberId;
+}
+
 function taskSourceLabel(task: OfferTaskItem): string {
   return truncateMeta(task.title?.trim() || task.notes);
 }
+
+export type BuildMissingItemsOptions = {
+  viewerMemberId?: string | null;
+  now?: number;
+};
 
 /** Requisitos + tareas pendientes → ítems de «Qué falta». */
 export function buildMissingItems(
   requirements: OfferRequirementDetail[],
   tasks: OfferTaskItem[],
-  now = Date.now(),
+  options: BuildMissingItemsOptions = {},
 ): MissingItem[] {
+  const viewerMemberId = options.viewerMemberId ?? null;
+  const now = options.now ?? Date.now();
   const items: MissingItem[] = [];
   const seenReq = new Set<string>();
 
@@ -68,6 +90,7 @@ export function buildMissingItems(
       id: `req-bloqueante-${r.id}`,
       severity: "bloqueante",
       tone: "bad",
+      mine: isMine(r.owner_member_id, viewerMemberId),
       title: "No se cumple un requisito excluyente",
       meta: truncateMeta(r.title),
       target: { kind: "requirement", id: r.id },
@@ -79,11 +102,15 @@ export function buildMissingItems(
     if (seenReq.has(r.id)) continue;
     if (r.compliance_status !== "no_cumple") continue;
     seenReq.add(r.id);
+    const mine = isMine(r.owner_member_id, viewerMemberId);
     items.push({
       id: `req-nocumple-${r.id}`,
       severity: "riesgo",
       tone: "warn",
-      title: "No se cumple un requisito",
+      mine,
+      title: mine
+        ? "No se cumple un requisito tuyo"
+        : "No se cumple un requisito",
       meta: truncateMeta(r.title),
       target: { kind: "requirement", id: r.id },
     });
@@ -100,12 +127,16 @@ export function buildMissingItems(
     const unassigned = r.owner_member_id == null;
     if (!unverified && !unassigned) continue;
     seenReq.add(r.id);
+    const mine = isMine(r.owner_member_id, viewerMemberId);
     items.push({
       id: `req-excl-${r.id}`,
       severity: "riesgo",
       tone: "warn",
+      mine,
       title: unverified
-        ? "Requisito excluyente sin verificar"
+        ? mine
+          ? "Tienes un excluyente sin verificar"
+          : "Requisito excluyente sin verificar"
         : "Requisito excluyente sin asignar",
       meta: truncateMeta(r.title),
       target: { kind: "requirement", id: r.id },
@@ -117,13 +148,17 @@ export function buildMissingItems(
     if (seenReq.has(r.id)) continue;
     if (r.prep_status === "listo") continue;
     const bucket = dueBucket(r.internal_due_at, now);
+    const mine = isMine(r.owner_member_id, viewerMemberId);
     seenReq.add(r.id);
     if (bucket === "overdue") {
       items.push({
         id: `req-plazo-${r.id}`,
         severity: "plazo",
         tone: "warn",
-        title: "Requisito con plazo vencido",
+        mine,
+        title: mine
+          ? "Tienes un requisito con plazo vencido"
+          : "Requisito con plazo vencido",
         meta: truncateMeta(r.title),
         target: { kind: "requirement", id: r.id },
       });
@@ -132,7 +167,10 @@ export function buildMissingItems(
         id: `req-plazo-soon-${r.id}`,
         severity: "plazo",
         tone: "warn",
-        title: "Requisito con plazo próximo",
+        mine,
+        title: mine
+          ? "Tienes un requisito con plazo próximo"
+          : "Requisito con plazo próximo",
         meta: truncateMeta(r.title),
         target: { kind: "requirement", id: r.id },
       });
@@ -141,7 +179,10 @@ export function buildMissingItems(
         id: `req-riesgo-${r.id}`,
         severity: "riesgo",
         tone: "warn",
-        title: "Requisito pendiente de preparar",
+        mine,
+        title: mine
+          ? "Tienes un requisito pendiente de preparar"
+          : "Requisito pendiente de preparar",
         meta: truncateMeta(r.title),
         target: { kind: "requirement", id: r.id },
       });
@@ -151,12 +192,16 @@ export function buildMissingItems(
   for (const t of tasks) {
     if (t.status !== "pendiente") continue;
     const bucket = dueBucket(t.due_at, now);
+    const mine = isMine(t.owner_member_id, viewerMemberId);
     if (bucket === "overdue") {
       items.push({
         id: `task-plazo-${t.id}`,
         severity: "plazo",
         tone: "warn",
-        title: "Tarea con plazo vencido",
+        mine,
+        title: mine
+          ? "Tienes una tarea con plazo vencido"
+          : "Tarea con plazo vencido",
         meta: taskSourceLabel(t),
         target: { kind: "task", id: t.id },
       });
@@ -165,7 +210,10 @@ export function buildMissingItems(
         id: `task-plazo-soon-${t.id}`,
         severity: "plazo",
         tone: "warn",
-        title: "Tarea con plazo próximo",
+        mine,
+        title: mine
+          ? "Tienes una tarea con plazo próximo"
+          : "Tarea con plazo próximo",
         meta: taskSourceLabel(t),
         target: { kind: "task", id: t.id },
       });
@@ -174,13 +222,18 @@ export function buildMissingItems(
         id: `task-riesgo-${t.id}`,
         severity: "riesgo",
         tone: "warn",
-        title: "Tarea pendiente",
+        mine,
+        title: mine ? "Tienes una tarea pendiente" : "Tarea pendiente",
         meta: taskSourceLabel(t),
         target: { kind: "task", id: t.id },
       });
     }
   }
 
-  items.sort((a, b) => SEVERITY_RANK[a.severity] - SEVERITY_RANK[b.severity]);
+  items.sort((a, b) => {
+    const aud = audienceRank(a) - audienceRank(b);
+    if (aud !== 0) return aud;
+    return SEVERITY_RANK[a.severity] - SEVERITY_RANK[b.severity];
+  });
   return items;
 }
