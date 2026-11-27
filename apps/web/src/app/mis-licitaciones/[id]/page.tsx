@@ -406,7 +406,11 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
                       reason={offerCase.go_reason}
                       decidedAt={offerCase.go_decided_at}
                       decidedByName={offerCase.go_decider_name}
-                      readOnly={historic}
+                      readOnly={
+                        historic ||
+                        offerCase.stage === "presentada" ||
+                        offerCase.stage === "requerimiento"
+                      }
                     />
                   ) : null}
 
