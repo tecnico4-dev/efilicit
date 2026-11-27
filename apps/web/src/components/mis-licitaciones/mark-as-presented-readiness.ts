@@ -56,20 +56,12 @@ export function presentationReadinessLines(
   readiness: PresentationReadiness,
 ): string[] {
   const lines: string[] = [];
-  if (readiness.compliancePending > 0) {
-    const n = readiness.compliancePending;
+  const reqsPending = readiness.compliancePending + readiness.prepPending;
+  if (reqsPending > 0) {
     lines.push(
-      n === 1
+      reqsPending === 1
         ? "Queda 1 requisito sin cumplimiento válido."
-        : `Quedan ${n} requisitos sin cumplimiento válido.`,
-    );
-  }
-  if (readiness.prepPending > 0) {
-    const n = readiness.prepPending;
-    lines.push(
-      n === 1
-        ? "Queda 1 requisito en Cumple/Parcial sin preparación en «Listo»."
-        : `Quedan ${n} requisitos en Cumple/Parcial sin preparación en «Listo».`,
+        : `Quedan ${reqsPending} requisitos sin cumplimiento válido.`,
     );
   }
   if (readiness.tasksOpen > 0) {

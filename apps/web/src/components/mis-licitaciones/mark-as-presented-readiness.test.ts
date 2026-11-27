@@ -33,6 +33,9 @@ describe("assessPresentationReadiness", () => {
     expect(r.compliancePending).toBe(2);
     expect(r.prepPending).toBe(1);
     expect(r.tasksOpen).toBe(1);
-    expect(presentationReadinessLines(r)).toHaveLength(3);
+    expect(presentationReadinessLines(r)).toEqual([
+      "Quedan 3 requisitos sin cumplimiento válido.",
+      "Queda 1 tarea pendiente.",
+    ]);
   });
 });
