@@ -410,18 +410,12 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
                     />
                   ) : null}
 
-                  {offerCase.stage === "preparacion" ||
-                  offerCase.stage === "presentada" ||
-                  offerCase.stage === "requerimiento" ||
-                  offerCase.presented_on ? (
+                  {offerCase.stage === "preparacion" ? (
                     <OfferPresentedCard
                       offerCaseId={offerCase.id}
                       userId={profile.data.id}
-                      stage={offerCase.stage}
-                      presentedOn={offerCase.presented_on}
                       requirements={matrixReqs}
                       tasks={tasks}
-                      readOnly={historic || offerCase.stage !== "preparacion"}
                     />
                   ) : null}
 
