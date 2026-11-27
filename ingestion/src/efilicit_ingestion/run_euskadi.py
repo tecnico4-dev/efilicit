@@ -38,12 +38,14 @@ __all__ = [
 class EuskadiRunConfig:
     """Opciones de una corrida local / documentada del pipeline Euskadi.
 
-    ``start_page`` es 1-based (``currentPage`` de la API). ``dry_run`` = sin writes.
+    ``start_page`` es 1-based (``currentPage`` de la API). Live sin fixture usa
+    ``auto_recent=True`` por defecto (primera página con fechas + ``max_pages``).
     """
 
     fixture_path: Path | None = None
     max_pages: int = 1
     start_page: int = 1
+    auto_recent: bool | None = None
     dry_run: bool = False
     run_id: str | None = None
     use_storage: bool = True
@@ -78,10 +80,16 @@ def run_euskadi(config: EuskadiRunConfig) -> PipelineResult:
             data,
         )
 
+    # Live sin fixture → zona con fechas; fixture / override explícito → fijo.
+    auto_recent = config.auto_recent
+    if auto_recent is None:
+        auto_recent = config.fixture_path is None
+
     connector = EuskadiConnector(
         dataset=dataset,
         max_pages=config.max_pages,
         start_page=config.start_page,
+        auto_recent=auto_recent,
         fetch_transport=fetch_transport,
     )
     context = SyncContext(source_code=connector.source_code, run_id=run_id)

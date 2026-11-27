@@ -160,7 +160,16 @@ def build_parser() -> argparse.ArgumentParser:
         "--start-page",
         type=int,
         default=1,
-        help="Primera currentPage (base 1, default: 1).",
+        help="Primera currentPage (base 1; solo con --no-auto-recent).",
+    )
+    euskadi.add_argument(
+        "--auto-recent",
+        action=argparse.BooleanOptionalAction,
+        default=None,
+        help=(
+            "Localizar la primera página con fechas de publicación (default: "
+            "on en live sin --fixture; off con fixture)."
+        ),
     )
     euskadi.add_argument(
         "--dry-run",
@@ -443,6 +452,7 @@ def _cmd_run_euskadi(args: argparse.Namespace) -> int:
         fixture_path=fixture,
         max_pages=args.max_pages,
         start_page=args.start_page,
+        auto_recent=args.auto_recent,
         dry_run=bool(args.dry_run),
         run_id=args.run_id,
         use_storage=not bool(args.no_storage),

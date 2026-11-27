@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Ingesta Euskadi: live localiza la primera página con fechas de publicación (`auto_recent`) y lee `max_pages` desde ahí (la página 1 es legado sin fechas); enmienda [ADR 025](docs/adr/025-catalunya-raw-row-incremental.md).
 - Mis licitaciones · «Qué falta»: BLOQUEANTE solo si requisito excluyente = no cumple; ítems con etiqueta de gravedad + título corto de evento + meta truncada; prioriza lo asignado al viewer; misma categoría se agrupa (título con N, hasta 2 líneas relevantes: mías → plazo más temprano); click en línea abre el ítem.
 - Mis licitaciones · intake PLACSP: al añadir expediente, Server Action sync estructura del Atom (requisitos/sobres/pliegos enlace/hitos) sin PDFs; cola `offer_case_intake` sigue pending para descargas (cron 1–2×/día). Port TS server-only + `SUPABASE_SERVICE_ROLE_KEY` — enmienda [ADR 035](docs/adr/035-intake-pliegos-expediente.md).
 - Mis licitaciones · intake PLACSP: tipado PCAP/PPT/anexo por nombre en `GeneralDocument` (aunque sea solo enlace WAF); criterios subordinados CODICE; títulos de criterios B con detalle numerado legible.

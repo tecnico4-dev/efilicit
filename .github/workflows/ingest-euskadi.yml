@@ -17,13 +17,23 @@ on:
           - live
         default: dry-run
       max_pages:
-        description: "Páginas a descubrir (default 1; API = 10 items/página)"
+        description: >
+          Páginas a descubrir desde la zona reciente (default 1; API = 10 items/página).
+          Cron productivo típico: 50–100.
         required: false
         default: "1"
       start_page:
-        description: "currentPage inicial 1-based (default 1)"
+        description: >
+          Override manual currentPage (solo con auto_recent=false). Live por defecto
+          ignora esto y localiza la primera página con fechas de publicación.
         required: false
         default: "1"
+      auto_recent:
+        description: >
+          true = primera página con last/firstPublicationDate + max_pages (recomendado).
+          false = usar start_page fijo (legado / catch-up).
+        type: boolean
+        default: true
       run_id:
         description: "run_id opcional (fixture-db/live); vacío = UUID"
         required: false
@@ -51,6 +61,7 @@ jobs:
       MODE: ${{ inputs.mode }}
       MAX_PAGES: ${{ inputs.max_pages || '1' }}
       START_PAGE: ${{ inputs.start_page || '1' }}
+      AUTO_RECENT: ${{ inputs.auto_recent }}
       RUN_ID: ${{ github.event.inputs.run_id || '' }}
       UPLOAD_STORAGE: ${{ inputs.upload_storage }}
     steps:
@@ -90,7 +101,7 @@ jobs:
       - name: Run Euskadi CLI
         run: |
           set -euo pipefail
-          EXTRA=(--max-pages "$MAX_PAGES" --start-page "$START_PAGE")
+          EXTRA=(--max-pages "$MAX_PAGES")
           if [ -n "${RUN_ID:-}" ]; then
             EXTRA+=(--run-id "$RUN_ID")
           fi
@@ -103,14 +114,24 @@ jobs:
               uv run python -m efilicit_ingestion.cli run-euskadi \
                 --fixture tests/fixtures/euskadi/valid_page.json \
                 --dry-run \
+                --no-auto-recent \
+                --start-page "$START_PAGE" \
                 "${EXTRA[@]}"
               ;;
             fixture-db)
               uv run python -m efilicit_ingestion.cli run-euskadi \
                 --fixture tests/fixtures/euskadi/valid_page.json \
+                --no-auto-recent \
+                --start-page "$START_PAGE" \
                 "${EXTRA[@]}"
               ;;
             live)
+              # Default on (cron antiguo sin input → zona reciente). Solo off explícito.
+              if [ "${AUTO_RECENT}" = "false" ] || [ "${AUTO_RECENT}" = "False" ]; then
+                EXTRA+=(--no-auto-recent --start-page "$START_PAGE")
+              else
+                EXTRA+=(--auto-recent)
+              fi
               uv run python -m efilicit_ingestion.cli run-euskadi \
                 "${EXTRA[@]}"
               ;;

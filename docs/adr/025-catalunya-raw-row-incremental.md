@@ -37,7 +37,7 @@ Contrato común (mismo que 022 a nivel de Storage):
 | Fuente | Unidad | Pull diario |
 |---|---|---|
 | `catalunya` | fila SODA (`id_intern`) | `$where=data_publicacio_anunci >= …` (default **7 días**, medianoche Europe/Madrid) + `$order=data_publicacio_anunci DESC,:id DESC` + paginación `$limit`/`$offset` / `max_pages` |
-| `euskadi` | ítem KontratazioA (`id`) | Cabeza del listado: `start_page` + `max_pages` (`currentPage`; 10 ítems/página fijos en el conector actual). Sin filtro de fecha en v1 |
+| `euskadi` | ítem KontratazioA (`id`) | Zona reciente: localizar la primera `currentPage` con `lastPublicationDate` / `firstPublicationDate` (búsqueda binaria; la página 1 es legado sin fechas) + `max_pages` (10 ítems/página fijos). Override manual: `--no-auto-recent --start-page N`. Sin filtro de fecha en query params (la API los ignora) |
 
 ### Alternativas descartadas
 
@@ -59,7 +59,8 @@ Contrato común (mismo que 022 a nivel de Storage):
 
 - RAW antiguos de páginas Cat/Euskadi (pre-025) pueden quedar huérfanos; las corridas nuevas ya no los generan.
 - Cat: si en 7 días hay más filas que `max_pages × page_size`, subir tope o ventana.
-- Euskadi: si un día hay más novedades que `max_pages × 10` en la cabeza del listado, ampliar `max_pages`.
+- Euskadi: si un día hay más novedades que `max_pages × 10` desde la primera página fechada, ampliar `max_pages` (cron típico 50–100).
+- Euskadi: el cursor de `source_sync` **no** filtra páginas en modo `auto_recent` (la idempotencia es el checksum); si se usara cursor, tras la primera corrida se saltarían las páginas más nuevas.
 
 ## Riesgos
 
@@ -69,7 +70,7 @@ Contrato común (mismo que 022 a nivel de Storage):
 | Sin `id_intern` / sin `id` | Se omite |
 | Retraso Open Data Cat | Ventana 7 días (`--since-days`) |
 | SoQL / zona horaria Cat | Inicio de día Europe/Madrid; ISO local en `$where` |
-| API Euskadi sin filtro fecha | Cabeza `max_pages` + checksum |
+| API Euskadi sin filtro fecha / página 1 ≠ novedades | Primera página con fechas (`auto_recent`) + `max_pages` + checksum |
 
 ## Verificación
 

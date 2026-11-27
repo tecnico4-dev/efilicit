@@ -109,8 +109,8 @@ Estados/tipos/procedimientos no mapeados → `status` / `contract_type` / `proce
 
 | Aspecto | Detalle |
 |---|---|
-| Incremental EfiLicit | Cabeza del listado (`start_page` + `max_pages`) + RAW por aviso con skip por checksum — [ADR 025](../adr/025-catalunya-raw-row-incremental.md) |
-| Ventana discover | `start_page` + `max_pages` (cron productivo típico: `max_pages=30`) |
+| Incremental EfiLicit | Zona con fechas de publicación (`auto_recent`: binary search) + `max_pages` + RAW por aviso con skip por checksum — [ADR 025](../adr/025-catalunya-raw-row-incremental.md) |
+| Ventana discover | Live: primera página con `lastPublicationDate`/`firstPublicationDate` + `max_pages` (cron típico 50–100). Override: `--no-auto-recent --start-page N` |
 | Rate limit | Consumo razonable; si hay 429 → documentar y reintentar (fetch ya reintenta) |
 | Tamaño página | 10 ítems fijos por la API (conector actual) |
 
@@ -131,7 +131,8 @@ Estados/tipos/procedimientos no mapeados → `status` / `contract_type` / `proce
 ## 9. Pipeline EfiLicit (Paso 9)
 
 ```text
-discover (páginas cabeza) → fetch página → expand ítems
+discover (auto_recent: 1ª página con fechas + max_pages)
+→ fetch página → expand ítems
 → skip si checksum conocido → RAW aviso → parse → normalize / identidad
 → upsert → source_sync
 ```
