@@ -40,7 +40,7 @@ export const HISTORIC_OFFER_STAGES = [
 
 export const OFFER_STAGE_LABELS: Record<OfferStage, string> = {
   interes: "Interés",
-  analisis: "Análisis / Go-No go",
+  analisis: "Análisis",
   preparacion: "En preparación",
   presentada: "Presentada",
   requerimiento: "Requerimiento",
