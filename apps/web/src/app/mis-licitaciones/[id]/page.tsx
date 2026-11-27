@@ -508,6 +508,7 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
                     viewerMemberId={viewerMemberId}
                     owner={offerCase.owner_member}
                     team={teamMembers}
+                    readOnly={historic}
                   />
                 ),
               calendario: showCalendarTab ? (

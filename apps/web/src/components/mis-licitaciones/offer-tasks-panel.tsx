@@ -345,34 +345,26 @@ function TaskNoteCard({
   task: OfferTaskItem;
   index: number;
   hidden?: boolean;
-  onOpen: (origin: NoteOrigin) => void;
+  /** Sin `onOpen` = solo lectura (histórico). */
+  onOpen?: (origin: NoteOrigin) => void;
 }) {
   const closed = task.status !== "pendiente";
   const tone = NOTE_TONES[index % NOTE_TONES.length]!;
   const tilt = NOTE_TILTS[index % NOTE_TILTS.length]!;
 
-  return (
-    <button
-      type="button"
-      data-offer-task-id={task.id}
-      onClick={(e) => {
-        const r = e.currentTarget.getBoundingClientRect();
-        onOpen({
-          top: r.top,
-          left: r.left,
-          width: r.width,
-          height: r.height,
-        });
-      }}
-      className={cn(
-        "group relative flex min-h-[9.5rem] flex-col rounded-md border p-3.5 text-left shadow-md transition",
-        "hover:-translate-y-0.5 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
-        tone,
-        tilt,
-        closed && "opacity-65",
-        hidden && "invisible pointer-events-none",
-      )}
-    >
+  const shellClass = cn(
+    "group relative flex min-h-[9.5rem] flex-col rounded-md border p-3.5 text-left shadow-md transition",
+    tone,
+    tilt,
+    closed && "opacity-65",
+    hidden && "invisible pointer-events-none",
+    onOpen
+      ? "hover:-translate-y-0.5 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+      : "cursor-default",
+  );
+
+  const inner = (
+    <>
       {task.status === "hecha" ? (
         <DoneTick className="absolute right-2.5 top-2.5 opacity-90" />
       ) : null}
@@ -418,6 +410,33 @@ function TaskNoteCard({
             : "Sin plazo"}
         </p>
       </div>
+    </>
+  );
+
+  if (!onOpen) {
+    return (
+      <div data-offer-task-id={task.id} className={shellClass}>
+        {inner}
+      </div>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      data-offer-task-id={task.id}
+      onClick={(e) => {
+        const r = e.currentTarget.getBoundingClientRect();
+        onOpen({
+          top: r.top,
+          left: r.left,
+          width: r.width,
+          height: r.height,
+        });
+      }}
+      className={shellClass}
+    >
+      {inner}
     </button>
   );
 }
@@ -1023,14 +1042,19 @@ export function OfferTasksPanel({
   viewerMemberId,
   owner,
   team,
+  readOnly = false,
 }: {
   offerCaseId: string;
   userId: string;
   viewerMemberId: string | null;
   owner: OfferOwnerMember | null;
   team: OfferCaseTeamMember[];
+  /** Histórico: lista + filtros; sin alta/edición; default «Todas». */
+  readOnly?: boolean;
 }) {
-  const bootDefault = fallbackTaskDefaultPreset(viewerMemberId);
+  const bootDefault: TaskDefaultFilterPreset = readOnly
+    ? "todas"
+    : fallbackTaskDefaultPreset(viewerMemberId);
 
   const [tasks, setTasks] = useState<OfferTaskItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -1090,11 +1114,17 @@ export function OfferTasksPanel({
   useLayoutEffect(() => {
     if (prefsAppliedRef.current) return;
     prefsAppliedRef.current = true;
+    if (readOnly) {
+      setPreferredDefault("todas");
+      setFilterPreset("todas");
+      setFilters(filtersForPreset("todas", viewerMemberId));
+      return;
+    }
     const preferred = readTaskDefaultFilterPreset(userId, viewerMemberId);
     setPreferredDefault(preferred);
     setFilterPreset(preferred);
     setFilters(filtersForDefaultPreset(preferred, viewerMemberId));
-  }, [userId, viewerMemberId]);
+  }, [userId, viewerMemberId, readOnly]);
 
   /** Cierra solo el menú contextual; el desplegable de filtros sigue abierto. */
   useEffect(() => {
@@ -1290,59 +1320,67 @@ export function OfferTasksPanel({
           <MisLicitacionesFiltersButton
             ref={filterBtnRef}
             activeCount={filterCount}
-            onClick={() => setPresetMenuOpen((v) => !v)}
-          />
-          <AnchoredPortal
-            open={presetMenuOpen}
-            anchorRef={filterBtnRef}
-            onDismiss={() => {
-              setPresetMenuOpen(false);
-              setCtxMenu(null);
+            onClick={() => {
+              if (readOnly) {
+                setFiltersOpen(true);
+                return;
+              }
+              setPresetMenuOpen((v) => !v);
             }}
-            className="bg-surface p-1"
-            matchAnchorWidth={false}
-            minWidth={180}
-            maxHeight={280}
-          >
-            <ul role="listbox" className="py-0.5">
-              {TASK_FILTER_PRESETS.map((opt) => {
-                const selected = filterPreset === opt.id;
-                const isDefaultable = opt.id !== "personalizado";
-                const canSetDefault =
-                  isDefaultable && opt.id !== preferredDefault;
-                return (
-                  <li key={opt.id}>
-                    <button
-                      type="button"
-                      role="option"
-                      aria-selected={selected}
-                      className={cn(
-                        "flex w-full rounded-md px-2.5 py-1.5 text-left text-sm hover:bg-muted",
-                        selected
-                          ? "font-semibold text-foreground"
-                          : "text-foreground",
-                      )}
-                      onClick={() => applyPreset(opt.id)}
-                      onContextMenu={(e) => {
-                        if (!canSetDefault || !isDefaultable) return;
-                        if (opt.id === "personalizado") return;
-                        e.preventDefault();
-                        e.stopPropagation();
-                        setCtxMenu({
-                          x: e.clientX,
-                          y: e.clientY,
-                          preset: opt.id,
-                        });
-                      }}
-                    >
-                      {opt.label}
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-          </AnchoredPortal>
-          {ctxMenu
+          />
+          {!readOnly ? (
+            <AnchoredPortal
+              open={presetMenuOpen}
+              anchorRef={filterBtnRef}
+              onDismiss={() => {
+                setPresetMenuOpen(false);
+                setCtxMenu(null);
+              }}
+              className="bg-surface p-1"
+              matchAnchorWidth={false}
+              minWidth={180}
+              maxHeight={280}
+            >
+              <ul role="listbox" className="py-0.5">
+                {TASK_FILTER_PRESETS.map((opt) => {
+                  const selected = filterPreset === opt.id;
+                  const isDefaultable = opt.id !== "personalizado";
+                  const canSetDefault =
+                    isDefaultable && opt.id !== preferredDefault;
+                  return (
+                    <li key={opt.id}>
+                      <button
+                        type="button"
+                        role="option"
+                        aria-selected={selected}
+                        className={cn(
+                          "flex w-full rounded-md px-2.5 py-1.5 text-left text-sm hover:bg-muted",
+                          selected
+                            ? "font-semibold text-foreground"
+                            : "text-foreground",
+                        )}
+                        onClick={() => applyPreset(opt.id)}
+                        onContextMenu={(e) => {
+                          if (!canSetDefault || !isDefaultable) return;
+                          if (opt.id === "personalizado") return;
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setCtxMenu({
+                            x: e.clientX,
+                            y: e.clientY,
+                            preset: opt.id,
+                          });
+                        }}
+                      >
+                        {opt.label}
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </AnchoredPortal>
+          ) : null}
+          {!readOnly && ctxMenu
             ? createPortal(
                 <div
                   ref={ctxMenuRef}
@@ -1369,9 +1407,11 @@ export function OfferTasksPanel({
               )
             : null}
         </div>
-        <Button type="button" size="sm" onClick={openCreate}>
-          Añadir tarea
-        </Button>
+        {!readOnly ? (
+          <Button type="button" size="sm" onClick={openCreate}>
+            Añadir tarea
+          </Button>
+        ) : null}
       </div>
 
       {error ? <p className="text-sm text-destructive">{error}</p> : null}
@@ -1380,7 +1420,9 @@ export function OfferTasksPanel({
         <p className="text-sm text-muted-foreground">Cargando tareas…</p>
       ) : tasks.length === 0 ? (
         <p className="rounded-lg border border-dashed border-border px-4 py-8 text-center text-sm text-muted-foreground">
-          Aún no hay tareas. Pulsa «Añadir tarea» para crear la primera.
+          {readOnly
+            ? "No hubo tareas en este expediente."
+            : "Aún no hay tareas. Pulsa «Añadir tarea» para crear la primera."}
         </p>
       ) : visibleTasks.length === 0 ? (
         <p className="rounded-lg border border-dashed border-border px-4 py-8 text-center text-sm text-muted-foreground">
@@ -1394,11 +1436,16 @@ export function OfferTasksPanel({
               task={task}
               index={index}
               hidden={
+                !readOnly &&
                 editor != null &&
                 editor !== "create" &&
                 editor.id === task.id
               }
-              onOpen={(origin) => openEdit(task, index, origin)}
+              onOpen={
+                readOnly
+                  ? undefined
+                  : (origin) => openEdit(task, index, origin)
+              }
             />
           ))}
         </div>
@@ -1414,26 +1461,30 @@ export function OfferTasksPanel({
         onClear={clearToDefault}
       />
 
-      <TaskEditorModal
-        open={editor != null}
-        mode={editor === "create" ? "create" : "edit"}
-        busy={saving}
-        members={editorMembers}
-        draft={draft}
-        error={formError}
-        toneIndex={editorTone}
-        origin={editorOrigin}
-        onChange={(patch) => setDraft((d) => ({ ...d, ...patch }))}
-        onReplaceDraft={setDraft}
-        onClosed={finishEditor}
-        onSave={save}
-        onDelete={editor && editor !== "create" ? () => void remove() : undefined}
-        onSetStatus={
-          editor && editor !== "create"
-            ? (status) => void setTaskStatus(status)
-            : undefined
-        }
-      />
+      {!readOnly ? (
+        <TaskEditorModal
+          open={editor != null}
+          mode={editor === "create" ? "create" : "edit"}
+          busy={saving}
+          members={editorMembers}
+          draft={draft}
+          error={formError}
+          toneIndex={editorTone}
+          origin={editorOrigin}
+          onChange={(patch) => setDraft((d) => ({ ...d, ...patch }))}
+          onReplaceDraft={setDraft}
+          onClosed={finishEditor}
+          onSave={save}
+          onDelete={
+            editor && editor !== "create" ? () => void remove() : undefined
+          }
+          onSetStatus={
+            editor && editor !== "create"
+              ? (status) => void setTaskStatus(status)
+              : undefined
+          }
+        />
+      ) : null}
     </div>
   );
 }
