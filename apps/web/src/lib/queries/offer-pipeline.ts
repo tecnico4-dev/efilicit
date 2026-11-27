@@ -737,6 +737,41 @@ export async function advanceOfferCaseToAnalisis(
   return { error: null };
 }
 
+/** En preparación → Presentada (`presented_on` = hoy si faltaba). */
+export async function markOfferCasePresented(
+  client: SupabaseClient<Database>,
+  input: { offerCaseId: string; createdBy: string | null },
+): Promise<{ error: Error | null }> {
+  const { data: current, error: readError } = await client
+    .from("offer_cases")
+    .select("presented_on")
+    .eq("id", input.offerCaseId)
+    .eq("stage", "preparacion")
+    .maybeSingle();
+  if (readError) return { error: new Error(readError.message) };
+  if (!current) return { error: new Error("offer_case not in preparacion") };
+
+  const today = madridTodayIso();
+  const { error } = await client
+    .from("offer_cases")
+    .update({
+      stage: "presentada",
+      presented_on: current.presented_on ?? today,
+    })
+    .eq("id", input.offerCaseId)
+    .eq("stage", "preparacion");
+  if (error) return { error: new Error(error.message) };
+
+  void insertOfferCaseLog(client, {
+    offerCaseId: input.offerCaseId,
+    eventType: "stage_change",
+    body: "Paso de En preparación a Presentada.",
+    createdBy: input.createdBy,
+  });
+
+  return { error: null };
+}
+
 export async function setOfferCaseGoDecision(
   client: SupabaseClient<Database>,
   input: {

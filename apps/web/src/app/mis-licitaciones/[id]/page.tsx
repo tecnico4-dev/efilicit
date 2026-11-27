@@ -44,6 +44,7 @@ import {
   AdvanceToAnalisisButton,
   AdvanceToAnalisisLink,
 } from "@/components/mis-licitaciones/advance-to-analisis-button";
+import { MarkAsPresentedLink } from "@/components/mis-licitaciones/mark-as-presented-link";
 import { AwardCriteriaSummary } from "@/components/mis-licitaciones/award-criteria-summary";
 import {
   OfferCalendarTimeline,
@@ -293,6 +294,16 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
                 {stageLabel}
               </p>
               <AdvanceToAnalisisLink
+                offerCaseId={offerCase.id}
+                userId={profile.data.id}
+              />
+            </OutlinedField>
+          ) : offerCase.stage === "preparacion" ? (
+            <OutlinedField label="Estado">
+              <p className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
+                {stageLabel}
+              </p>
+              <MarkAsPresentedLink
                 offerCaseId={offerCase.id}
                 userId={profile.data.id}
               />

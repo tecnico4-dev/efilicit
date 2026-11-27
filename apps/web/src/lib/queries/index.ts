@@ -212,6 +212,7 @@ export {
   clearOfferCaseMemberAssignments,
   setOfferCaseOwner,
   advanceOfferCaseToAnalisis,
+  markOfferCasePresented,
   setOfferCaseGoDecision,
   asOfferGoDecision,
   createOfferRequirement,
