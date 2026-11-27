@@ -52,6 +52,12 @@ const SEVERITY_RANK: Record<MissingSeverity, number> = {
   riesgo: 2,
 };
 
+/** Orden estable entre cajas BLOQUEANTE. */
+const BLOQUEANTE_GROUP_RANK: Record<string, number> = {
+  "bloqueante-excl-nocumple": 0,
+  "bloqueante-excl-bloqueado": 1,
+};
+
 /** 0 = bloqueantes; 1 = grupos con algo mío; 2 = resto. */
 function audienceRank(item: MissingItem): number {
   if (item.severity === "bloqueante") return 0;
@@ -92,6 +98,16 @@ function isMine(
   viewerMemberId: string | null,
 ): boolean {
   return viewerMemberId != null && ownerMemberId === viewerMemberId;
+}
+
+/** Asignado a otro miembro (no al viewer). Sin asignar = false. */
+function isAssignedToOther(
+  ownerMemberId: string | null,
+  viewerMemberId: string | null,
+): boolean {
+  if (ownerMemberId == null) return false;
+  if (viewerMemberId == null) return true;
+  return ownerMemberId !== viewerMemberId;
 }
 
 function taskSourceLabel(task: OfferTaskItem): string {
@@ -142,7 +158,15 @@ function collapseGroups(raw: RawEntry[]): MissingItem[] {
   items.sort((a, b) => {
     const aud = audienceRank(a) - audienceRank(b);
     if (aud !== 0) return aud;
-    return SEVERITY_RANK[a.severity] - SEVERITY_RANK[b.severity];
+    const sev = SEVERITY_RANK[a.severity] - SEVERITY_RANK[b.severity];
+    if (sev !== 0) return sev;
+    if (a.severity === "bloqueante" && b.severity === "bloqueante") {
+      return (
+        (BLOQUEANTE_GROUP_RANK[a.id] ?? 99) -
+        (BLOQUEANTE_GROUP_RANK[b.id] ?? 99)
+      );
+    }
+    return 0;
   });
   return items;
 }
@@ -163,7 +187,7 @@ export function buildMissingItems(
   const raw: RawEntry[] = [];
   const seenReq = new Set<string>();
 
-  // BLOQUEANTE: solo excluyente marcado como no cumple.
+  // BLOQUEANTE: excluyente marcado como no cumple (de cualquiera).
   for (const r of requirements) {
     if (r.requirement_type !== "excluyente") continue;
     if (r.compliance_status !== "no_cumple") continue;
@@ -185,9 +209,34 @@ export function buildMissingItems(
     });
   }
 
+  // BLOQUEANTE: excluyente con preparación bloqueada (de cualquiera; un solo grupo).
+  for (const r of requirements) {
+    if (seenReq.has(r.id)) continue;
+    if (r.requirement_type !== "excluyente") continue;
+    if (r.prep_status !== "bloqueado") continue;
+    seenReq.add(r.id);
+    raw.push({
+      groupKey: "bloqueante-excl-bloqueado",
+      severity: "bloqueante",
+      tone: "bad",
+      mine: isMine(r.owner_member_id, viewerMemberId),
+      dueAt: r.internal_due_at,
+      meta: truncateMeta(r.title),
+      target: { kind: "requirement", id: r.id },
+      titles: {
+        oneMine: "Tienes un requisito excluyente bloqueado",
+        oneOther: "Hay un requisito excluyente bloqueado",
+        manyMine: (n) => `Tienes ${n} requisitos excluyentes bloqueados`,
+        manyOther: (n) => `Hay ${n} requisitos excluyentes bloqueados`,
+      },
+    });
+  }
+
+  // A partir de aquí: no info de requisitos asignados a otros.
   // Otros no_cumple (no excluyentes) → provisionalmente RIESGO.
   for (const r of requirements) {
     if (seenReq.has(r.id)) continue;
+    if (isAssignedToOther(r.owner_member_id, viewerMemberId)) continue;
     if (r.compliance_status !== "no_cumple") continue;
     seenReq.add(r.id);
     const mine = isMine(r.owner_member_id, viewerMemberId);
@@ -211,6 +260,7 @@ export function buildMissingItems(
   // Excluyente sin verificar / sin asignar → provisionalmente RIESGO.
   for (const r of requirements) {
     if (seenReq.has(r.id)) continue;
+    if (isAssignedToOther(r.owner_member_id, viewerMemberId)) continue;
     if (r.requirement_type !== "excluyente") continue;
     if (r.compliance_status === "cumple" || r.compliance_status === "no_aplica") {
       continue;
@@ -255,10 +305,11 @@ export function buildMissingItems(
     }
   }
 
-  // Preparación pendiente.
+  // Preparación pendiente (míos / sin asignar).
   for (const r of requirements) {
     if (seenReq.has(r.id)) continue;
-    if (r.prep_status === "listo") continue;
+    if (isAssignedToOther(r.owner_member_id, viewerMemberId)) continue;
+    if (r.prep_status === "listo" || r.prep_status === "bloqueado") continue;
     const bucket = dueBucket(r.internal_due_at, now);
     const mine = isMine(r.owner_member_id, viewerMemberId);
     seenReq.add(r.id);
@@ -316,12 +367,7 @@ export function buildMissingItems(
   for (const t of tasks) {
     if (t.status !== "pendiente") continue;
     // No mostrar tareas de otros miembros; sí las mías y las sin asignar.
-    if (
-      t.owner_member_id != null &&
-      (viewerMemberId == null || t.owner_member_id !== viewerMemberId)
-    ) {
-      continue;
-    }
+    if (isAssignedToOther(t.owner_member_id, viewerMemberId)) continue;
     const bucket = dueBucket(t.due_at, now);
     const mine = isMine(t.owner_member_id, viewerMemberId);
     if (bucket === "overdue") {
