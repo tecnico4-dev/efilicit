@@ -56,6 +56,7 @@ export function OfferGoDecisionCard({
   reason,
   decidedAt,
   decidedByName,
+  readOnly = false,
 }: {
   offerCaseId: string;
   userId: string;
@@ -63,6 +64,8 @@ export function OfferGoDecisionCard({
   reason: string | null;
   decidedAt: string | null;
   decidedByName: string | null;
+  /** Expediente histórico: solo consulta, sin revisar/tomar decisión. */
+  readOnly?: boolean;
 }) {
   const router = useRouter();
   const parsed = asOfferGoDecision(decision);
@@ -200,15 +203,17 @@ export function OfferGoDecisionCard({
               </span>
             )}
           </p>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={openEditor}
-            className="shrink-0"
-          >
-            {decided ? "Revisar decisión" : "Tomar decisión"}
-          </Button>
+          {!readOnly ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={openEditor}
+              className="shrink-0"
+            >
+              {decided ? "Revisar decisión" : "Tomar decisión"}
+            </Button>
+          ) : null}
         </div>
       )}
     </div>

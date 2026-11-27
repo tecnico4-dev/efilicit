@@ -128,6 +128,15 @@ function formatEstimateStored(n: number): string {
   return Number.isInteger(n) ? String(n) : String(Math.round(n * 100) / 100);
 }
 
+function EstimateReadOnly({ initial }: { initial: string | null }) {
+  const n = parseScore(initial);
+  return (
+    <span className="inline-block min-w-[4.5rem] px-1.5 py-1 text-center text-sm font-medium text-foreground">
+      {n != null ? formatScore(n, "") : initial?.trim() || "—"}
+    </span>
+  );
+}
+
 function EstimateCell({
   deliverableId,
   initial,
@@ -244,12 +253,15 @@ function EstimateCell({
 
 /**
  * Criterios de adjudicación desde entregables B/C (intake → offer_deliverables).
- * Estimación propia = `our_estimate` (editable).
+ * Estimación propia = `our_estimate` (editable salvo `readOnly`).
  */
 export function AwardCriteriaSummary({
   deliverables,
+  readOnly = false,
 }: {
   deliverables: OfferDeliverableRow[];
+  /** Expediente histórico: estimación visible, no editable. */
+  readOnly?: boolean;
 }) {
   const rows = mapCriteria(deliverables);
   const totals = totalsByEnvelope(rows);
@@ -311,11 +323,15 @@ export function AwardCriteriaSummary({
                     </td>
                     <td className="whitespace-nowrap px-3 py-2 text-center">
                       <div className="inline-flex justify-center">
-                        <EstimateCell
-                          deliverableId={row.id}
-                          initial={row.estimate}
-                          pointsMax={row.pointsMax}
-                        />
+                        {readOnly ? (
+                          <EstimateReadOnly initial={row.estimate} />
+                        ) : (
+                          <EstimateCell
+                            deliverableId={row.id}
+                            initial={row.estimate}
+                            pointsMax={row.pointsMax}
+                          />
+                        )}
                       </div>
                     </td>
                   </tr>

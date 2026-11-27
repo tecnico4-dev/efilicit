@@ -339,6 +339,43 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
             panes={{
               resumen: (
                 <div className="space-y-5 text-sm">
+                  {historic ? (
+                    <div className="rounded-xl border border-border bg-muted/25 p-4 sm:p-5">
+                      <h3 className="text-sm font-semibold text-foreground">
+                        Resultado
+                      </h3>
+                      <dl className="mt-3 grid gap-2 sm:grid-cols-2">
+                        <div>
+                          <dt className="text-xs text-muted-foreground">
+                            Estado final
+                          </dt>
+                          <dd className="mt-0.5 text-base font-semibold text-foreground">
+                            {stageLabel}
+                          </dd>
+                        </div>
+                        <div>
+                          <dt className="text-xs text-muted-foreground">
+                            Fecha de cierre
+                          </dt>
+                          <dd className="mt-0.5 text-base font-medium text-foreground">
+                            {offerCase.outcome_on
+                              ? formatDateMadrid(offerCase.outcome_on)
+                              : "—"}
+                          </dd>
+                        </div>
+                        {offerCase.discard_reason?.trim() ? (
+                          <div className="sm:col-span-2">
+                            <dt className="text-xs text-muted-foreground">
+                              Motivo de descarte
+                            </dt>
+                            <dd className="mt-0.5 whitespace-pre-wrap text-sm text-foreground">
+                              {offerCase.discard_reason.trim()}
+                            </dd>
+                          </div>
+                        ) : null}
+                      </dl>
+                    </div>
+                  ) : null}
                   {offerCase.stage === "interes" ? (
                     <AdvanceToAnalisisButton
                       offerCaseId={offerCase.id}
@@ -355,11 +392,13 @@ export default async function MisLicitacionDetailPage({ params }: PageProps) {
                       reason={offerCase.go_reason}
                       decidedAt={offerCase.go_decided_at}
                       decidedByName={offerCase.go_decider_name}
+                      readOnly={historic}
                     />
                   ) : null}
 
                   <AwardCriteriaSummary
                     deliverables={deliverablesResult.data}
+                    readOnly={historic}
                   />
 
                   <div className="rounded-xl border border-border bg-muted/25 p-4 sm:p-5">
