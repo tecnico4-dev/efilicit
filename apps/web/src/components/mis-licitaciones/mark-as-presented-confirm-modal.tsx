@@ -41,7 +41,7 @@ export function MarkAsPresentedConfirmModal({
           id="mark-presented-title"
           className="text-base font-semibold text-foreground"
         >
-          ¿Marcar como presentada de todas formas?
+          ¿Seguro que quieres marcar como presentada?
         </h2>
         <p className="mt-2 text-sm text-muted-foreground">
           El expediente aún no cumple las comprobaciones habituales antes de

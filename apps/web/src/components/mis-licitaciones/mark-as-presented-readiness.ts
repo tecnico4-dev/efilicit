@@ -60,8 +60,8 @@ export function presentationReadinessLines(
     const n = readiness.compliancePending;
     lines.push(
       n === 1
-        ? "Queda 1 requisito sin cumplimiento válido (debe ser Cumple, Parcial o No aplica)."
-        : `Quedan ${n} requisitos sin cumplimiento válido (deben ser Cumple, Parcial o No aplica).`,
+        ? "Queda 1 requisito sin cumplimiento válido."
+        : `Quedan ${n} requisitos sin cumplimiento válido.`,
     );
   }
   if (readiness.prepPending > 0) {
@@ -75,9 +75,7 @@ export function presentationReadinessLines(
   if (readiness.tasksOpen > 0) {
     const n = readiness.tasksOpen;
     lines.push(
-      n === 1
-        ? "Queda 1 tarea pendiente (debe estar Hecha o Descartada)."
-        : `Quedan ${n} tareas pendientes (deben estar Hechas o Descartadas).`,
+      n === 1 ? "Queda 1 tarea pendiente." : `Quedan ${n} tareas pendientes.`,
     );
   }
   return lines;
