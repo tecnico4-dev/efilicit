@@ -47,7 +47,7 @@ Crear **7 jobs** (PLACSP son tres sindicaciones; un dispatch = una).
 | 2 | 03:00 | 02:00 | `ingest-placsp.yml` | `syndication=placsp_agregadas`, `mode=live`, `upload_storage=true` |
 | 3 | 03:00 | 02:00 | `ingest-placsp.yml` | `syndication=placsp_menores`, `mode=live`, `upload_storage=true` |
 | 4 | 05:00 | 04:00 | `ingest-catalunya.yml` | `mode=live`, `since_days=7`, `max_pages=20`, `page_size=1000`, `upload_storage=true` |
-| 5 | 06:00 | 05:00 | `ingest-euskadi.yml` | `mode=live`, `auto_recent=true`, `max_pages=50`–`100`, `upload_storage=true` |
+| 5 | 06:00 | 05:00 | `ingest-euskadi.yml` | `mode=live`, `max_pages=50`–`100`, `upload_storage=true` (auto_recent siempre) |
 | 6 | 07:00 | 06:00 | `alerts-match.yml` | `mode=write` |
 | 7 | 07:30 | 06:30 | `alerts-digest.yml` | `mode=write-resend` |
 
@@ -91,7 +91,6 @@ Euskadi:
   "ref": "main",
   "inputs": {
     "mode": "live",
-    "auto_recent": true,
     "max_pages": "50",
     "upload_storage": "true"
   }

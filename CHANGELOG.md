@@ -29,6 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Mis licitaciones: se elimina el stage `en_evaluacion`; post-envío = `presentada` (`presented_on`). Migración local — enmienda [ADR 036](docs/adr/036-offer-cases-kind-y-historico-tres-estados.md).
 - Mis licitaciones · Bitácora: el intake deja de usarse `otro`; tipo `extraccion_anuncio` («Extracción del anuncio») y texto legible (sin jerga ni ceros). Migración local.
+- Workflow Ingest Euskadi: inputs solo `mode` / `max_pages` / `upload_storage`; live siempre calcula la página reciente (`auto_recent`).
 - Ingesta Euskadi: live localiza la primera página con fechas de publicación (`auto_recent`) y lee `max_pages` desde ahí (la página 1 es legado sin fechas); enmienda [ADR 025](docs/adr/025-catalunya-raw-row-incremental.md).
 - Mis licitaciones · «Qué falta»: BLOQUEANTE solo si requisito excluyente = no cumple; ítems con etiqueta de gravedad + título corto de evento + meta truncada; prioriza lo asignado al viewer; misma categoría se agrupa (título con N, hasta 2 líneas relevantes: mías → plazo más temprano); click en línea abre el ítem.
 - Mis licitaciones · intake PLACSP: al añadir expediente, Server Action sync estructura del Atom (requisitos/sobres/pliegos enlace/hitos) sin PDFs; cola `offer_case_intake` sigue pending para descargas (cron 1–2×/día). Port TS server-only + `SUPABASE_SERVICE_ROLE_KEY` — enmienda [ADR 035](docs/adr/035-intake-pliegos-expediente.md).

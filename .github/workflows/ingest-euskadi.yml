@@ -1,5 +1,6 @@
 # Semana 3 + Semana 6 Paso 10 — ingesta Euskadi (KontratazioA REST) vía GitHub Actions.
 # Disparo: workflow_dispatch (default dry-run). Sin on.schedule (ADR 020: cron externo).
+# Live siempre auto_recent (primera página con fechas); override solo vía CLI.
 name: Ingest Euskadi
 
 on:
@@ -9,7 +10,7 @@ on:
         description: >
           dry-run = fixture in-memory (safe).
           fixture-db = fixture → Postgres (needs EFILICIT_DATABASE_URL).
-          live = página(s) API reales (needs secrets; acotar max_pages; 10 items/página).
+          live = zona reciente API (auto; needs secrets; acotar max_pages; 10 items/página).
         type: choice
         options:
           - dry-run
@@ -22,22 +23,6 @@ on:
           Cron productivo típico: 50–100.
         required: false
         default: "1"
-      start_page:
-        description: >
-          Override manual currentPage (solo con auto_recent=false). Live por defecto
-          ignora esto y localiza la primera página con fechas de publicación.
-        required: false
-        default: "1"
-      auto_recent:
-        description: >
-          true = primera página con last/firstPublicationDate + max_pages (recomendado).
-          false = usar start_page fijo (legado / catch-up).
-        type: boolean
-        default: true
-      run_id:
-        description: "run_id opcional (fixture-db/live); vacío = UUID"
-        required: false
-        default: ""
       upload_storage:
         description: "Subir RAW a Storage (requiere SUPABASE_SERVICE_ROLE_KEY + SUPABASE_URL)"
         type: boolean
@@ -60,9 +45,6 @@ jobs:
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
       MODE: ${{ inputs.mode }}
       MAX_PAGES: ${{ inputs.max_pages || '1' }}
-      START_PAGE: ${{ inputs.start_page || '1' }}
-      AUTO_RECENT: ${{ inputs.auto_recent }}
-      RUN_ID: ${{ github.event.inputs.run_id || '' }}
       UPLOAD_STORAGE: ${{ inputs.upload_storage }}
     steps:
       - name: Checkout
@@ -102,9 +84,6 @@ jobs:
         run: |
           set -euo pipefail
           EXTRA=(--max-pages "$MAX_PAGES")
-          if [ -n "${RUN_ID:-}" ]; then
-            EXTRA+=(--run-id "$RUN_ID")
-          fi
           if [ "${UPLOAD_STORAGE}" != "true" ] && [ "$MODE" != "dry-run" ]; then
             EXTRA+=(--no-storage)
           fi
@@ -115,24 +94,19 @@ jobs:
                 --fixture tests/fixtures/euskadi/valid_page.json \
                 --dry-run \
                 --no-auto-recent \
-                --start-page "$START_PAGE" \
+                --start-page 1 \
                 "${EXTRA[@]}"
               ;;
             fixture-db)
               uv run python -m efilicit_ingestion.cli run-euskadi \
                 --fixture tests/fixtures/euskadi/valid_page.json \
                 --no-auto-recent \
-                --start-page "$START_PAGE" \
+                --start-page 1 \
                 "${EXTRA[@]}"
               ;;
             live)
-              # Default on (cron antiguo sin input → zona reciente). Solo off explícito.
-              if [ "${AUTO_RECENT}" = "false" ] || [ "${AUTO_RECENT}" = "False" ]; then
-                EXTRA+=(--no-auto-recent --start-page "$START_PAGE")
-              else
-                EXTRA+=(--auto-recent)
-              fi
               uv run python -m efilicit_ingestion.cli run-euskadi \
+                --auto-recent \
                 "${EXTRA[@]}"
               ;;
             *)
