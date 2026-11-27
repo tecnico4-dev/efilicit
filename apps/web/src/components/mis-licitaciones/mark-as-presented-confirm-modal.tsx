@@ -55,20 +55,20 @@ export function MarkAsPresentedConfirmModal({
         <div className="mt-5 flex flex-wrap justify-end gap-2">
           <Button
             type="button"
+            size="sm"
+            disabled={busy}
+            onClick={onConfirm}
+          >
+            {busy ? "Marcando…" : "Marcar de todas formas"}
+          </Button>
+          <Button
+            type="button"
             variant="ghost"
             size="sm"
             disabled={busy}
             onClick={onCancel}
           >
             Cancelar
-          </Button>
-          <Button
-            type="button"
-            size="sm"
-            disabled={busy}
-            onClick={onConfirm}
-          >
-            {busy ? "Marcando…" : "Marcar de todas formas"}
           </Button>
         </div>
       </div>
