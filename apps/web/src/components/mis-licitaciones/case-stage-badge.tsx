@@ -6,7 +6,6 @@ const TONE: Record<string, string> = {
   analisis: "border-indigo-300/60 bg-indigo-50 text-indigo-950",
   preparacion: "border-amber-300/60 bg-amber-50 text-amber-950",
   presentada: "border-primary/40 bg-primary/10 text-link",
-  en_evaluacion: "border-cyan-300/60 bg-cyan-50 text-cyan-950",
   requerimiento: "border-orange-300/60 bg-orange-50 text-orange-950",
   adjudicada: "border-emerald-300/60 bg-emerald-50 text-emerald-900",
   no_adjudicada: "border-border bg-muted text-muted-foreground",

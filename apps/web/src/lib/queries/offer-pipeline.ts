@@ -13,7 +13,6 @@ export const OFFER_STAGES = [
   "analisis",
   "preparacion",
   "presentada",
-  "en_evaluacion",
   "requerimiento",
   "adjudicada",
   "no_adjudicada",
@@ -30,7 +29,6 @@ export const ACTIVE_OFFER_STAGES = [
   "analisis",
   "preparacion",
   "presentada",
-  "en_evaluacion",
   "requerimiento",
 ] as const satisfies readonly OfferStage[];
 
@@ -45,7 +43,6 @@ export const OFFER_STAGE_LABELS: Record<OfferStage, string> = {
   analisis: "Análisis / Go-No go",
   preparacion: "En preparación",
   presentada: "Presentada",
-  en_evaluacion: "En evaluación",
   requerimiento: "Requerimiento",
   adjudicada: "Adjudicada",
   no_adjudicada: "No adjudicada",

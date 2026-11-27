@@ -38,7 +38,8 @@ El espacio de oferta acordado (matriz requisito→evidencia, sobres, go/no-go, K
 6. **Biblioteca de empresa**
    - `company_documents` (tipo, emisión, caducidad, url/`storage_path`).
    - `company_people` (retirada en [032](032-eficen-members-favorites-shared.md) → `eficen_members`), `company_references`, `company_financials`.
-7. Etapas: `interes` | `analisis` | `preparacion` | `presentada` | `en_evaluacion` | `requerimiento` | `adjudicada` | `no_adjudicada` | `descartada` | `subcontrata` | `desierta`.
+7. Etapas (histórico de este ADR): `interes` | `analisis` | `preparacion` | `presentada` | `en_evaluacion` | `requerimiento` | `adjudicada` | `no_adjudicada` | `descartada` | `subcontrata` | `desierta`.  
+   **Vigente:** lista y retiros en [036](036-offer-cases-kind-y-historico-tres-estados.md) (sin `subcontrata`/`desierta` como stage; sin `en_evaluacion` desde 2026-11-27).
 8. RLS: `is_app_user()` (mismo tenant compartido que 023).
 9. Backfill one-shot: `bid_cases` → `offer_cases` (mismo `id`); checklist → `offer_requirements`.
 10. **Storage de ficheros** (bucket privado): aplazado; columnas `url` / `storage_path` listas.

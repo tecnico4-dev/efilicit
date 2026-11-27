@@ -20,7 +20,7 @@ type Scope = "active" | "historic";
 const ACTIVE_KANBAN: { label: string; stages: OfferStage[] }[] = [
   { label: "Interés / Análisis", stages: ["interes", "analisis"] },
   { label: "En preparación", stages: ["preparacion"] },
-  { label: "Presentada / Evaluación", stages: ["presentada", "en_evaluacion"] },
+  { label: "Presentada", stages: ["presentada"] },
   { label: "Requerimiento", stages: ["requerimiento"] },
 ];
 

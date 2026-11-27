@@ -79,7 +79,6 @@ def _offer_weight(stage: str) -> float:
         "analisis",
         "preparacion",
         "presentada",
-        "en_evaluacion",
         "requerimiento",
     }:
         return WEIGHT_OFFER_ACTIVE
